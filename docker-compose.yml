@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # --- DEVELOPMENT PROFILE ---
+  dev:
+    container_name: reisbloc-pos-dev
+    build:
+      context: .
+      target: dev
+    profiles: [ "dev" ]
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env.local
+    restart: unless-stopped
+
+  # --- STAGING PROFILE ---
+  staging:
+    container_name: reisbloc-pos-staging
+    build:
+      context: .
+      target: build
+    profiles: [ "staging" ]
+    ports:
+      - "8080:80"
+    env_file:
+      - .env.staging
+    restart: unless-stopped
+
+  # --- PRODUCTION PROFILE ---
+  prod:
+    container_name: reisbloc-pos-prod
+    build:
+      context: .
+      target: prod
+    profiles: [ "prod" ]
+    ports:
+      - "80:80"
+    env_file:
+      - .env.production
+    restart: unless-stopped

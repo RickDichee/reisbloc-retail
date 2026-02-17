@@ -1,0 +1,20 @@
+// reisbloc-pos-production.code-workspace
+{
+  "folders": [{ "name": "🔴 PRODUCTION - Reisbloc POS", "path": "." }],
+  "settings": {
+    "workbench.colorCustomizations": {
+      "statusBar.background": "#ff0000",  // Rojo = PROD
+      "statusBar.foreground": "#ffffff"
+    },
+    "terminal.integrated.env.osx": { "ENV_NAME": "🔴 PRODUCTION" }
+  }
+}
+```
+
+**Uso:**
+```
+File → Open Workspace from File...
+→ Selecciona reisbloc-pos.code-workspace (DEV)
+
+La barra de estado se pone VERDE
+Sabes que estás en DEV

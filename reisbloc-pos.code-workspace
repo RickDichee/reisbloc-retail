@@ -1,0 +1,41 @@
+// reisbloc-pos.code-workspace
+
+{
+  "folders": [
+    {
+      "name": "🟢 DEV - Reisbloc POS",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      ".env": true,  // Ocultar .env activo (evita confusiones)
+    },
+    
+    // Color coding por ambiente
+    "workbench.colorCustomizations": {
+      "[Default Dark+]": {
+        "statusBar.background": "#00ff00",  // Verde = DEV
+        "statusBar.foreground": "#000000"
+      }
+    },
+    
+    "terminal.integrated.env.osx": {
+      "ENV_NAME": "🟢 DEVELOPMENT"
+    },
+    "terminal.integrated.env.linux": {
+      "ENV_NAME": "🟢 DEVELOPMENT"
+    },
+    "terminal.integrated.env.windows": {
+      "ENV_NAME": "🟢 DEVELOPMENT"
+    }
+  },
+  
+  "extensions": {
+    "recommendations": [
+      "bradlc.vscode-tailwindcss",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "short_name": "Reisbloc",
+  "name": "Reisbloc Retail Lab",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0B0B0B",
+  "background_color": "#0B0B0B"
+}

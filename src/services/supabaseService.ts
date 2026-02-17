@@ -1,0 +1,1288 @@
+/**
+ * Reisbloc POS - Sistema POS Profesional
+ * Copyright (C) 2026 Reisbloc POS
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ */
+
+// Servicio Supabase para operaciones de base de datos (PostgreSQL)
+import { supabase } from '@/config/supabase'
+import logger from '@/utils/logger'
+import { withOrg } from '@/utils/queryHelpers'
+import { getStoredToken } from './jwtService'
+import {
+  User,
+  Device,
+  Product,
+  Order,
+  Sale,
+  DailyClose,
+  AuditLog,
+} from '@/types/index'
+
+class SupabaseService {
+  // Reintento simple para operaciones de red propensas a fallos transitorios
+  private async withRetry<T>(operation: () => Promise<T>, retries = 2, delayMs = 200): Promise<T> {
+    try {
+      return await operation()
+    } catch (error) {
+      if (retries <= 0) throw error
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+      return this.withRetry(operation, retries - 1, delayMs * 2)
+    }
+  }
+
+  // Helper para obtener el ID de organización actual
+  private getCurrentOrgId(): string {
+    const token = getStoredToken()
+    if (token && token.organizationId) {
+      return token.organizationId
+    }
+    logger.warn('supabase', '⚠️ No organization ID found in token')
+    // Fallback: Si no hay token (raro en operaciones autenticadas), intentar obtener de sesión
+    // Por ahora retornamos string vacío que causará error SQL si es obligatorio, 
+    // lo cual es correcto para seguridad.
+    return ''
+  }
+
+  // ==================== USERS ====================
+
+  async getUserByUsername(username: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('name', username) // Supabase uses 'name' column
+        .maybeSingle()
+
+      if (error) throw error
+      // Map Supabase fields to TypeScript User type
+      const user = data ? { ...data, username: data.name } : null
+      return user as User
+    } catch (error) {
+      logger.error('supabase', 'Error getting user', error as any)
+      return null
+    }
+  }
+
+  async getUserById(userId: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error) throw error
+      // Map Supabase fields to TypeScript User type
+      const user = data ? {
+        ...data,
+        username: data.name,
+        organizationId: data.organization_id // ✅ MAPEO CRÍTICO
+      } : null
+      return user as User
+    } catch (error) {
+      logger.error('supabase', 'Error getting user by ID', error as any)
+      return null
+    }
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return this.withRetry(async () => {
+      console.log('🔍 [Supabase] Obteniendo usuarios...')
+
+      const { data, error } = await withOrg(
+        supabase.from('users').select('*'),
+        this.getCurrentOrgId()
+      )
+        .eq('active', true)
+        .order('name', { ascending: true })
+
+      console.log('🔍 [Supabase] Data:', data)
+      console.log('🔍 [Supabase] Error:', error)
+
+      if (error) throw error
+      // Map Supabase fields to TypeScript User type
+      return (data || []).map(user => ({
+        ...user,
+        username: user.name,
+        organizationId: user.organization_id,
+        createdAt: new Date(user.created_at)
+      })) as User[]
+    }).catch(error => {
+      logger.error('supabase', 'Error getting all users', error as any)
+      return []
+    })
+  }
+
+  async createUser(user: Omit<User, 'id'>): Promise<string> {
+    try {
+      // Map TypeScript User fields to Supabase schema
+      const { username, createdAt, ...rest } = user as any
+      const supabaseUser = { ...rest, name: username, username: username, organization_id: this.getCurrentOrgId() }
+
+      if (!supabaseUser.organization_id) throw new Error('Organization ID required to create user')
+
+      // Usar RPC segura para evitar problemas de RLS circular
+      const { data, error } = await supabase.rpc('create_user_secure', {
+        p_name: supabaseUser.name,
+        p_username: supabaseUser.username,
+        p_pin: supabaseUser.pin,
+        p_role: supabaseUser.role,
+        p_organization_id: supabaseUser.organization_id
+      })
+
+      if (error) throw error
+      return data // RPC devuelve el UUID directamente
+    } catch (error) {
+      logger.error('supabase', 'Error creating user', error as any)
+      throw error
+    }
+  }
+
+  async updateUser(userId: string, updates: Partial<User>): Promise<void> {
+    try {
+      // Map TypeScript User fields to Supabase schema
+      const { username, createdAt, avatarUrl, ...rest } = updates as any
+      let supabaseUpdates = username ? { ...rest, name: username, username: username } : rest
+
+      // Forzar mapeo de avatarUrl -> avatar_url
+      if (avatarUrl || updates.avatar_url) {
+        supabaseUpdates.avatar_url = avatarUrl || updates.avatar_url
+        delete supabaseUpdates.avatarUrl
+      }
+
+      const { error } = await supabase
+        .from('users')
+        .update(supabaseUpdates)
+        .eq('id', userId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating user', error as any)
+      throw error
+    }
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      // Soft delete - marcar como inactivo
+      const { error } = await supabase
+        .from('users')
+        .update({ active: false })
+        .eq('id', userId)
+        .eq('organization_id', this.getCurrentOrgId()) // FIX: Requerido por RLS
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting user', error as any)
+      throw error
+    }
+  }
+
+  // ==================== DEVICES ====================
+
+  // Helper público para mapear snake_case (DB) a camelCase (Frontend)
+  mapDeviceFromDB(d: any): Device {
+    return {
+      id: d.id,
+      userId: d.user_id,
+      userName: d.userInfo?.username || d.userInfo?.name || 'Desconocido',
+      macAddress: d.mac_address,
+      deviceName: d.device_name,
+      network: d.network || d.network_type,
+      os: d.os,
+      browser: d.browser,
+      deviceType: d.device_type,
+      fingerprint: d.fingerprint,
+      registeredAt: new Date(d.registered_at || d.created_at),
+      lastAccess: new Date(d.last_access || d.last_seen),
+      isApproved: d.status === 'approved' || d.is_approved === true,
+      isRejected: d.status === 'rejected',
+    } as Device
+  }
+
+  async getAllDevices(): Promise<Device[]> {
+    try {
+      const { data, error } = await withOrg(
+        supabase.from('devices').select('*, userInfo:users!devices_user_id_fkey(username, name)'),
+        this.getCurrentOrgId()
+      )
+
+      if (error) throw error
+
+      console.log('🔍 [Supabase] Devices raw:', data)
+
+      // Mapear snake_case a camelCase
+      return (data || []).map(d => this.mapDeviceFromDB(d))
+    } catch (error) {
+      logger.error('supabase', 'Error getting all devices', error as any)
+      return []
+    }
+  }
+
+  async registerDevice(device: Omit<Device, 'id'>): Promise<string> {
+    try {
+      // Mapear camelCase a snake_case para PostgreSQL
+      const deviceData = {
+        user_id: device.userId,
+        mac_address: device.macAddress,
+        device_name: device.deviceName,
+        device_type: device.deviceType,
+        network: device.network,
+        network_type: device.network,
+        os: device.os,
+        browser: device.browser,
+        fingerprint: device.fingerprint,
+        status: 'pending',
+        registered_at: device.registeredAt?.toISOString() || new Date().toISOString(),
+        last_access: device.lastAccess?.toISOString() || new Date().toISOString(),
+        last_seen: new Date().toISOString(),
+        organization_id: this.getCurrentOrgId() // Importante para admin manual
+      }
+
+      // Usar UPSERT para evitar errores de duplicado
+      const { data, error } = await supabase
+        .from('devices')
+        .upsert([deviceData], { onConflict: 'mac_address' })
+        .select('id')
+        .single()
+
+      if (error) throw error
+      return data.id
+    } catch (error) {
+      logger.error('supabase', 'Error registering device', error as any)
+      throw error
+    }
+  }
+
+  async getDevicesByUser(userId: string): Promise<Device[]> {
+    try {
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('organization_id', this.getCurrentOrgId())
+
+      if (error) throw error
+
+      // Mapear snake_case a camelCase
+      return (data || []).map(d => this.mapDeviceFromDB(d))
+    } catch (error) {
+      logger.error('supabase', 'Error getting devices', error as any)
+      return []
+    }
+  }
+
+  async getDeviceByFingerprint(fingerprint: string, orgId?: string): Promise<Device | null> {
+    try {
+      const targetOrgId = orgId || this.getCurrentOrgId()
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*, userInfo:users!devices_user_id_fkey(username, name)')
+        .eq('fingerprint', fingerprint)
+        .eq('organization_id', targetOrgId)
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) return null
+
+      return this.mapDeviceFromDB(data)
+    } catch (error) {
+      logger.error('supabase', 'Error getting device by fingerprint', error as any)
+      return null
+    }
+  }
+
+  async getDeviceById(deviceId: string): Promise<Device | null> {
+    try {
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*')
+        .eq('id', deviceId)
+        .single()
+
+      if (error) throw error
+      return this.mapDeviceFromDB(data)
+    } catch (error) {
+      logger.error('supabase', 'Error getting device', error as any)
+      return null
+    }
+  }
+
+  async updateDevice(deviceId: string, updates: Partial<Device>): Promise<void> {
+    try {
+      // Mapear camelCase a snake_case
+      const updateData: any = {}
+      if (updates.userId) updateData.user_id = updates.userId
+      if (updates.macAddress) updateData.mac_address = updates.macAddress
+      if (updates.deviceName) updateData.device_name = updates.deviceName
+      if (updates.network) updateData.network = updates.network
+      if (updates.os) updateData.os = updates.os
+      if (updates.browser) updateData.browser = updates.browser
+      if (updates.deviceType) updateData.device_type = updates.deviceType
+      if (updates.fingerprint) updateData.fingerprint = updates.fingerprint
+      if (updates.lastAccess) updateData.last_access = updates.lastAccess.toISOString()
+
+      updateData.last_seen = new Date().toISOString()
+
+      const { error } = await supabase
+        .from('devices')
+        .update(updateData)
+        .eq('id', deviceId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating device', error as any)
+      throw error
+    }
+  }
+
+  async approveDevice(deviceId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('devices')
+        .update({
+          status: 'approved',
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', deviceId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error approving device', error as any)
+      throw error
+    }
+  }
+
+  async revokeDevice(deviceId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('devices')
+        .update({
+          status: 'rejected'
+        })
+        .eq('id', deviceId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error revoking device', error as any)
+      throw error
+    }
+  }
+
+  async deleteDevice(deviceId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('devices')
+        .delete()
+        .eq('id', deviceId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting device', error as any)
+      throw error
+    }
+  }
+
+  // ==================== PRODUCTS ====================
+
+  async getAllProducts(): Promise<Product[]> {
+    return this.withRetry(async () => {
+      console.log('🔍 [Supabase] Obteniendo productos...')
+      const { data, error } = await withOrg(
+        supabase.from('products').select('*'),
+        this.getCurrentOrgId()
+      )
+        // Temporarily remove .eq('available', true) to see all products
+        .order('category', { ascending: true })
+        .order('name', { ascending: true })
+
+      console.log('🔍 [Supabase] Productos data:', data)
+      console.log('🔍 [Supabase] Productos error:', error)
+
+      if (error) throw error
+      // Filter in memory to show active/available products
+      const products = (data || []).map((p: any) => ({
+        ...p,
+        active: p.available, // Map available -> active
+        currentStock: p.current_stock, // Map snake_case -> camelCase
+        minimumStock: p.minimum_stock,
+        hasInventory: p.has_inventory,
+        createdAt: new Date(p.created_at)
+      })) as Product[]
+
+      console.log('🔍 [Supabase] Total productos:', products.length)
+      return products
+    }).catch(error => {
+      logger.error('supabase', 'Error getting products', error as any)
+      return []
+    })
+  }
+
+  async getProductById(productId: string): Promise<Product | null> {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single()
+
+      if (error) throw error
+      return data as Product
+    } catch (error) {
+      logger.error('supabase', 'Error getting product', error as any)
+      return null
+    }
+  }
+
+  async createProduct(product: Omit<Product, 'id'>): Promise<string> {
+    try {
+      const payload: any = { ...product }
+      // Map active to available for Supabase schema
+      if ('active' in product) {
+        payload.available = product.active
+        delete payload.active
+      }
+      // Map inventory fields to snake_case
+      if ('currentStock' in product) {
+        payload.current_stock = product.currentStock
+        delete payload.currentStock
+      }
+      if ('hasInventory' in product) {
+        payload.has_inventory = product.hasInventory
+        delete payload.hasInventory
+      }
+      if ('minimumStock' in product) {
+        payload.minimum_stock = product.minimumStock
+        delete payload.minimumStock
+      }
+      // Remove timestamp fields (Supabase handles with triggers)
+      if ('createdAt' in payload) delete payload.createdAt
+      if ('updatedAt' in payload) delete payload.updatedAt
+
+      payload.organization_id = this.getCurrentOrgId()
+
+      const { data, error } = await supabase
+        .from('products')
+        .insert([payload])
+        .select('id')
+        .single()
+
+      if (error) throw error
+      return data.id
+    } catch (error) {
+      logger.error('supabase', 'Error creating product', error as any)
+      throw error
+    }
+  }
+
+  async updateProduct(productId: string, updates: Partial<Product>): Promise<void> {
+    try {
+      const payload: any = { ...updates }
+      // Map active to available for Supabase schema
+      if ('active' in updates) {
+        payload.available = updates.active
+        delete payload.active
+      }
+      // Map inventory fields to snake_case
+      if ('currentStock' in updates) {
+        payload.current_stock = updates.currentStock
+        delete payload.currentStock
+      }
+      if ('hasInventory' in updates) {
+        payload.has_inventory = updates.hasInventory
+        delete payload.hasInventory
+      }
+      if ('minimumStock' in updates) {
+        payload.minimum_stock = updates.minimumStock
+        delete payload.minimumStock
+      }
+      // Remove timestamp fields (Supabase handles with triggers)
+      if ('createdAt' in payload) delete payload.createdAt
+      if ('updatedAt' in payload) delete payload.updatedAt
+
+      const { error } = await supabase
+        .from('products')
+        .update(payload)
+        .eq('id', productId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating product', error as any)
+      throw error
+    }
+  }
+
+  async updateProductStockBatch(updates: { productId: string; quantity: number }[]): Promise<void> {
+    if (!updates.length) return
+
+    try {
+      // Usar RPC para actualización atómica y eficiente (definida en DB)
+      const { error } = await supabase.rpc('update_stock_batch', { updates })
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating stock batch', error as any)
+    }
+  }
+
+  async deleteProduct(productId: string): Promise<void> {
+    try {
+      // Soft delete - marcar como no disponible
+      const { error } = await supabase
+        .from('products')
+        .update({ available: false })
+        .eq('id', productId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting product', error as any)
+      throw error
+    }
+  }
+
+  // ==================== ORDERS ====================
+
+  private normalizeOrderStatus(status: any): string | undefined {
+    if (!status) return undefined
+    const allowed = ['pending', 'sent', 'preparing', 'ready', 'served', 'completed', 'cancelled', 'paid', 'open']
+    return allowed.includes(status) ? status : 'pending'
+  }
+
+  private normalizeOrderItems(items: any[]): any[] {
+    if (!Array.isArray(items)) return []
+    return items.map(item => ({
+      ...item,
+      addedAt: item.addedAt instanceof Date ? item.addedAt.toISOString() : item.addedAt,
+      deletedAt: item.deletedAt instanceof Date ? item.deletedAt.toISOString() : item.deletedAt,
+    }))
+  }
+
+  private buildOrderPayload(order: Partial<Order> & Record<string, any>) {
+    const payload: any = { ...order }
+
+    // Validar tableNumber si está presente (debe ser &gt; 0)
+    if ('tableNumber' in order) {
+      const tableNum = order.tableNumber
+      if (tableNum === null || tableNum === undefined || tableNum <= 0) {
+        throw new Error(`Invalid table number: ${tableNum}. Must be greater than 0.`)
+      }
+      payload.table_number = tableNum
+    }
+    if ('waiterId' in order) payload.waiter_id = (order as any).waiterId
+    if ('createdBy' in order) payload.created_by = (order as any).createdBy
+    if ('status' in order) payload.status = this.normalizeOrderStatus((order as any).status)
+
+    if ('createdAt' in order) {
+      payload.created_at = order.createdAt instanceof Date
+        ? order.createdAt.toISOString()
+        : order.createdAt
+    }
+
+    if ('sentToKitchenAt' in order) {
+      payload.sent_to_kitchen_at = order.sentToKitchenAt instanceof Date
+        ? order.sentToKitchenAt.toISOString()
+        : order.sentToKitchenAt
+    }
+
+    if ('items' in order) {
+      payload.items = this.normalizeOrderItems(order.items as any[])
+    }
+
+    if ('tipAmount' in order) payload.tip_amount = (order as any).tipAmount ?? 0
+    if ('tipPercentage' in order) payload.tip_percentage = (order as any).tipPercentage ?? 0
+    if ('paymentMethod' in order) payload.payment_method = (order as any).paymentMethod
+
+    const calculatedSubtotal = Array.isArray(payload.items)
+      ? payload.items.reduce((sum: number, item: any) => sum + (item.unitPrice || 0) * (item.quantity || 0), 0)
+      : 0
+
+    if (!('subtotal' in payload)) payload.subtotal = (order as any).subtotal ?? calculatedSubtotal
+    if (!('total' in payload)) payload.total = (order as any).total ?? (payload.subtotal ?? calculatedSubtotal) + ((order as any).tipAmount ?? 0)
+
+    delete payload.tableNumber
+    delete payload.waiterId
+    delete payload.createdBy
+    delete payload.createdAt
+    delete payload.sentToKitchenAt
+    delete payload.tipAmount
+    delete payload.tipPercentage
+    delete payload.paymentMethod
+    delete payload.isCourtesy
+    delete payload.authorizedBy
+    delete payload.closedAt
+    delete payload.closedBy
+    delete payload.lastEditedAt
+    delete payload.lastEditedBy
+    delete payload.cancelledAt
+    delete payload.cancelledBy
+    delete payload.cancelReason
+
+    return payload
+  }
+
+  async getOrdersByStatus(status: Order['status']): Promise<Order[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await withOrg(
+        supabase.from('orders').select('*'),
+        this.getCurrentOrgId()
+      )
+        .eq('status', status)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      // Normalizar table_number para evitar "Mesa 0"
+      return (data || []).map((o: any) => ({
+        ...o,
+        tableNumber: o.table_number ?? o.tableNumber ?? 0,
+      })) as Order[]
+    }).catch(error => {
+      logger.error('supabase', 'Error getting orders by status', error as any)
+      return []
+    })
+  }
+
+  async getActiveOrders(): Promise<Order[]> {
+    return this.withRetry(async () => {
+      logger.info('supabase', '🔍 Getting active orders...')
+      const { data, error } = await withOrg(
+        supabase.from('orders').select('*'),
+        this.getCurrentOrgId()
+      )
+        .in('status', ['sent', 'preparing', 'ready', 'served'])
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        logger.error('supabase', 'Error in getActiveOrders query', error)
+        throw error
+      }
+
+      const normalized = (data || []).map((o: any) => ({
+        ...o,
+        tableNumber: o.table_number ?? o.tableNumber ?? 0,
+      }))
+
+      logger.info('supabase', `✅ Found ${normalized.length} active orders`)
+      // Log table_number para cada orden
+      if (normalized.length > 0) {
+        const tableNumbers = normalized.map((o: any) => ({ id: o.id, table_number: o.tableNumber }))
+        logger.info('supabase', `📊 Order table numbers:`, tableNumbers)
+      }
+      return normalized as Order[]
+    }).catch(error => {
+      logger.error('supabase', 'Error getting active orders', error as any)
+      return []
+    })
+  }
+
+  async getOrderById(orderId: string): Promise<Order | null> {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single()
+
+      if (error) throw error
+      return data as Order
+    } catch (error) {
+      logger.error('supabase', 'Error getting order', error as any)
+      return null
+    }
+  }
+
+  async createOrder(order: Omit<Order, 'id'>): Promise<string> {
+    try {
+      const payload = this.buildOrderPayload({ ...order, createdAt: (order as any).createdAt || new Date() })
+      payload.organization_id = this.getCurrentOrgId()
+
+      if (!payload.organization_id) {
+        logger.error('supabase', '❌ Intento de crear orden sin Organization ID')
+        throw new Error('No se pudo identificar la organización. Por favor inicie sesión nuevamente.')
+      }
+
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([payload])
+        .select('id')
+        .single()
+
+      if (error) throw error
+      return data.id
+    } catch (error) {
+      logger.error('supabase', 'Error creating order', error as any)
+      throw error
+    }
+  }
+
+  async updateOrder(orderId: string, updates: Partial<Order>): Promise<void> {
+    try {
+      const payload = this.buildOrderPayload(updates)
+
+      const { error } = await supabase.from('orders').update(payload).eq('id', orderId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating order', error as any)
+      throw error
+    }
+  }
+
+  async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+    logger.info('supabase', `📝 Updating order ${orderId} status to: ${status}`)
+    return this.updateOrder(orderId, { status })
+  }
+
+  async deleteOrder(orderId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting order', error as any)
+      throw error
+    }
+  }
+
+  // ==================== SALES ====================
+
+  async getTodaySales(): Promise<Sale[]> {
+    try {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const { data, error } = await withOrg(
+        supabase.from('sales').select('*'),
+        this.getCurrentOrgId()
+      )
+        .gte('created_at', today.toISOString())
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      // Normalizar campos de DB (snake_case) a App (camelCase)
+      return (data || []).map((o: any) => ({
+        ...o,
+        tableNumber: o.table_number ?? o.tableNumber ?? 0,
+        paymentMethod: o.payment_method || o.paymentMethod,
+        saleBy: o.waiter_id || o.saleBy,
+        tip: o.tip_amount || o.tip
+      })) as Sale[]
+    } catch (error) {
+      logger.error('supabase', 'Error getting today sales', error as any)
+      return []
+    }
+  }
+
+  async getSalesByDateRange(startDate: Date, endDate: Date): Promise<Sale[]> {
+    try {
+      const { data, error } = await withOrg(
+        supabase.from('sales').select('*'),
+        this.getCurrentOrgId()
+      )
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', endDate.toISOString())
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      // Normalizar campos de DB (snake_case) a App (camelCase)
+      return (data || []).map((o: any) => ({
+        ...o,
+        tableNumber: o.table_number ?? o.tableNumber ?? 0,
+        paymentMethod: o.payment_method || o.paymentMethod,
+        saleBy: o.waiter_id || o.saleBy,
+        tip: o.tip_amount || o.tip
+      })) as Sale[]
+    } catch (error) {
+      logger.error('supabase', 'Error getting sales by date range', error as any)
+      return []
+    }
+  }
+
+  async createSale(sale: Omit<Sale, 'id'>): Promise<string> {
+    try {
+      // Validar tableNumber
+      if (!sale.tableNumber || sale.tableNumber <= 0) {
+        throw new Error('Table number must be greater than 0')
+      }
+
+      // Map TypeScript Sale to Supabase schema with type validation
+      const payload: any = {
+        order_id: (sale as any).orderIds?.[0] || null,
+        waiter_id: (sale as any).saleBy || null,
+        table_number: Number(sale.tableNumber),
+        items: sale.items || [],
+        subtotal: parseFloat(String(sale.subtotal)) || 0,
+        tip_amount: parseFloat(String(sale.tip || 0)) || 0,
+        tip_percentage: 0,
+        tip_source: (sale as any).tipSource || 'cash',
+        total: parseFloat(String(sale.total)) || 0,
+        payment_method: String(sale.paymentMethod) || 'cash',
+        device_id: null,
+        organization_id: this.getCurrentOrgId()
+      }
+
+      logger.info('supabase', '💰 Creating sale with payload:', payload)
+      logger.info('supabase', '   - order_id:', payload.order_id)
+      logger.info('supabase', '   - waiter_id:', payload.waiter_id)
+      logger.info('supabase', '   - table_number:', payload.table_number, typeof payload.table_number)
+      logger.info('supabase', '   - subtotal:', payload.subtotal, typeof payload.subtotal)
+      logger.info('supabase', '   - total:', payload.total, typeof payload.total)
+      logger.info('supabase', '   - payment_method:', payload.payment_method)
+      logger.info('supabase', '   - items count:', payload.items?.length || 0)
+
+      // DEBUG: Verificar usuario actual antes de insertar
+      const { data: { user } } = await supabase.auth.getUser()
+      logger.info('supabase', '👤 Current Auth User:', user?.id, 'Role:', user?.role)
+
+      // Use returning: 'minimal' to avoid SELECT and bypass RLS on select
+      const { error } = await supabase
+        .from('sales')
+        .insert([payload])
+
+      if (error) {
+        logger.error('supabase', '❌ Supabase insert error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          statusCode: (error as any).statusCode
+        })
+        throw new Error(`Supabase error: ${error.message} ${error.details ? '- ' + error.details : ''} ${error.hint ? '- ' + error.hint : ''}`)
+      }
+
+      logger.info('supabase', '✅ Sale created successfully (no returning id)')
+
+      // Registrar en auditoría
+      this.createAuditLog({
+        userId: (sale as any).saleBy || 'system',
+        action: 'SALE_COMPLETED',
+        entityType: 'SALE',
+        entityId: payload.order_id || 'unknown',
+        newValue: { total: payload.total, method: payload.payment_method },
+        ipAddress: 'system',
+        timestamp: new Date()
+      }).catch(e => logger.error('supabase', 'Audit log failed', e))
+
+      return payload.order_id || ''
+    } catch (error: any) {
+      logger.error('supabase', '❌ Error creating sale:', error?.message || String(error))
+      throw error
+    }
+  }
+
+  // ==================== AUDIT LOGS ====================
+
+  async createAuditLog(log: Omit<AuditLog, 'id' | 'created_at'>): Promise<void> {
+    try {
+      // Mapear campos camelCase a snake_case del schema Supabase
+      const payload = {
+        user_id: log.userId,
+        action: log.action,
+        table_name: log.entityType,
+        record_id: log.entityId,
+        changes: log.oldValue || log.newValue ? { old: log.oldValue, new: log.newValue } : null,
+        ip_address: log.ipAddress,
+        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+        // deviceId se almacena en changes JSONB
+        organization_id: this.getCurrentOrgId()
+      }
+
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert([payload])
+
+      if (error) throw error
+      logger.info('supabase', `Audit log created: ${log.action} on ${log.entityType}`)
+    } catch (error) {
+      logger.error('supabase', 'Error creating audit log', error as any)
+    }
+  }
+
+  async getAuditLogs(limit = 100): Promise<AuditLog[]> {
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (error) throw error
+
+      // Mapear campos snake_case a camelCase
+      return (data || []).map((log: any) => ({
+        id: log.id,
+        userId: log.user_id,
+        action: log.action,
+        entityType: log.table_name,
+        entityId: log.record_id,
+        oldValue: log.changes?.old,
+        newValue: log.changes?.new,
+        ipAddress: log.ip_address,
+        timestamp: new Date(log.created_at),
+      }))
+    } catch (error) {
+      logger.error('supabase', 'Error getting audit logs', error as any)
+      return []
+    }
+  }
+
+  // ==================== CLOSINGS ====================
+
+  async saveClosing(closing: Omit<DailyClose, 'id'>): Promise<string> {
+    try {
+      const payload = {
+        date: closing.date instanceof Date ? closing.date.toISOString().split('T')[0] : closing.date,
+        closed_by: closing.closedBy,
+        total_sales: parseFloat(String(closing.totalSales)) || 0,
+        total_cash: parseFloat(String(closing.totalCash)) || 0,
+        total_card: parseFloat(String(closing.totalCard)) || 0,
+        total_digital: parseFloat(String(closing.totalDigital)) || 0,
+        total_tips: parseFloat(String(closing.totalTips)) || 0,
+        orders_count: parseInt(String(closing.ordersCount)) || 0,
+        sales_count: parseInt(String(closing.salesCount)) || 0,
+        employee_metrics: closing.employeeMetrics || [],
+        payment_methods: closing.paymentMethods || {},
+        notes: closing.notes || '',
+        status: closing.status || 'closed',
+        closed_at: new Date().toISOString(),
+        organization_id: this.getCurrentOrgId()
+      }
+
+      logger.info('supabase', '💾 Saving closing:', payload)
+
+      const { error } = await supabase
+        .from('closings')
+        .insert([payload])
+
+      if (error) {
+        logger.error('supabase', '❌ Error saving closing:', error)
+        throw new Error(`Supabase error: ${error.message}`)
+      }
+
+      logger.info('supabase', '✅ Closing saved successfully')
+      return payload.closed_by || ''
+    } catch (error: any) {
+      logger.error('supabase', '❌ Error saving closing:', error?.message || String(error))
+      throw error
+    }
+  }
+
+  async getClosings(startDate: Date, endDate: Date): Promise<DailyClose[]> {
+    try {
+      const { data, error } = await withOrg(
+        supabase.from('closings').select('*'),
+        this.getCurrentOrgId()
+      )
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0])
+        .order('date', { ascending: false })
+
+      if (error) throw error
+
+      // Map snake_case to camelCase
+      return (data || []).map((closing: any) => ({
+        id: closing.id,
+        date: closing.date,
+        closedBy: closing.closed_by,
+        totalSales: parseFloat(closing.total_sales),
+        totalCash: parseFloat(closing.total_cash),
+        totalCard: parseFloat(closing.total_card),
+        totalDigital: parseFloat(closing.total_digital),
+        totalTips: parseFloat(closing.total_tips),
+        ordersCount: closing.orders_count,
+        salesCount: closing.sales_count,
+        employeeMetrics: closing.employee_metrics,
+        paymentMethods: closing.payment_methods,
+        notes: closing.notes,
+        status: closing.status,
+        closedAt: new Date(closing.closed_at),
+      })) as DailyClose[]
+    } catch (error) {
+      logger.error('supabase', 'Error getting closings', error as any)
+      return []
+    }
+  }
+
+  // ==================== REAL-TIME SUBSCRIPTIONS ====================
+
+  subscribeToOrders(callback: (orders: Order[]) => void) {
+    const orgId = this.getCurrentOrgId()
+    if (!orgId) {
+      logger.warn('supabase', '⚠️ Cannot subscribe to orders: No Organization ID')
+      return () => { }
+    }
+
+    // Initial load
+    this.getActiveOrders().then(callback).catch(err => {
+      logger.error('supabase', 'Error loading initial orders', err)
+    })
+
+    // Usar ID único para evitar conflictos entre componentes o recargas en React StrictMode
+    const channelId = `orders_changes_${Date.now()}_${Math.random().toString(36).slice(2)}`
+
+    const channel = supabase
+      .channel(channelId)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `organization_id=eq.${orgId}` // Filtrar por organización
+        },
+        (payload) => {
+          logger.info('supabase', '🔔 Realtime event received:', payload.eventType)
+          // Cuando hay cambios, recargar todas las órdenes activas
+          this.getActiveOrders().then(callback)
+        }
+      )
+      .subscribe((status) => {
+        logger.info('supabase', `📡 Subscription status (${channelId}): ${status}`)
+        if (status === 'SUBSCRIBED') {
+          logger.info('supabase', '✅ Realtime connected for orders')
+        }
+        if (status === 'CLOSED') {
+          logger.warn('supabase', '⚠️ Realtime connection closed for orders')
+        }
+        if (status === 'CHANNEL_ERROR') {
+          logger.error('supabase', '❌ Realtime channel error for orders')
+        }
+      })
+
+    return () => {
+      logger.info('supabase', `🔌 Unsubscribing from orders (${channelId})`)
+      supabase.removeChannel(channel)
+    }
+  }
+
+  /**
+   * Alias para compatibilidad con Kitchen.tsx y Bar.tsx
+   * Permite callbacks para success y error
+   */
+  subscribeToActiveOrders(
+    onSuccess: (orders: Order[]) => void,
+    onError?: (message: string) => void
+  ): (() => void) | undefined {
+    try {
+      return this.subscribeToOrders(onSuccess)
+    } catch (error) {
+      onError?.(error instanceof Error ? error.message : 'Unknown error')
+      return undefined
+    }
+  }
+
+  subscribeToOrdersByStatus(
+    status: Order['status'],
+    onData: (orders: Order[]) => void,
+    onError?: (message: string) => void
+  ) {
+    try {
+      const orgId = this.getCurrentOrgId()
+      if (!orgId) {
+        const msg = 'Cannot subscribe: No Organization ID'
+        logger.warn('supabase', msg)
+        onError?.(msg)
+        return () => { }
+      }
+
+      // Primera carga
+      this.getOrdersByStatus(status).then(onData).catch(err => onError?.(err?.message || 'Error loading orders'))
+
+      const channelId = `orders_${status}_${Date.now()}_${Math.random().toString(36).slice(2)}`
+
+      const channel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders',
+            filter: `status=eq.${status} AND organization_id=eq.${orgId}`
+          },
+          () => {
+            this.getOrdersByStatus(status).then(onData)
+          }
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    } catch (error: any) {
+      const message = error?.message || 'Error creando suscripción de órdenes'
+      logger.error('supabase', 'Error subscribing to orders by status', message)
+      onError?.(message)
+      return () => { }
+    }
+  }
+
+  subscribeToProducts(callback: (products: Product[]) => void) {
+    const orgId = this.getCurrentOrgId()
+    if (!orgId) return () => { }
+
+    const channelId = `products_changes_${Date.now()}_${Math.random().toString(36).slice(2)}`
+
+    const channel = supabase
+      .channel(channelId)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'products',
+          filter: `organization_id=eq.${orgId}`
+        },
+        () => {
+          this.getAllProducts().then(callback)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+  async getSalesMetrics(
+    startDate: Date,
+    endDate: Date
+  ): Promise<{
+    totalSales: number
+    totalCash: number
+    totalTransferencia: number
+    totalTarjeta: number
+    totalTips: number
+    transactionCount: number
+    averageTicket: number
+  }> {
+    try {
+      const sales = await this.getSalesByDateRange(startDate, endDate)
+
+      const metrics = sales.reduce(
+        (acc: any, sale: any) => {
+          const total = Number(sale.total || 0)
+          const tip = Number(sale.tip_amount || sale.tip || 0)
+          acc.totalSales += total
+          acc.totalTips += tip
+          acc.transactionCount += 1
+          const method = (sale.payment_method || '').toLowerCase()
+          if (method === 'cash') acc.totalCash += total
+          else if (['transferencia', 'digital', 'transfer'].includes(method)) acc.totalTransferencia += total
+          else if (['tarjeta', 'clip', 'card'].includes(method)) acc.totalTarjeta += total
+          return acc
+        },
+        {
+          totalSales: 0,
+          totalCash: 0,
+          totalTransferencia: 0,
+          totalTarjeta: 0,
+          totalTips: 0,
+          transactionCount: 0,
+          averageTicket: 0,
+        }
+      )
+
+      metrics.averageTicket = metrics.transactionCount
+        ? metrics.totalSales / metrics.transactionCount
+        : 0
+
+      return metrics
+    } catch (error) {
+      logger.error('supabase', 'Error calculating sales metrics', error as any)
+      return {
+        totalSales: 0,
+        totalCash: 0,
+        totalTransferencia: 0,
+        totalTarjeta: 0,
+        totalTips: 0,
+        transactionCount: 0,
+        averageTicket: 0,
+      }
+    }
+  }
+
+  async getTopProducts(startDate: Date, endDate: Date, limit: number = 5): Promise<any[]> {
+    try {
+      const sales = await this.getSalesByDateRange(startDate, endDate)
+
+      const productMap: Record<string, { name: string; qty: number; total: number }> = {}
+      sales.forEach((sale: any) => {
+        ; (sale.items || []).forEach((item: any) => {
+          const pid = item.productId || item.product_id || item.id
+          const pname = item.productName || item.name || 'Producto'
+          if (!productMap[pid]) productMap[pid] = { name: pname, qty: 0, total: 0 }
+          productMap[pid].qty += Number(item.quantity || 0)
+          productMap[pid].total += Number(item.unitPrice || item.price || 0) * Number(item.quantity || 0)
+        })
+      })
+
+      return Object.values(productMap)
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, limit)
+        .map((p, i) => ({ id: i, ...p }))
+    } catch (error) {
+      logger.error('supabase', 'Error getting top products', error as any)
+      return []
+    }
+  }
+
+  async getEmployeeMetrics(startDate: Date, endDate: Date): Promise<any[]> {
+    try {
+      const sales = await this.getSalesByDateRange(startDate, endDate)
+      const users = await this.getAllUsers()
+
+      const byUser: Record<string, any> = {}
+      users.forEach((u: any) => {
+        byUser[u.id] = {
+          userId: u.id,
+          userName: (u as any).username || (u as any).name || 'Usuario',
+          role: u.role,
+          salesCount: 0,
+          totalSales: 0,
+          totalTips: 0,
+          averageTicket: 0,
+          averageTip: 0,
+        }
+      })
+
+      sales.forEach((sale: any) => {
+        const uid = sale.waiter_id || sale.saleBy
+        if (uid && byUser[uid]) {
+          byUser[uid].salesCount += 1
+          byUser[uid].totalSales += Number(sale.total || 0)
+          byUser[uid].totalTips += Number(sale.tip_amount || sale.tip || 0)
+        }
+      })
+
+      return Object.values(byUser)
+        .filter((m: any) => m.salesCount > 0)
+        .map((m: any) => ({
+          ...m,
+          averageTicket: m.salesCount ? m.totalSales / m.salesCount : 0,
+          averageTip: m.salesCount ? m.totalTips / m.salesCount : 0,
+        }))
+        .sort((a: any, b: any) => b.totalSales - a.totalSales)
+    } catch (error) {
+      logger.error('supabase', 'Error getting employee metrics', error as any)
+      return []
+    }
+  }
+}
+
+// Singleton export
+const supabaseService = new SupabaseService()
+export default supabaseService
