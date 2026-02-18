@@ -1,0 +1,99 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+Deno.serve(async (req) => {
+    // Handle CORS
+    if (req.method === 'OPTIONS') {
+        return new Response('ok', { headers: corsHeaders });
+    }
+
+    try {
+        const supabase = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        // 1. Get the current user from auth header
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            return new Response(JSON.stringify({ error: 'No authorization header' }), { status: 401, headers: corsHeaders });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+        if (authError || !user) {
+            return new Response(JSON.stringify({ error: 'Invalid user token' }), { status: 401, headers: corsHeaders });
+        }
+
+        // 2. Verify if the user is an admin in their organization
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('organization_id, role')
+            .eq('id', user.id)
+            .single();
+
+        if (userError || !userData || userData.role !== 'admin') {
+            return new Response(JSON.stringify({ error: 'Only admins can send invitations' }), { status: 403, headers: corsHeaders });
+        }
+
+        // 3. Extract invitation details from body
+        const { email, role = 'mesero', expires_in_hours = 48 } = await req.json();
+
+        if (!email) {
+            return new Response(JSON.stringify({ error: 'Email is required' }), { status: 400, headers: corsHeaders });
+        }
+
+        // 4. Generate secure token
+        const rawToken = crypto.randomUUID();
+        const tokenHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawToken))
+            .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + expires_in_hours);
+
+        // 5. Store invitation in DB
+        const { data: invite, error: inviteError } = await supabase
+            .from('organization_invites')
+            .insert({
+                email,
+                organization_id: userData.organization_id,
+                invited_by: user.id,
+                role,
+                token_hash: tokenHash,
+                status: 'pending',
+                expires_at: expiresAt.toISOString()
+            })
+            .select()
+            .single();
+
+        if (inviteError) {
+            console.error('Invite error:', inviteError);
+            return new Response(JSON.stringify({ error: 'Failed to create invitation' }), { status: 500, headers: corsHeaders });
+        }
+
+        // 6. Generate invitation link
+        const origin = req.headers.get('origin') || 'https://reisbloc.io';
+        const inviteLink = `${origin}/accept-invite?token=${rawToken}`;
+
+        // 7. TODO: Send Email
+        // In a real production setup, you would use Resend, SendGrid, or SMTP here.
+        console.log(`📩 Secret Invite Link for ${email}: ${inviteLink}`);
+
+        return new Response(JSON.stringify({
+            success: true,
+            message: 'Invitation sent successfully',
+            invite_id: invite.id,
+            // For development/debugging, we return the link (in production, only send via email)
+            dev_invite_link: inviteLink
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    } catch (err: any) {
+        console.error('Unexpected error:', err);
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+    }
+});

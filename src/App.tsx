@@ -21,7 +21,7 @@ import Reports from '@/pages/Reports'
 import NotFound from '@/pages/NotFound'
 import { AuthCallback } from '@/pages/AuthCallback'
 import KitchenDashboard from '@/pages/KitchenDashboard'
-import OAuthConsent from '@/pages/OAuthConsent';
+// import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 
 export default function App() {
@@ -114,7 +114,7 @@ export default function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/closing" element={<Closing />} />
         <Route path="/clients" element={<Clients />} />
-        <Route path="/oauth-consent" element={<OAuthConsent />} />
+        {/* <Route path="/oauth-consent" element={<OAuthConsent />} /> */}
 
         {/* 🚫 Manejo de errores */}
         <Route path="/404" element={<NotFound />} />
