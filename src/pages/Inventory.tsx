@@ -1,40 +1,44 @@
-import { useState, useEffect } from 'react'
-import { Package, Search, Plus, AlertTriangle, ArrowUpDown, Filter, Share2, Edit2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Package, Plus, Search, AlertTriangle, Share2, Edit2 } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
-import supabaseService from '@/services/supabaseService'
 import logger from '@/utils/logger'
+import supabaseService from '@/services/supabaseService'
+import ProductModal from '@/components/admin/ProductModal'
+import DashboardLayout from '@/components/layout/DashboardLayout'
 
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLowStock, setFilterLowStock] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<any>(null)
 
-  useEffect(() => {
-    loadInventory()
-  }, [])
-
-  const loadInventory = async () => {
+  const loadInventory = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await supabaseService.getAllProducts()
+      const data = await supabaseService.getAllRetailProducts()
       setProducts(data)
     } catch (e) {
       logger.error('inventory', 'Error loading inventory', e as any)
     } finally {
       setLoading(false)
     }
-  }
+  }, [setProducts])
+
+  useEffect(() => {
+    loadInventory()
+  }, [loadInventory])
 
   const handleShareProduct = async (product: any) => {
     const text = `
 🔥 *¡PROMO DEL DÍA!* 🔥
 
-🌮 *${product.name}*
+ taco *${product.name}*
 💰 Solo: $${Number(product.price).toFixed(2)}
 
 📍 ¡Ven a probarlo en ${currentUser?.businessName || 'nuestro local'}!
-    `.trim()
+  `.trim()
 
     if (navigator.share) {
       try {
@@ -52,124 +56,191 @@ export default function Inventory() {
   }
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const searchLower = searchTerm.toLowerCase()
+    const matchesSearch =
+      p.name.toLowerCase().includes(searchLower) ||
+      p.category.toLowerCase().includes(searchLower) ||
+      (p.sku && p.sku.toLowerCase().includes(searchLower)) ||
+      (p.barcode && p.barcode.toLowerCase().includes(searchLower))
+
     const isLowStock = p.hasInventory && (p.currentStock || 0) <= (p.minimumStock || 0)
     return matchesSearch && (filterLowStock ? isLowStock : true)
   })
 
   return (
-    <div className="min-h-screen relative bg-rb-canvas text-rb-text pb-12">
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
-        {/* Header - Widget Premium */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl overflow-hidden">
-          <div className="px-6 py-8 sm:px-10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
-                <Package size={32} />
+    <DashboardLayout>
+      <div className="relative space-y-8 p-4 sm:p-0">
+        {/* Header - Widget Premium Carbon Look */}
+        <div className="bg-slate-900 text-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/5 relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+          <div className="px-6 py-6 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
+                <Package size={28} className="text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm text-blue-100 uppercase tracking-tighter font-black">Almacén</p>
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight uppercase">Inventario</h1>
-                <p className="text-blue-100 mt-1 font-bold opacity-80">CONTROL DE EXISTENCIAS Y COSTOS</p>
+                <p className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-0.5">Stock Central</p>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase leading-none">Inventario</h1>
+                <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Gestión profesional de suministros y productos</p>
               </div>
             </div>
-            <button className="bg-white text-indigo-700 px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:scale-105 transition-all active:scale-95">
-              <Plus size={20} />
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-4 rounded-2xl font-black flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] group"
+            >
+              <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
               NUEVO PRODUCTO
             </button>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 bg-white rounded-2xl shadow-sm border border-rb-border p-4 flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-              <input 
+        {/* Search & Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-200 p-2 flex items-center gap-2">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={20} />
+              <input
                 type="text"
-                placeholder="Buscar por nombre o categoría..."
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-rb-border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                placeholder="Buscar por Nombre, Categoría, SKU o Código..."
+                className="w-full pl-14 pr-6 py-3 bg-slate-50/50 border-none rounded-2xl focus:ring-0 outline-none font-bold text-slate-900"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <button 
+            <button
               onClick={() => setFilterLowStock(!filterLowStock)}
-              className={`p-3 rounded-xl border transition-all flex items-center gap-2 font-bold text-sm ${
-                filterLowStock ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-rb-border text-slate-500'
-              }`}
+              className={`p-4 rounded-2xl transition-all border flex items-center gap-2 font-bold text-xs ${filterLowStock
+                ? 'bg-red-50 border-red-200 text-red-600 shadow-inner'
+                : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'
+                }`}
             >
               <AlertTriangle size={18} />
-              <span className="hidden sm:inline">Stock Bajo</span>
+              <span className="hidden sm:inline">STOCK BAJO</span>
             </button>
           </div>
-          
-          <div className="bg-white rounded-2xl shadow-sm border border-rb-border p-4 flex items-center justify-around">
-            <div className="text-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase">Total Items</p>
-              <p className="text-2xl font-black text-slate-800">{products.length}</p>
+
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
+              <div className="text-3xl font-black text-slate-900">{filteredProducts.length}</div>
             </div>
-            <div className="w-px h-8 bg-slate-100" />
-            <div className="text-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase">Alertas</p>
-              <p className="text-2xl font-black text-orange-500">
-                {products.filter(p => p.hasInventory && (p.currentStock || 0) <= (p.minimumStock || 0)).length}
-              </p>
+            <div className="p-3 bg-slate-900 text-white rounded-2xl">
+              <Package size={20} />
             </div>
           </div>
         </div>
 
-        {/* Inventory Table */}
-        <div className="bg-white rounded-3xl shadow-sm border border-rb-border overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-rb-border">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Producto</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoría</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Stock</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Precio</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredProducts.map(product => (
-                <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <p className="font-bold text-slate-800">{product.name}</p>
-                    <p className="text-[10px] text-slate-400 font-mono">{product.id.slice(0,8)}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold uppercase">
-                      {product.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className={`inline-flex items-center gap-2 font-black ${
-                      product.hasInventory && (product.currentStock || 0) <= (product.minimumStock || 0)
-                        ? 'text-orange-500'
-                        : 'text-slate-700'
-                    }`}>
-                      {product.currentStock || 0}
-                      {product.hasInventory && (product.currentStock || 0) <= (product.minimumStock || 0) && <AlertTriangle size={14} />}
+        {/* Product Grid - Retail Optimized */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+          {filteredProducts.map(product => (
+            <div
+              key={product.id}
+              className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group overflow-hidden flex flex-col"
+            >
+              <div className="p-5 flex-1 space-y-4">
+                {/* 1. Product Name (Top Priority) */}
+                <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-2 uppercase tracking-tight leading-tight">
+                  {product.name}
+                </h3>
+
+                {/* 2. Meta Info (Category, SKU, Stock Status) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-indigo-600">
+                      {product.category || 'General'}
+                    </p>
+                    <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${product.hasInventory ? 'bg-slate-100 text-slate-600' : 'bg-slate-50 text-slate-400'}`}>
+                      {product.hasInventory ? 'Stock' : 'N/A'}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-right font-black text-slate-900">
-                    ${Number(product.price).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button onClick={() => handleShareProduct(product)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors mr-2" title="Compartir Promo">
-                      <Share2 size={18} />
-                    </button>
-                    <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                      <Edit2 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {product.sku && (
+                      <div className="text-[10px] font-bold text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                        SKU: {product.sku}
+                      </div>
+                    )}
+                    {product.barcode && (
+                      <div className="text-[10px] font-bold text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                        {product.barcode}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-end justify-between pt-2 border-t border-slate-50 mt-2">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Precio</p>
+                    <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                      ${Number(product.price).toFixed(2)}
+                    </div>
+                  </div>
+                  {product.hasInventory && (
+                    <div className="text-right">
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Existencia</p>
+                      <p className={`text-2xl font-black ${Number(product.currentStock) <= Number(product.minimumStock) ? 'text-red-500' : 'text-slate-950'}`}>
+                        {product.currentStock}
+                      </p>
+                      {Number(product.currentStock) <= Number(product.minimumStock) && (
+                        <div className="flex items-center gap-1 text-[8px] font-black text-red-500 uppercase mt-1 animate-pulse">
+                          <AlertTriangle size={8} /> Stock Bajo
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex gap-2">
+                <button
+                  onClick={() => handleShareProduct(product)}
+                  className="flex-1 bg-white border border-slate-200 p-3 rounded-xl text-slate-600 hover:text-slate-900 hover:shadow-md transition-all flex items-center justify-center gap-2 text-xs font-black group/btn"
+                >
+                  <Share2 size={16} className="group-hover/btn:scale-110 transition-transform" />
+                  <span className="hidden xs:inline">SHARE</span>
+                </button>
+                <button
+                  onClick={() => setEditingProduct(product)}
+                  className="p-3 bg-slate-900 text-white rounded-xl hover:bg-emerald-500 hover:text-slate-950 transition-all shadow-lg shadow-slate-900/10 group/edit"
+                >
+                  <Edit2 size={16} className="group-edit:rotate-12 transition-transform" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
+
+        {loading && (
+          <div className="p-12 text-center text-slate-400 animate-pulse font-bold uppercase tracking-widest">
+            Sincronizando inventario...
+          </div>
+        )}
+
+        {!loading && filteredProducts.length === 0 && (
+          <div className="bg-white rounded-3xl border-2 border-dashed border-slate-200 p-20 text-center space-y-4">
+            <Package size={64} className="mx-auto text-slate-200" />
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-slate-900 uppercase">Sin resultados</h3>
+              <p className="text-slate-400 font-medium">No encontramos productos que coincidan con tu búsqueda.</p>
+            </div>
+          </div>
+        )}
+
+        {(showCreateModal || editingProduct) && (
+          <ProductModal
+            product={editingProduct || undefined}
+            onClose={() => {
+              setShowCreateModal(false)
+              setEditingProduct(null)
+            }}
+            onSuccess={() => {
+              setShowCreateModal(false)
+              setEditingProduct(null)
+              loadInventory()
+            }}
+          />
+        )}
       </div>
-    </div>
+    </DashboardLayout>
   )
 }

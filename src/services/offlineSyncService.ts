@@ -48,19 +48,19 @@ class OfflineSyncService {
     // Comenzar sincronización automática
     this.startAutoSync()
 
-    logger.info('✅ Offline Sync Service initialized')
+    logger.info('offline-sync', '✅ Offline Sync Service initialized')
   }
 
   // ==================== CONNECTION DETECTION ====================
 
   private onOnline(): void {
-    logger.info('🟢 ONLINE - Sincronizando cambios...')
+    logger.info('offline-sync', '🟢 ONLINE - Sincronizando cambios...')
     this.notifyStatusChange()
     this.syncQueue()
   }
 
   private onOffline(): void {
-    logger.warn('🔴 OFFLINE - Guardando cambios localmente')
+    logger.warn('offline-sync', '🔴 OFFLINE - Guardando cambios localmente')
     this.notifyStatusChange()
   }
 
@@ -74,7 +74,7 @@ class OfflineSyncService {
     if (!this.isOnline()) {
       await indexedDBService.set('orders', order)
       await indexedDBService.addToSyncQueue('CREATE', 'orders', order)
-      logger.info('📝 Orden guardada localmente:', order.id)
+      logger.info('offline-sync', '📝 Orden guardada localmente:', order.id)
     } else {
       // ...enviar a Supabase (implementación pendiente o migrada)
     }
@@ -102,7 +102,7 @@ class OfflineSyncService {
     if (!this.isOnline()) {
       await indexedDBService.set('sales', sale)
       await indexedDBService.addToSyncQueue('CREATE', 'sales', sale)
-      logger.info('💰 Venta guardada localmente:', sale.id)
+      logger.info('offline-sync', '💰 Venta guardada localmente:', sale.id)
     } else {
       // ...enviar venta a Supabase (implementación pendiente o migrada)
     }
@@ -114,7 +114,7 @@ class OfflineSyncService {
 
   async syncQueue(): Promise<void> {
     if (this.isSyncing || !this.isOnline()) {
-      logger.warn('⏸️ Sync skipped (already syncing or offline)')
+      logger.warn('offline-sync', '⏸️ Sync skipped (already syncing or offline)')
       return
     }
 
@@ -126,7 +126,7 @@ class OfflineSyncService {
       const total = queue.length
 
       if (total === 0) {
-        logger.info('✅ Sync queue empty')
+        logger.info('offline-sync', '✅ Sync queue empty')
         this.isSyncing = false
         this.lastSyncTime = Date.now()
         this.retryCount = 0
@@ -134,7 +134,7 @@ class OfflineSyncService {
         return
       }
 
-      logger.info(`🔄 Sincronizando ${total} elementos...`)
+      logger.info('offline-sync', `🔄 Sincronizando ${total} elementos...`)
 
       let synced = 0
       let failed = 0
@@ -144,22 +144,22 @@ class OfflineSyncService {
           await this.syncItem(item)
           synced++
         } catch (error) {
-          logger.error('❌ Sync failed for item:', item.id, error)
+          logger.error('offline-sync', '❌ Sync failed for item:', item.id, error)
           failed++
         }
       }
 
-      logger.info(`✅ Sync complete: ${synced} OK, ${failed} FAILED`)
+      logger.info('offline-sync', `✅ Sync complete: ${synced} OK, ${failed} FAILED`)
       this.lastSyncTime = Date.now()
       this.retryCount = 0
 
     } catch (error) {
-      logger.error('❌ Sync queue processing failed:', error)
+      logger.error('offline-sync', '❌ Sync queue processing failed:', error)
       this.retryCount++
 
       // Reintentar si no hemos excedido el máximo
       if (this.retryCount < this.maxRetries) {
-        logger.info(`🔁 Retrying sync (${this.retryCount}/${this.maxRetries})`)
+        logger.info('offline-sync', `🔁 Retrying sync (${this.retryCount}/${this.maxRetries})`)
         setTimeout(() => this.syncQueue(), 5000)
       }
 
@@ -195,17 +195,17 @@ class OfflineSyncService {
           if (collection === 'orders') {
             // ...migrado a Supabase
           } else if (collection === 'sales') {
-
+            // No action needed for DELETE sales yet
           }
           break
       }
 
       // Marcar como sincronizado
       await indexedDBService.markAsSynced(id)
-      logger.info(`✅ Synced ${collection} item:`, data.id)
+      logger.info('offline-sync', `✅ Synced ${collection} item:`, data.id)
 
     } catch (error) {
-      logger.error(`❌ Failed to sync ${action} on ${collection}:`, error)
+      logger.error('offline-sync', `❌ Failed to sync ${action} on ${collection}:`, error)
       throw error
     }
   }
@@ -223,14 +223,14 @@ class OfflineSyncService {
       }
     }, 30000)
 
-    logger.info('⏱️ Auto-sync started (every 30s)')
+    logger.info('offline-sync', '⏱️ Auto-sync started (every 30s)')
   }
 
   stopAutoSync(): void {
     if (this.syncInterval) {
       clearInterval(this.syncInterval)
       this.syncInterval = null
-      logger.info('⏹️ Auto-sync stopped')
+      logger.info('offline-sync', '⏹️ Auto-sync stopped')
     }
   }
 
@@ -275,19 +275,19 @@ class OfflineSyncService {
   async clearSyncQueue(): Promise<void> {
     await indexedDBService.clear('sync_queue')
     this.pendingCount = 0
-    logger.info('🗑️ Sync queue cleared')
+    logger.info('offline-sync', '🗑️ Sync queue cleared')
   }
 
   async clearOldData(daysOld: number = 7): Promise<void> {
     await indexedDBService.clearOldData(daysOld)
-    logger.info(`🗑️ Cleared data older than ${daysOld} days`)
+    logger.info('offline-sync', `🗑️ Cleared data older than ${daysOld} days`)
   }
 
   destroy(): void {
     this.stopAutoSync()
     window.removeEventListener('online', () => this.onOnline())
     window.removeEventListener('offline', () => this.onOffline())
-    logger.info('🛑 Offline Sync Service destroyed')
+    logger.info('offline-sync', '🛑 Offline Sync Service destroyed')
   }
 }
 

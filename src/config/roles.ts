@@ -32,6 +32,6 @@ export type PermissionAction = keyof typeof PERMISSIONS;
  */
 export const hasPermission = (role: UserRole | undefined | string, action: PermissionAction): boolean => {
   if (!role) return false;
-  // @ts-ignore - Validación simple de string a rol
+  // @ts-expect-error - Dynamic role mapping
   return PERMISSIONS[action]?.includes(role as UserRole) || false;
 };

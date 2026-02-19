@@ -7,18 +7,14 @@ import {
   TrendingUp,
   DollarSign,
   Package,
-  Users,
   Calendar,
-  Download,
   Eye,
-  Lock,
   BarChart3,
   Loader,
   Filter,
   Target,
   ArrowDownUp,
   ShoppingBag,
-  ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react'
 import {
@@ -35,21 +31,20 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieLabel,
   AreaChart,
-  Area,
-  ComposedChart
+  Area
 } from 'recharts'
 import AIInsightsWidget from '@/components/common/AIInsightsWidget'
+import DashboardLayout from '@/components/layout/DashboardLayout'
 
 type ReportTab = 'sales' | 'inventory' | 'employees' | 'goals' | 'purchases'
 
 export default function Reports() {
   const { currentUser } = useAppStore()
   const permissions = usePermissions()
-  const canViewReports = permissions.canViewReports || currentUser?.role === 'capitan'
-  const canViewSalesReport = permissions.canViewSalesReport || currentUser?.role === 'capitan'
-  const canViewEmployeeMetrics = permissions.canViewEmployeeMetrics || currentUser?.role === 'capitan'
+  const canViewReports = permissions.canViewReports || currentUser?.role === 'admin' || currentUser?.role === 'supervisor'
+  const canViewSalesReport = permissions.canViewSalesReport || currentUser?.role === 'admin' || currentUser?.role === 'supervisor'
+  const canViewEmployeeMetrics = permissions.canViewEmployeeMetrics || currentUser?.role === 'admin' || currentUser?.role === 'supervisor'
   const isReadOnly = permissions.isReadOnly
 
   const [activeTab, setActiveTab] = useState<ReportTab>('sales')
@@ -131,38 +126,30 @@ export default function Reports() {
     return <Navigate to="/pos" replace />
   }
 
-  const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4']
+  const COLORS = ['#10b981', '#334155', '#f59e0b', '#64748b', '#ef4444', '#06b6d4']
 
   return (
-    <div className="min-h-screen relative bg-rb-canvas p-6 pb-20">
-      {/* Background Doodle */}
-      <div
-        className="fixed inset-0 z-0 opacity-40 pointer-events-none bg-repeat"
-        style={{
-          backgroundImage: 'url("/doodle_ceviche.png?v=2")',
-          backgroundSize: '450px',
-        }}
-      />
-      {/* Gradient Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-gray-500/5 z-0 pointer-events-none" />
-
-      <div className="relative z-10 max-w-7xl mx-auto space-y-6">
+    <DashboardLayout>
+      <div className="relative space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 text-white shadow-xl">
-          <div className="flex items-center justify-between">
+        {/* Header - Premium Slate/Emerald Style */}
+        <div className="bg-slate-900 text-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/5 relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+          <div className="px-6 py-6 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
             <div className="flex items-center gap-4">
-              <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
-                <BarChart3 size={36} />
+              <div className="p-4 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
+                <BarChart3 size={28} className="text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold">Reportes</h1>
-                <p className="text-blue-100 mt-2">Análisis y métricas del negocio</p>
+                <p className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-0.5">Business Intelligence</p>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase leading-none">Reportes</h1>
+                <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Análisis estratégico y métricas de rendimiento</p>
               </div>
             </div>
             {isReadOnly && (
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
-                <Eye size={20} />
-                <span className="font-semibold">Solo lectura</span>
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl text-emerald-400 border border-white/10">
+                <Eye size={18} />
+                <span className="font-bold text-xs uppercase tracking-wider">Modo Lectura</span>
               </div>
             )}
           </div>
@@ -240,7 +227,7 @@ export default function Reports() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
           {[
             { id: 'sales' as const, label: '📊 Ventas', enabled: canViewSalesReport },
             { id: 'inventory' as const, label: '📦 Inventario', enabled: true },
@@ -253,9 +240,9 @@ export default function Reports() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all ${activeTab === tab.id
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 shadow-md hover:shadow-lg'
+                className={`px-6 py-3 rounded-2xl font-black text-sm transition-all ${activeTab === tab.id
+                  ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                  : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:text-slate-700'
                   } whitespace-nowrap`}
               >
                 {tab.label}
@@ -270,20 +257,21 @@ export default function Reports() {
             {metrics && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Ventas', value: `$${metrics.totalSales?.toFixed(2)}`, icon: DollarSign, color: 'from-green-500 to-emerald-600' },
-                  { label: 'Transacciones', value: metrics.transactionCount || 0, icon: Package, color: 'from-blue-500 to-cyan-600' },
-                  { label: 'Ticket Promedio', value: `$${metrics.averageTicket?.toFixed(2)}`, icon: TrendingUp, color: 'from-purple-500 to-pink-600' },
-                  { label: 'Propinas', value: `$${metrics.totalTips?.toFixed(2)}`, icon: DollarSign, color: 'from-orange-500 to-red-600' },
+                  { label: 'Total Ventas', value: `$${metrics.totalSales?.toFixed(2)}`, icon: DollarSign, color: 'bg-emerald-50 text-emerald-600' },
+                  { label: 'Transacciones', value: metrics.transactionCount || 0, icon: Package, color: 'bg-slate-50 text-slate-600' },
+                  { label: 'Ticket Promedio', value: `$${metrics.averageTicket?.toFixed(2)}`, icon: TrendingUp, color: 'bg-indigo-50 text-indigo-600' },
                 ].map((card, i) => {
                   const Icon = card.icon
                   return (
-                    <div key={i} className={`bg-gradient-to-br ${card.color} rounded-2xl p-6 text-white shadow-lg`}>
-                      <div className="flex items-center justify-between">
+                    <div key={i} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                      <div className="flex items-start justify-between mb-4">
                         <div>
-                          <p className="text-white/80 text-sm font-medium">{card.label}</p>
-                          <p className="text-3xl font-bold mt-2">{card.value}</p>
+                          <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black mb-1">{card.label}</p>
+                          <p className="text-3xl font-black text-slate-900 tracking-tight">{card.value}</p>
                         </div>
-                        <Icon size={40} className="opacity-30" />
+                        <div className={`p-3 rounded-2xl ${card.color}`}>
+                          <Icon size={24} />
+                        </div>
                       </div>
                     </div>
                   )
@@ -297,7 +285,7 @@ export default function Reports() {
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Payment Methods */}
-              <div className="card">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Métodos de Pago</h3>
                 {metrics && (metrics.totalCash || metrics.totalDigital || metrics.totalClip) ? (
                   <div className="space-y-4">
@@ -314,13 +302,13 @@ export default function Reports() {
                           cx="50%"
                           cy="50%"
                           outerRadius={80}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }: { name?: string, percent?: number }) => `${name || ''} ${((percent || 0) * 100).toFixed(0)}%`}
                         >
                           {['#10b981', '#3b82f6', '#f59e0b'].map((color, index) => (
                             <Cell key={`cell-${index}`} fill={color} />
                           ))}
                         </Pie>
-                        <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                        <Tooltip formatter={(value: any) => `$${Number(value || 0).toFixed(2)}`} />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="grid grid-cols-3 gap-3">
@@ -344,7 +332,7 @@ export default function Reports() {
               </div>
 
               {/* Sales by Day */}
-              <div className="card">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Ventas por Día</h3>
                 {salesData && salesData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
@@ -354,7 +342,7 @@ export default function Reports() {
                       <YAxis stroke="#6b7280" />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                        formatter={(value) => `$${value.toFixed(2)}`}
+                        formatter={(value: any) => `$${(Number(value) || 0).toFixed(2)}`}
                       />
                       <Legend />
                       <Line type="monotone" dataKey="total" name="Total Ventas" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
@@ -366,7 +354,7 @@ export default function Reports() {
               </div>
 
               {/* Top Products */}
-              <div className="card">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Top 5 Productos</h3>
                 {topProducts && topProducts.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
@@ -378,13 +366,13 @@ export default function Reports() {
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }: { name?: string, percent?: number }) => `${name || ''} ${((percent || 0) * 100).toFixed(0)}%`}
                       >
                         {topProducts.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => `${value} unidades`} />
+                      <Tooltip formatter={(value: any) => `${value} unidades`} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -429,20 +417,20 @@ export default function Reports() {
           <div className="space-y-6">
             {/* Employee Chart */}
             {employeeMetrics && employeeMetrics.length > 0 && (
-              <div className="card">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Ventas por Empleado</h3>
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={employeeMetrics}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="userName" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="userName" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                      formatter={(value: any) => `$${value.toFixed(2)}`}
+                      cursor={{ fill: '#f1f5f9' }}
+                      contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                      formatter={(value: any) => [`$${value.toFixed(2)}`, 'Ventas']}
                     />
                     <Legend />
-                    <Bar dataKey="totalSales" name="Total Ventas" fill="#3b82f6" />
-                    <Bar dataKey="totalTips" name="Propinas" fill="#10b981" />
+                    <Bar dataKey="totalSales" name="Total Ventas" fill="#334155" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -463,7 +451,6 @@ export default function Reports() {
                         <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Ventas</th>
                         <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Total Vendido</th>
                         <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Ticket Prom.</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Propinas</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -474,7 +461,6 @@ export default function Reports() {
                           <td className="px-6 py-4 text-right text-gray-700">{emp.salesCount}</td>
                           <td className="px-6 py-4 text-right font-semibold text-green-600">${emp.totalSales.toFixed(2)}</td>
                           <td className="px-6 py-4 text-right text-gray-700">${emp.averageTicket.toFixed(2)}</td>
-                          <td className="px-6 py-4 text-right text-orange-600 font-semibold">${emp.totalTips.toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -497,19 +483,19 @@ export default function Reports() {
 
         {/* Purchases Report */}
         {activeTab === 'purchases' && (
-          <div className="card-gradient flex flex-col items-center justify-center py-20 text-center">
-            <div className="p-6 bg-blue-50 rounded-full mb-4">
-              <ShoppingBag size={48} className="text-blue-500" />
+          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center py-24 text-center">
+            <div className="p-6 bg-white rounded-full mb-6 shadow-sm border border-slate-100">
+              <ShoppingBag size={48} className="text-slate-300" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-800">Módulo de Compras</h3>
-            <p className="text-gray-500 max-w-md mt-2">
+            <h3 className="text-2xl font-black text-slate-900 uppercase">Módulo de Compras</h3>
+            <p className="text-slate-400 max-w-md mt-2 font-medium">
               Próximamente podrás gestionar proveedores, órdenes de compra y costos detallados aquí.
             </p>
-            <span className="mt-4 px-4 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">En Desarrollo</span>
+            <span className="mt-6 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-200">En Desarrollo</span>
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
 
@@ -533,25 +519,25 @@ function InventoryReport({ isReadOnly }: { isReadOnly: boolean }) {
           title="Valor Inventario"
           value="$125,430"
           icon={DollarSign}
-          color="from-blue-500 to-cyan-600"
+          color="bg-blue-50 text-blue-600"
         />
         <StatCard
           title="Items Totales"
           value="1,240"
           icon={Package}
-          color="from-purple-500 to-indigo-600"
+          color="bg-purple-50 text-indigo-600"
         />
         <StatCard
           title="Rotación (Mensual)"
           value="12.5%"
           icon={ArrowDownUp}
-          color="from-orange-500 to-red-600"
+          color="bg-orange-50 text-orange-600"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Movimientos de Stock</h3>
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+          <h3 className="text-xl font-black text-slate-900 mb-6">Movimientos de Stock</h3>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={movementData}>
               <defs>
@@ -564,19 +550,22 @@ function InventoryReport({ isReadOnly }: { isReadOnly: boolean }) {
                   <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <CartesianGrid strokeDasharray="3 3" />
-              <Tooltip />
+              <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
+              />
               <Legend />
-              <Area type="monotone" dataKey="entradas" stroke="#10b981" fillOpacity={1} fill="url(#colorEntradas)" />
-              <Area type="monotone" dataKey="salidas" stroke="#ef4444" fillOpacity={1} fill="url(#colorSalidas)" />
+              <Area type="monotone" dataKey="entradas" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorEntradas)" />
+              <Area type="monotone" dataKey="salidas" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorSalidas)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="card">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Alertas de Stock</h3>
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+          <h3 className="text-xl font-black text-slate-900 mb-6">Alertas de Stock</h3>
           <div className="space-y-3">
             {[
               { name: 'Cerveza Corona', stock: 5, min: 12 },
@@ -615,9 +604,8 @@ function InventoryReport({ isReadOnly }: { isReadOnly: boolean }) {
 // 🎯 Componente de Reporte de Metas
 function GoalsReport() {
   const goalsData = [
-    { name: 'Ventas', current: 45000, target: 60000, color: '#3b82f6' },
-    { name: 'Tickets', current: 120, target: 150, color: '#8b5cf6' },
-    { name: 'Propinas', current: 4500, target: 5000, color: '#10b981' },
+    { name: 'Ventas', current: 45000, target: 60000, color: '#10b981' },
+    { name: 'Tickets', current: 120, target: 150, color: '#334155' },
   ]
 
   return (
@@ -660,22 +648,28 @@ function GoalsReport() {
         })}
       </div>
 
-      <div className="card bg-gradient-to-r from-indigo-900 to-blue-900 text-white p-8 rounded-2xl relative overflow-hidden">
+      <div className="bg-slate-900 text-white p-8 rounded-[2rem] relative overflow-hidden shadow-2xl border border-slate-800">
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <Target className="text-yellow-400" size={32} />
-            <h3 className="text-2xl font-bold">Objetivo Mensual</h3>
+            <Target className="text-emerald-400" size={32} />
+            <h3 className="text-2xl font-black uppercase tracking-tight">Objetivo Mensual</h3>
           </div>
-          <p className="text-blue-100 max-w-xl text-lg mb-6">
-            ¡Estás a un 75% de alcanzar tu meta de ventas mensual! Mantén el ritmo para desbloquear el bono de equipo.
+          <p className="text-slate-400 max-w-xl text-lg mb-6 font-medium">
+            ¡Estás a un <span className="text-white font-bold">75%</span> de alcanzar tu meta de ventas mensual! Mantén el ritmo para desbloquear el bono de equipo.
           </p>
-          <button className="bg-white text-blue-900 px-6 py-2 rounded-lg font-bold hover:bg-blue-50 transition-colors">
+          <button
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="bg-emerald-500 text-slate-900 px-8 py-3 rounded-xl font-black hover:bg-emerald-400 transition-colors shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)]"
+          >
             Ver Detalles
           </button>
         </div>
-        <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none">
-          <Target size={200} />
+        <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
+          <Target size={250} />
         </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full -mr-20 -mt-20"></div>
       </div>
     </div>
   )
@@ -694,12 +688,12 @@ function StatCard({
   color: string
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-all">
-      <div className={`p-3 bg-gradient-to-br ${color} rounded-xl text-white w-fit mb-3 shadow-sm`}>
+    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hover:shadow-xl transition-all duration-300">
+      <div className={`p-3 rounded-2xl w-fit mb-4 ${color}`}>
         <Icon size={24} />
       </div>
-      <h3 className="text-gray-600 text-sm font-semibold">{title}</h3>
-      <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
+      <h3 className="text-slate-400 text-xs font-black uppercase tracking-widest">{title}</h3>
+      <p className="text-2xl font-black text-slate-900 mt-1 tracking-tight">{value}</p>
     </div>
   )
 }

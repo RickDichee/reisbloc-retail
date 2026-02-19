@@ -1,5 +1,5 @@
 // Tipos principales del sistema
-export type UserRole = 'admin' | 'capitan' | 'mesero' | 'cocina' | 'bar' | 'supervisor';
+export type UserRole = 'admin' | 'supervisor' | 'staff' | 'invitado';
 
 export interface User {
   id: string;
@@ -13,6 +13,7 @@ export interface User {
   organizationId?: string; // ID de la organización (Multi-Tenant)
   avatar_url?: string;
   businessName?: string;
+  organizationSettings?: any;
 }
 
 export interface Device {
@@ -42,6 +43,9 @@ export interface Product {
   active: boolean;
   image?: string;
   createdAt: Date;
+  barcode?: string;
+  sku?: string;
+  description?: string;
 }
 
 export interface OrderItem {
@@ -64,6 +68,8 @@ export interface Order {
   tableNumber: number;
   items: OrderItem[];
   status: 'open' | 'sent' | 'ready' | 'served' | 'completed' | 'cancelled';
+  subtotal?: number;
+  total?: number;
   isCourtesy?: boolean; // Mesa cortesía sin costo
   authorizedBy?: string; // Admin que autorizó mesa cortesía
   createdAt: Date;
@@ -160,6 +166,7 @@ export interface AuditLog {
   newValue?: any;
   ipAddress?: string;
   deviceId?: string;
+  details?: string;
   timestamp: Date;
 }
 
@@ -188,6 +195,67 @@ export interface ClipPayment {
   createdAt: Date;
   completedAt?: Date;
   errorMessage?: string;
+}
+
+export interface SplitPayment {
+  personNumber: number;
+  items: Array<{
+    item: OrderItem;
+    quantity: number;
+  }>;
+  subtotal: number;
+  paymentMethods: Array<{
+    method: 'cash' | 'tarjeta' | 'transferencia';
+    currency: 'MXN' | 'USD';
+    amount: number;
+  }>;
+  tipAmount?: number;
+  tipCurrency?: 'MXN' | 'USD';
+  paid: boolean;
+  manualAmount?: number; // Added to match TableMonitor usage
+}
+
+export interface Supplier {
+  id: string;
+  organizationId: string;
+  name: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  taxId?: string;
+  createdAt: Date;
+  deletedAt?: Date;
+  deletedBy?: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  organizationId: string;
+  supplierId?: string;
+  supplier?: Supplier;
+  folio?: string;
+  date: Date;
+  subtotal: number;
+  tax: number;
+  total: number;
+  status: 'pending' | 'received' | 'cancelled' | 'draft';
+  notes?: string;
+  items?: PurchaseOrderItem[];
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+  deletedBy?: string;
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  purchaseOrderId: string;
+  productId: string;
+  productName?: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  createdAt: Date;
 }
 
 export interface AuthContext {

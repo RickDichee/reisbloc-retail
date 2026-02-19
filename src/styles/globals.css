@@ -72,3 +72,56 @@ body {
   @apply widget-card;
   /* Normalize to widget style */
 }
+
+/* ♿ High Contrast Mode */
+.high-contrast {
+  --bg-canvas: #ffffff;
+  --bg-surface: #ffffff;
+  --text-main: #000000;
+  --text-secondary: #000000;
+  --primary: #000000;
+  --primary-hover: #333333;
+  --border-light: #000000;
+}
+
+.high-contrast * {
+  border-color: #000000 !important;
+  box-shadow: none !important;
+}
+
+.high-contrast .btn-primary,
+.high-contrast button {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  font-weight: 900 !important;
+}
+
+.high-contrast .text-slate-500,
+.high-contrast .text-gray-500,
+.high-contrast .text-slate-400 {
+  color: #000000 !important;
+}
+
+/* ♿ Large Text Mode */
+.large-text {
+  font-size: 115% !important;
+}
+
+.large-text h1 {
+  font-size: 2.5rem !important;
+}
+
+.large-text h2 {
+  font-size: 2rem !important;
+}
+
+.large-text h3 {
+  font-size: 1.75rem !important;
+}
+
+.large-text p,
+.large-text span,
+.large-text button {
+  font-size: 1.1rem !important;
+}

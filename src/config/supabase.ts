@@ -64,11 +64,11 @@ export const removeAuthToken = async () => {
  */
 export const forceAuthHeader = (token: string) => {
   if (!token) return
-  // @ts-ignore - Acceso a propiedad interna para inyectar header
+  // @ts-expect-error - Internal REST property access
   if (supabase.rest) supabase.rest.headers['Authorization'] = `Bearer ${token}`
-  // @ts-ignore - Acceso a propiedad interna para Realtime
+  // @ts-expect-error - Internal Realtime property access
   if (supabase.realtime) supabase.realtime.setAuth(token)
-  // @ts-ignore - Acceso a propiedad interna para Storage
+  // @ts-expect-error - Internal Storage property access
   if (supabase.storage) supabase.storage.headers['Authorization'] = `Bearer ${token}`
 }
 

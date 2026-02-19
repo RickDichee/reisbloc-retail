@@ -14,6 +14,7 @@ import {
   Share2,
   TrendingUp,
 } from 'lucide-react'
+import DashboardLayout from '@/components/layout/DashboardLayout'
 import {
   BarChart,
   Bar,
@@ -63,14 +64,16 @@ export default function Closing() {
       const metrics = sales.reduce(
         (acc: any, sale: any) => {
           const total = Number(sale.total || 0)
-          const tip = Number(sale.tip_amount || sale.tip || 0)
           acc.totalSales += total
-          acc.totalTips += tip
           acc.transactionCount += 1
           const method = (sale.payment_method || '').toLowerCase()
-          if (method === 'cash') acc.totalCash += total
-          else if (method === 'digital') acc.totalDigital += total
-          else if (method === 'clip') acc.totalClip += total
+          if (method === 'cash') {
+            acc.totalCash += total
+          } else if (['digital', 'transferencia', 'transfer'].includes(method)) {
+            acc.totalDigital += total
+          } else if (['clip', 'tarjeta', 'card'].includes(method)) {
+            acc.totalClip += total
+          }
           return acc
         },
         {
@@ -78,7 +81,6 @@ export default function Closing() {
           totalCash: 0,
           totalDigital: 0,
           totalClip: 0,
-          totalTips: 0,
           totalDiscounts: 0,
           transactionCount: 0,
           averageTicket: 0,
@@ -98,9 +100,7 @@ export default function Closing() {
           role: u.role,
           salesCount: 0,
           totalSales: 0,
-          totalTips: 0,
           averageTicket: 0,
-          averageTip: 0,
         }
       })
       sales.forEach((sale: any) => {
@@ -116,7 +116,6 @@ export default function Closing() {
         .map((m: any) => ({
           ...m,
           averageTicket: m.salesCount ? m.totalSales / m.salesCount : 0,
-          averageTip: m.salesCount ? m.totalTips / m.salesCount : 0,
         }))
         .sort((a: any, b: any) => b.totalSales - a.totalSales)
 
@@ -140,25 +139,29 @@ export default function Closing() {
       const closingRecord = {
         date: new Date(),
         closedBy: currentUser?.id || '',
+        closedAt: new Date(),
         totalSales: closingData.totalSales,
-        totalCash: closingData.cash,
-        totalCard: closingData.card,
-        totalDigital: closingData.digital,
-        totalTips: closingData.totalTips,
-        ordersCount: closingData.ordersCount,
-        salesCount: closingData.salesCount,
+        totalCash: closingData.totalCash,
+        totalCard: closingData.totalClip,
+        totalDigital: closingData.totalDigital,
+        totalTips: 0,
+        ordersCount: closingData.transactionCount || 0,
+        salesCount: closingData.transactionCount || 0,
         employeeMetrics,
+        sales: [], // TODO: Pasar las ventas reales si es necesario
+        tipsDistribution: [],
+        adjustments: [],
         paymentMethods: {
-          cash: closingData.cash,
-          card: closingData.card,
-          digital: closingData.digital,
+          cash: closingData.totalCash,
+          card: closingData.totalClip,
+          digital: closingData.totalDigital,
         },
         notes,
         status: 'closed',
       }
 
       await supabaseService.saveClosing(closingRecord)
-      
+
       alert('✅ Cierre de caja guardado exitosamente')
       setConfirmed(false)
       setNotes('')
@@ -258,8 +261,7 @@ export default function Closing() {
   const generatePrintHTML = () => {
     const total = closingData?.totalSales || 0
     const discounts = closingData?.totalDiscounts || 0
-    const tips = closingData?.totalTips || 0
-    const toDeposit = total - discounts + tips
+    const toDeposit = total - discounts
 
     return `
       <!DOCTYPE html>
@@ -348,10 +350,6 @@ export default function Closing() {
               <span>Descuentos:</span>
               <strong>-$${discounts.toFixed(2)}</strong>
             </div>
-            <div class="line">
-              <span>Propinas:</span>
-              <strong>+$${tips.toFixed(2)}</strong>
-            </div>
             <div class="line total-line">
               <span>A DEPOSITAR:</span>
               <span>$${toDeposit.toFixed(2)}</span>
@@ -435,80 +433,71 @@ export default function Closing() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <Loader size={48} className="animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Cargando datos de cierre...</p>
+          <Loader size={48} className="animate-spin text-emerald-500 mx-auto mb-4" />
+          <p className="text-slate-500 font-bold">Cargando datos de cierre...</p>
         </div>
       </div>
     )
   }
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b']
+  const COLORS = ['#10b981', '#334155', '#f59e0b']
 
   return (
-    <div className="min-h-screen relative bg-[#F4F4F2] p-6 text-stone-800">
-      {/* Background Doodle */}
-      <div 
-        className="fixed inset-0 z-0 opacity-[0.03] pointer-events-none bg-repeat mix-blend-multiply"
-        style={{
-          backgroundImage: 'url("/doodle_ceviche.png?v=2")',
-          backgroundSize: '450px',
-        }}
-      />
-      
-      <div className="relative z-10 max-w-6xl mx-auto space-y-6">
-        {/* Header - Clean Card */}
-        <div className="bg-white rounded-3xl p-8 shadow-sm border border-stone-200/60">
-          <div className="flex items-center justify-between">
+    <DashboardLayout>
+      <div className="relative space-y-6">
+        {/* Header - Premium Slate/Emerald Style */}
+        <div className="bg-slate-900 text-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/5 relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+          <div className="px-6 py-6 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
             <div className="flex items-center gap-4">
-              <div className="p-4 bg-stone-100 rounded-2xl text-stone-600">
-                <DollarSign size={32} />
+              <div className="p-4 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
+                <DollarSign size={28} className="text-emerald-400" />
               </div>
               <div>
-                <p className="text-xs text-stone-400 uppercase tracking-widest font-black">Finanzas</p>
-                <h1 className="text-3xl font-black text-stone-800 tracking-tight">Cierre de Caja</h1>
-                <p className="text-stone-500 font-medium mt-1">
+                <p className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-0.5">Finanzas</p>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase leading-none">Cierre de Caja</h1>
+                <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">
                   {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-stone-100 px-5 py-2.5 rounded-2xl">
-               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
-               <span className="font-bold text-stone-600">{currentUser?.username}</span>
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-2xl border border-white/10">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
+              <span className="font-bold text-white text-sm uppercase tracking-wide">{currentUser?.username}</span>
             </div>
           </div>
         </div>
 
         {/* Alert - Clean */}
-        <div className="bg-white border border-stone-200 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
-          <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
-             <AlertCircle size={20} />
+        <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
+          <div className="p-3 bg-amber-100 text-amber-600 rounded-2xl shrink-0">
+            <AlertCircle size={24} />
           </div>
-          <div className="text-sm text-stone-600">
-            <p className="font-bold text-stone-800 mb-1">Importante</p>
-            <p>Este proceso generará un cierre oficial del día. Revisa todos los números antes de confirmar.</p>
+          <div>
+            <p className="font-black text-amber-900 uppercase tracking-wide text-xs mb-1">Aviso Importante</p>
+            <p className="text-amber-800 font-medium text-sm leading-relaxed">Este proceso generará un cierre oficial del día. Revisa todos los números antes de confirmar.</p>
           </div>
         </div>
 
         {/* Summary Cards - Clean White Cards with Accents */}
         {closingData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-               { label: 'Total Ventas', value: closingData.totalSales, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-               { label: 'Transacciones', value: closingData.transactionCount, icon: BarChart, color: 'text-blue-600', bg: 'bg-blue-50', isCount: true },
-               { label: 'Propinas', value: closingData.totalTips, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50' },
-               { label: 'Ticket Promedio', value: closingData.averageTicket, icon: TrendingUp, color: 'text-orange-600', bg: 'bg-orange-50' },
+              { label: 'Total Ventas', value: closingData.totalSales, icon: DollarSign, color: ' text-emerald-600', bg: 'bg-emerald-50' },
+              { label: 'Transacciones', value: closingData.transactionCount, icon: BarChart, color: 'text-slate-600', bg: 'bg-slate-50', isCount: true },
+              { label: 'Ticket Promedio', value: closingData.averageTicket, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
             ].map((item, idx) => (
-                <div key={idx} className="bg-white rounded-3xl p-6 shadow-sm border border-stone-100 hover:shadow-md transition-all">
-                   <div className="flex justify-between items-start mb-4">
-                      <div className={`p-3 rounded-2xl ${item.bg} ${item.color}`}>
-                         <item.icon size={24} />
-                      </div>
-                   </div>
-                   <p className="text-stone-400 text-xs font-black uppercase tracking-wider">{item.label}</p>
-                   <p className="text-3xl font-black text-stone-800 mt-1">
-                      {item.isCount ? item.value : `$${item.value?.toFixed(2)}`}
-                   </p>
+              <div key={idx} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 hover:shadow-xl transition-all duration-300 group">
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`p-4 rounded-2xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}>
+                    <item.icon size={24} />
+                  </div>
                 </div>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{item.label}</p>
+                <p className="text-3xl font-black text-slate-900 mt-1 tracking-tight">
+                  {item.isCount ? item.value : `$${item.value?.toFixed(2)}`}
+                </p>
+              </div>
             ))}
           </div>
         )}
@@ -544,16 +533,16 @@ export default function Closing() {
 
               {/* Payment Summary */}
               <div className="mt-6 space-y-3">
-                <div className="flex justify-between items-center p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                  <span className="font-bold text-stone-700">Efectivo</span>
+                <div className="flex justify-between items-center p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+                  <span className="font-bold text-slate-700">Efectivo</span>
                   <span className="text-lg font-black text-emerald-600">${(closingData.totalCash || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                  <span className="font-bold text-stone-700">Transferencia</span>
-                  <span className="text-lg font-black text-blue-600">${(closingData.totalDigital || 0).toFixed(2)}</span>
+                <div className="flex justify-between items-center p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                  <span className="font-bold text-slate-700">Transferencia</span>
+                  <span className="text-lg font-black text-slate-600">${(closingData.totalDigital || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-stone-50 rounded-2xl border border-stone-100">
-                  <span className="font-bold text-stone-700">Tarjeta</span>
+                <div className="flex justify-between items-center p-4 bg-amber-50/50 rounded-2xl border border-amber-100">
+                  <span className="font-bold text-slate-700">Tarjeta (Clip/Terminal)</span>
                   <span className="text-lg font-black text-amber-600">${(closingData.totalClip || 0).toFixed(2)}</span>
                 </div>
               </div>
@@ -563,25 +552,11 @@ export default function Closing() {
             <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-8 space-y-6">
               <h3 className="text-xl font-black text-stone-800">Resumen Financiero</h3>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                  <span className="text-stone-500 font-medium">Subtotal</span>
-                  <span className="text-lg font-semibold">${(closingData.totalSales || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                  <span className="text-stone-500 font-medium">Descuentos</span>
-                  <span className="text-lg font-semibold text-red-600">-${(closingData.totalDiscounts || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                  <span className="text-stone-500 font-medium">Propinas</span>
-                  <span className="text-lg font-semibold text-green-600">+${(closingData.totalTips || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center py-6 bg-stone-900 rounded-2xl p-6 text-white mt-4">
-                  <span className="font-bold text-stone-300">Total a Depositar</span>
-                  <span className="text-3xl font-black text-white">
-                    ${((closingData.totalSales || 0) - (closingData.totalDiscounts || 0) + (closingData.totalTips || 0)).toFixed(2)}
-                  </span>
-                </div>
+              <div className="flex justify-between items-center py-6 bg-stone-900 rounded-2xl p-6 text-white mt-4">
+                <span className="font-bold text-stone-300">Total a Depositar</span>
+                <span className="text-3xl font-black text-white">
+                  ${((closingData.totalSales || 0) - (closingData.totalDiscounts || 0)).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
@@ -590,44 +565,38 @@ export default function Closing() {
         {/* Employee Metrics */}
         {employeeMetrics && employeeMetrics.length > 0 && (
           <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-8">
-            <h3 className="text-xl font-black text-stone-800 mb-6">Desempeño de Empleados</h3>
+            <h3 className="text-xl font-black text-slate-900 mb-6">Desempeño de Empleados</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={employeeMetrics}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="userName" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="userName" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                  formatter={(value: any) => `$${value.toFixed(2)}`}
+                  cursor={{ fill: '#f1f5f9' }}
+                  contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                  formatter={(value: any) => [`$${value.toFixed(2)}`, 'Ventas']}
                 />
                 <Legend />
-                <Bar dataKey="totalSales" name="Ventas" fill="#3b82f6" />
-                <Bar dataKey="totalTips" name="Propinas" fill="#10b981" />
+                <Bar dataKey="totalSales" name="Ventas" fill="#334155" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
 
             {/* Employee Table */}
             <div className="overflow-x-auto mt-6">
               <table className="w-full">
-                <thead className="bg-stone-50 rounded-xl">
+                <thead className="bg-slate-50 rounded-xl">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-black text-stone-400 uppercase tracking-wider rounded-l-xl">Empleado</th>
-                    <th className="px-6 py-4 text-right text-xs font-black text-stone-400 uppercase tracking-wider">Ventas</th>
-                    <th className="px-6 py-4 text-right text-xs font-black text-stone-400 uppercase tracking-wider">Tickets</th>
-                    <th className="px-6 py-4 text-right text-xs font-black text-stone-400 uppercase tracking-wider">Propinas</th>
-                    <th className="px-6 py-4 text-right text-xs font-black text-stone-400 uppercase tracking-wider rounded-r-xl">Ganancias</th>
+                    <th className="px-6 py-4 text-left text-xs font-black text-slate-400 uppercase tracking-wider rounded-l-xl">Empleado</th>
+                    <th className="px-6 py-4 text-right text-xs font-black text-slate-400 uppercase tracking-wider">Ventas</th>
+                    <th className="px-6 py-4 text-right text-xs font-black text-slate-400 uppercase tracking-wider rounded-r-xl">Tickets</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-slate-100">
                   {employeeMetrics.map((emp: any) => (
-                    <tr key={emp.userId} className="hover:bg-stone-50/50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-stone-700">{emp.userName}</td>
-                      <td className="px-6 py-4 text-right font-semibold text-green-600">${emp.totalSales.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-right text-stone-600 font-bold">{emp.salesCount}</td>
-                      <td className="px-6 py-4 text-right text-orange-600 font-semibold">${emp.totalTips.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-right text-lg font-black text-stone-800">
-                        ${(emp.totalSales + emp.totalTips).toFixed(2)}
-                      </td>
+                    <tr key={emp.userId} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-slate-700">{emp.userName}</td>
+                      <td className="px-6 py-4 text-right font-black text-emerald-600 tracking-tight">${emp.totalSales.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right text-slate-600 font-bold">{emp.salesCount}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -660,14 +629,14 @@ export default function Closing() {
             </div>
           </div>
 
-          <label className="flex items-center gap-4 p-5 bg-stone-50 rounded-2xl border border-stone-200 cursor-pointer hover:bg-stone-100 transition-colors">
+          <label className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="w-6 h-6 rounded-lg accent-stone-900"
+              className="w-6 h-6 rounded-lg accent-emerald-500"
             />
-            <span className="font-bold text-stone-700">
+            <span className="font-bold text-slate-700">
               Confirmo que todos los datos son correctos y autorizo el cierre de caja
             </span>
           </label>
@@ -677,7 +646,7 @@ export default function Closing() {
             <button
               onClick={handleSubmitClosing}
               disabled={!confirmed || submitting}
-              className="flex-1 min-w-[200px] bg-stone-900 hover:bg-black disabled:bg-stone-300 text-white font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-1"
+              className="flex-1 min-w-[200px] bg-slate-900 hover:bg-black disabled:bg-slate-300 text-white font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-1"
             >
               {submitting ? (
                 <>
@@ -693,34 +662,34 @@ export default function Closing() {
             </button>
             <button
               onClick={handlePrintClosing}
-              className="px-6 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 font-bold py-4 rounded-2xl transition-all flex items-center gap-2"
+              className="px-6 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-4 rounded-2xl transition-all flex items-center gap-2"
             >
               <Printer size={20} />
               <span className="hidden md:inline">Imprimir</span>
             </button>
             <button
               onClick={handleShareReport}
-              className="px-6 bg-white border border-stone-200 hover:bg-stone-50 text-stone-700 font-bold py-4 rounded-2xl transition-all flex items-center gap-2"
+              className="px-6 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-4 rounded-2xl transition-all flex items-center gap-2"
             >
               <Share2 size={20} />
               <span className="hidden md:inline">Compartir</span>
             </button>
             <button
               onClick={handleSendEmail}
-              className={`px-6 font-bold py-4 rounded-2xl transition-all flex items-center gap-2 ${canSendEmail ? 'bg-white border border-stone-200 hover:bg-stone-50 text-stone-700' : 'bg-stone-100 text-stone-400 cursor-not-allowed'}`}
+              className={`px-6 font-bold py-4 rounded-2xl transition-all flex items-center gap-2 ${canSendEmail ? 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
             >
               <Mail size={20} />
               <span className="hidden md:inline">Enviar por Correo</span>
             </button>
             <button
               onClick={loadClosingData}
-              className="px-6 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold py-4 rounded-2xl transition-all"
+              className="px-6 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl transition-all"
             >
               Recargar
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout >
   )
 }

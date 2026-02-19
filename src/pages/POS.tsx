@@ -1,30 +1,45 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import logger from '@/utils/logger'
 import { useAppStore } from '@/store/appStore'
-import { useAuth } from '@/hooks/useAuth'
 import supabaseService from '@/services/supabaseService'
-import { APP_CONFIG } from '@/config/constants'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import ProductGrid from '@/components/pos/ProductGrid'
 import OrderPanel from '@/components/pos/OrderPanel'
-import CartSummary from '@/components/pos/CartSummary'
 import PaymentPanel, { PaymentResult } from '@/components/pos/PaymentPanel'
 import OrderNoteModal from '@/components/pos/OrderNoteModal'
 import ManualItemModal from '@/components/pos/ManualItemModal'
 import { Product, OrderItem } from '@/types/index'
-import { sendNotificationToUsers } from '@/services/sendNotificationHelper'
 import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
-import { X, PlusCircle, Search } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
+const buildTicketHTML = (ordersList: any[], tableNumber: number, title = 'Cuenta', totalAmount: number): string => {
+  const allItems = ordersList.flatMap(o => o.items || [])
+  const lines = allItems.map(item => `
+        <div style="display:flex;justify-content:space-between;margin:2px 0;">
+          <span>${item.quantity}x ${item.productName}</span>
+          <span>$${(item.unitPrice * item.quantity).toFixed(2)}</span>
+        </div>
+    `).join('')
+
+  return `
+      <div style="width:58mm;padding:4px;font-family:'Courier New', monospace;font-size:11px;color:#000;">
+        <div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;">
+            <div style="font-weight:bold;font-size:14px;">REISBLOC POS</div>
+            <div>Cuenta: ${tableNumber}</div>
+            <div>${title}</div>
+            <div>${new Date().toLocaleString()}</div>
+        </div>
+        <div style="border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;">${lines || '(Sin items)'}</div>
+        <div style="text-align:right;font-weight:bold;font-size:14px;border-top:1px solid #000;padding-top:4px;">TOTAL: $${totalAmount.toFixed(2)}</div>
+        <div style="text-align:center;margin-top:12px;font-size:10px;">*** Gracias por su compra ***</div>
+      </div>
+    `
+}
+
 export default function POS() {
-  const navigate = useNavigate()
-  const {
-    logout,
-  } = useAuth()
   const {
     currentUser,
     products,
@@ -41,27 +56,23 @@ export default function POS() {
   } = useAppStore()
 
   const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-  const [stockError, setStockError] = useState<string | undefined>()
-  const [readyOrdersCount, setReadyOrdersCount] = useState(0)
-  const [activeTableOrders, setActiveTableOrders] = useState<any[]>([]) // Estado para "Mesa Viva"
+  const [activeTableOrders, setActiveTableOrders] = useState<any[]>([])
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
-  const prevReadyCountRef = useRef(0)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const cashRegisterAudioRef = useRef<HTMLAudioElement | null>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
+
   const [paymentPanel, setPaymentPanel] = useState<{
     isOpen: boolean
     orderId: string | null
     orderTotal: number
+    orderIds?: string[]
   }>({
     isOpen: false,
     orderId: null,
     orderTotal: 0,
+    orderIds: []
   })
-  const [activeTab, setActiveTab] = useState<'order' | 'products'>('order')
+
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('Todos')
   const [showManualItemModal, setShowManualItemModal] = useState(false)
   const [activeShift, setActiveShift] = useState<any>(null)
 
@@ -72,15 +83,9 @@ export default function POS() {
   // 🔫 Scanner Integration
   useBarcodeScanner((code) => {
     if (isReadOnly || !currentUser) return
-
-    // Buscar producto por código de barras o SKU
     // @ts-ignore
     const product = products.find(p => p.barcode === code || p.sku === code)
-
-    if (product) {
-      handleAddProduct(product)
-      // Aquí podrías agregar un sonido de "beep" exitoso si quisieras
-    }
+    if (product) handleAddProduct(product)
   })
 
   if (!currentUser && !loading) {
@@ -88,9 +93,6 @@ export default function POS() {
   }
 
   useEffect(() => {
-    // Audio de notificación
-    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBiuBzvLZiDYIF2W79+qbUg8OTqvn8raKOwcVa7r3GMUBAAAAAAABAAAAA')
-    // Audio de Caja Registradora (Ka-ching!)
     cashRegisterAudioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU7/3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/w==')
     loadProducts()
     checkShift()
@@ -106,69 +108,38 @@ export default function POS() {
     }
   }
 
-  // Monitorear órdenes listas en tiempo real
-  useEffect(() => {
-    const unsubscribe = supabaseService.subscribeToOrdersByStatus('ready', (readyOrders) => {
-      const count = readyOrders.length
-      setReadyOrdersCount(count)
+  const loadProducts = async () => {
+    setLoading(true)
+    try {
+      const prods = await supabaseService.getAllRetailProducts()
+      setProducts(prods)
+    } catch (error) {
+      logger.error('pos', 'Error loading retail products', error as any)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      // Reproducir sonido cuando aumenta el contador
-      if (count > prevReadyCountRef.current && prevReadyCountRef.current > 0) {
-        audioRef.current?.play().catch(e => logger.warn('pos', 'No se pudo reproducir audio', e as any))
-      }
-
-      prevReadyCountRef.current = count
-    })
-
-    return () => unsubscribe?.()
-  }, [])
-
-  // Monitorear órdenes activas de la mesa actual (Persistencia visual)
   useEffect(() => {
     if (!currentTableNumber) {
       setActiveTableOrders([])
       return
     }
-    // Suscribirse a cambios en órdenes para mantener la mesa "viva"
     const unsubscribe = supabaseService.subscribeToActiveOrders((orders) => {
       setActiveTableOrders(orders.filter(o => o.tableNumber === currentTableNumber))
     })
     return () => unsubscribe?.()
   }, [currentTableNumber])
 
-  const loadProducts = async () => {
-    setLoading(true)
-    try {
-      const prods = await supabaseService.getAllProducts()
-      setProducts(prods)
-    } catch (error) {
-      logger.error('pos', 'Error loading products', error as any)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // 🏷️ Extraer Categorías únicas de los productos
-  const categories = useMemo(() => {
-    // @ts-ignore - Asumiendo que el producto tiene campo category
-    const cats = new Set(products.map(p => p.category).filter(Boolean))
-    return ['Todos', ...Array.from(cats).sort()]
-  }, [products])
-
-  // ⌨️ Manejo de ENTER en el buscador (Entrada Manual Rápida)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm) {
-      // 1. Intento de coincidencia EXACTA (Barcode o SKU)
       // @ts-ignore
       const exactMatch = products.find(p => p.barcode === searchTerm || p.sku === searchTerm)
-
       if (exactMatch) {
         handleAddProduct(exactMatch)
-        setSearchTerm('') // Limpiar para el siguiente
+        setSearchTerm('')
         return
       }
-
-      // 2. Si no es exacta, pero el filtro solo muestra UNO, agrégalo
       if (filteredProducts.length === 1) {
         handleAddProduct(filteredProducts[0])
         setSearchTerm('')
@@ -176,19 +147,9 @@ export default function POS() {
     }
   }
 
-  // 🔍 Lógica de Filtrado para Retail (Búsqueda rápida)
   const filteredProducts = useMemo(() => {
     let result = products
-
-    // 1. Filtrar por Categoría
-    if (selectedCategory !== 'Todos') {
-      // @ts-ignore
-      result = result.filter(p => p.category === selectedCategory)
-    }
-
-    // 2. Filtrar por Buscador
     if (!searchTerm) return result
-
     const lower = searchTerm.toLowerCase()
     return result.filter(p =>
       p.name.toLowerCase().includes(lower) ||
@@ -197,7 +158,7 @@ export default function POS() {
       // @ts-ignore
       p.barcode?.includes(lower)
     )
-  }, [products, searchTerm, selectedCategory])
+  }, [products, searchTerm])
 
   const handleUpdateItemNote = (itemId: string, note: string) => {
     useAppStore.setState(state => {
@@ -206,88 +167,9 @@ export default function POS() {
         item.id === itemId ? { ...item, notes: note } : item
       );
       return {
-        draftOrders: {
-          ...state.draftOrders,
-          [tableNumber]: updatedDraft
-        }
+        draftOrders: { ...state.draftOrders, [tableNumber]: updatedDraft }
       };
     });
-  }
-
-  const handlePrintAccount = async () => {
-    if (items.length === 0) return
-    const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
-    const tax = subtotal * 0.16
-    const total = subtotal + tax
-    const date = new Date().toLocaleString('es-MX')
-
-    const lines = items
-      .map(item => `
-        <div style="display:flex;justify-content:space-between;margin:2px 0;">
-          <span>${item.quantity}x ${item.productName}</span>
-          <span>$${(item.unitPrice * item.quantity).toFixed(2)}</span>
-        </div>
-      `)
-      .join('')
-
-    // Cálculos de propina sugerida
-    const tip10 = subtotal * 0.10
-    const tip15 = subtotal * 0.15
-    const tip20 = subtotal * 0.20
-
-    const businessName = currentUser?.businessName || 'REISBLOC POS'
-    const cashierName = currentUser?.username || 'Staff'
-
-    const html = `
-      <div style="width:58mm;padding:8px;font-family:'Courier New', monospace;font-size:11px;line-height:1.2;color:#000;">
-        <div style="text-align:center;margin-bottom:8px;border-bottom:1px solid #000;">
-          <div style="font-weight:bold;font-size:12px;">${businessName.toUpperCase()}</div>
-          <div style="font-size:9px;">Cuenta ${tableNumber}</div>
-        </div>
-        <div style="margin-bottom:6px;font-size:9px;">
-          <div>Fecha: ${date}</div>
-          <div>Le atiende: ${cashierName}</div>
-        </div>
-        <div style="margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:8px;">
-          ${lines}
-        </div>
-        <div style="margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;margin:2px 0;">
-            <span>Subtotal:</span>
-            <span>$${subtotal.toFixed(2)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin:2px 0;">
-            <span>IVA (16%):</span>
-            <span>$${tax.toFixed(2)}</span>
-          </div>
-          <div style="font-weight:bold;display:flex;justify-content:space-between;font-size:12px;">
-            <span>TOTAL:</span>
-            <span>$${total.toFixed(2)}</span>
-          </div>
-        </div>
-        
-        <div style="margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:8px;">
-          <div style="text-align:center;font-weight:bold;margin-bottom:4px;">PROPINA SUGERIDA</div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;">
-            <span>10%: $${tip10.toFixed(2)}</span>
-            <span>15%: $${tip15.toFixed(2)}</span>
-          </div>
-          <div style="text-align:center;font-size:10px;margin-top:2px;">
-            <span>20%: $${tip20.toFixed(2)}</span>
-          </div>
-        </div>
-        <div style="text-align:center;font-size:9px;margin-top:8px;">
-          <div>Este no es comprobante fiscal.</div>
-          <div style="margin-top:4px;font-size:8px;">Gracias por su preferencia</div>
-        </div>
-      </div>
-    `
-
-    try {
-      await printService.printReceipt(html, { title: 'Cuenta', width: 58 })
-    } catch (e) {
-      // errores ya se registran en printService
-    }
   }
 
   const handleAddProduct = (product: Product) => {
@@ -297,409 +179,265 @@ export default function POS() {
 
   const handleAddManualItem = (description: string, price: number) => {
     if (!currentUser || isReadOnly) return
-
-    // Crear un producto virtual al vuelo
-    const virtualProduct: Product = {
+    const virtualProduct: any = {
       id: `manual-${Date.now()}`,
       name: description,
       price: price,
       category: 'Manual',
       image: '',
-      available: true
     }
-
     addItemToDraft(tableNumber, virtualProduct, currentUser.id)
   }
 
-  const handleSendToKitchen = async () => {
-    if (!currentUser || items.length === 0 || isReadOnly || sending) return
-
-    setSending(true)
-    setStockError(null)
+  const handlePrintAccount = async (tableNum: number) => {
     try {
-      // Validar stock disponible
-      const stockUpdates: { productId: string; quantity: number }[] = []
-      for (const item of items) {
-        const product = products.find(p => p.id === item.productId)
-        if (product?.hasInventory) {
-          const available = product.currentStock ?? 0
-          if (available < item.quantity) {
-            setStockError(`No hay stock suficiente de "${product.name}". Disponible: ${available}, Solicitado: ${item.quantity}`)
-            return
-          }
-          stockUpdates.push({ productId: item.productId, quantity: -item.quantity })
-        }
-      }
+      const ordersToPrint = activeTableOrders
+      const draftItems = draftOrders[tableNum] || []
+      const activeTotal = ordersToPrint.reduce((sum, o) => sum + (o.items?.reduce((s: number, i: any) => s + (i.unitPrice * i.quantity), 0) || 0), 0)
+      const draftTotal = draftItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
+      const total = activeTotal + draftTotal
+      if (total === 0) return
 
-      // Separar items por categoría: Comida → Cocina, Bebidas → Bar
-      const foodItems = items.filter(item => {
-        const product = products.find(p => p.id === item.productId)
-        return product?.category !== 'Bebidas'
-      })
+      const allItems = [...ordersToPrint.flatMap(o => o.items || []), ...draftItems]
+      const itemsForTicket = [{ id: 'consolidated', items: allItems }]
 
-      const drinkItems = items.filter(item => {
-        const product = products.find(p => p.id === item.productId)
-        return product?.category === 'Bebidas'
-      })
-
-      const orderIds: string[] = []
-
-      // Crear orden para Cocina (comida)
-      if (foodItems.length > 0) {
-        const foodOrderId = await supabaseService.createOrder({
-          tableNumber,
-          items: foodItems,
-          status: 'sent',
-          createdBy: currentUser.id,
-          createdAt: new Date(),
-          notes: '🍽️ Comida',
-        })
-        orderIds.push(foodOrderId)
-
-        // Notificar a cocina
-        try {
-          await sendNotificationToUsers({
-            roles: ['cocina'],
-            title: `🍽️ Nueva orden cocina - Mesa ${tableNumber}`,
-            body: `${foodItems.length} platillo(s)`,
-            type: 'order',
-            priority: 'high',
-            data: {
-              orderId: foodOrderId,
-              tableNumber: tableNumber.toString(),
-              itemCount: foodItems.length.toString()
-            }
-          })
-        } catch (notifError) {
-          logger.warn('pos', 'No se pudo notificar a cocina', notifError as any)
-        }
-      }
-
-      // Crear orden para Bar (bebidas)
-      if (drinkItems.length > 0) {
-        const drinkOrderId = await supabaseService.createOrder({
-          tableNumber,
-          items: drinkItems,
-          status: 'sent',
-          createdBy: currentUser.id,
-          createdAt: new Date(),
-          notes: '🍹 Bebidas',
-        })
-        orderIds.push(drinkOrderId)
-
-        // Notificar a bar
-        try {
-          await sendNotificationToUsers({
-            roles: ['bar'],
-            title: `🍹 Nueva orden bar - Mesa ${tableNumber}`,
-            body: `${drinkItems.length} bebida(s)`,
-            type: 'order',
-            priority: 'high',
-            data: {
-              orderId: drinkOrderId,
-              tableNumber: tableNumber.toString(),
-              itemCount: drinkItems.length.toString()
-            }
-          })
-        } catch (notifError) {
-          logger.warn('pos', 'No se pudo notificar a bar', notifError as any)
-        }
-      }
-
-      // Decrementar stock
-      if (stockUpdates.length > 0) {
-        await supabaseService.updateProductStockBatch(stockUpdates)
-        const updatedProducts = await supabaseService.getAllProducts()
-        setProducts(updatedProducts)
-      }
-
-      // Limpiar carrito y mostrar confirmación
-      clearDraftForTable(tableNumber)
-      const summary = []
-      if (foodItems.length > 0) summary.push(`${foodItems.length} comida`)
-      if (drinkItems.length > 0) summary.push(`${drinkItems.length} bebidas`)
-      alert(`✅ Orden enviada - Mesa ${tableNumber}\n${summary.join(' + ')}`)
-
+      const ticketHTML = buildTicketHTML(itemsForTicket, tableNum, 'Pre-cuenta', total)
+      await printService.printReceipt(ticketHTML, { title: 'Pre-cuenta', width: 58 })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al enviar orden'
-      setStockError(message)
-      logger.error('pos', 'Error creating order', error as any)
-    } finally {
-      setSending(false)
+      logger.error('pos', 'Error printing account', error as any)
+      alert('Error al imprimir cuenta')
     }
   }
 
+  const [stockWarning, setStockWarning] = useState<{ isOpen: boolean, items: any[] }>({ isOpen: false, items: [] })
+
+  const checkStockAvailability = (orders: any[], currentDraft: any[]) => {
+    // Combine all items to be sold
+    const allItems = [...currentDraft, ...orders.flatMap(o => o.items || [])]
+
+    // Agrupar por producto para sumar cantidades totales
+    const totals: Record<string, number> = {}
+    allItems.forEach(item => {
+      if (item.productId) {
+        totals[item.productId] = (totals[item.productId] || 0) + item.quantity
+      }
+    })
+
+    const warnings: any[] = []
+
+    Object.keys(totals).forEach(prodId => {
+      // @ts-ignore
+      const product = products.find(p => p.id === prodId)
+      // Solo validar si el producto existe y tiene control de inventario (hasInventory)
+      // Y excluimos items manuales que no tienen ID real en products
+      if (product && product.hasInventory) {
+        const currentStock = product.currentStock || 0
+        if (currentStock < totals[prodId]) {
+          warnings.push({
+            name: product.name,
+            current: currentStock,
+            requested: totals[prodId],
+            deficit: totals[prodId] - currentStock
+          })
+        }
+      }
+    })
+
+    return warnings
+  }
+
+  const confirmCheckout = () => {
+    const activeTotal = activeTableOrders.reduce((sum, o) => sum + (o.items?.reduce((s: number, i: any) => s + (i.unitPrice * i.quantity), 0) || 0), 0)
+    const draftTotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
+    const finalTotal = activeTotal + draftTotal
+
+    if (finalTotal === 0) return
+
+    setPaymentPanel({
+      isOpen: true,
+      orderId: 'retail-direct',
+      orderTotal: finalTotal,
+      orderIds: activeTableOrders.map(o => o.id)
+    })
+  }
+
+  const handleQuickCheckout = async () => {
+    if (!currentUser || isReadOnly) return
+
+    // 1. Stock Check 🛡️
+    const formattedDraft = items.map(i => ({ ...i, productId: i.productId })) // Ensure shape
+    const stockIssues = checkStockAvailability(activeTableOrders, formattedDraft)
+
+    if (stockIssues.length > 0) {
+      setStockWarning({ isOpen: true, items: stockIssues })
+      return
+    }
+
+    confirmCheckout()
+  }
+
   const handlePaymentComplete = async (result: PaymentResult) => {
-    if (!currentUser || !paymentPanel.orderId || isReadOnly) return
+    if (!currentUser || isReadOnly) return
+    const { orderIds } = paymentPanel
+    const targetIds = orderIds || (paymentPanel.orderId ? [paymentPanel.orderId] : [])
+    if (targetIds.length === 0) return
 
     try {
-      const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'digital' ? 'transferencia' : result.paymentMethod)
+      const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'transfer' ? 'transferencia' : result.paymentMethod)
 
-      // Registrar venta
-      await supabaseService.createSale({
-        organizationId: currentUser.organizationId,
-        orderIds: [paymentPanel.orderId],
+      // Fetch combined items: Draft + any previously open orders
+      const ordersToProcess = activeTableOrders.filter(o => (targetIds || []).includes(o.id))
+      const allItems = [...items, ...ordersToProcess.flatMap(o => o.items || [])]
+
+      await supabaseService.createRetailSale({
         tableNumber,
-        items,
         subtotal: paymentPanel.orderTotal,
-        discounts: 0,
-        tax: 0,
         total: result.total,
-        paymentMethod: mappedMethod as any,
-        tip: result.tip,
-        tipSource: result.tip > 0 ? (mappedMethod === 'cash' ? 'cash' : mappedMethod) : 'none',
+        paymentMethod: mappedMethod,
         saleBy: currentUser.id,
-        createdAt: new Date(),
-      } as any)
+        notes: 'Venta Directa Retail'
+      }, allItems)
 
-      // IMPORTANTE: Marcar la orden como completada para consolidar la mesa
-      await supabaseService.updateOrderStatus(paymentPanel.orderId, 'completed')
-
-      // Imprimir ticket final con monto, propina y método de pago
       try {
-        const subtotal = paymentPanel.orderTotal
-        const tax = 0
-        const total = result.total
-        const date = new Date().toLocaleString('es-MX')
-
-        const lines = items
-          .map(item => `
-            <div style="display:flex;justify-content:space-between;margin:2px 0;">
-              <span>${item.quantity}x ${item.productName}</span>
-              <span>$${(item.unitPrice * item.quantity).toFixed(2)}</span>
-            </div>
-          `)
-          .join('')
-
-        const businessName = currentUser?.businessName || 'REISBLOC POS'
-        const cashierName = currentUser?.username || 'Staff'
-
-        const html = `
-          <div style="width:58mm;padding:8px;font-family:'Courier New', monospace;font-size:11px;line-height:1.2;color:#000;">
-            <div style="text-align:center;margin-bottom:8px;border-bottom:1px solid #000;">
-              <div style="font-weight:bold;font-size:12px;">${businessName.toUpperCase()}</div>
-              <div style="font-size:9px;">Mesa ${tableNumber}</div>
-              <div style="font-size:9px;">Ticket: ${paymentPanel.orderId.slice(0, 8)}</div>
-            </div>
-            <div style="margin-bottom:6px;font-size:9px;">
-              <div>Fecha: ${date}</div>
-              <div>Cajero: ${cashierName}</div>
-            </div>
-            <div style="margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:8px;">
-              ${lines}
-            </div>
-            <div style="margin-bottom:8px;border-bottom:1px solid #000;padding-bottom:8px;">
-              <div style="display:flex;justify-content:space-between;margin:2px 0;">
-                <span>Subtotal:</span>
-                <span>$${subtotal.toFixed(2)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin:2px 0;">
-                <span>Impuesto:</span>
-                <span>$${tax.toFixed(2)}</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin:2px 0;">
-                <span>Propina:</span>
-                <span>$${(result.tip || 0).toFixed(2)}</span>
-              </div>
-              <div style="font-weight:bold;display:flex;justify-content:space-between;font-size:12px;">
-                <span>TOTAL:</span>
-                <span>$${total.toFixed(2)}</span>
-              </div>
-            </div>
-            <div style="text-align:center;font-size:9px;margin-top:8px;">
-              <div>Pagado: ${mappedMethod.toUpperCase()}</div>
-              <div style="margin-top:4px;font-size:8px;">Gracias por su preferencia</div>
-            </div>
-          </div>
-        `
-
-        await printService.printReceipt(html, { title: 'Ticket de Pago', width: 58 })
+        const ticketHTML = buildTicketHTML([{ items: allItems }], tableNumber, 'Ticket de Venta', result.total)
+        await printService.printReceipt(ticketHTML, { title: 'Ticket de Pago', width: 58 })
       } catch (printErr) {
         logger.warn('pos', 'No se pudo imprimir ticket final', printErr as any)
       }
 
-      // Limpiar carrito
       clearDraftForTable(tableNumber)
-
-      // Cerrar panel de pago
-      setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0 })
-
-      logger.info('pos', 'Sale recorded', { orderId: paymentPanel.orderId, transactionId: result.transactionId })
-    } catch (error) {
-      logger.error('pos', 'Error recording sale', error as any)
-      setStockError('Error al registrar la venta')
+      setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })
+      cashRegisterAudioRef.current?.play().catch(() => { })
+      alert(`✅ Venta completada!\nTotal: $${result.total.toFixed(2)}`)
+    } catch (error: any) {
+      logger.error('pos', 'Error recording sale', error)
+      alert(`Error: ${error.message}`)
     }
   }
 
   const tableButtons = useMemo(() => {
-    const baseTables = tables.length ? tables : Array.from({ length: APP_CONFIG.TABLES.NUMBERED_TABLES }, (_, i) => i + 1)
-    return baseTables
+    const baseTables = tables.length ? tables : Array.from({ length: 3 }, (_, i) => i + 1)
+    return baseTables.slice(0, 3)
   }, [tables])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-gray-600">Cargando productos...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <div className="flex items-center justify-center min-h-screen">Cargando...</div>
+
+  const currentTotal = (
+    activeTableOrders.reduce((sum, o) => sum + (o.items?.reduce((s: number, i: any) => s + (i.unitPrice * i.quantity), 0) || 0), 0) +
+    items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
+  )
 
   return (
     <DashboardLayout>
-      <div className="h-[calc(100vh-2rem)] flex flex-col lg:flex-row gap-6">
-        {/* Mobile View Tabs */}
-        <div className="lg:hidden flex bg-white border-b border-gray-200 sticky top-0 z-20">
-          <button
-            onClick={() => setActiveTab('products')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'products' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'}`}
-          >
-            Catálogo
-          </button>
-          <button
-            onClick={() => setActiveTab('order')}
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'order' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400'}`}
-          >
-            Cuenta
-            {items.length > 0 && (
-              <span className="absolute top-3 right-4 bg-slate-900 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce-short">
-                {items.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Left Column: Product Grid & Controls */}
-        <div className={`flex-1 lg:w-2/3 h-full min-h-0 flex flex-col gap-4 ${activeTab !== 'products' ? 'hidden lg:flex' : 'flex'}`}>
-          {/* Controls Header */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col gap-4 shrink-0">
-            <div className="flex gap-2">
-              {/* Search Bar */}
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all font-bold"
-                  placeholder="Buscar..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                />
-              </div>
-
-              {/* Manual Item Button */}
-              <button
-                onClick={() => setShowManualItemModal(true)}
-                className="p-3 bg-slate-100 text-slate-800 rounded-lg hover:bg-slate-200 transition-colors"
-                title="Item Manual"
-              >
-                <PlusCircle size={24} />
-              </button>
-            </div>
-
-            {/* Category Chips */}
-            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all border ${selectedCategory === cat
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-lg'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                    }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Grid */}
-          <div className="flex-1 min-h-0">
-            <ProductGrid
-              products={filteredProducts}
-              onAdd={handleAddProduct}
-              disableAdd={isReadOnly || !!activeShift?.end_time}
-            />
-          </div>
-        </div>
-
-        {/* Right Column: Order Panel & Cart */}
-        <div className={`w-full lg:w-1/3 flex flex-col gap-4 h-full min-h-0 ${activeTab !== 'order' ? 'hidden lg:flex' : 'flex'}`}>
-          {/* Table Selector Widget */}
-          <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
+      <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
+        {/* Unified Header with Search and Accounts */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center shrink-0">
+          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0">
+            <LayoutGrid size={18} className="text-slate-400 ml-2" />
             {tableButtons.map(num => (
               <button
                 key={num}
                 onClick={() => setCurrentTable(num)}
-                className={`relative px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${tableNumber === num
-                  ? 'bg-slate-900 text-white shadow-xl scale-105 z-10'
-                  : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
-                  }`}
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${tableNumber === num ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
               >
-                Cuenta {num}
-                {(draftOrders[num]?.length || 0) > 0 && (
-                  <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${tableNumber === num ? 'bg-red-500 animate-pulse' : 'bg-slate-400'}`} />
-                )}
+                Caja {num}
               </button>
             ))}
           </div>
 
-          {/* Active Order Widget */}
-          <div className="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-            <OrderPanel
-              tableNumber={tableNumber}
-              items={items}
-              activeOrders={activeTableOrders}
-              onIncrement={(itemId) => !isReadOnly && incrementDraftItem(tableNumber, itemId)}
-              onDecrement={(itemId) => !isReadOnly && decrementDraftItem(tableNumber, itemId)}
-              onRemove={(itemId) => !isReadOnly && removeDraftItem(tableNumber, itemId)}
-              onEditNote={(item) => setEditingItem(item)}
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 font-bold focus:ring-2 focus:ring-slate-900 transition-all"
+              placeholder="Escanear o buscar producto..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
             />
           </div>
 
-          {/* Cart Actions Widget */}
-          <div className="flex-none pb-20 lg:pb-0">
-            <CartSummary
-              tableNumber={tableNumber}
-              items={items}
-              onSend={handleSendToKitchen}
-              onClear={() => clearDraftForTable(tableNumber)}
-              sending={sending}
-              products={products}
-              stockError={stockError}
-            />
+          <button
+            onClick={() => setShowManualItemModal(true)}
+            className="hidden md:flex p-3 bg-slate-900 text-white rounded-xl shadow-lg hover:scale-105 transition-all"
+          >
+            <PlusCircle size={24} />
+          </button>
+        </div>
+
+        {/* Main Workspace: Combined Grid and Cart */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+          {/* Catalog Panel (Left) */}
+          <div className="flex-[5] flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar">
+              <ProductGrid products={filteredProducts} onAdd={handleAddProduct} disableAdd={isReadOnly || !!activeShift?.end_time} />
+            </div>
+          </div>
+
+          {/* Cart Panel (Right) */}
+          <div className="flex-[3] flex flex-col min-h-0 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2">
+              <OrderPanel
+                tableNumber={tableNumber}
+                items={items}
+                activeOrders={[]} // Hide restaurant statuses in Retail Pivot
+                onIncrement={(id) => incrementDraftItem(tableNumber, id)}
+                onDecrement={(id) => decrementDraftItem(tableNumber, id)}
+                onRemove={(id) => removeDraftItem(tableNumber, id)}
+                onClear={() => clearDraftForTable(tableNumber)}
+                onEditNote={(item) => setEditingItem(item)}
+              />
+            </div>
+
+            {/* Checkout Region */}
+            <div className="p-4 bg-white border-t border-slate-200 space-y-4 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span className="font-black text-slate-500 text-sm">TOTAL</span>
+                <span className="font-black text-3xl text-slate-900 tracking-tight">
+                  ${currentTotal.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => handlePrintAccount(tableNumber)}
+                  disabled={currentTotal === 0}
+                  className="py-4 bg-slate-100 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-all border border-slate-300"
+                >
+                  <Printer size={20} />
+                  Ticket
+                </button>
+                <button
+                  onClick={handleQuickCheckout}
+                  disabled={currentTotal === 0}
+                  className="py-4 bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all"
+                >
+                  <DollarSign size={20} />
+                  COBRAR
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {paymentPanel.isOpen && paymentPanel.orderId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
-            <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-              <PaymentPanel
-                orderId={paymentPanel.orderId}
-                orderTotal={paymentPanel.orderTotal}
-                tableNumber={tableNumber}
-                onPaymentComplete={handlePaymentComplete}
-                onCancel={() => setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0 })}
-              />
-            </div>
-          </div>
+        {/* Modals */}
+        {paymentPanel.isOpen && (
+          <PaymentPanel
+            orderId={paymentPanel.orderId || ''}
+            orderIds={paymentPanel.orderIds}
+            orderTotal={paymentPanel.orderTotal}
+            items={[...items, ...activeTableOrders.filter(o => paymentPanel.orderIds?.includes(o.id)).flatMap(o => o.items || [])]}
+            tableNumber={tableNumber}
+            onPaymentComplete={handlePaymentComplete}
+            onCancel={() => setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })}
+          />
         )}
 
         {editingItem && (
           <OrderNoteModal
             isOpen={!!editingItem}
             onClose={() => setEditingItem(null)}
-            onSave={(note) => {
-              if (editingItem) {
-                handleUpdateItemNote(editingItem.id, note)
-                setEditingItem(null)
-              }
-            }}
-            // @ts-ignore
+            onSave={(note) => { handleUpdateItemNote(editingItem.id, note); setEditingItem(null); }}
             initialNote={editingItem.notes || ''}
             itemName={editingItem.productName}
           />
@@ -712,6 +450,68 @@ export default function POS() {
             onAdd={handleAddManualItem}
           />
         )}
+
+        {stockWarning.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-red-100">
+              <div className="bg-red-50 p-6 border-b border-red-100 flex items-center gap-4">
+                <div className="p-3 bg-red-100 text-red-600 rounded-full shrink-0">
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-red-900 leading-none mb-1">Stock Insuficiente</h3>
+                  <p className="text-red-700/80 text-sm font-medium">Algunos productos exceden las existencias.</p>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <p className="text-slate-600 font-medium mb-4 text-sm">Los siguientes productos quedarán con inventario negativo si procedes:</p>
+                <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden mb-6">
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                    {stockWarning.items.map((item, idx) => (
+                      <div key={idx} className="p-3 border-b border-slate-100 last:border-0 flex justify-between items-center text-sm">
+                        <span className="font-bold text-slate-800 line-clamp-1">{item.name}</span>
+                        <div className="text-right shrink-0 ml-4">
+                          <div className="text-red-600 font-black">-{item.deficit}</div>
+                          <div className="text-[10px] text-slate-400">Stock actual: {item.current}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setStockWarning({ isOpen: false, items: [] })}
+                    className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => {
+                      // 📝 Audit Log: Forced Sale
+                      supabaseService.createAuditLog({
+                        userId: currentUser?.id || 'system',
+                        action: 'SALE_FORCE_STOCK',
+                        entityType: 'retail_sale',
+                        entityId: 'pre-check',
+                        oldValue: { warnings: stockWarning.items },
+                        details: 'User forced sale with insufficient stock'
+                      }).catch(console.error)
+
+                      setStockWarning({ isOpen: false, items: [] })
+                      confirmCheckout() // Proceder
+                    }}
+                    className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+                  >
+                    Forzar Venta
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </DashboardLayout>
   )

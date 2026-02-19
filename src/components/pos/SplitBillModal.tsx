@@ -1,6 +1,16 @@
 import { useState, useMemo } from 'react'
-import { X, Users, DollarSign, Check, CreditCard, Smartphone, PieChart, List, Trash2 } from 'lucide-react'
-import { Order, OrderItem } from '@/types/index'
+import {
+  Users,
+  Trash2,
+  CreditCard,
+  DollarSign,
+  Smartphone,
+  X, // X is still used for close button
+  PieChart, // PieChart is still used for split type
+  List, // List is still used for split type
+  Check // Check is still used for continue button
+} from 'lucide-react'
+import { Order, OrderItem, SplitPayment } from '@/types/index'
 
 interface SplitBillModalProps {
   order: Order
@@ -8,22 +18,6 @@ interface SplitBillModalProps {
   onConfirmSplit: (splits: SplitPayment[]) => void
 }
 
-interface SplitPayment {
-  personNumber: number
-  items: Array<{
-    item: OrderItem
-    quantity: number
-  }>
-  subtotal: number
-  paymentMethods: Array<{
-    method: 'cash' | 'card' | 'transfer'
-    currency: 'MXN' | 'USD'
-    amount: number
-  }>
-  tipAmount?: number
-  tipCurrency?: 'MXN' | 'USD'
-  paid: boolean
-}
 
 export default function SplitBillModal({ order, onClose, onConfirmSplit }: SplitBillModalProps) {
   const [numberOfPeople, setNumberOfPeople] = useState(2)
@@ -59,8 +53,6 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
         items: [],
         subtotal: amountPerPerson,
         paymentMethods: [],
-        tipAmount: amountPerPerson * 0.15, // 15% por defecto (Happy Waiters)
-        tipCurrency: 'MXN',
         paid: false,
       })
     }
@@ -79,7 +71,6 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
 
     if (existingItemIndex >= 0) {
       // Incrementar cantidad
-      const currentQty = personSplit.items[existingItemIndex].quantity
       const totalAssigned = splits.reduce(
         (sum, split) =>
           sum +
@@ -109,7 +100,6 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
       (sum, { item, quantity }) => sum + item.unitPrice * quantity,
       0
     )
-    personSplit.tipAmount = personSplit.subtotal * 0.15 // Recalcular 15% al cambiar items
 
     setSplits(newSplits)
   }
@@ -131,20 +121,11 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
         (sum, { item, quantity }) => sum + item.unitPrice * quantity,
         0
       )
-      personSplit.tipAmount = personSplit.subtotal * 0.15 // Recalcular 15%
 
       setSplits(newSplits)
     }
   }
 
-  const updatePaymentMethod = (
-    personIndex: number,
-    method: 'cash' | 'card' | 'transfer'
-  ) => {
-    const newSplits = [...splits]
-    newSplits[personIndex].paymentMethod = method
-    setSplits(newSplits)
-  }
 
   const markAsPaid = (personIndex: number) => {
     const newSplits = [...splits]
@@ -184,16 +165,16 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
   }
 
   // Helper para agregar pago rápido
-  const addQuickPayment = (personIndex: number, method: 'cash' | 'card' | 'transfer') => {
+  const addQuickPayment = (personIndex: number, method: 'cash' | 'tarjeta' | 'transferencia') => {
     const newSplits = [...splits]
     const split = newSplits[personIndex]
-    
+
     // Calcular restante
     const totalPaid = split.paymentMethods.reduce((sum, m) => {
       const amount = m.currency === 'USD' ? m.amount * USD_TO_MXN : m.amount
       return sum + amount
     }, 0)
-    const totalWithTip = split.subtotal + (split.tipAmount || 0)
+    const totalWithTip = split.subtotal
     const remaining = Math.max(0, totalWithTip - totalPaid)
 
     if (remaining <= 0.01) return
@@ -206,12 +187,6 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
     setSplits(newSplits)
   }
 
-  const setTipPercentage = (personIndex: number, percentage: number) => {
-    const newSplits = [...splits]
-    const split = newSplits[personIndex]
-    split.tipAmount = split.subtotal * (percentage / 100)
-    setSplits(newSplits)
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -274,18 +249,16 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setSplitType('amount')}
-                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
-                    splitType === 'amount' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 hover:border-purple-300'
-                  }`}
+                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${splitType === 'amount' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 hover:border-purple-300'
+                    }`}
                 >
                   <PieChart size={24} />
                   <span className="font-bold">Por Monto ($)</span>
                 </button>
                 <button
                   onClick={() => setSplitType('items')}
-                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${
-                    splitType === 'items' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 hover:border-purple-300'
-                  }`}
+                  className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${splitType === 'items' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 hover:border-purple-300'
+                    }`}
                 >
                   <List size={24} />
                   <span className="font-bold">Por Items</span>
@@ -310,15 +283,14 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                   Asignar Items a Cada Persona
                 </h3>
                 <div className="flex gap-2">
-                  {splits.map((split, index) => (
+                  {splits.map((_split, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedPerson(index + 1)}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                        selectedPerson === index + 1
-                          ? 'bg-purple-600 text-white shadow-lg'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-all ${selectedPerson === index + 1
+                        ? 'bg-purple-600 text-white shadow-lg'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                       Persona {index + 1}
                     </button>
@@ -338,11 +310,10 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                     return (
                       <div
                         key={item.id}
-                        className={`bg-white rounded-lg p-3 flex items-center justify-between ${
-                          remaining > 0
-                            ? 'border-2 border-purple-200'
-                            : 'opacity-50'
-                        }`}
+                        className={`bg-white rounded-lg p-3 flex items-center justify-between ${remaining > 0
+                          ? 'border-2 border-purple-200'
+                          : 'opacity-50'
+                          }`}
                       >
                         <div>
                           <p className="font-semibold text-gray-900">
@@ -354,11 +325,10 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                         </div>
                         <div className="flex items-center gap-3">
                           <span
-                            className={`text-sm font-semibold ${
-                              remaining > 0
-                                ? 'text-purple-600'
-                                : 'text-green-600'
-                            }`}
+                            className={`text-sm font-semibold ${remaining > 0
+                              ? 'text-purple-600'
+                              : 'text-green-600'
+                              }`}
                           >
                             {remaining > 0
                               ? `${remaining} restante${remaining > 1 ? 's' : ''}`
@@ -451,19 +421,18 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                     const amount = m.currency === 'USD' ? m.amount * USD_TO_MXN : m.amount
                     return sum + amount
                   }, 0)
-                  const totalWithTip = split.subtotal + (split.tipAmount || 0)
+                  const totalWithTip = split.subtotal
                   const amountDue = totalWithTip - totalPaid
 
                   return (
                     <div
                       key={index}
-                      className={`rounded-xl p-4 border-2 ${
-                        split.paid
-                          ? 'bg-green-50 border-green-500'
-                          : amountDue <= 0
+                      className={`rounded-xl p-4 border-2 ${split.paid
+                        ? 'bg-green-50 border-green-500'
+                        : amountDue <= 0
                           ? 'bg-blue-50 border-blue-400'
                           : 'bg-white border-gray-200'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-bold text-gray-900 text-lg">
@@ -525,19 +494,19 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                                     <button
                                       onClick={() => {
                                         const newSplits = [...splits]
-                                        newSplits[index].paymentMethods[methodIdx].method = 'card'
+                                        newSplits[index].paymentMethods[methodIdx].method = 'tarjeta'
                                         setSplits(newSplits)
                                       }}
-                                      className={`p-2 rounded-md transition-all ${method.method === 'card' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
+                                      className={`p-2 rounded-md transition-all ${method.method === 'tarjeta' ? 'bg-blue-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
                                       title="Tarjeta"
                                     ><CreditCard size={14} /></button>
                                     <button
                                       onClick={() => {
                                         const newSplits = [...splits]
-                                        newSplits[index].paymentMethods[methodIdx].method = 'transfer'
+                                        newSplits[index].paymentMethods[methodIdx].method = 'transferencia'
                                         setSplits(newSplits)
                                       }}
-                                      className={`p-2 rounded-md transition-all ${method.method === 'transfer' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
+                                      className={`p-2 rounded-md transition-all ${method.method === 'transferencia' ? 'bg-orange-500 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-200'}`}
                                       title="Transferencia"
                                     ><Smartphone size={14} /></button>
                                   </div>
@@ -582,7 +551,7 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                                   </button>
 
                                   <button
-                                    onClick={() => addQuickPayment(index, 'card')}
+                                    onClick={() => addQuickPayment(index, 'tarjeta')}
                                     className="p-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg flex flex-col items-center gap-1 transition-colors"
                                   >
                                     <CreditCard size={16} className="text-blue-600" />
@@ -591,7 +560,7 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                                   </button>
 
                                   <button
-                                    onClick={() => addQuickPayment(index, 'transfer')}
+                                    onClick={() => addQuickPayment(index, 'transferencia')}
                                     className="p-2 bg-orange-50 border border-orange-200 hover:bg-orange-100 rounded-lg flex flex-col items-center gap-1 transition-colors"
                                   >
                                     <CreditCard size={16} className="text-orange-600" />
@@ -603,42 +572,6 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                             </div>
                           </div>
 
-                          {/* Propina Simplificada */}
-                          <div className="mb-4 bg-purple-50 p-3 rounded-xl border border-purple-100">
-                            <label className="block text-xs font-bold text-purple-800 mb-2 flex justify-between">
-                              <span>Propina Sugerida</span>
-                              <span className="text-purple-600">${(split.tipAmount || 0).toFixed(2)}</span>
-                            </label>
-                            <div className="flex gap-2">
-                              {[10, 15, 20].map(pct => (
-                                <button
-                                  key={pct}
-                                  onClick={() => setTipPercentage(index, pct)}
-                                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                                    Math.abs((split.tipAmount || 0) - (split.subtotal * (pct / 100))) < 0.1
-                                      ? 'bg-purple-600 text-white shadow-md'
-                                      : 'bg-white text-purple-600 border border-purple-200 hover:bg-purple-100'
-                                  }`}
-                                >
-                                  {pct}%
-                                </button>
-                              ))}
-                              <div className="flex-1 relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">$</span>
-                                <input 
-                                  type="number"
-                                  value={split.tipAmount || ''}
-                                  onChange={(e) => {
-                                      const newSplits = [...splits]
-                                      newSplits[index].tipAmount = parseFloat(e.target.value) || 0
-                                      setSplits(newSplits)
-                                  }}
-                                  className="w-full pl-4 pr-1 py-2 border border-purple-200 rounded-lg text-xs font-bold text-center focus:ring-2 focus:ring-purple-500 outline-none"
-                                  placeholder="Otro"
-                                />
-                              </div>
-                            </div>
-                          </div>
 
                           {/* Resumen */}
                           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200 space-y-1 text-xs">
@@ -646,13 +579,9 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                               <span>Subtotal:</span>
                               <span className="font-semibold">${split.subtotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span>Propina:</span>
-                              <span className="font-semibold">${(split.tipAmount || 0).toFixed(2)}</span>
-                            </div>
                             <div className="border-t border-purple-300 pt-1 flex justify-between font-bold text-sm">
                               <span>Total Debido:</span>
-                              <span className="text-purple-600">${totalWithTip.toFixed(2)}</span>
+                              <span className="text-purple-600">${split.subtotal.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span>Pagado:</span>
@@ -694,7 +623,7 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                   <span className="text-gray-900">Total General:</span>
                   <span className="text-purple-600">
                     ${splits
-                      .reduce((sum, split) => sum + split.subtotal + (split.tipAmount || 0), 0)
+                      .reduce((sum, split) => sum + split.subtotal, 0)
                       .toFixed(2)}
                   </span>
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import supabaseService from '@/services/supabaseService'
@@ -14,6 +14,7 @@ import {
   TrendingDown,
   Eye
 } from 'lucide-react'
+import ProductModal from './ProductModal'
 
 export default function InventoryManagement() {
   const { products, setProducts, currentUser } = useAppStore()
@@ -23,34 +24,35 @@ export default function InventoryManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [filter, setFilter] = useState<'all' | 'active' | 'low-stock'>('all')
 
-  useEffect(() => {
-    loadProducts()
-  }, [])
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const loadedProducts = await supabaseService.getAllProducts()
+      const loadedProducts = await supabaseService.getAllRetailProducts()
       setProducts(loadedProducts)
     } catch (error) {
       console.error('Error loading products:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [setProducts])
+
+  useEffect(() => {
+    loadProducts()
+  }, [loadProducts])
 
   const handleToggleActive = async (product: Product) => {
     if (isReadOnly) return
 
     try {
-      await supabaseService.updateProduct(product.id, { active: !product.active })
+      await supabaseService.updateRetailProduct(product.id, { active: !product.active })
       await supabaseService.createAuditLog({
         userId: currentUser?.id || 'unknown',
         action: 'PRODUCT_UPDATED',
         entityType: 'PRODUCT',
         entityId: product.id,
         oldValue: { active: product.active },
-        newValue: { active: !product.active }
+        newValue: { active: !product.active },
+        timestamp: new Date()
       })
       await loadProducts()
     } catch (error) {
@@ -67,13 +69,14 @@ export default function InventoryManagement() {
     }
 
     try {
-      await supabaseService.deleteProduct(product.id)
+      await supabaseService.deleteRetailProduct(product.id)
       await supabaseService.createAuditLog({
         userId: currentUser?.id || 'unknown',
         action: 'PRODUCT_DELETED',
         entityType: 'PRODUCT',
         entityId: product.id,
-        oldValue: { name: product.name }
+        oldValue: { name: product.name },
+        timestamp: new Date()
       })
       await loadProducts()
     } catch (error) {
@@ -92,14 +95,15 @@ export default function InventoryManagement() {
     }
 
     try {
-      await supabaseService.updateProduct(product.id, { currentStock: newStock })
+      await supabaseService.updateRetailProduct(product.id, { currentStock: newStock })
       await supabaseService.createAuditLog({
         userId: currentUser?.id || 'unknown',
         action: 'INVENTORY_CHANGE',
         entityType: 'PRODUCT',
         entityId: product.id,
         oldValue: { stock: product.currentStock },
-        newValue: { stock: newStock, adjustment }
+        newValue: { stock: newStock, adjustment },
+        timestamp: new Date()
       })
       await loadProducts()
     } catch (error) {
@@ -382,199 +386,6 @@ function StatCard({
       </div>
       <p className="text-sm text-gray-600 font-semibold">{title}</p>
       <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-    </div>
-  )
-}
-
-// Product Modal (Create/Edit)
-function ProductModal({
-  product,
-  onClose,
-  onSuccess
-}: {
-  product?: Product
-  onClose: () => void
-  onSuccess: () => void
-}) {
-  const { currentUser } = useAppStore()
-  const [formData, setFormData] = useState({
-    name: product?.name || '',
-    price: product?.price || 0,
-    category: product?.category || 'Comida',
-    hasInventory: product?.hasInventory || false,
-    currentStock: product?.currentStock || 0,
-    minimumStock: product?.minimumStock || 10,
-    active: product?.active ?? true,
-  })
-  const [loading, setLoading] = useState(false)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    setLoading(true)
-    try {
-      if (product) {
-        await supabaseService.updateProduct(product.id, formData)
-        await supabaseService.createAuditLog({
-          userId: currentUser?.id || 'unknown',
-          action: 'PRODUCT_UPDATED',
-          entityType: 'PRODUCT',
-          entityId: product.id,
-          newValue: formData
-        })
-      } else {
-        const newId = await supabaseService.createProduct({
-          ...formData,
-          createdAt: new Date(),
-        })
-
-        await supabaseService.createAuditLog({
-          userId: currentUser?.id || 'unknown',
-          action: 'PRODUCT_CREATED',
-          entityType: 'PRODUCT',
-          entityId: newId,
-          newValue: formData
-        })
-      }
-
-      onSuccess()
-      onClose()
-    } catch (error) {
-      console.error('Error saving product:', error)
-      alert('Error al guardar producto')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scaleIn max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-4">
-          {product ? 'Editar Producto' : 'Crear Producto'}
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Nombre
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input-field"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Precio
-            </label>
-            <input
-              type="number"
-              value={formData.price || ''}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
-              className="input-field"
-              step="0.01"
-              min="0"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Categoría
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="input-field"
-            >
-              <option value="Comida">Comida</option>
-              <option value="Bebidas">Bebidas</option>
-              <option value="Postres">Postres</option>
-              <option value="Otros">Otros</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="hasInventory"
-              checked={formData.hasInventory}
-              onChange={(e) => setFormData({ ...formData, hasInventory: e.target.checked })}
-              className="w-5 h-5"
-            />
-            <label htmlFor="hasInventory" className="text-sm font-bold text-gray-700">
-              Controlar inventario
-            </label>
-          </div>
-
-          {formData.hasInventory && (
-            <>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Stock actual
-                </label>
-                <input
-                  type="number"
-                  value={formData.currentStock || ''}
-                  onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                  className="input-field"
-                  min="0"
-                  required />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Stock mínimo
-                </label>
-                <input
-                  type="number"
-                  value={formData.minimumStock || ''}
-                  onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                  className="input-field"
-                  min="0"
-                  required
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="active"
-              checked={formData.active}
-              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-              className="w-5 h-5"
-            />
-            <label htmlFor="active" className="text-sm font-bold text-gray-700">
-              Producto activo
-            </label>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 btn-secondary"
-              disabled={loading}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="flex-1 btn-success"
-              disabled={loading}
-            >
-              {loading ? 'Guardando...' : product ? 'Guardar' : 'Crear'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }

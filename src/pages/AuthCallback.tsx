@@ -40,7 +40,7 @@ export function AuthCallback() {
       }
 
       // 2. Verificar si el usuario ya tiene organización (Esperando al Webhook)
-      
+
       // Aquí usamos el "Backoff" que programamos
       const orgId = await pollForOrganization(session.user.id)
 
@@ -54,7 +54,7 @@ export function AuthCallback() {
         console.warn('Timeout esperando organization_id')
         // Redirigir al login con error claro en lugar de dejarlo en el limbo
         // Esto fuerza al usuario a intentar de nuevo, disparando el webhook otra vez si falló
-        navigate('/login?error=setup_timeout') 
+        navigate('/login?error=setup_timeout')
       }
     }
 
@@ -69,7 +69,7 @@ export function AuthCallback() {
           {/* Icono de Seguridad para reforzar la confianza */}
           <ShieldCheck className="w-16 h-16 text-emerald-400 animate-bounce relative z-10" />
         </div>
-        
+
         <div className="space-y-3">
           <h2 className="text-2xl font-bold text-white">Verificación de Seguridad</h2>
           <p className="text-slate-400 animate-pulse font-mono text-sm min-h-[20px]">

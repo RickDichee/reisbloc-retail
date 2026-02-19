@@ -2,15 +2,11 @@ import { useState, useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useAuth } from '@/hooks/useAuth'
 import {
   Users,
   UserCheck,
   Package,
-  Smartphone,
-  FileText,
-  Settings,
-  Palette,
+  Shield,
   ArrowLeft,
   ShoppingCart,
   Bot,
@@ -19,38 +15,32 @@ import {
   Puzzle,
   Percent,
   Globe,
-  LifeBuoy
+  LifeBuoy,
+  ExternalLink,
+  Copy,
+  Check,
+  Settings,
+  History
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import DeviceApprovalPanel from '@/components/admin/DeviceApprovalPanel'
 import AdminCard from '@/components/common/AdminCard'
 import UsersManagement from '@/components/admin/UsersManagement'
 import InventoryManagement from '@/components/admin/InventoryManagement'
-import AuditLogsPanel from '@/components/admin/AuditLogsPanel'
-import { shiftService } from '@/services/shiftService'
+import AuditLogs from '@/components/admin/AuditLogs'
 import logger from '@/utils/logger'
-import AvatarUpload from '@/components/admin/AvatarUpload'
-import { supabase } from '@/config/supabase'
 
 import AIInsightsWidget from '@/components/common/AIInsightsWidget'
 import PurchasesManagement from '@/components/admin/PurchasesManagement'
 import supabaseService from '@/services/supabaseService'
 import ClientsManagement from '@/components/admin/ClientsManagement'
 
-type AdminTab = 'hub' | 'devices' | 'users' | 'inventory' | 'logs' | 'settings' | 'clients' | 'purchases' | 'llm' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support'
+type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs'
 
 export default function Admin() {
-  const navigate = useNavigate()
   const { currentUser } = useAppStore()
-  const { logout } = useAuth()
-  const { canManageUsers, canManageInventory, canManageDevices, canViewLogs } = usePermissions()
+  const navigate = useNavigate()
+  const { canManageUsers, canManageInventory } = usePermissions()
   const [activeTab, setActiveTab] = useState<AdminTab>('hub')
-
-  // Estado local para personalización (esto luego vendrá de useAppStore)
-  const [brandColor, setBrandColor] = useState('neon')
-  const [openingAmount, setOpeningAmount] = useState<string>('')
-  const [activeShift, setActiveShift] = useState<any>(null)
-  const [loadingShift, setLoadingShift] = useState(true)
 
   // AI Insights Data
   const [aiMetrics, setAiMetrics] = useState<any>(null)
@@ -60,75 +50,12 @@ export default function Admin() {
   // 🔒 Verificación de Seguridad: Blindaje para reisbloc-lab
   useEffect(() => {
     if (currentUser && currentUser.organizationId) {
-      // 🛡️ ID Maestro Reisbloc Lab (v3.7.3)
       const isDevOrg = currentUser.organizationId === '8ba45da3-7373-4c9f-867f-5ea2d8300cc6'
       if (currentUser.username === 'admin' && !isDevOrg) {
         logger.warn('security', '⚠️ Intento de acceso administrativo desde organización no autorizada')
-        // Aquí podrías forzar un logout si fuera necesario
       }
     }
   }, [currentUser])
-
-  // 🎨 Cargar configuración de marca de la organización al montar
-  useEffect(() => {
-    const loadOrgSettings = async () => {
-      if (!currentUser?.organizationId) return
-      try {
-        const { data, error } = await supabase
-          .from('organizations')
-          .select('settings')
-          .eq('id', currentUser.organizationId)
-          .maybeSingle()
-
-        if (error) throw error
-        if (data?.settings?.brandColor) {
-          setBrandColor(data.settings.brandColor)
-        }
-      } catch (e) {
-        logger.error('admin', 'Error loading org settings', e as any)
-      }
-    }
-    loadOrgSettings()
-  }, [currentUser?.organizationId])
-
-  // Verificar si hay un turno abierto al cargar
-  useEffect(() => {
-    const checkShift = async () => {
-      if (!currentUser) return
-      const shift = await shiftService.getActiveShift(currentUser.id)
-      setActiveShift(shift)
-      setLoadingShift(false)
-    }
-    checkShift()
-  }, [currentUser])
-
-  const handleOpenShift = async () => {
-    if (!currentUser || !openingAmount) return
-    try {
-      const shift = await shiftService.openShift(currentUser.id, currentUser.organizationId || '', parseFloat(openingAmount))
-      setActiveShift(shift)
-      alert('✅ Turno de caja abierto correctamente')
-      setOpeningAmount('')
-    } catch (error) {
-      alert('❌ Error al abrir caja')
-    }
-  }
-
-  const handleCloseShift = async () => {
-    if (!activeShift) return
-    const amount = prompt('Ingrese el monto final en efectivo para el arqueo:')
-    if (amount === null || isNaN(parseFloat(amount))) return
-
-    try {
-      const salesDelta = await shiftService.calculateExpectedAmount(currentUser.organizationId || '', activeShift.start_time)
-      const expected = Number(activeShift.opening_amount || 0) + salesDelta
-      await shiftService.closeShift(activeShift.id, parseFloat(amount), expected)
-      alert('✅ Turno cerrado y arqueo registrado con éxito')
-      setActiveShift(null)
-    } catch (error) {
-      alert('❌ Error al cerrar turno')
-    }
-  }
 
   // Cargar datos para la IA cuando la pestaña está activa
   useEffect(() => {
@@ -146,8 +73,8 @@ export default function Admin() {
 
           setAiMetrics(metricsData)
           setAiTopProducts(topProductsData)
-        } catch (error) {
-          logger.error('admin', 'Error loading AI metrics', error as any)
+        } catch (e) {
+          logger.error('admin', 'Error loading AI metrics', e as any)
         } finally {
           setLoadingAI(false)
         }
@@ -156,87 +83,59 @@ export default function Admin() {
     }
   }, [activeTab, aiMetrics])
 
-  const colorMap: Record<string, { gradient: string, primary: string, text: string }> = {
-    neon: { gradient: 'from-[#00F5FF] to-[#00D1D1]', primary: '#00F5FF', text: '#1A1C1E' },
-    indigo: { gradient: 'from-indigo-600 to-purple-600', primary: '#4f46e5', text: '#FFFFFF' },
-    blue: { gradient: 'from-blue-600 to-cyan-600', primary: '#2563eb', text: '#FFFFFF' },
-    rose: { gradient: 'from-rose-600 to-pink-600', primary: '#e11d48', text: '#FFFFFF' },
-    emerald: { gradient: 'from-emerald-600 to-teal-600', primary: '#059669', text: '#FFFFFF' },
-    amber: { gradient: 'from-amber-600 to-orange-600', primary: '#d97706', text: '#FFFFFF' }
-  }
-
-  // Efecto para aplicar el color de marca globalmente
-  useEffect(() => {
-    const colors = colorMap[brandColor]
-    if (colors) {
-      document.documentElement.style.setProperty('--brand-primary', colors.primary)
-      document.documentElement.style.setProperty('--brand-text', colors.text)
-      // Esto permite usar clases como bg-[var(--brand-primary)] en cualquier parte
-      logger.info('admin', `Tema actualizado a: ${brandColor}`)
-    }
-  }, [brandColor])
-
-  const saveBranding = async (color: string, logo?: string) => {
-    if (!currentUser?.organizationId) return
-    try {
-      const { error } = await supabase
-        .from('organizations')
-        .update({
-          settings: { brandColor: color, logoUrl: logo }
-        })
-        .eq('id', currentUser.organizationId)
-      if (error) throw error
-      logger.info('admin', 'Configuración de marca guardada')
-    } catch (e) {
-      logger.error('admin', 'Error al guardar marca', e as any)
-    }
-  }
-
-  if (!currentUser) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (currentUser.role !== 'admin') {
-    return <Navigate to="/pos" replace />
-  }
+  if (!currentUser) return <Navigate to="/login" replace />
+  if (currentUser.role !== 'admin') return <Navigate to="/pos" replace />
 
   const tabs = [
     { id: 'reports' as AdminTab, label: 'Reportes', icon: BarChart3, enabled: true },
     { id: 'closing' as AdminTab, label: 'Cierre de Caja', icon: DollarSign, enabled: true },
-    { id: 'devices' as AdminTab, label: 'Dispositivos', icon: Smartphone, enabled: canManageDevices },
     { id: 'users' as AdminTab, label: 'Personal', icon: UserCheck, enabled: canManageUsers },
     { id: 'inventory' as AdminTab, label: 'Inventario', icon: Package, enabled: canManageInventory },
     { id: 'promotions' as AdminTab, label: 'Promociones', icon: Percent, enabled: true },
     { id: 'clients' as AdminTab, label: 'Clientes', icon: Users, enabled: true },
     { id: 'purchases' as AdminTab, label: 'Compras', icon: ShoppingCart, enabled: true },
-    { id: 'ecommerce' as AdminTab, label: 'Venta Online', icon: Globe, enabled: true },
+    { id: 'ecommerce' as AdminTab, label: 'E-commerce', icon: Globe, enabled: true },
     { id: 'integrations' as AdminTab, label: 'Integraciones', icon: Puzzle, enabled: true },
     { id: 'llm' as AdminTab, label: 'IA Assistant', icon: Bot, enabled: true },
+    { id: 'logs' as AdminTab, label: 'Auditoría', icon: History, enabled: true },
     { id: 'support' as AdminTab, label: 'Ayuda y Soporte', icon: LifeBuoy, enabled: true },
-    { id: 'logs' as AdminTab, label: 'Logs de Auditoría', icon: FileText, enabled: canViewLogs },
-    { id: 'settings' as AdminTab, label: 'Configuración', icon: Settings, enabled: true },
   ]
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Administración</h1>
-            <p className="text-sm text-gray-500 mt-1">Gestión del sistema y seguridad</p>
+        {/* Header - Premium Slate/Emerald Style */}
+        <div className="bg-slate-900 text-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/5 relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+          <div className="px-6 py-6 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
+                <Shield size={28} className="text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-0.5">Centro de Mando</p>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase leading-none">Administración</h1>
+                <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Panel de control operativo y gestión</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 flex flex-col items-end">
+                <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Organización</span>
+                <span className="font-bold text-white text-sm">{currentUser?.organizationId?.split('-')[0] || 'REISBLOC'}</span>
+              </div>
+            </div>
           </div>
-          {/* Optional: Add global admin actions here if needed */}
         </div>
 
         {/* Back Button for Sub-pages */}
         {activeTab !== 'hub' && (
           <button
             onClick={() => setActiveTab('hub')}
-            className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-white rounded-xl shadow-sm border border-slate-100 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all"
           >
             <ArrowLeft size={18} />
-            Volver al Panel
+            Volver al Hub
           </button>
         )}
 
@@ -248,149 +147,235 @@ export default function Admin() {
                 <AdminCard
                   key={tab.id}
                   title={tab.label}
-                  subtitle="Gestionar sección"
+                  subtitle="Gestionar módulo"
                   icon={tab.icon}
                   onClick={() => {
                     if (tab.id === 'reports') navigate('/reports')
                     else if (tab.id === 'closing') navigate('/closing')
                     else setActiveTab(tab.id)
                   }}
-                  brandColor={brandColor}
+                  brandColor={
+                    ['reports', 'closing', 'inventory'].includes(tab.id) ? 'emerald' :
+                      ['users', 'clients'].includes(tab.id) ? 'indigo' :
+                        ['logs', 'support'].includes(tab.id) ? 'slate' :
+                          'amber'
+                  }
                 />
               ))}
             </div>
           )}
 
-          {activeTab === 'devices' && <DeviceApprovalPanel />}
-          {activeTab === 'users' && <UsersManagement />}
-          {activeTab === 'inventory' && <InventoryManagement />}
-          {activeTab === 'logs' && <AuditLogsPanel />}
+          {activeTab === 'users' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><UsersManagement /></div>}
+          {activeTab === 'inventory' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><InventoryManagement /></div>}
           {activeTab === 'promotions' && (
-            <div className="flex flex-col items-center justify-center h-96 text-gray-400 animate-fadeIn">
-              <Percent size={64} className="mb-4 opacity-50" />
-              <h2 className="text-2xl font-bold text-gray-600">Promociones y Descuentos</h2>
-              <p>Configura Happy Hours, cupones y reglas de descuento automáticas.</p>
+            <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4 border border-slate-100">
+              <Percent size={64} className="mx-auto opacity-20" />
+              <h2 className="text-2xl font-black text-slate-900 uppercase">Promociones y Descuentos</h2>
+              <p className="max-w-md mx-auto font-medium">Configura Happy Hours, cupones y reglas de descuento automáticas para fidelizar a tus clientes.</p>
+              <div className="pt-8">
+                <span className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black uppercase">Módulo en Desarrollo</span>
+              </div>
             </div>
           )}
-          {activeTab === 'clients' && <ClientsManagement />}
-          {activeTab === 'purchases' && <PurchasesManagement />}
-          {activeTab === 'ecommerce' && (
-            <div className="flex flex-col items-center justify-center h-96 text-gray-400 animate-fadeIn">
-              <Globe size={64} className="mb-4 opacity-50" />
-              <h2 className="text-2xl font-bold text-gray-600">Canales de Venta Online</h2>
-              <p>Gestiona tu menú digital, pedidos web y delivery.</p>
-            </div>
-          )}
+          {activeTab === 'clients' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><ClientsManagement /></div>}
+          {activeTab === 'purchases' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><PurchasesManagement /></div>}
+          {activeTab === 'ecommerce' && <EcommerceDashboard />}
           {activeTab === 'integrations' && (
-            <div className="flex flex-col items-center justify-center h-96 text-gray-400 animate-fadeIn">
-              <Puzzle size={64} className="mb-4 opacity-50" />
-              <h2 className="text-2xl font-bold text-gray-600">Centro de Integraciones</h2>
-              <p className="text-center max-w-md mt-2">
-                Conecta servicios externos como MercadoPago, WhatsApp, Meta y APIs personalizadas.
-                <br />
-                <span className="text-sm opacity-75">Módulo en desarrollo.</span>
-              </p>
+            <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4 border border-slate-100">
+              <Puzzle size={64} className="mx-auto opacity-20" />
+              <h2 className="text-2xl font-black text-slate-900 uppercase">Centro de Integraciones</h2>
+              <p className="max-w-md mx-auto font-medium">Conecta Reisbloc con MercadoPago, WhatsApp Business, Meta Ads y más.</p>
+              <div className="pt-8">
+                <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-xs font-black uppercase">Módulo Enterprise</span>
+              </div>
             </div>
           )}
           {activeTab === 'llm' && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="bg-gradient-to-r from-indigo-600 to-violet-700 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Bot size={40} className="text-indigo-200" />
-                    <h2 className="text-3xl font-bold">Reisbloc Intelligence</h2>
+              <div className="bg-slate-900 rounded-[2rem] p-10 text-white shadow-2xl relative overflow-hidden border border-white/10">
+                <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                  <div className="p-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+                    <Bot size={58} className="text-indigo-400" />
                   </div>
-                  <p className="text-indigo-100 max-w-2xl text-lg">
-                    Analizamos tu operación con inteligencia artificial para darte el impulso que tu negocio necesita,
-                    desde optimización de recursos hasta estrategias de marketing sustentable.
-                  </p>
+                  <div>
+                    <h2 className="text-4xl font-black tracking-tighter mb-2">REISBLOC INTELLIGENCE</h2>
+                    <p className="text-slate-400 max-w-2xl text-lg font-medium">
+                      Consultoría avanzada con IA. Optimizamos tu inventario, analizamos tendencias de venta y te damos recomendaciones estratégicas en tiempo real.
+                    </p>
+                  </div>
                 </div>
-                <div className="absolute right-[-20px] bottom-[-20px] opacity-10 pointer-events-none">
-                  <Bot size={240} />
+                <div className="absolute right-[-40px] top-[-40px] opacity-[0.03] pointer-events-none">
+                  <Bot size={300} />
                 </div>
               </div>
 
               {!loadingAI ? (
                 <AIInsightsWidget metrics={aiMetrics} topProducts={aiTopProducts} />
               ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 flex flex-col items-center justify-center text-gray-400">
-                  <Bot size={48} className="animate-bounce mb-4 text-indigo-400" />
-                  <p>Preparando tu consultoría personalizada...</p>
+                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-20 flex flex-col items-center justify-center text-slate-400">
+                  <Bot size={64} className="animate-pulse mb-6 text-indigo-500 opacity-50" />
+                  <p className="font-black text-slate-900 uppercase tracking-widest text-sm">Sincronizando flujos de datos...</p>
                 </div>
               )}
             </div>
           )}
+          {activeTab === 'logs' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><AuditLogs /></div>}
           {activeTab === 'support' && (
-            <div className="flex flex-col items-center justify-center h-96 text-gray-400 animate-fadeIn">
-              <LifeBuoy size={64} className="mb-4 opacity-50" />
-              <h2 className="text-2xl font-bold text-gray-600">Centro de Ayuda</h2>
-              <p>Tutoriales, chat de soporte y documentación de capacitación.</p>
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                    <Palette size={24} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">Personalización de Marca</h2>
-                    <p className="text-sm text-gray-500">Configura la apariencia visual</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Branding Settings */}
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      Colores del Sistema
-                    </h3>
-                    <div className="flex gap-4">
-                      {Object.entries(colorMap).map(([color, values]) => (
-                        <button
-                          key={color}
-                          onClick={() => {
-                            setBrandColor(color)
-                            saveBranding(color)
-                          }}
-                          style={{ backgroundColor: values.primary }}
-                          className={`w-10 h-10 rounded-full border-4 shadow-sm transition-transform hover:scale-110 ${brandColor === color ? 'border-gray-300 scale-110 ring-2 ring-indigo-100' : 'border-white'
-                            }`}
-                          title={`Cambiar a ${color}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Logo Upload */}
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      Logotipo
-                    </h3>
-                    <div className="flex items-start gap-4">
-                      {currentUser && (
-                        <AvatarUpload
-                          userId={currentUser.organizationId || 'global'}
-                          currentAvatarUrl={currentUser.avatar_url}
-                          onUploadComplete={(url) => {
-                            logger.info('admin', 'Logo subido', { url })
-                            saveBranding(brandColor, url)
-                          }}
-                        />
-                      )}
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-500">Sube tu logo para los tickets y la barra de navegación.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4 border border-slate-100">
+              <LifeBuoy size={64} className="mx-auto opacity-20" />
+              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Centro de Ayuda y Soporte</h2>
+              <p className="max-w-md mx-auto font-medium">Accede a tutoriales, documentación técnica y canal directo con nuestros especialistas.</p>
+              <div className="pt-8">
+                <button className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:shadow-lg transition-all">
+                  Abrir Ticket de Soporte
+                </button>
               </div>
             </div>
           )}
         </div>
       </div>
     </DashboardLayout>
+  )
+}
+
+function EcommerceDashboard() {
+  const { currentUser } = useAppStore()
+  const [org, setOrg] = useState<any>(null)
+  const [productsCount, setProductsCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!currentUser?.organizationId) return
+      setLoading(true)
+      try {
+        const [orgData, prods] = await Promise.all([
+          supabaseService.getOrganizationById(currentUser.organizationId),
+          supabaseService.getPublicProducts(currentUser.organizationId)
+        ])
+        setOrg(orgData)
+        setProductsCount(prods.length)
+      } catch (e) {
+        logger.error('admin', 'Error loading ecommerce data', e as any)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [currentUser])
+
+  const storeUrl = org ? `${window.location.origin}/p/${org.slug}` : ''
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(storeUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-3xl p-20 flex flex-col items-center justify-center text-slate-400 border border-slate-100">
+        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="font-bold uppercase tracking-widest text-xs">Cargando presencia online...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8">
+          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest ring-1 ring-emerald-100">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            Tienda en Vivo
+          </div>
+        </div>
+
+        <div className="max-w-2xl space-y-8">
+          <div className="space-y-2">
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">Mi Tienda Online</h2>
+            <p className="text-slate-500 font-medium text-lg leading-relaxed">
+              Tu catálogo digital está activo y listo para recibir clientes. Comparte el enlace directo o úsalo como menú digital en tus mesas.
+            </p>
+          </div>
+
+          <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 group">
+            <div className="space-y-1 text-center md:text-left">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enlace Público</p>
+              <p className="text-lg font-bold text-slate-900 break-all">{storeUrl}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={copyToClipboard}
+                className="p-4 bg-white hover:bg-slate-900 hover:text-white rounded-2xl border border-slate-200 shadow-sm transition-all flex items-center gap-2 font-bold text-sm"
+              >
+                {copied ? <Check size={18} className="text-emerald-500" /> : <Copy size={18} />}
+                {copied ? 'Copiado' : 'Copiar'}
+              </button>
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="p-4 bg-slate-900 text-white hover:bg-indigo-600 rounded-2xl shadow-xl transition-all flex items-center gap-2 font-bold text-sm"
+              >
+                <ExternalLink size={18} />
+                Visitar Tienda
+              </a>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm">
+              <div className="text-slate-400 mb-2"><Package size={20} /></div>
+              <p className="text-3xl font-black text-slate-900 leading-none mb-1">{productsCount}</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Productos Visibles</p>
+            </div>
+            <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm">
+              <div className="text-slate-400 mb-2"><Globe size={20} /></div>
+              <p className="text-3xl font-black text-slate-900 leading-none mb-1">Activo</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado del Catálogo</p>
+            </div>
+            <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm">
+              <div className="text-slate-400 mb-2"><ShoppingCart size={20} /></div>
+              <p className="text-3xl font-black text-slate-900 leading-none mb-1">Próximamente</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pedidos Online</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Settings Preview / Shortcuts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-indigo-50/50 border border-indigo-100 p-8 rounded-[2.5rem] space-y-4">
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm">
+            <Settings size={24} />
+          </div>
+          <h3 className="text-xl font-black text-slate-900 uppercase">Personalización</h3>
+          <p className="text-slate-600 font-medium text-sm leading-relaxed">
+            Cambia el banner, colores y tipografía de tu tienda para que coincidan con tu marca.
+          </p>
+          <button className="text-indigo-600 font-black text-xs uppercase tracking-widest border-b-2 border-indigo-600/20 pb-1 hover:border-indigo-600 transition-all">
+            Configurar diseño v4.1
+          </button>
+        </div>
+
+        <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white space-y-4 relative overflow-hidden">
+          <div className="absolute right-[-20px] bottom-[-20px] opacity-10">
+            <DollarSign size={150} />
+          </div>
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white">
+            <DollarSign size={24} />
+          </div>
+          <h3 className="text-xl font-black uppercase">Pagos Digitales</h3>
+          <p className="text-slate-400 font-medium text-sm leading-relaxed">
+            Acepta pagos con tarjetas y transferencias directamente desde tu catálogo online.
+          </p>
+          <button className="text-white font-black text-xs uppercase tracking-widest border-b-2 border-white/20 pb-1 hover:border-white transition-all">
+            Activar módulo de pago
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

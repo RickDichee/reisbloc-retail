@@ -1,12 +1,5 @@
 import { getRequiredEnv, getOptionalEnv } from './env';
 
-// Configuración de Clip
-export const CLIP_CONFIG = {
-  apiKey: getRequiredEnv('VITE_CLIP_API_KEY', 'Clip Payment Gateway'),
-  merchantId: getRequiredEnv('VITE_CLIP_MERCHANT_ID', 'Clip Merchant ID'),
-  baseUrl: getOptionalEnv('VITE_CLIP_BASE_URL', 'https://api.clip.mx/v1'),
-};
-
 // Configuración de aplicación
 export const APP_CONFIG = {
   // Tiempo de bloqueo para eliminar productos (en minutos)

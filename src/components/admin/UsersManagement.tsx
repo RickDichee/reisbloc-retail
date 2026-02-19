@@ -12,7 +12,8 @@ import {
   XCircle,
   Shield,
   Eye,
-  Lock
+  Lock,
+  UserPlus
 } from 'lucide-react'
 
 
@@ -129,12 +130,10 @@ export default function UsersManagement() {
         {canManageUsers && !isReadOnly && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="btn-primary flex items-center gap-2 opacity-50 cursor-not-allowed grayscale"
-            disabled={true}
-            title="Creación de usuarios deshabilitada temporalmente"
+            className="btn-primary flex items-center gap-2"
           >
             <Plus size={20} />
-            Nuevo Usuario
+            Invitar Staff
           </button>
         )}
       </div>
@@ -250,7 +249,7 @@ export default function UsersManagement() {
 
       {/* Modals */}
       {showCreateModal && (
-        <CreateUserModal
+        <InviteUserModal
           onClose={() => setShowCreateModal(false)}
           onSuccess={loadUsers}
         />
@@ -267,130 +266,152 @@ export default function UsersManagement() {
   )
 }
 
-// Modal para crear usuario
-function CreateUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+// Modal para invitar usuario
+function InviteUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [formData, setFormData] = useState({
-    username: '',
-    pin: '',
-    role: 'capitan' as UserRole,
-    avatar_url: ''
+    email: '',
+    role: 'mesero' as UserRole
   })
   const [loading, setLoading] = useState(false)
+  const [devLink, setDevLink] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (formData.pin.length !== 4) {
-      alert('El PIN debe tener 4 dígitos')
-      return
-    }
-
-    if (!/^\d+$/.test(formData.pin)) {
-      alert('El PIN solo debe contener números')
-      return
-    }
-
     setLoading(true)
     try {
-      // Crear usuario directamente en Supabase (PIN en texto plano v3.7.2)
-      await supabaseService.createUser({
-        username: formData.username,
-        pin: formData.pin,
-        role: formData.role,
-        active: true,
-        avatar_url: formData.avatar_url
-      } as any)
+      const result = await supabaseService.inviteUser(formData.email, formData.role)
 
-      alert('✅ Usuario creado exitosamente')
-      onSuccess()
-      onClose()
-    } catch (error: any) {
-      console.error('Error creating user:', error)
-      if (error.code === 'PGRST204' || error.message?.includes('duplicate')) {
-        alert('❌ El nombre de usuario ya existe')
+      if (result.success) {
+        // Registrar acción en la bitácora
+        supabaseService.createAuditLog({
+          userId: 'admin',
+          action: 'invite_staff',
+          entityType: 'user',
+          entityId: formData.email,
+          newValue: { role: formData.role }
+        });
+
+        if (result.devLink) {
+          setDevLink(result.devLink)
+        } else {
+          alert('✅ Invitación enviada exitosamente por correo')
+          onSuccess()
+          onClose()
+        }
       } else {
-        alert('❌ Error al crear usuario: ' + (error.message || 'Error desconocido'))
+        throw new Error(result.message)
       }
+    } catch (error: any) {
+      console.error('Error inviting user:', error)
+      alert('❌ Error al enviar invitación: ' + (error.message || 'Error desconocido'))
     } finally {
-      setLoading(false)
+      if (!devLink) setLoading(false)
     }
+  }
+
+  if (devLink) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-scaleIn text-center">
+          <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle size={40} />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">¡Invitación Generada!</h2>
+          <p className="text-gray-600 mb-6">Como estamos en desarrollo, copia este enlace para activar la cuenta:</p>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 break-all text-xs font-mono text-indigo-600">
+            {devLink}
+          </div>
+
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(devLink)
+              alert('Enlace copiado')
+            }}
+            className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold mb-3 hover:bg-slate-800 transition-all"
+          >
+            Copiar Enlace
+          </button>
+
+          <button
+            onClick={() => {
+              onSuccess()
+              onClose()
+            }}
+            className="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-all"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scaleIn">
-        <h2 className="text-2xl font-bold mb-4">Crear Nuevo Usuario</h2>
-
-        <div className="mb-6 flex justify-center">
-          <AvatarUpload
-            userId="temp-new-user"
-            onUploadComplete={(url) => setFormData({ ...formData, avatar_url: url })}
-          />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+            <UserPlus size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-900 uppercase">Invitar Staff</h2>
+            <p className="text-xs text-slate-500 font-medium">Se enviará un correo para activar la cuenta.</p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Nombre de usuario
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+              Correo Electrónico
             </label>
             <input
-              type="text"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="input-field"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-900 focus:border-indigo-500 focus:bg-white transition-all outline-none"
+              placeholder="ejemplo@empresa.com"
               required
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              PIN (4 dígitos)
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+              Rol del Empleado
             </label>
-            <input
-              type="password"
-              value={formData.pin}
-              onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
-              className="input-field"
-              maxLength={4}
-              pattern="[0-9]{4}"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Rol
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-              className="input-field"
-            >
-              <option value="mesero">Mesero</option>
-              <option value="capitan">Capitán</option>
-              <option value="cocina">Cocina</option>
-              <option value="bar">Bar</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="admin">Administrador</option>
-            </select>
+            <div className="grid grid-cols-2 gap-2">
+              {(['mesero', 'capitan', 'cocina', 'bar', 'supervisor', 'admin'] as UserRole[]).map((role) => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role })}
+                  className={`py-3 px-4 rounded-xl text-xs font-bold capitalize border-2 transition-all ${formData.role === role
+                    ? 'bg-indigo-50 border-indigo-600 text-indigo-700 shadow-sm'
+                    : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200'
+                    }`}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 btn-secondary"
+              className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all"
               disabled={loading}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 btn-success"
+              className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:translate-y-0"
               disabled={loading}
             >
-              {loading ? 'Creando...' : 'Crear Usuario'}
+              {loading ? 'Enviando...' : 'Enviar Invitación'}
             </button>
           </div>
         </form>

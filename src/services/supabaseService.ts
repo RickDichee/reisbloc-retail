@@ -111,7 +111,7 @@ class SupabaseService {
 
       if (error) throw error
       // Map Supabase fields to TypeScript User type
-      return (data || []).map(user => ({
+      return (data || []).map((user: any) => ({
         ...user,
         username: user.name,
         organizationId: user.organization_id,
@@ -126,7 +126,7 @@ class SupabaseService {
   async createUser(user: Omit<User, 'id'>): Promise<string> {
     try {
       // Map TypeScript User fields to Supabase schema
-      const { username, createdAt, ...rest } = user as any
+      const { username, ...rest } = user as any
       const supabaseUser = { ...rest, name: username, username: username, organization_id: this.getCurrentOrgId() }
 
       if (!supabaseUser.organization_id) throw new Error('Organization ID required to create user')
@@ -148,11 +148,81 @@ class SupabaseService {
     }
   }
 
+  async inviteUser(email: string, role: string): Promise<{ success: boolean; message?: string; devLink?: string }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-invitation', {
+        body: { email, role }
+      })
+
+      if (error) throw error
+      return {
+        success: true,
+        message: data.message,
+        devLink: data.dev_invite_link
+      }
+    } catch (error: any) {
+      logger.error('supabase', 'Error inviting user', error as any)
+      return { success: false, message: error.message }
+    }
+  }
+
+  // ==================== AUDIT LOGS ====================
+
+  async createAuditLog(log: Omit<AuditLog, 'id' | 'timestamp'>): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert({
+          user_id: log.userId,
+          action: log.action,
+          entity_type: log.entityType,
+          entity_id: log.entityId,
+          old_value: log.oldValue,
+          new_value: log.newValue,
+          ip_address: log.ipAddress,
+          device_id: log.deviceId,
+          organization_id: this.getCurrentOrgId()
+        })
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error creating audit log', error as any)
+    }
+  }
+
+  async getAuditLogs(limit = 100): Promise<AuditLog[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await withOrg(
+        supabase.from('audit_logs').select('*'),
+        this.getCurrentOrgId()
+      )
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (error) throw error
+      return (data || []).map((log: any) => ({
+        id: log.id,
+        userId: log.user_id,
+        action: log.action,
+        entityType: log.entity_type,
+        entityId: log.entity_id,
+        oldValue: log.old_value,
+        newValue: log.new_value,
+        ipAddress: log.ip_address,
+        deviceId: log.device_id,
+        timestamp: new Date(log.created_at)
+      })) as AuditLog[]
+    }).catch(error => {
+      logger.error('supabase', 'Error getting audit logs', error as any)
+      return []
+    })
+  }
+
   async updateUser(userId: string, updates: Partial<User>): Promise<void> {
     try {
       // Map TypeScript User fields to Supabase schema
-      const { username, createdAt, avatarUrl, ...rest } = updates as any
-      let supabaseUpdates = username ? { ...rest, name: username, username: username } : rest
+      const { username, avatarUrl, ...rest } = updates as any
+      const supabaseUpdates = username ? { ...rest, name: username, username: username } : rest
 
       // Forzar mapeo de avatarUrl -> avatar_url
       if (avatarUrl || updates.avatar_url) {
@@ -191,7 +261,7 @@ class SupabaseService {
   // ==================== DEVICES ====================
 
   // Helper público para mapear snake_case (DB) a camelCase (Frontend)
-  mapDeviceFromDB(d: any): Device {
+  private mapDeviceFromDB(d: any): Device {
     return {
       id: d.id,
       userId: d.user_id,
@@ -203,8 +273,8 @@ class SupabaseService {
       browser: d.browser,
       deviceType: d.device_type,
       fingerprint: d.fingerprint,
-      registeredAt: new Date(d.registered_at || d.created_at),
-      lastAccess: new Date(d.last_access || d.last_seen),
+      registeredAt: new Date((d as any).registered_at || (d as any).created_at),
+      lastAccess: new Date((d as any).last_access || (d as any).last_seen),
       isApproved: d.status === 'approved' || d.is_approved === true,
       isRejected: d.status === 'rejected',
     } as Device
@@ -222,7 +292,7 @@ class SupabaseService {
       console.log('🔍 [Supabase] Devices raw:', data)
 
       // Mapear snake_case a camelCase
-      return (data || []).map(d => this.mapDeviceFromDB(d))
+      return (data || []).map((d: any) => this.mapDeviceFromDB(d))
     } catch (error) {
       logger.error('supabase', 'Error getting all devices', error as any)
       return []
@@ -465,9 +535,13 @@ class SupabaseService {
         payload.minimum_stock = product.minimumStock
         delete payload.minimumStock
       }
-      // Remove timestamp fields (Supabase handles with triggers)
-      if ('createdAt' in payload) delete payload.createdAt
-      if ('updatedAt' in payload) delete payload.updatedAt
+
+      // Ensure barcode, sku, image are included (they are already snake_case or match)
+      // Remove any timestamp fields if present in incoming object
+      delete payload.id
+      delete payload.createdAt
+      delete payload.updated_at
+      delete payload.created_at
 
       payload.organization_id = this.getCurrentOrgId()
 
@@ -506,8 +580,12 @@ class SupabaseService {
         payload.minimum_stock = updates.minimumStock
         delete payload.minimumStock
       }
-      // Remove timestamp fields (Supabase handles with triggers)
-      if ('createdAt' in payload) delete payload.createdAt
+
+      // Supabase managed timestamps & frontend-only ids
+      delete payload.id
+      delete payload.createdAt
+      delete payload.updated_at
+      delete payload.created_at
       if ('updatedAt' in payload) delete payload.updatedAt
 
       const { error } = await supabase
@@ -742,6 +820,36 @@ class SupabaseService {
     return this.updateOrder(orderId, { status })
   }
 
+  async cancelOrder(orderId: string, reason: string, userId: string): Promise<void> {
+    try {
+      // 1. Update status to cancelled
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          status: 'cancelled',
+          notes: reason ? `Cancelado: ${reason}` : 'Cancelado por el usuario'
+        })
+        .eq('id', orderId)
+
+      if (error) throw error
+
+      // 2. Audit Log
+      await this.createAuditLog({
+        userId: userId,
+        action: 'ORDER_CANCELLED',
+        entityType: 'ORDER',
+        entityId: orderId,
+        newValue: { reason },
+        ipAddress: 'client-terminal'
+      })
+
+      logger.info('supabase', `🛑 Order ${orderId} cancelled. Reason: ${reason}`)
+    } catch (error) {
+      logger.error('supabase', 'Error cancelling order', error as any)
+      throw error
+    }
+  }
+
   async deleteOrder(orderId: string): Promise<void> {
     try {
       const { error } = await supabase
@@ -788,24 +896,55 @@ class SupabaseService {
 
   async getSalesByDateRange(startDate: Date, endDate: Date): Promise<Sale[]> {
     try {
-      const { data, error } = await withOrg(
+      // 1. Fetch legacy sales
+      const { data: legacySales, error: legacyError } = await withOrg(
         supabase.from('sales').select('*'),
         this.getCurrentOrgId()
       )
         .gte('created_at', startDate.toISOString())
         .lt('created_at', endDate.toISOString())
-        .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (legacyError) throw legacyError
 
-      // Normalizar campos de DB (snake_case) a App (camelCase)
-      return (data || []).map((o: any) => ({
+      // 2. Fetch retail sales with items included (joined)
+      const { data: retailSales, error: retailError } = await withOrg(
+        supabase.from('retail_sales').select('*, items:retail_sale_items(*)'),
+        this.getCurrentOrgId()
+      )
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', endDate.toISOString())
+
+      if (retailError) throw retailError
+
+      // 3. Normalize and merge
+      const normalizedLegacy = (legacySales || []).map((o: any) => ({
         ...o,
         tableNumber: o.table_number ?? o.tableNumber ?? 0,
         paymentMethod: o.payment_method || o.paymentMethod,
         saleBy: o.waiter_id || o.saleBy,
         tip: o.tip_amount || o.tip
-      })) as Sale[]
+      }))
+
+      const normalizedRetail = (retailSales || []).map((o: any) => ({
+        ...o,
+        tableNumber: o.table_number ?? 0,
+        paymentMethod: o.payment_method,
+        saleBy: o.sale_by,
+        tip: o.tip,
+        // Map retail items to match the expected structure
+        items: (o.items || []).map((i: any) => ({
+          ...i,
+          productId: i.product_id,
+          productName: i.product_name,
+          unitPrice: Number(i.unit_price),
+          quantity: Number(i.quantity)
+        })),
+        created_at: o.created_at
+      }))
+
+      return [...normalizedLegacy, ...normalizedRetail].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ) as Sale[]
     } catch (error) {
       logger.error('supabase', 'Error getting sales by date range', error as any)
       return []
@@ -848,6 +987,20 @@ class SupabaseService {
       const { data: { user } } = await supabase.auth.getUser()
       logger.info('supabase', '👤 Current Auth User:', user?.id, 'Role:', user?.role)
 
+      // 🛡️ IDEMPOTENCIA: Verificar si ya existe una venta para esta orden
+      if (payload.order_id) {
+        const { data: existingSale } = await supabase
+          .from('sales')
+          .select('id')
+          .eq('order_id', payload.order_id)
+          .maybeSingle()
+
+        if (existingSale) {
+          logger.warn('supabase', '⚠️ Sale already exists for order:', payload.order_id)
+          return payload.order_id // Retornar éxito silencioso para evitar errores en UI
+        }
+      }
+
       // Use returning: 'minimal' to avoid SELECT and bypass RLS on select
       const { error } = await supabase
         .from('sales')
@@ -873,8 +1026,7 @@ class SupabaseService {
         entityType: 'SALE',
         entityId: payload.order_id || 'unknown',
         newValue: { total: payload.total, method: payload.payment_method },
-        ipAddress: 'system',
-        timestamp: new Date()
+        ipAddress: 'system'
       }).catch(e => logger.error('supabase', 'Audit log failed', e))
 
       return payload.order_id || ''
@@ -884,61 +1036,6 @@ class SupabaseService {
     }
   }
 
-  // ==================== AUDIT LOGS ====================
-
-  async createAuditLog(log: Omit<AuditLog, 'id' | 'created_at'>): Promise<void> {
-    try {
-      // Mapear campos camelCase a snake_case del schema Supabase
-      const payload = {
-        user_id: log.userId,
-        action: log.action,
-        table_name: log.entityType,
-        record_id: log.entityId,
-        changes: log.oldValue || log.newValue ? { old: log.oldValue, new: log.newValue } : null,
-        ip_address: log.ipAddress,
-        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-        // deviceId se almacena en changes JSONB
-        organization_id: this.getCurrentOrgId()
-      }
-
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert([payload])
-
-      if (error) throw error
-      logger.info('supabase', `Audit log created: ${log.action} on ${log.entityType}`)
-    } catch (error) {
-      logger.error('supabase', 'Error creating audit log', error as any)
-    }
-  }
-
-  async getAuditLogs(limit = 100): Promise<AuditLog[]> {
-    try {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (error) throw error
-
-      // Mapear campos snake_case a camelCase
-      return (data || []).map((log: any) => ({
-        id: log.id,
-        userId: log.user_id,
-        action: log.action,
-        entityType: log.table_name,
-        entityId: log.record_id,
-        oldValue: log.changes?.old,
-        newValue: log.changes?.new,
-        ipAddress: log.ip_address,
-        timestamp: new Date(log.created_at),
-      }))
-    } catch (error) {
-      logger.error('supabase', 'Error getting audit logs', error as any)
-      return []
-    }
-  }
 
   // ==================== CLOSINGS ====================
 
@@ -1221,7 +1318,7 @@ class SupabaseService {
 
       const productMap: Record<string, { name: string; qty: number; total: number }> = {}
       sales.forEach((sale: any) => {
-        ; (sale.items || []).forEach((item: any) => {
+        (sale.items || []).forEach((item: any) => {
           const pid = item.productId || item.product_id || item.id
           const pname = item.productName || item.name || 'Producto'
           if (!productMap[pid]) productMap[pid] = { name: pname, qty: 0, total: 0 }
@@ -1279,6 +1376,456 @@ class SupabaseService {
     } catch (error) {
       logger.error('supabase', 'Error getting employee metrics', error as any)
       return []
+    }
+  }
+
+  // ==================== PUBLIC STOREFRONT ====================
+
+  async getOrganizationById(orgId: string): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, name, slug, logo_url, settings')
+        .eq('id', orgId)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      logger.error('supabase', 'Error getting organization by ID', error as any)
+      return null
+    }
+  }
+
+  async getOrganizationBySlug(slug: string): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, name, slug, logo_url, settings')
+        .eq('slug', slug)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      logger.error('supabase', 'Error getting organization by slug', error as any)
+      return null
+    }
+  }
+
+  async getPublicProducts(orgId: string): Promise<Product[]> {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('available', true)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (error) throw error
+
+      return (data || []).map((p: any) => ({
+        ...p,
+        active: p.available,
+        currentStock: p.current_stock,
+        minimumStock: p.minimum_stock,
+        hasInventory: p.has_inventory,
+        createdAt: new Date(p.created_at)
+      })) as Product[]
+    } catch (error) {
+      logger.error('supabase', 'Error getting public products', error as any)
+      return []
+    }
+  }
+
+  // ==================== SUPPLIERS (PROVEEDORES) ====================
+
+  async getSuppliers(): Promise<any[]> {
+    try {
+      const { data, error } = await withOrg(
+        supabase.from('suppliers').select('*'),
+        this.getCurrentOrgId()
+      )
+        .is('deleted_at', null)
+        .order('name', { ascending: true })
+
+      if (error) throw error
+      return (data || []).map((s: any) => ({
+        ...s,
+        contactName: s.contact_name,
+        taxId: s.tax_id,
+        createdAt: new Date(s.created_at)
+      }))
+    } catch (error) {
+      logger.error('supabase', 'Error getting suppliers', error as any)
+      return []
+    }
+  }
+
+  async createSupplier(supplier: any): Promise<void> {
+    try {
+      const payload = {
+        ...supplier,
+        contact_name: supplier.contactName,
+        tax_id: supplier.taxId,
+        organization_id: this.getCurrentOrgId()
+      }
+      delete payload.contactName
+      delete payload.taxId
+
+      const { error } = await supabase.from('suppliers').insert([payload])
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error creating supplier', error as any)
+      throw error
+    }
+  }
+
+  async deleteSupplier(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('suppliers')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting supplier', error as any)
+      throw error
+    }
+  }
+
+  // ==================== PURCHASE ORDERS ====================
+
+  async getPurchaseOrders(): Promise<any[]> {
+    try {
+      const { data, error } = await withOrg(
+        supabase.from('purchase_orders').select('*, supplier:suppliers(*)'),
+        this.getCurrentOrgId()
+      )
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return (data || []).map((o: any) => ({
+        ...o,
+        supplier: o.supplier ? {
+          ...o.supplier,
+          contactName: o.supplier.contact_name,
+          taxId: o.supplier.tax_id
+        } : null,
+        date: new Date(o.date),
+        createdAt: new Date(o.created_at)
+      }))
+    } catch (error) {
+      logger.error('supabase', 'Error getting purchase orders', error as any)
+      return []
+    }
+  }
+
+  async createPurchaseOrder(order: any, items: any[]): Promise<void> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const { data: po, error: poError } = await supabase
+        .from('purchase_orders')
+        .insert([{
+          ...order,
+          supplier_id: order.supplierId,
+          organization_id: orgId
+        }])
+        .select('id')
+        .single()
+
+      if (poError) throw poError
+
+      const itemsPayload = items.map(item => ({
+        purchase_order_id: po.id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        total: item.total
+      }))
+
+      const { error: itemsError } = await supabase.from('purchase_order_items').insert(itemsPayload)
+      if (itemsError) throw itemsError
+    } catch (error) {
+      logger.error('supabase', 'Error creating purchase order', error as any)
+      throw error
+    }
+  }
+
+  async deletePurchaseOrder(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('purchase_orders')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting purchase order', error as any)
+      throw error
+    }
+  }
+
+  // ==================== RETAIL ====================
+
+  async getAllRetailProducts(): Promise<Product[]> {
+    return this.withRetry(async () => {
+      const { data, error } = await withOrg(
+        supabase.from('retail_products').select('*'),
+        this.getCurrentOrgId()
+      )
+        .eq('active', true)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (error) throw error
+      return (data || []).map((p: any) => ({
+        ...p,
+        active: p.active,
+        currentStock: p.current_stock,
+        minimumStock: p.minimum_stock,
+        hasInventory: p.has_inventory,
+        createdAt: new Date(p.created_at)
+      })) as Product[]
+    }).catch(error => {
+      logger.error('supabase', 'Error getting retail products', error as any)
+      return []
+    })
+  }
+
+  async createRetailProduct(product: Omit<Product, 'id'>): Promise<string> {
+    try {
+      const payload: any = {
+        organization_id: this.getCurrentOrgId(),
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        barcode: product.barcode,
+        sku: product.sku,
+        category: product.category,
+        image: product.image,
+        current_stock: product.currentStock || 0,
+        minimum_stock: product.minimumStock || 0,
+        has_inventory: product.hasInventory ?? true,
+        active: product.active ?? true
+      }
+
+      const { data, error } = await supabase
+        .from('retail_products')
+        .insert([payload])
+        .select('id')
+        .single()
+
+      if (error) throw error
+      return data.id
+    } catch (error) {
+      logger.error('supabase', 'Error creating retail product', error as any)
+      throw error
+    }
+  }
+
+  async updateRetailProduct(productId: string, updates: Partial<Product>): Promise<void> {
+    try {
+      const payload: any = { ...updates }
+      // Map camelCase to snake_case
+      if ('currentStock' in updates) {
+        payload.current_stock = updates.currentStock
+        delete payload.currentStock
+      }
+      if ('minimumStock' in updates) {
+        payload.minimum_stock = updates.minimumStock
+        delete payload.minimumStock
+      }
+      if ('hasInventory' in updates) {
+        payload.has_inventory = updates.hasInventory
+        delete payload.hasInventory
+      }
+
+      delete payload.id
+      delete payload.createdAt
+
+      const { error } = await supabase
+        .from('retail_products')
+        .update(payload)
+        .eq('id', productId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating retail product', error as any)
+      throw error
+    }
+  }
+
+  async deleteRetailProduct(productId: string): Promise<void> {
+    try {
+      // Soft delete: set active to false
+      const { error } = await supabase
+        .from('retail_products')
+        .update({ active: false })
+        .eq('id', productId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting retail product', error as any)
+      throw error
+    }
+  }
+
+  async getRetailProductByCode(code: string): Promise<Product | null> {
+    try {
+      const { data, error } = await withOrg(
+        supabase.from('retail_products').select('*'),
+        this.getCurrentOrgId()
+      )
+        .or(`barcode.eq."${code}",sku.eq."${code}"`)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) return null
+
+      return {
+        ...data,
+        active: data.active,
+        currentStock: data.current_stock,
+        minimumStock: data.minimum_stock,
+        hasInventory: data.has_inventory,
+        createdAt: new Date(data.created_at)
+      } as Product
+    } catch (error) {
+      logger.error('supabase', 'Error getting retail product by code', error as any)
+      return null
+    }
+  }
+
+  async createRetailSale(sale: any, items: any[]): Promise<string> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      // 1. Create sale header
+      const { data: saleData, error: saleError } = await supabase
+        .from('retail_sales')
+        .insert([{
+          organization_id: orgId,
+          table_number: sale.tableNumber,
+          subtotal: sale.subtotal,
+          discounts: sale.discounts || 0,
+          tax: sale.tax || 0,
+          total: sale.total,
+          payment_method: sale.paymentMethod,
+          tip: sale.tip || 0,
+          tip_source: sale.tipSource || 'none',
+          sale_by: sale.saleBy,
+          notes: sale.notes
+        }])
+        .select('id')
+        .single()
+
+      if (saleError) throw saleError
+
+      // 2. Create sale items
+      const itemsPayload = items.map(item => ({
+        sale_id: saleData.id,
+        product_id: item.productId,
+        product_name: item.productName,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        total_price: item.unitPrice * item.quantity
+      }))
+
+      const { error: itemsError } = await supabase.from('retail_sale_items').insert(itemsPayload)
+      if (itemsError) throw itemsError
+
+      // 3. Update stock for items that have inventory
+      const stockUpdates = items
+        .filter(item => item.productId && !item.id.toLowerCase().startsWith('manual-'))
+        .map(item => ({
+          productId: item.productId,
+          quantity: -item.quantity // Deduct
+        }))
+
+      if (stockUpdates.length > 0) {
+        await this.updateRetailStockBatch(stockUpdates)
+      }
+
+      return saleData.id
+    } catch (error) {
+      logger.error('supabase', 'Error creating retail sale', error as any)
+      throw error
+    }
+  }
+
+  async createPendingRetailSale(sale: any, items: any[]): Promise<string> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const { data: saleData, error: saleError } = await supabase
+        .from('retail_sales')
+        .insert([{
+          organization_id: orgId,
+          table_number: sale.tableNumber,
+          subtotal: sale.subtotal,
+          discounts: sale.discounts || 0,
+          tax: sale.tax || 0,
+          total: sale.total,
+          payment_method: 'pending',
+          status: 'pending',
+          sale_by: sale.saleBy,
+          notes: sale.notes
+        }])
+        .select('id')
+        .single()
+
+      if (saleError) throw saleError
+
+      const itemsPayload = items.map(item => ({
+        sale_id: saleData.id,
+        product_id: item.productId,
+        product_name: item.productName,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        total_price: item.unitPrice * item.quantity
+      }))
+
+      const { error: itemsError } = await supabase.from('retail_sale_items').insert(itemsPayload)
+      if (itemsError) throw itemsError
+
+      return saleData.id
+    } catch (error) {
+      logger.error('supabase', 'Error creating pending sale', error as any)
+      throw error
+    }
+  }
+
+  async addRetailPayment(payment: {
+    saleId: string,
+    method: string,
+    amount: number,
+    referenceId?: string
+  }): Promise<void> {
+    try {
+      const { error } = await supabase.from('retail_sale_payments').insert({
+        sale_id: payment.saleId,
+        organization_id: this.getCurrentOrgId(),
+        payment_method: payment.method,
+        amount: payment.amount,
+        reference_id: payment.referenceId
+      })
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error adding retail payment', error as any)
+      throw error
+    }
+  }
+
+  async updateRetailStockBatch(updates: { productId: string; quantity: number }[]): Promise<void> {
+    if (!updates.length) return
+    try {
+      const { error } = await supabase.rpc('update_retail_stock_batch', { updates })
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating retail stock batch', error as any)
     }
   }
 }

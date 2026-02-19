@@ -25,13 +25,11 @@ import {
   Product,
   Order,
   Sale,
-  DailyClose,
   AuditLog,
 } from '@/types/index'
 
 class DatabaseService {
   private get currentService() {
-    const useSupabase = SUPABASE_FEATURES.DATABASE_ENABLED
     logger.info('database', `Using Supabase for database operations`)
     return supabaseService
   }
@@ -162,8 +160,7 @@ class DatabaseService {
   }
 
   async getAuditLogs(limit = 100): Promise<AuditLog[]> {
-    // @ts-ignore - ambos servicios tienen este método
-    return this.currentService.getAuditLogs?.(limit) || []
+    return (this.currentService as any).getAuditLogs?.(limit) || []
   }
 
   // ==================== REAL-TIME SUBSCRIPTIONS ====================
@@ -173,7 +170,7 @@ class DatabaseService {
       return supabaseService.subscribeToOrders(callback)
     } else {
       // Solo Supabase disponible
-      return () => {}
+      return () => { }
     }
   }
 
@@ -182,7 +179,7 @@ class DatabaseService {
       return supabaseService.subscribeToProducts(callback)
     } else {
       // Solo Supabase disponible
-      return () => {}
+      return () => { }
     }
   }
 }

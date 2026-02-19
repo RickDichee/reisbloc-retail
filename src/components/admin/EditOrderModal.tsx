@@ -50,7 +50,7 @@ export default function EditOrderModal({ order, onClose, onSave, onCancel }: Edi
 
     // Filtrar items con cantidad 0
     const validItems = items.filter(item => item.quantity > 0)
-    
+
     if (validItems.length === 0) {
       alert('⚠️ La orden debe tener al menos un item')
       return
@@ -91,11 +91,8 @@ export default function EditOrderModal({ order, onClose, onSave, onCancel }: Edi
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Editar Orden - Mesa {order.tableNumber}
+              Gestión de Lote - Mesa {order.tableNumber}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Estado: <span className="font-semibold">{order.status}</span>
-            </p>
           </div>
           <button
             onClick={onClose}
@@ -168,7 +165,7 @@ export default function EditOrderModal({ order, onClose, onSave, onCancel }: Edi
                     </div>
                   ) : (
                     <div className="text-right">
-                      <p className="font-bold text-gray-900">x{item.quantity}</p>
+                      <p className="font-bold text-gray-900">{item.quantity} pz</p>
                     </div>
                   )}
 
@@ -261,7 +258,7 @@ export default function EditOrderModal({ order, onClose, onSave, onCancel }: Edi
           >
             Cerrar
           </button>
-          
+
           <button
             onClick={handleSave}
             disabled={isSaving || !hasChanges || items.filter(i => i.quantity > 0).length === 0}

@@ -14,10 +14,10 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
     action
 }) => {
     return (
-        <div className={`widget-card flex flex-col ${className}`}>
+        <div className={`bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col ${className}`}>
             {title && (
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{title}</h3>
                     {action && <div>{action}</div>}
                 </div>
             )}
