@@ -12,26 +12,33 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const supabase = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
-
-        // 1. Get the current user from auth header
         const authHeader = req.headers.get('Authorization');
         if (!authHeader) {
             return new Response(JSON.stringify({ error: 'No authorization header' }), { status: 401, headers: corsHeaders });
         }
 
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        // Cliente para validar el token del usuario (con permisos del usuario)
+        const supabaseAuth = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: authHeader } } }
+        );
+
+        // Cliente con Service Role para saltarse RLS y poder leer roles / insertar invitaciones
+        const supabaseAdmin = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        // 1. Get the current user
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
         if (authError || !user) {
             return new Response(JSON.stringify({ error: 'Invalid user token' }), { status: 401, headers: corsHeaders });
         }
 
         // 2. Verify if the user is an admin in their organization
-        const { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabaseAdmin
             .from('users')
             .select('organization_id, role')
             .eq('id', user.id)
@@ -57,7 +64,7 @@ Deno.serve(async (req) => {
         expiresAt.setHours(expiresAt.getHours() + expires_in_hours);
 
         // 5. Store invitation in DB
-        const { data: invite, error: inviteError } = await supabase
+        const { data: invite, error: inviteError } = await supabaseAdmin
             .from('organization_invites')
             .insert({
                 email,
