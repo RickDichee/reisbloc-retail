@@ -76,15 +76,12 @@ class PrintService {
             printWindow.print()
           } catch (e) {
             logger.error('print', 'Fallo al ejecutar window.print()', e as any)
-          } finally {
-            // Cerramos la ventana después de la impresión
-            setTimeout(() => {
-              if (printWindow && !printWindow.closed) {
-                printWindow.close()
-              }
-              resolve()
-            }, 500)
           }
+          // Ya no intentamos auto-cerrar la ventana con printWindow.close() aquí,
+          // porque en iOS WebViews y Chrome Mobile, cerrar la ventana por código
+          // justo después de abrir el diálogo de impresión congela la pestaña "madre" (POS).
+          // Dejamos que el usuario cierre la pestaña o usamos la vista nativa.
+          resolve()
         }, 500)
       })
     } catch (error) {
