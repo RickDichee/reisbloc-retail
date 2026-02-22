@@ -36,7 +36,11 @@ Deno.serve(async (req) => {
 
         if (authError || !user) {
             console.error('Auth error:', authError);
-            return new Response(JSON.stringify({ error: 'Invalid user token' }), { status: 401, headers: corsHeaders });
+            return new Response(JSON.stringify({
+                error: 'Invalid user token',
+                details: authError?.message || 'User not found',
+                token_length: token ? token.length : 0
+            }), { status: 401, headers: corsHeaders });
         }
 
         // 2. Verify if the user is an admin in their organization
@@ -57,7 +61,36 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ error: 'Email is required' }), { status: 400, headers: corsHeaders });
         }
 
-        // 4. Generate secure token
+        // 4. Check if user already exists in the system (Mobility)
+        const { data: existingUserId, error: rpcError } = await supabaseAdmin
+            .rpc('get_user_id_by_email', { p_email: email });
+
+        if (!rpcError && existingUserId) {
+            // User already exists! Auto-transfer them to the new organization
+            const { error: updateError } = await supabaseAdmin
+                .from('users')
+                .update({
+                    organization_id: userData.organization_id,
+                    role: role,
+                    active: true
+                })
+                .eq('id', existingUserId);
+
+            if (updateError) {
+                console.error('Auto-transfer error:', updateError);
+                return new Response(JSON.stringify({ error: 'Failed to transfer existing user' }), { status: 500, headers: corsHeaders });
+            }
+
+            console.log(`🔄 Auto-transferred existing user ${email} to org ${userData.organization_id}`);
+
+            return new Response(JSON.stringify({
+                success: true,
+                message: 'El usuario ya estaba registrado en el sistema. Ha sido transferido exitosamente a tu sucursal.',
+                dev_invite_link: null // No invlink needed
+            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // 5. Generate secure token for NEW users
         const rawToken = crypto.randomUUID();
         const tokenHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawToken))
             .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
@@ -65,7 +98,7 @@ Deno.serve(async (req) => {
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + expires_in_hours);
 
-        // 5. Store invitation in DB
+        // 6. Store invitation in DB
         const { data: invite, error: inviteError } = await supabaseAdmin
             .from('organization_invites')
             .insert({
@@ -85,19 +118,17 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ error: 'Failed to create invitation' }), { status: 500, headers: corsHeaders });
         }
 
-        // 6. Generate invitation link
+        // 7. Generate invitation link
         const origin = req.headers.get('origin') || 'https://reisbloc.io';
         const inviteLink = `${origin}/accept-invite?token=${rawToken}`;
 
-        // 7. TODO: Send Email
-        // In a real production setup, you would use Resend, SendGrid, or SMTP here.
+        // 8. TODO: Send Email
         console.log(`📩 Secret Invite Link for ${email}: ${inviteLink}`);
 
         return new Response(JSON.stringify({
             success: true,
             message: 'Invitation sent successfully',
             invite_id: invite.id,
-            // For development/debugging, we return the link (in production, only send via email)
             dev_invite_link: inviteLink
         }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 

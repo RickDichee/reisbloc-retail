@@ -294,7 +294,7 @@ function InviteUserModal({ onClose, onSuccess }: { onClose: () => void; onSucces
         if (result.devLink) {
           setDevLink(result.devLink)
         } else {
-          alert('✅ Invitación enviada exitosamente por correo')
+          alert('✅ ' + (result.message || 'Invitación enviada o usuario transferido exitosamente'))
           onSuccess()
           onClose()
         }
