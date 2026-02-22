@@ -64,10 +64,11 @@ export default function ReceiptTicket({
       }}
     >
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '8px', borderBottom: '1px solid #000' }}>
-        <div style={{ fontWeight: 'bold', fontSize: '12px' }}>{businessName}</div>
-        <div style={{ fontSize: '9px' }}>{address}</div>
-        {phone && <div style={{ fontSize: '9px' }}>{phone}</div>}
+      <div style={{ textAlign: 'center', marginBottom: '8px', borderBottom: '1px solid #000', paddingBottom: '8px' }}>
+        <img src="/icon.svg" alt="Logo" style={{ width: '40px', height: '40px', marginBottom: '4px', filter: 'grayscale(100%) contrast(1000%)' }} />
+        <div style={{ fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>{businessName}</div>
+        <div style={{ fontSize: '10px' }}>{address}</div>
+        {phone && <div style={{ fontSize: '10px' }}>{phone}</div>}
       </div>
 
       {/* Ticket Info */}
@@ -113,31 +114,58 @@ export default function ReceiptTicket({
       <div
         style={{
           textAlign: 'center',
-          fontSize: '9px',
+          fontSize: '10px',
           borderTop: '1px solid #000',
-          paddingTop: '4px',
+          paddingTop: '6px',
           marginTop: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4px'
         }}
       >
-        <div>¡Gracias por su compra!</div>
-        <div style={{ marginTop: '4px', fontSize: '8px' }}>
-          Vuelva pronto
+        <div style={{ fontWeight: 'bold' }}>¡Gracias por su compra!</div>
+        <div style={{ fontSize: '9px', fontStyle: 'italic', margin: '4px 0' }}>
+          "Tu negocio, sin límites"
+        </div>
+
+        {/* Publicidad Reisbloc */}
+        <div style={{
+          marginTop: '6px',
+          borderTop: '1px dashed #000',
+          paddingTop: '6px',
+          width: '100%',
+          fontSize: '9px',
+          fontWeight: 'bold'
+        }}>
+          <div>⚡ Power by REISBLOC</div>
+          <div style={{ fontSize: '8px', fontWeight: 'normal', marginTop: '2px' }}>Software POS Gratuito</div>
         </div>
       </div>
 
       {/* Hidden styles para impresión */}
       <style>{`
         @media print {
+          @page {
+            margin: 0;
+          }
           * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            color: #000 !important;
           }
           body {
             width: 58mm;
             font-family: "Courier New", monospace;
           }
           .receipt-ticket {
-            width: 100%;
+            width: 58mm;
+            padding: 2mm !important;
+          }
+          img {
+            -webkit-print-color-adjust: exact;
+            filter: grayscale(100%) contrast(1000%) !important;
           }
         }
       `}</style>
