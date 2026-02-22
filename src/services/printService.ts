@@ -23,67 +23,74 @@ class PrintService {
     try {
       const { title = 'Ticket', silent = false, width = 58 } = options
 
-      // Crear iframe invisible
-      const iframe = document.createElement('iframe')
-      iframe.style.display = 'none'
-      document.body.appendChild(iframe)
+      return new Promise((resolve, reject) => {
+        // Crear iframe invisible
+        const iframe = document.createElement('iframe')
+        iframe.style.display = 'none'
 
-      // Get the document inside the iframe
-      const doc = iframe.contentWindow?.document
-      if (!doc) {
-        document.body.removeChild(iframe)
-        throw new Error('No se pudo acceder al documento del iframe')
-      }
+        // Append first so we can access contentWindow
+        document.body.appendChild(iframe)
 
-      // HTML con estilos para térmica
-      const printHTML = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>${title}</title>
-          <style>
-            * { margin: 0; padding: 0; }
-            body {
-              font-family: "Courier New", monospace;
-              font-size: 12px;
-              width: ${width}mm;
-              padding: 8px;
-            }
-            @media print {
-              body { width: ${width}mm; }
-              @page { size: ${width}mm auto; margin: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          ${htmlContent}
-        </body>
-        </html>
-      `
+        const doc = iframe.contentWindow?.document
+        if (!doc) {
+          document.body.removeChild(iframe)
+          reject(new Error('No se pudo acceder al documento del iframe'))
+          return
+        }
 
-      doc.open()
-      doc.write(printHTML)
-      doc.close()
-
-      // Esperar a que renderice y luego imprimir
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          try {
-            iframe.contentWindow?.focus()
-            iframe.contentWindow?.print()
-          } catch (e) {
-            logger.error('print', 'Error executing print command', e as any)
-          } finally {
-            // Eliminar iframe después de imprimir
-            setTimeout(() => {
-              if (document.body.contains(iframe)) {
-                document.body.removeChild(iframe)
+        // HTML con estilos para térmica
+        const printHTML = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                font-family: "Courier New", monospace;
+                font-size: 12px;
+                width: ${width}mm;
+                padding: 8px;
+                background: white;
+                color: black;
               }
+              @media print {
+                body { width: ${width}mm; }
+                @page { size: ${width}mm auto; margin: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+          </html>
+        `
+
+        // Escuchar el evento de carga para asegurar que todas las imágenes/estilos están listos
+        iframe.onload = () => {
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus()
+              iframe.contentWindow?.print()
               resolve()
-            }, 1000)
-          }
-        }, 500)
+            } catch (e) {
+              logger.error('print', 'Error executing print command', e as any)
+              resolve() // Aún así resolvemos para no bloquear el flujo
+            } finally {
+              setTimeout(() => {
+                if (document.body.contains(iframe)) {
+                  document.body.removeChild(iframe)
+                }
+              }, 1000)
+            }
+          }, 500) // Pequeño delay adicional para estabilizar rendering (útil para logos)
+        }
+
+        // Escribir el contenido
+        doc.open()
+        doc.write(printHTML)
+        doc.close() // Esto dispara el iframe.onload
       })
     } catch (error) {
       logger.error('print', 'Error en impresión web', error as any)
