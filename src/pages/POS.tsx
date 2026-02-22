@@ -8,36 +8,14 @@ import OrderPanel from '@/components/pos/OrderPanel'
 import PaymentPanel, { PaymentResult } from '@/components/pos/PaymentPanel'
 import OrderNoteModal from '@/components/pos/OrderNoteModal'
 import ManualItemModal from '@/components/pos/ManualItemModal'
+import ReceiptTicket from '@/components/pos/ReceiptTicket'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { Product, OrderItem } from '@/types/index'
 import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
-
-const buildTicketHTML = (ordersList: any[], tableNumber: number, title = 'Cuenta', totalAmount: number): string => {
-  const allItems = ordersList.flatMap(o => o.items || [])
-  const lines = allItems.map(item => `
-        <div style="display:flex;justify-content:space-between;margin:2px 0;">
-          <span>${item.quantity}x ${item.productName}</span>
-          <span>$${(item.unitPrice * item.quantity).toFixed(2)}</span>
-        </div>
-    `).join('')
-
-  return `
-      <div style="width:58mm;padding:4px;font-family:'Courier New', monospace;font-size:11px;color:#000;">
-        <div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;">
-            <div style="font-weight:bold;font-size:14px;">REISBLOC POS</div>
-            <div>Cuenta: ${tableNumber}</div>
-            <div>${title}</div>
-            <div>${new Date().toLocaleString()}</div>
-        </div>
-        <div style="border-bottom:1px dashed #000;padding-bottom:8px;margin-bottom:8px;">${lines || '(Sin items)'}</div>
-        <div style="text-align:right;font-weight:bold;font-size:14px;border-top:1px solid #000;padding-top:4px;">TOTAL: $${totalAmount.toFixed(2)}</div>
-        <div style="text-align:center;margin-top:12px;font-size:10px;">*** Gracias por su compra ***</div>
-      </div>
-    `
-}
 
 export default function POS() {
   const {
@@ -201,7 +179,15 @@ export default function POS() {
       const allItems = [...ordersToPrint.flatMap(o => o.items || []), ...draftItems]
       const itemsForTicket = [{ id: 'consolidated', items: allItems }]
 
-      const ticketHTML = buildTicketHTML(itemsForTicket, tableNum, 'Pre-cuenta', total)
+      const ticketHTML = renderToStaticMarkup(
+        <ReceiptTicket
+          order={{ id: 'Pre-cuenta', items: allItems, status: 'pending', total: total } as any}
+          products={products}
+          saleTotal={total}
+          paymentMethod="Pendiente"
+          tableNumber={tableNum}
+        />
+      )
       await printService.printReceipt(ticketHTML, { title: 'Pre-cuenta', width: 58 })
     } catch (error) {
       logger.error('pos', 'Error printing account', error as any)
@@ -299,7 +285,15 @@ export default function POS() {
       }, allItems)
 
       try {
-        const ticketHTML = buildTicketHTML([{ items: allItems }], tableNumber, 'Ticket de Venta', result.total)
+        const ticketHTML = renderToStaticMarkup(
+          <ReceiptTicket
+            order={{ id: 'Venta', items: allItems, status: 'completed', total: result.total } as any}
+            products={products}
+            saleTotal={result.total}
+            paymentMethod={mappedMethod}
+            tableNumber={tableNumber}
+          />
+        )
         await printService.printReceipt(ticketHTML, { title: 'Ticket de Pago', width: 58 })
       } catch (printErr) {
         logger.warn('pos', 'No se pudo imprimir ticket final', printErr as any)

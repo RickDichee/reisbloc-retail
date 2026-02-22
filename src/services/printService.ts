@@ -28,8 +28,12 @@ class PrintService {
       iframe.style.display = 'none'
       document.body.appendChild(iframe)
 
-      const doc = iframe.contentDocument || iframe.contentWindow?.document
-      if (!doc) throw new Error('No se pudo acceder al documento del iframe')
+      // Get the document inside the iframe
+      const doc = iframe.contentWindow?.document
+      if (!doc) {
+        document.body.removeChild(iframe)
+        throw new Error('No se pudo acceder al documento del iframe')
+      }
 
       // HTML con estilos para térmica
       const printHTML = `
@@ -62,14 +66,25 @@ class PrintService {
       doc.write(printHTML)
       doc.close()
 
-      // Esperar a que cargue y luego imprimir
-      setTimeout(() => {
-        iframe.contentWindow?.print()
-        // Eliminar iframe después de 1 segundo
-        setTimeout(() => document.body.removeChild(iframe), 1000)
-      }, 250)
-
-      logger.info('print', 'Impresión iniciada (web)', { title })
+      // Esperar a que renderice y luego imprimir
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus()
+            iframe.contentWindow?.print()
+          } catch (e) {
+            logger.error('print', 'Error executing print command', e as any)
+          } finally {
+            // Eliminar iframe después de imprimir
+            setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe)
+              }
+              resolve()
+            }, 1000)
+          }
+        }, 500)
+      })
     } catch (error) {
       logger.error('print', 'Error en impresión web', error as any)
       throw error
