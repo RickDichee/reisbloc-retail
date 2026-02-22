@@ -21,24 +21,22 @@ class PrintService {
     options: PrintOptions = {}
   ): Promise<void> {
     try {
-      const { title = 'Ticket', silent = false, width = 58 } = options
+      const { title = 'Ticket', width = 58 } = options
 
-      return new Promise((resolve, reject) => {
-        // Crear iframe invisible
-        const iframe = document.createElement('iframe')
-        iframe.style.display = 'none'
+      return new Promise((resolve) => {
+        // En navegadores móviles y PWAs estrictas (Vercel/iOS/Android WebView),
+        // imprimir desde un iframe invisible es frecuentemente bloqueado.
+        // La forma más robusta y universal es abrir una ventana flotante diminuta 
+        // o pestaña efímera y mandar a imprimir ahí.
+        const printWindow = window.open('', '_blank', 'width=400,height=600,left=200,top=200')
 
-        // Append first so we can access contentWindow
-        document.body.appendChild(iframe)
-
-        const doc = iframe.contentWindow?.document
-        if (!doc) {
-          document.body.removeChild(iframe)
-          reject(new Error('No se pudo acceder al documento del iframe'))
+        if (!printWindow) {
+          logger.error('print', 'El navegador bloqueó la ventana emergente de impresión', {})
+          alert('Por favor, permite las ventanas emergentes (pop-ups) para imprimir el ticket.')
+          resolve() // Resolvemos para no trabar el flujo
           return
         }
 
-        // HTML con estilos para térmica
         const printHTML = `
           <!DOCTYPE html>
           <html>
@@ -67,27 +65,25 @@ class PrintService {
           </html>
         `
 
-        // Escribir el contenido
-        doc.open()
-        doc.write(printHTML)
-        doc.close()
+        printWindow.document.open()
+        printWindow.document.write(printHTML)
+        printWindow.document.close()
 
-        // El evento onload de iframes dinámicos con document.write es inestable en algunos browsers (ej. Chrome/Vercel PWA)
-        // Usamos un timeout garantizado para dar tiempo de render a los estilos e imágenes base64/SVG
+        // Dar un momento para que el render engine pinte los assets (ej. SVG del logo)
         setTimeout(() => {
           try {
-            iframe.contentWindow?.focus()
-            iframe.contentWindow?.print()
-            resolve()
+            printWindow.focus()
+            printWindow.print()
           } catch (e) {
-            logger.error('print', 'Error executing print command', e as any)
-            resolve() // Aún así resolvemos para no bloquear el flujo
+            logger.error('print', 'Fallo al ejecutar window.print()', e as any)
           } finally {
+            // Cerramos la ventana después de la impresión
             setTimeout(() => {
-              if (document.body.contains(iframe)) {
-                document.body.removeChild(iframe)
+              if (printWindow && !printWindow.closed) {
+                printWindow.close()
               }
-            }, 1000)
+              resolve()
+            }, 500)
           }
         }, 500)
       })
