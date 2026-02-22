@@ -17,11 +17,12 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ error: 'No authorization header' }), { status: 401, headers: corsHeaders });
         }
 
+        const token = authHeader.replace('Bearer ', '');
+
         // Cliente para validar el token del usuario (con permisos del usuario)
         const supabaseAuth = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            { global: { headers: { Authorization: authHeader } } }
+            Deno.env.get('SUPABASE_ANON_KEY') ?? ''
         );
 
         // Cliente con Service Role para saltarse RLS y poder leer roles / insertar invitaciones
@@ -31,9 +32,10 @@ Deno.serve(async (req) => {
         );
 
         // 1. Get the current user
-        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
 
         if (authError || !user) {
+            console.error('Auth error:', authError);
             return new Response(JSON.stringify({ error: 'Invalid user token' }), { status: 401, headers: corsHeaders });
         }
 
