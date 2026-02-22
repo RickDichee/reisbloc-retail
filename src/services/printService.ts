@@ -67,30 +67,29 @@ class PrintService {
           </html>
         `
 
-        // Escuchar el evento de carga para asegurar que todas las imágenes/estilos están listos
-        iframe.onload = () => {
-          setTimeout(() => {
-            try {
-              iframe.contentWindow?.focus()
-              iframe.contentWindow?.print()
-              resolve()
-            } catch (e) {
-              logger.error('print', 'Error executing print command', e as any)
-              resolve() // Aún así resolvemos para no bloquear el flujo
-            } finally {
-              setTimeout(() => {
-                if (document.body.contains(iframe)) {
-                  document.body.removeChild(iframe)
-                }
-              }, 1000)
-            }
-          }, 500) // Pequeño delay adicional para estabilizar rendering (útil para logos)
-        }
-
         // Escribir el contenido
         doc.open()
         doc.write(printHTML)
-        doc.close() // Esto dispara el iframe.onload
+        doc.close()
+
+        // El evento onload de iframes dinámicos con document.write es inestable en algunos browsers (ej. Chrome/Vercel PWA)
+        // Usamos un timeout garantizado para dar tiempo de render a los estilos e imágenes base64/SVG
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus()
+            iframe.contentWindow?.print()
+            resolve()
+          } catch (e) {
+            logger.error('print', 'Error executing print command', e as any)
+            resolve() // Aún así resolvemos para no bloquear el flujo
+          } finally {
+            setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe)
+              }
+            }, 1000)
+          }
+        }, 500)
       })
     } catch (error) {
       logger.error('print', 'Error en impresión web', error as any)
