@@ -150,8 +150,16 @@ class SupabaseService {
 
   async inviteUser(email: string, role: string): Promise<{ success: boolean; message?: string; devLink?: string }> {
     try {
+      const token = getStoredToken()
+      if (!token || !token.accessToken) {
+        throw new Error('No estás autenticado para realizar esta acción.')
+      }
+
       const { data, error } = await supabase.functions.invoke('send-invitation', {
-        body: { email, role }
+        body: { email, role },
+        headers: {
+          Authorization: `Bearer ${token.accessToken}`
+        }
       })
 
       if (error) throw error
