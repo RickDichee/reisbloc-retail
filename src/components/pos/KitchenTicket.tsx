@@ -17,7 +17,7 @@ export default function KitchenTicket({
   products,
   tableNumber,
   isBar = false,
-  businessName = 'RESTAURANTE TPV',
+  businessName = 'TIENDA POS',
   ticketNumber,
 }: KitchenTicketProps) {
   const ticketRef = useRef<HTMLDivElement>(null)
@@ -43,7 +43,7 @@ export default function KitchenTicket({
 
   if (destinationItems.length === 0) return null
 
-  const destination = isBar ? '🍹 BARRA' : '🍽️ COCINA'
+  const destination = isBar ? '🛍️ MOSTRADOR' : '📦 ALMACÉN'
 
   return (
     <>
@@ -72,7 +72,7 @@ export default function KitchenTicket({
         {/* Orden Info */}
         <div style={{ marginBottom: '8px', borderBottom: '1px dashed #000', paddingBottom: '6px', fontSize: '11px' }}>
           <div>
-            <strong>Mesa:</strong> {tableNumber}
+            <strong>Caja:</strong> {tableNumber}
           </div>
           <div>
             <strong>Hora:</strong> {new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}

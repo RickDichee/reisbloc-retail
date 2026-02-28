@@ -30,6 +30,7 @@ import AuditLogs from '@/components/admin/AuditLogs'
 import logger from '@/utils/logger'
 
 import AIInsightsWidget from '@/components/common/AIInsightsWidget'
+import AgentChat from '@/components/agent/AgentChat'
 import PurchasesManagement from '@/components/admin/PurchasesManagement'
 import supabaseService from '@/services/supabaseService'
 import ClientsManagement from '@/components/admin/ClientsManagement'
@@ -42,7 +43,7 @@ export default function Admin() {
   const { canManageUsers, canManageInventory } = usePermissions()
   const [activeTab, setActiveTab] = useState<AdminTab>('hub')
 
-  // AI Insights Data
+  // AI Insights Data (Free Tier)
   const [aiMetrics, setAiMetrics] = useState<any>(null)
   const [aiTopProducts, setAiTopProducts] = useState<any[]>([])
   const [loadingAI, setLoadingAI] = useState(false)
@@ -209,14 +210,26 @@ export default function Admin() {
                 </div>
               </div>
 
-              {!loadingAI ? (
-                <AIInsightsWidget metrics={aiMetrics} topProducts={aiTopProducts} />
-              ) : (
-                <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-20 flex flex-col items-center justify-center text-slate-400">
-                  <Bot size={64} className="animate-pulse mb-6 text-indigo-500 opacity-50" />
-                  <p className="font-black text-slate-900 uppercase tracking-widest text-sm">Sincronizando flujos de datos...</p>
+              {/* Free Tier: AI Insights Widget */}
+              <div className="mb-6">
+                {!loadingAI ? (
+                  <AIInsightsWidget metrics={aiMetrics} topProducts={aiTopProducts} />
+                ) : (
+                  <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-20 flex flex-col items-center justify-center text-slate-400">
+                    <Bot size={64} className="animate-pulse mb-6 text-indigo-500 opacity-50" />
+                    <p className="font-black text-slate-900 uppercase tracking-widest text-sm">Sincronizando flujos de datos...</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Premium Tier: Agent Chat */}
+              <div className="mt-8 border-t border-slate-200 pt-8">
+                <div className="mb-6">
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">AI Agent Studio <span className="text-[10px] ml-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1 rounded-full align-middle">PREMIUM</span></h3>
+                  <p className="text-sm font-medium text-slate-500">Un agente conversacional autónomo para ejecutar tareas complejas con integraciones externas bajo el esquema Zero-Risk.</p>
                 </div>
-              )}
+                <AgentChat />
+              </div>
             </div>
           )}
           {activeTab === 'logs' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><AuditLogs /></div>}

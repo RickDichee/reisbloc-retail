@@ -1,116 +1,80 @@
-import { AlertCircle, Wifi, WifiOff, Loader, CheckCircle2 } from 'lucide-react'
-import { useOfflineSync } from '../../hooks/useOfflineSync'
+import React, { useState, useEffect } from 'react';
+import { WifiOff, Wifi, RefreshCw } from 'lucide-react';
+import { syncService } from '@/services/syncService';
+import { offlineStorage } from '@/services/offlineStorage';
 
-export default function OfflineIndicator() {
-  const {
-    isOnline,
-    isSyncing,
-    pendingOrdersCount,
-    pendingSalesCount,
-    lastSyncTime,
-    syncPendingData
-  } = useOfflineSync()
+const OfflineIndicator: React.FC = () => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
-  const totalPending = pendingOrdersCount + pendingSalesCount
-  const showPending = totalPending > 0 && !isOnline
+  useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      setIsSyncing(true);
+      try {
+        await syncService.processQueue();
+      } finally {
+        setIsSyncing(false);
+        updatePendingCount();
+      }
+    };
 
-  // Si está online y sin datos pendientes, no mostrar nada
-  if (isOnline && totalPending === 0) {
-    return null
-  }
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    const updatePendingCount = async () => {
+      const pending = await offlineStorage.getPendingSyncOperations();
+      setPendingCount(pending.length);
+    };
+
+    // Auto update count
+    const interval = setInterval(updatePendingCount, 5000);
+    updatePendingCount();
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Custom event fired by syncService when finished
+    const syncListener = () => {
+      setIsSyncing(false);
+      updatePendingCount();
+    };
+    window.addEventListener('reisbloc-sync-completed', syncListener);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('reisbloc-sync-completed', syncListener);
+      clearInterval(interval);
+    };
+  }, []);
+
+  if (isOnline && pendingCount === 0 && !isSyncing) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 max-w-sm z-40">
-      {/* Indicador de conexión */}
-      <div
-        className={`rounded-lg shadow-lg p-3 flex items-center gap-3 transition-all ${
-          isOnline
-            ? 'bg-green-50 border border-green-200'
-            : 'bg-red-50 border border-red-200 animate-pulse'
-        }`}
-      >
-        <div className="flex-shrink-0">
-          {isOnline ? (
-            <Wifi className="w-5 h-5 text-green-600" />
-          ) : (
-            <WifiOff className="w-5 h-5 text-red-600" />
-          )}
-        </div>
+    <div className={`fixed bottom-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-all duration-300 ${isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+      {isSyncing ? (
+        <RefreshCw size={20} className="animate-spin text-emerald-600" />
+      ) : !isOnline ? (
+        <WifiOff size={20} className="text-amber-600" />
+      ) : (
+        <Wifi size={20} className="text-emerald-600" />
+      )}
 
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold ${isOnline ? 'text-green-900' : 'text-red-900'}`}>
-            {isOnline ? 'Conectado' : 'Sin conexión'}
-          </p>
-
-          {/* Info de sincronización */}
-          {!isOnline && totalPending > 0 && (
-            <p className="text-xs text-red-700 mt-1">
-              {pendingOrdersCount > 0 && `${pendingOrdersCount} orden(es)`}
-              {pendingOrdersCount > 0 && pendingSalesCount > 0 && ', '}
-              {pendingSalesCount > 0 && `${pendingSalesCount} venta(s)`}
-              {' '}pendiente(s)
-            </p>
-          )}
-
-          {isOnline && lastSyncTime && (
-            <p className="text-xs text-green-700 mt-1">
-              Última sincronización hace {getTimeAgo(lastSyncTime)}
-            </p>
-          )}
-
-          {isSyncing && (
-            <p className="text-xs text-blue-700 mt-1 flex items-center gap-1">
-              <Loader className="w-3 h-3 animate-spin" />
-              Sincronizando...
-            </p>
-          )}
-        </div>
-
-        {/* Botón de sincronización */}
-        {!isOnline && totalPending > 0 && (
-          <button
-            onClick={syncPendingData}
-            disabled={isSyncing}
-            className="flex-shrink-0 p-2 rounded-lg bg-red-100 hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title="Sincronizar datos"
-          >
-            {isSyncing ? (
-              <Loader className="w-4 h-4 text-red-600 animate-spin" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-red-600" />
-            )}
-          </button>
-        )}
-
-        {isOnline && lastSyncTime && (
-          <div className="flex-shrink-0">
-            <CheckCircle2 className="w-5 h-5 text-green-600" />
-          </div>
+      <div className="flex flex-col">
+        <span className="font-semibold text-sm">
+          {!isOnline ? 'Modo Sin Conexión' : isSyncing ? 'Sincronizando con la Nube...' : 'Conexión Restablecida'}
+        </span>
+        {!isOnline && pendingCount > 0 && (
+          <span className="text-xs opacity-80">
+            {pendingCount} operacion{pendingCount > 1 ? 'es' : ''} pendiente{pendingCount > 1 ? 's' : ''} de envío
+          </span>
         )}
       </div>
-
-      {/* Banner de offline mode */}
-      {!isOnline && (
-        <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <p className="text-xs text-amber-800">
-            <strong>Modo offline:</strong> Los datos se guardarán localmente y se sincronizarán cuando
-            vuelva la conexión.
-          </p>
-        </div>
-      )}
     </div>
-  )
-}
+  );
+};
 
-/**
- * Obtener tiempo en formato amigable
- */
-function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-
-  if (seconds < 60) return 'hace unos segundos'
-  if (seconds < 3600) return `hace ${Math.floor(seconds / 60)} min`
-  if (seconds < 86400) return `hace ${Math.floor(seconds / 3600)} horas`
-
-  return 'hace más de un día'
-}
+export default OfflineIndicator;

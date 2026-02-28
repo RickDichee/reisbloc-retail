@@ -24,6 +24,7 @@ import AcceptInvite from '@/pages/AcceptInvite'
 import StoreFront from '@/pages/StoreFront'
 import Ecommerce from '@/pages/Ecommerce'
 import Help from '@/pages/Help'
+import OfflineIndicator from '@/components/common/OfflineIndicator'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 // 🎨 Contenedor Principal con Layout Condicional
@@ -128,6 +129,7 @@ export default function App() {
 
   return (
     <Router>
+      <OfflineIndicator />
       <AppLayout />
     </Router>
   )

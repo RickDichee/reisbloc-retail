@@ -16,6 +16,25 @@ import {
   UserPlus
 } from 'lucide-react'
 
+export const roleColors: Record<string, string> = {
+  admin: 'from-purple-500 to-indigo-600',
+  capitan: 'from-blue-500 to-cyan-600',
+  mesero: 'from-teal-500 to-green-600',
+  cocina: 'from-orange-500 to-red-600',
+  bar: 'from-green-500 to-emerald-600',
+  supervisor: 'from-gray-500 to-gray-700',
+  manager: 'from-blue-600 to-indigo-700', // Added missing manager role
+}
+
+export const roleLabels: Record<string, string> = {
+  admin: 'Administrador',
+  capitan: 'Soporte / Gerente',
+  mesero: 'Vendedor / Cajero',
+  cocina: 'Almacén',
+  bar: 'Mostrador',
+  supervisor: 'Supervisor',
+  manager: 'Manager',
+}
 
 export default function UsersManagement() {
   const { users, setUsers, currentUser } = useAppStore()
@@ -87,23 +106,6 @@ export default function UsersManagement() {
 
   const filteredUsers = users.filter(u => showInactive || u.active)
 
-  const roleColors = {
-    admin: 'from-purple-500 to-indigo-600',
-    capitan: 'from-blue-500 to-cyan-600',
-    mesero: 'from-teal-500 to-green-600',
-    cocina: 'from-orange-500 to-red-600',
-    bar: 'from-green-500 to-emerald-600',
-    supervisor: 'from-gray-500 to-gray-700',
-  }
-
-  const roleLabels = {
-    admin: 'Administrador',
-    capitan: 'Capitán',
-    mesero: 'Mesero',
-    cocina: 'Cocina',
-    bar: 'Bar',
-    supervisor: 'Supervisor',
-  }
 
   return (
     <div className="space-y-6">
@@ -391,7 +393,7 @@ function InviteUserModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                     : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200'
                     }`}
                 >
-                  {role}
+                  {roleLabels[role] || role}
                 </button>
               ))}
             </div>
@@ -494,12 +496,12 @@ function EditUserModal({
               onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
               className="input-field"
             >
-              <option value="mesero">Mesero</option>
-              <option value="capitan">Capitán</option>
-              <option value="cocina">Cocina</option>
-              <option value="bar">Bar</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="admin">Administrador</option>
+              <option value="mesero">{roleLabels['mesero']}</option>
+              <option value="capitan">{roleLabels['capitan']}</option>
+              <option value="cocina">{roleLabels['cocina']}</option>
+              <option value="bar">{roleLabels['bar']}</option>
+              <option value="supervisor">{roleLabels['supervisor']}</option>
+              <option value="admin">{roleLabels['admin']}</option>
             </select>
           </div>
 

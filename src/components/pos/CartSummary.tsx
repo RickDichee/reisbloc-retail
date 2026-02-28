@@ -51,9 +51,9 @@ export function CartSummary({ tableNumber, items, onSend, onClear, sending, prod
     const html = `
       <div style="width:58mm;padding:8px;font-family:'Courier New', monospace;font-size:11px;line-height:1.2;color:#000;">
         <div style="text-align:center;margin-bottom:8px;border-bottom:1px solid #000;">
-          <div style="font-weight:bold;font-size:12px;">CEVICHERIA MEXA</div>
-          <div style="font-size:9px;">Restaurante y Marisquería</div>
-          <div style="font-size:9px;">Mesa ${tableNumber}</div>
+          <div style="font-weight:bold;font-size:12px;">REISBLOC RETAIL</div>
+          <div style="font-size:9px;">Tienda POS</div>
+          <div style="font-size:9px;">Caja ${tableNumber}</div>
         </div>
         <div style="margin-bottom:6px;font-size:9px;">
           <div>Fecha: ${date}</div>
@@ -97,7 +97,7 @@ export function CartSummary({ tableNumber, items, onSend, onClear, sending, prod
             <ShoppingCart className="text-indigo-600" size={24} />
             Resumen
           </h2>
-          <p className="text-sm font-medium text-gray-500 mt-1">Mesa {tableNumber}</p>
+          <p className="text-sm font-medium text-gray-500 mt-1">Caja {tableNumber}</p>
         </div>
         <button
           onClick={onClear}

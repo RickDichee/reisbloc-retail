@@ -18,6 +18,8 @@ import { supabase } from '@/config/supabase'
 import logger from '@/utils/logger'
 import { withOrg } from '@/utils/queryHelpers'
 import { getStoredToken } from './jwtService'
+import { offlineStorage } from './offlineStorage'
+import { syncService } from './syncService'
 import {
   User,
   Device,
@@ -97,7 +99,13 @@ class SupabaseService {
 
   async getAllUsers(): Promise<User[]> {
     return this.withRetry(async () => {
-      console.log('🔍 [Supabase] Obteniendo usuarios...')
+      // 📡 OFFLINE FIRST: Si no hay internet, devolver caché rápido
+      if (!navigator.onLine) {
+        console.log('📴 [Offline] Retornando usuarios de IndexedDB')
+        return await offlineStorage.getUsers()
+      }
+
+      console.log('🔍 [Supabase] Obteniendo usuarios de la nube...')
 
       const { data, error } = await withOrg(
         supabase.from('users').select('*'),
@@ -106,20 +114,21 @@ class SupabaseService {
         .eq('active', true)
         .order('name', { ascending: true })
 
-      console.log('🔍 [Supabase] Data:', data)
-      console.log('🔍 [Supabase] Error:', error)
-
       if (error) throw error
-      // Map Supabase fields to TypeScript User type
-      return (data || []).map((user: any) => ({
+
+      const users = (data || []).map((user: any) => ({
         ...user,
         username: user.name,
         organizationId: user.organization_id,
         createdAt: new Date(user.created_at)
       })) as User[]
-    }).catch(error => {
-      logger.error('supabase', 'Error getting all users', error as any)
-      return []
+
+      // 💾 Cachear silenciosamente en disco
+      offlineStorage.saveUsers(users)
+      return users
+    }).catch(async error => {
+      logger.warn('supabase', 'Fallo de red al obtener usuarios. Usando caché offline.', error)
+      return await offlineStorage.getUsers()
     })
   }
 
@@ -475,34 +484,38 @@ class SupabaseService {
 
   async getAllProducts(): Promise<Product[]> {
     return this.withRetry(async () => {
-      console.log('🔍 [Supabase] Obteniendo productos...')
+      // 📡 OFFLINE FIRST: Si no hay internet, devolver caché rápido
+      if (!navigator.onLine) {
+        console.log('📴 [Offline] Retornando productos de IndexedDB')
+        return await offlineStorage.getProducts()
+      }
+
+      console.log('🔍 [Supabase] Obteniendo productos de la red...')
       const { data, error } = await withOrg(
         supabase.from('products').select('*'),
         this.getCurrentOrgId()
       )
-        // Temporarily remove .eq('available', true) to see all products
         .order('category', { ascending: true })
         .order('name', { ascending: true })
 
-      console.log('🔍 [Supabase] Productos data:', data)
-      console.log('🔍 [Supabase] Productos error:', error)
-
       if (error) throw error
+
       // Filter in memory to show active/available products
       const products = (data || []).map((p: any) => ({
         ...p,
-        active: p.available, // Map available -> active
-        currentStock: p.current_stock, // Map snake_case -> camelCase
+        active: p.available,
+        currentStock: p.current_stock,
         minimumStock: p.minimum_stock,
         hasInventory: p.has_inventory,
         createdAt: new Date(p.created_at)
       })) as Product[]
 
-      console.log('🔍 [Supabase] Total productos:', products.length)
+      // 💾 Guardar una copia fresca para uso offline
+      offlineStorage.saveProducts(products)
       return products
-    }).catch(error => {
-      logger.error('supabase', 'Error getting products', error as any)
-      return []
+    }).catch(async error => {
+      logger.warn('supabase', 'Fallo al descargar productos. Usando caché offline.', error)
+      return await offlineStorage.getProducts()
     })
   }
 
@@ -796,6 +809,17 @@ class SupabaseService {
         throw new Error('No se pudo identificar la organización. Por favor inicie sesión nuevamente.')
       }
 
+      // 📡 OFFLINE FIRST: Si no hay internet, despachar a IndexedDB
+      if (!navigator.onLine) {
+        logger.warn('supabase', '⚠️ Sin conexión: Guardando orden de retail en la cola local.')
+        const fauxId = crypto.randomUUID()
+        await syncService.queueOperation('CREATE_ORDER', {
+          order: { ...payload, id: fauxId },
+          items: order.items // we pass items to let the executer know
+        })
+        return fauxId
+      }
+
       const { data, error } = await supabase
         .from('orders')
         .insert([payload])
@@ -980,6 +1004,18 @@ class SupabaseService {
         payment_method: String(sale.paymentMethod) || 'cash',
         device_id: null,
         organization_id: this.getCurrentOrgId()
+      }
+
+      // 📡 OFFLINE FIRST: Guardar venta sin conexión
+      if (!navigator.onLine) {
+        logger.warn('supabase', '⚠️ Sin conexión: Guardando cierre de Venta en la cola local.')
+        const fauxId = crypto.randomUUID()
+        await syncService.queueOperation('CLOSE_ORDER', {
+          orderId: payload.order_id,
+          status: 'closed',
+          saleData: payload
+        })
+        return fauxId
       }
 
       logger.info('supabase', '💰 Creating sale with payload:', payload)
