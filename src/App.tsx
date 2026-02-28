@@ -25,14 +25,16 @@ import StoreFront from '@/pages/StoreFront'
 import Ecommerce from '@/pages/Ecommerce'
 import Help from '@/pages/Help'
 import OfflineIndicator from '@/components/common/OfflineIndicator'
+import PrivacyPolicy from '@/pages/PrivacyPolicy'
+import TermsOfService from '@/pages/TermsOfService'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
 
-  // No mostrar NavBar en el Storefront Público (B2C) o Invitación
-  const hideNavBar = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite'
+  // No mostrar NavBar en el Storefront Público (B2C), Invitación o páginas legales
+  const hideNavBar = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms'
 
   return (
     <>
@@ -45,6 +47,8 @@ function AppLayout() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/p/:slug" element={<StoreFront />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
 
         {/* 🛒 Operación del POS */}
         <Route path="/pos" element={<POS />} />
