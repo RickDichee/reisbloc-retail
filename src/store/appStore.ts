@@ -23,6 +23,7 @@ const generateId = () =>
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
 interface AppState {
+  isInitializing: boolean
   isAuthenticated: boolean
   currentUser: User | null
   currentDevice: Device | null
@@ -36,6 +37,7 @@ interface AppState {
 }
 
 interface AppActions {
+  setInitializing: (status: boolean) => void
   setAuthenticated: (status: boolean) => void
   setCurrentUser: (user: User | null) => void
   setCurrentDevice: (device: Device | null) => void
@@ -65,6 +67,7 @@ export interface AccessibilityState {
 type AppStore = AppState & AppActions
 
 const initialState: AppState = {
+  isInitializing: true,
   isAuthenticated: false,
   currentUser: null,
   currentDevice: null,
@@ -88,6 +91,7 @@ export const useAppStore = create<AppStore>(
       ...initialState,
 
       // Auth state
+      setInitializing: (status: boolean) => set({ isInitializing: status }),
       setAuthenticated: (status: boolean) => set({ isAuthenticated: status }),
       setCurrentUser: (user: User | null) => set({ currentUser: user }),
       setCurrentDevice: (device: Device | null) => set({ currentDevice: device }),
@@ -218,7 +222,7 @@ export const useAppStore = create<AppStore>(
         draftOrders: state.draftOrders, // CRÍTICO: órdenes en progreso
         organizationSettings: state.organizationSettings,
         accessibility: state.accessibility, // ♿ Persistir preferencias visuales
-      }),
+      } as any),
     }
   )
 )

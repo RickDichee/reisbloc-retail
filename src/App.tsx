@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
 import { supabase } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
@@ -75,7 +76,7 @@ function AppLayout() {
 }
 
 export default function App() {
-  const { setCurrentUser, setAuthenticated } = useAppStore()
+  const { setCurrentUser, setAuthenticated, isInitializing, setInitializing } = useAppStore()
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -125,11 +126,22 @@ export default function App() {
         }
       } catch (globalError) {
         console.error('❌ Error crítico en restoreSession:', globalError)
+      } finally {
+        setInitializing(false)
       }
     }
 
     restoreSession()
-  }, [setCurrentUser, setAuthenticated])
+  }, [setCurrentUser, setAuthenticated, setInitializing])
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+        <p className="text-white font-mono text-sm tracking-widest uppercase">Inicializando Sesión...</p>
+      </div>
+    )
+  }
 
   return (
     <Router>
