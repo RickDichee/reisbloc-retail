@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loginWithEmail, logSuccessfulLogin } from '@/services/authService'
+import { loginWithEmail, logSuccessfulLogin, authLogout } from '@/services/authService'
 import { supabase } from '@/config/supabase'
 import { Mail, Lock, ArrowRight, Globe } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
@@ -28,7 +28,11 @@ export default function Login() {
       // es una sesión Zombie que causará un Loop Infinito. Debe ser destruida.
       if (session && !isAuthenticated) {
         console.warn('⚠️ Sesión Zombie detectada. Eliminando sesión para romper loop infinito.')
-        await supabase.auth.signOut()
+        await authLogout() // Limpia localStorage y token
+
+        // Forzamos un reinicio completo del cliente para limpiar cualquier estado
+        // de react-router o Zustand que haya quedado en memoria.
+        window.location.replace('/login?zombie=cleared')
       }
     }
     checkSession()
