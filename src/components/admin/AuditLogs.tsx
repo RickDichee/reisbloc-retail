@@ -12,7 +12,8 @@ import {
     Filter,
     Trash2,
     ShieldAlert,
-    Edit3
+    Edit3,
+    Globe
 } from 'lucide-react'
 
 export default function AuditLogs() {
@@ -41,7 +42,9 @@ export default function AuditLogs() {
         const matchesSearch =
             log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.entityType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            log.userId.toLowerCase().includes(searchTerm.toLowerCase())
+            log.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (log.location && log.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (log.ipAddress && log.ipAddress.includes(searchTerm))
 
         if (filter === 'all') return matchesSearch
         if (filter === 'delete') return matchesSearch && log.action.toLowerCase().includes('delete')
@@ -130,6 +133,7 @@ export default function AuditLogs() {
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario</th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Acción</th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Entidad</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Conexión</th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Detalles</th>
                                 </tr>
                             </thead>
@@ -167,6 +171,24 @@ export default function AuditLogs() {
                                             <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest">
                                                 {log.entityType}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {log.action === 'login' && log.location ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                                                        <Globe size={12} className="text-slate-400" />
+                                                        {log.location}
+                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-mono text-slate-500">{log.ipAddress}</span>
+                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${log.sessionType === 'Local' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                            {log.sessionType === 'Local' ? 'On-Site' : 'Remote'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 italic">No disponible</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button className="p-2 text-slate-400 hover:text-indigo-600 transition-all opacity-0 group-hover:opacity-100">

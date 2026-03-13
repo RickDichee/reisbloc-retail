@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
-import { pollForOrganization } from '@/services/authService'
+import { pollForOrganization, logSuccessfulLogin } from '@/services/authService'
 import { ShieldCheck } from 'lucide-react'
 
 const LOADING_TIPS = [
@@ -47,6 +47,10 @@ export function AuthCallback() {
       if (orgId) {
         // ✅ Éxito: Webhook completó la creación de la Org
         setStatus('¡Verificación exitosa! Accediendo...')
+
+        // Ejecutar silenciosamente auditoría Enterprise (Login Georeferenciado)
+        logSuccessfulLogin(session.user.id).catch(console.error)
+
         // Pequeña pausa para que el usuario lea el mensaje
         setTimeout(() => navigate('/admin'), 800)
       } else {

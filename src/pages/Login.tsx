@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loginWithEmail } from '@/services/authService'
+import { loginWithEmail, logSuccessfulLogin } from '@/services/authService'
 import { supabase } from '@/config/supabase'
 import { Mail, Lock, ArrowRight, Globe } from 'lucide-react'
 
@@ -27,8 +27,12 @@ export default function Login() {
     setError(null)
 
     const result = await loginWithEmail(email, password)
-    
+
     if (result.success) {
+      if (result.user?.id) {
+        // Ejecutar silenciosamente auditoría Enterprise
+        logSuccessfulLogin(result.user.id).catch(console.error)
+      }
       navigate('/admin') // Admins van al dashboard
     } else {
       setError(result.error || 'Error al iniciar sesión')

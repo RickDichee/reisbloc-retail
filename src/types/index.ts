@@ -167,6 +167,8 @@ export interface AuditLog {
   ipAddress?: string;
   deviceId?: string;
   details?: string;
+  location?: string;
+  sessionType?: string;
   timestamp: Date;
 }
 

@@ -198,6 +198,8 @@ class SupabaseService {
           new_value: log.newValue,
           ip_address: log.ipAddress,
           device_id: log.deviceId,
+          location: log.location,
+          session_type: log.sessionType,
           organization_id: this.getCurrentOrgId()
         })
 
@@ -227,6 +229,8 @@ class SupabaseService {
         newValue: log.new_value,
         ipAddress: log.ip_address,
         deviceId: log.device_id,
+        location: log.location,
+        sessionType: log.session_type,
         timestamp: new Date(log.created_at)
       })) as AuditLog[]
     }).catch(error => {
