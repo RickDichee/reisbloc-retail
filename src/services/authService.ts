@@ -107,13 +107,29 @@ export const registerWithGoogle = loginWithGoogle
 export async function authLogout(): Promise<void> {
   try {
     clearAuthToken() // Limpiar token local
+
+    // BARRIDO EXTREMO: Destruir todas las sesiones de Supabase en LocalStorage 
+    // manualmente para evitar que reviva en el próximo refresco si la red falla.
+    if (typeof localStorage !== 'undefined') {
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k))
+      logger.info('auth', `🗑️ ${keysToRemove.length} tokens de Supabase eliminados manualmente`)
+    }
+
     logger.info('auth', '🗑️ Token local eliminado')
 
     // Intentar logout de Supabase, pero no bloquear si falla
-    const { error } = await supabase.auth.signOut()
-    if (error) logger.warn('auth', 'Supabase signOut warning', error)
+    supabase.auth.signOut().catch(err => {
+      logger.warn('auth', 'Supabase signOut warning (Ignorado por barrido local)', err)
+    })
 
-    logger.info('auth', '✅ Logout exitoso')
+    logger.info('auth', '✅ Logout local exitoso')
   } catch (error: any) {
     logger.error('auth', 'Error en logout', error)
   }

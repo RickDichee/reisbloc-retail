@@ -27,6 +27,11 @@ export default function Login() {
       // 3. Si hay sesión cruda pero Zustand la rechazó (ej. usuario borrado de la tabla users),
       // es una sesión Zombie que causará un Loop Infinito. Debe ser destruida.
       if (session && !isAuthenticated) {
+        if (window.location.search.includes('zombie=cleared')) {
+          console.warn('⚠️ Falló la limpieza de la Sesión Zombie o fue abortada. Deteniendo loop por seguridad.')
+          return
+        }
+
         console.warn('⚠️ Sesión Zombie detectada. Eliminando sesión para romper loop infinito.')
         await authLogout() // Limpia localStorage y token
 
