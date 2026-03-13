@@ -64,16 +64,41 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
+      console.log('🌍 Iniciando Google Auth...')
+      setError(null)
       setLoading(true)
-      const { error } = await supabase.auth.signInWithOAuth({
+
+      console.log('🧹 Limpiando tokens fantasma locales...')
+      await authLogout()
+
+      console.log('🚀 Ejecutando signInWithOAuth...')
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth/callback'
+          redirectTo: window.location.origin + '/auth/callback',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         }
       })
-      if (error) throw error
+
+      console.log('✅ Resultado auth:', { data, error })
+
+      if (error) {
+        console.error('❌ Error devuelto por Supabase:', error)
+        throw error
+      }
+
+      // Si llegamos aqui y no redirigió...
+      if (data?.url) {
+        console.warn('⚠️ Supabase devolvió URL pero no redirigió automáticamente! Forzando redirección manual:', data.url)
+        window.location.assign(data.url)
+      }
+
     } catch (err: any) {
-      setError(err.message)
+      console.error('❌ Error capturado en handleGoogleLogin:', err)
+      setError(err?.message || JSON.stringify(err) || 'Error desconocido al iniciar OAuth')
       setLoading(false)
     }
   }
