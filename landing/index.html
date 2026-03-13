@@ -1,0 +1,382 @@
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  Reisbloc Labs — Landing Page                                ║
+  ║  Hosted via GitHub Pages                                     ║
+  ║                                                              ║
+  ║  ⚠️  ANTES DE PUBLICAR, reemplaza:                           ║
+  ║     5215665848231  →  tu número de WhatsApp (con lada)       ║
+  ║     daniel@megamayoreo.mx  →  tu correo de contacto              ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Reisbloc Labs: Punto de Venta inteligente y Automatización con IA para empresas que no se detienen." />
+
+  <!-- Open Graph / WhatsApp -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Reisbloc Labs — Automatiza. Vende. Domina." />
+  <meta property="og:description" content="POS Nativo + Agentes de IA con n8n. Soluciones para empresas que no se detienen." />
+  <meta property="og:image" content="https://reisbloc-retail.vercel.app/icon.svg" />
+
+  <title>Reisbloc Labs — Automatiza. Vende. Domina.</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              bg:     '#F8FAFC',
+              dark:   '#1F293B',
+              card:   '#FFFFFF',
+              border: '#E2E8F0',
+              muted:  '#64748B',
+              accent: '#3B82F6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts — Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    body { font-family: 'Outfit', sans-serif; }
+    .hero-gradient {
+      background: linear-gradient(135deg, #1F293B 0%, #2d3f55 50%, #1F293B 100%);
+    }
+    .card-hover {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(31,41,59,0.12);
+    }
+    .btn-wa {
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      transition: filter 0.2s ease, transform 0.2s ease;
+    }
+    .btn-wa:hover {
+      filter: brightness(1.1);
+      transform: scale(1.03);
+    }
+    .btn-dark {
+      background: #1F293B;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .btn-dark:hover {
+      background: #2d3f55;
+      transform: scale(1.03);
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-8px); }
+    }
+    .float { animation: float 4s ease-in-out infinite; }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-[#1F293B]">
+
+  <!-- ─── NAV ─── -->
+  <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-[#E2E8F0]">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#1F293B]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </span>
+        <span class="font-bold text-lg tracking-tight text-[#1F293B]">Reisbloc <span class="font-light text-[#64748B]">Labs</span></span>
+      </div>
+      <a
+        href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20Reisbloc%20Labs"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-dark text-white text-sm font-semibold px-5 py-2 rounded-full"
+      >
+        Solicitar Demo
+      </a>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ─── -->
+  <section class="hero-gradient text-white overflow-hidden">
+    <div class="max-w-6xl mx-auto px-6 py-24 md:py-32 grid md:grid-cols-2 gap-12 items-center">
+      <!-- Text -->
+      <div>
+        <span class="inline-block mb-4 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-widest">
+          Powered by n8n &amp; IA
+        </span>
+        <h1 class="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
+          Reisbloc Labs:<br/>
+          <span class="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+            Automatiza.<br/>Vende.<br/>Domina.
+          </span>
+        </h1>
+        <p class="text-lg text-slate-300 mb-10 max-w-md leading-relaxed">
+          Punto de Venta inteligente y Automatización con IA para empresas que no se detienen.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a
+            href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20Reisbloc%20Labs"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-wa inline-flex items-center gap-2 text-white font-bold px-7 py-4 rounded-full shadow-lg"
+          >
+            <!-- WhatsApp icon -->
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Solicitar Demo por WhatsApp
+          </a>
+          <a href="#features" class="inline-flex items-center gap-2 border border-white/30 hover:bg-white/10 text-white font-semibold px-7 py-4 rounded-full transition">
+            Ver características
+          </a>
+        </div>
+      </div>
+
+      <!-- Illustration / Badge -->
+      <div class="flex justify-center">
+        <div class="float relative">
+          <div class="w-72 h-72 rounded-3xl bg-white/10 border border-white/20 backdrop-blur flex flex-col items-center justify-center gap-4 shadow-2xl p-8">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            <p class="text-center text-white/80 text-sm font-medium">POS Nativo + Agente IA<br/><span class="text-blue-300 font-bold">n8n Integrado</span></p>
+            <div class="flex gap-2">
+              <span class="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">● En vivo</span>
+              <span class="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">IA activa</span>
+            </div>
+          </div>
+          <!-- Floating badges -->
+          <div class="absolute -top-4 -right-4 bg-white text-[#1F293B] text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
+            🤖 IA lista
+          </div>
+          <div class="absolute -bottom-4 -left-4 bg-[#1F293B] text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
+            ⚡ Offline-first
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ─── -->
+  <section id="features" class="max-w-6xl mx-auto px-6 py-24">
+    <div class="text-center mb-16">
+      <span class="inline-block mb-3 px-3 py-1 rounded-full bg-[#1F293B]/8 text-[#1F293B] text-xs font-semibold uppercase tracking-widest">
+        Capacidades
+      </span>
+      <h2 class="text-4xl font-extrabold">Todo lo que necesitas, en un solo lugar</h2>
+      <p class="mt-4 text-[#64748B] text-lg max-w-xl mx-auto">
+        Desde la caja registradora hasta tu agente de ventas con IA — sin fricciones.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+
+      <!-- POS Nativo -->
+      <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
+        <div class="w-14 h-14 mb-6 rounded-2xl bg-[#1F293B] flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <h3 class="text-2xl font-bold mb-3">POS Nativo</h3>
+        <p class="text-[#64748B] leading-relaxed flex-grow">
+          Sistema de Punto de Venta diseñado para el ritmo del comercio mexicano. Funciona sin internet, sincroniza automáticamente y soporta múltiples sucursales.
+        </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#1F293B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Offline-first</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Multi-sucursal</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Inventario en tiempo real</li>
+        </ul>
+      </div>
+
+      <!-- Agentes de IA (n8n) — highlighted -->
+      <div class="card-hover bg-[#1F293B] text-white rounded-3xl p-8 border border-[#1F293B] shadow-lg flex flex-col">
+        <div class="w-14 h-14 mb-6 rounded-2xl bg-white/15 flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="#60A5FA"/>
+          </svg>
+        </div>
+        <div class="inline-flex mb-4 px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold w-fit">
+          ★ Más solicitado
+        </div>
+        <h3 class="text-2xl font-bold mb-3">Agentes de IA <span class="text-blue-300">(n8n)</span></h3>
+        <p class="text-slate-300 leading-relaxed flex-grow">
+          Conecta flujos de trabajo inteligentes directamente en tu POS. Responde clientes en WhatsApp, genera cotizaciones automáticas y cierra ventas sin levantar el teléfono.
+        </p>
+        <ul class="mt-6 space-y-2 text-sm text-slate-200 font-medium">
+          <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Agente de ventas 24/7</li>
+          <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Integración WhatsApp</li>
+          <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Flujos personalizados</li>
+        </ul>
+      </div>
+
+      <!-- Control Total -->
+      <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
+        <div class="w-14 h-14 mb-6 rounded-2xl bg-[#1F293B] flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3 class="text-2xl font-bold mb-3">Control Total</h3>
+        <p class="text-[#64748B] leading-relaxed flex-grow">
+          Dashboard centralizado para ver tus ventas, clientes, inventario y agentes en tiempo real. Tú mandas, la tecnología trabaja para ti.
+        </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#1F293B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Reportes instantáneos</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Control de usuarios</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">✓</span> Seguridad RLS</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── JULIO (B2B) SECTION ─── -->
+  <section id="julio" class="bg-[#1F293B] text-white">
+    <div class="max-w-6xl mx-auto px-6 py-24">
+      <div class="grid md:grid-cols-2 gap-16 items-center">
+        <!-- Left -->
+        <div>
+          <span class="inline-block mb-4 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-widest">
+            Soluciones B2B
+          </span>
+          <h2 class="text-4xl font-extrabold leading-tight mb-6">
+            ¿Tu empresa maneja<br/>
+            <span class="text-blue-300">operaciones complejas?</span>
+          </h2>
+          <p class="text-slate-300 text-lg leading-relaxed mb-8">
+            Reisbloc Labs tiene una solución específica para industrias y empresas de servicios que necesitan automatizar procesos, controlar inventario y gestionar equipos sin complicaciones.
+          </p>
+          <p class="text-slate-400 mb-10">
+            Desde manufactura hasta distribución, nuestro stack tecnológico se adapta a tu operación — no al revés.
+          </p>
+          <a
+            href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20propuesta%20B2B%20de%20Reisbloc%20Labs%20para%20mi%20empresa"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-wa inline-flex items-center gap-3 text-white font-bold px-8 py-4 rounded-full shadow-xl text-lg"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Solicitar Demo por WhatsApp
+          </a>
+        </div>
+
+        <!-- Right — service cards -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-white/8 border border-white/15 rounded-2xl p-6 flex flex-col gap-3">
+            <div class="text-3xl">🏭</div>
+            <h4 class="font-bold text-white">Manufactura</h4>
+            <p class="text-sm text-slate-400">Control de producción, inventario de materias primas y trazabilidad de lotes.</p>
+          </div>
+          <div class="bg-white/8 border border-white/15 rounded-2xl p-6 flex flex-col gap-3">
+            <div class="text-3xl">🚚</div>
+            <h4 class="font-bold text-white">Distribución</h4>
+            <p class="text-sm text-slate-400">Rutas de venta, pedidos por WhatsApp y seguimiento de entregas en tiempo real.</p>
+          </div>
+          <div class="bg-white/8 border border-white/15 rounded-2xl p-6 flex flex-col gap-3">
+            <div class="text-3xl">🛠️</div>
+            <h4 class="font-bold text-white">Servicios</h4>
+            <p class="text-sm text-slate-400">Cotizaciones automáticas, agendamiento y facturación integrada para empresas de servicios.</p>
+          </div>
+          <div class="bg-white/8 border border-white/15 rounded-2xl p-6 flex flex-col gap-3">
+            <div class="text-3xl">🤖</div>
+            <h4 class="font-bold text-white">Automatización</h4>
+            <p class="text-sm text-slate-400">Agentes de IA vía n8n: responden, califican prospectos y cierran ventas solos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SOCIAL PROOF / STATS ─── -->
+  <section class="max-w-6xl mx-auto px-6 py-20">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div class="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
+        <div class="text-4xl font-extrabold text-[#1F293B]">99%</div>
+        <div class="text-[#64748B] text-sm mt-1">Uptime garantizado</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
+        <div class="text-4xl font-extrabold text-[#1F293B]">24/7</div>
+        <div class="text-[#64748B] text-sm mt-1">Agente de ventas IA</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
+        <div class="text-4xl font-extrabold text-[#1F293B]">&lt;2s</div>
+        <div class="text-[#64748B] text-sm mt-1">Tiempo de respuesta</div>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
+        <div class="text-4xl font-extrabold text-[#1F293B]">MX</div>
+        <div class="text-[#64748B] text-sm mt-1">Hecho en México 🇲🇽</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FINAL CTA ─── -->
+  <section class="bg-[#F8FAFC] border-t border-[#E2E8F0]">
+    <div class="max-w-3xl mx-auto px-6 py-24 text-center">
+      <h2 class="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
+        ¿Listo para automatizar<br/>
+        <span class="text-[#1F293B]">tu negocio hoy?</span>
+      </h2>
+      <p class="text-[#64748B] text-lg mb-10 max-w-xl mx-auto">
+        Escríbenos por WhatsApp y te hacemos una demo personalizada — sin compromiso y en menos de 24 horas.
+      </p>
+      <a
+        href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20Reisbloc%20Labs"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-wa inline-flex items-center gap-3 text-white font-bold px-10 py-5 rounded-full shadow-2xl text-xl"
+      >
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        Solicitar Demo por WhatsApp
+      </a>
+      <p class="mt-6 text-sm text-[#64748B]">También disponible en <a href="mailto:daniel@megamayoreo.mx" class="underline hover:text-[#1F293B]">daniel@megamayoreo.mx</a></p>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <footer class="bg-[#1F293B] text-slate-400 py-10">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/10">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </span>
+        <span class="text-white font-semibold text-sm">Reisbloc Labs</span>
+      </div>
+      <p class="text-xs text-center">© 2026 Reisbloc Labs. Hecho con ❤️ en México 🇲🇽</p>
+      <div class="flex gap-4 text-xs">
+        <a href="#features" class="hover:text-white transition">Características</a>
+        <a href="#julio" class="hover:text-white transition">B2B</a>
+        <a
+          href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20Reisbloc%20Labs"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-white transition"
+        >Contacto</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
