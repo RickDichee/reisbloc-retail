@@ -3,23 +3,36 @@ import { useNavigate } from 'react-router-dom'
 import { loginWithEmail, logSuccessfulLogin } from '@/services/authService'
 import { supabase } from '@/config/supabase'
 import { Mail, Lock, ArrowRight, Globe } from 'lucide-react'
+import { useAppStore } from '@/store/appStore'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { isAuthenticated } = useAppStore()
   const navigate = useNavigate()
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
+      // 1. Si Zustand dice que ya descargó el perfil y es auténtico, vamos a Admin
+      if (isAuthenticated) {
         navigate('/admin')
+        return
+      }
+
+      // 2. Si no es auténtico, revisamos la sesión "cruda" de Supabase
+      const { data: { session } } = await supabase.auth.getSession()
+
+      // 3. Si hay sesión cruda pero Zustand la rechazó (ej. usuario borrado de la tabla users),
+      // es una sesión Zombie que causará un Loop Infinito. Debe ser destruida.
+      if (session && !isAuthenticated) {
+        console.warn('⚠️ Sesión Zombie detectada. Eliminando sesión para romper loop infinito.')
+        await supabase.auth.signOut()
       }
     }
     checkSession()
-  }, [navigate])
+  }, [navigate, isAuthenticated])
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
