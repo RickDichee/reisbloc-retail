@@ -1,5 +1,6 @@
 // Tipos principales del sistema
-export type UserRole = 'admin' | 'supervisor' | 'staff' | 'invitado';
+import { UserRole as ConfigUserRole } from '../config/roles'
+export type UserRole = ConfigUserRole;
 
 export interface User {
   id: string;

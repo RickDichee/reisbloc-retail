@@ -39,7 +39,7 @@ export function OrderPanel({
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Icon className="text-indigo-600" size={24} />
-            Cuenta {tableNumber}
+            Ticket {tableNumber}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             {items.length} productos {activeOrders.length > 0 ? '· Historial de venta' : ''}
@@ -54,7 +54,7 @@ export function OrderPanel({
               onClick={onClear}
               className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1 uppercase tracking-wider transition-colors"
             >
-              <Trash2 size={12} /> Vaciar Cuenta
+              <Trash2 size={12} /> Vaciar Ticket
             </button>
           )}
         </div>
@@ -154,14 +154,14 @@ export function OrderPanel({
         </div>
       )}
 
-      {/* Acciones de Cuenta (Mesa Viva) */}
+      {/* Acciones de Cuenta (Venta Viva) */}
       {activeOrders.length > 0 && (
         <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 gap-3">
           <button
             onClick={onPrintAccount}
             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all border border-slate-200"
           >
-            Imprimir Cuenta
+            Imprimir Ticket
           </button>
           <button
             onClick={() => {

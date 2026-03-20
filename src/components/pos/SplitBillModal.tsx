@@ -196,9 +196,9 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
           <div className="flex items-center gap-3">
             <Users size={32} />
             <div>
-              <h2 className="text-2xl font-bold">Dividir Cuenta</h2>
+              <h2 className="text-2xl font-bold">Dividir Pago</h2>
               <p className="text-purple-100">
-                Mesa {order.tableNumber} - Total: ${orderTotal.toFixed(2)}
+                Ticket {order.tableNumber} - Total: ${orderTotal.toFixed(2)}
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                   ¿Entre cuántas personas?
                 </h3>
                 <p className="text-gray-600">
-                  Selecciona el número de comensales para dividir la cuenta
+                  Selecciona el número de clientes para dividir el cobro
                 </p>
               </div>
 
@@ -635,7 +635,7 @@ export default function SplitBillModal({ order, onClose, onConfirmSplit }: Split
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <Check size={20} />
-                Confirmar División de Cuenta
+                Confirmar División de Pago
               </button>
             </div>
           )}

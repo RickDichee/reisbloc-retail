@@ -41,8 +41,8 @@ export default function CourtesyTableModal({ tableNumber, onClose, onConfirm }: 
               <Gift className="text-white" size={24} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Mesa Cortesía</h2>
-              <p className="text-sm text-gray-600">Mesa {tableNumber}</p>
+              <h2 className="text-2xl font-bold text-gray-900">Ticket de Cortesía</h2>
+              <p className="text-sm text-gray-600">Ticket {tableNumber}</p>
             </div>
           </div>
           <button
@@ -56,8 +56,8 @@ export default function CourtesyTableModal({ tableNumber, onClose, onConfirm }: 
         {/* Info */}
         <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 mb-6">
           <p className="text-sm text-green-800">
-            <strong>⚠️ Atención:</strong> Esta mesa no generará costo y será marcada como cortesía.
-            Solo usuarios con rol de <strong>Administrador</strong> pueden autorizar mesas de cortesía.
+            <strong>⚠️ Atención:</strong> Este ticket no generará costo y será marcado como cortesía.
+            Solo usuarios con rol de <strong>Administrador</strong> pueden autorizar tickets de cortesía.
           </p>
         </div>
 
