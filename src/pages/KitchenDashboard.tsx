@@ -100,20 +100,19 @@ export default function KitchenDashboard() {
     return orders.map(order => (
       <div
         key={order.id}
-        className={`rounded-xl p-5 shadow-lg transition-all hover:shadow-xl ${
-          status === 'sent'
+        className={`rounded-xl p-5 shadow-lg transition-all hover:shadow-xl ${status === 'sent'
             ? 'bg-red-50 border-4 border-red-400 animate-pulse'
             : status === 'ready'
               ? 'bg-green-50 border-4 border-green-400'
               : 'bg-gray-50 border-2 border-gray-300'
-        }`}
+          }`}
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-4 pb-3 border-b-2">
           <div className="flex items-center gap-2">
             {status === 'sent' && <Flame size={28} className="text-red-600 animate-bounce" />}
             {status === 'ready' && <CheckCircle size={28} className="text-green-600" />}
-            <span className="font-bold text-xl">Mesa {order.tableNumber}</span>
+            <span className="font-bold text-xl">Ticket {order.tableNumber}</span>
           </div>
           <span className="text-sm text-gray-600">
             {order.createdAt instanceof Date
@@ -175,7 +174,7 @@ export default function KitchenDashboard() {
     <div className="min-h-screen bg-gray-900 text-white p-4">
       {/* Header */}
       <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-6 mb-6 shadow-2xl">
-        <h1 className="text-4xl font-bold">🍽️ COCINA & BAR</h1>
+        <h1 className="text-4xl font-bold">📦 BODEGA & MOSTRADOR</h1>
         <p className="text-red-100 mt-2">Panel de Control en Tiempo Real</p>
       </div>
 
@@ -201,11 +200,10 @@ export default function KitchenDashboard() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-6 py-3 rounded-lg font-bold transition-all transform hover:scale-105 ${
-              activeTab === tab
+            className={`px-6 py-3 rounded-lg font-bold transition-all transform hover:scale-105 ${activeTab === tab
                 ? 'bg-blue-600 shadow-lg'
                 : 'bg-gray-700 hover:bg-gray-600'
-            }`}
+              }`}
           >
             {tab === 'sent' ? `🔥 Preparación (${sentOrders.length})` : tab === 'ready' ? `✓ Listas (${readyOrders.length})` : `Completadas (${completedOrders.length})`}
           </button>

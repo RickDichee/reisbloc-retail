@@ -18,21 +18,19 @@ import {
 
 export const roleColors: Record<string, string> = {
   admin: 'from-purple-500 to-indigo-600',
-  capitan: 'from-blue-500 to-cyan-600',
-  mesero: 'from-teal-500 to-green-600',
-  cocina: 'from-orange-500 to-red-600',
-  bar: 'from-green-500 to-emerald-600',
-  supervisor: 'from-gray-500 to-gray-700',
-  manager: 'from-blue-600 to-indigo-700', // Added missing manager role
+  supervisor: 'from-blue-500 to-cyan-600',
+  vendedor: 'from-teal-500 to-green-600',
+  almacen: 'from-orange-500 to-red-600',
+  mostrador: 'from-green-500 to-emerald-600',
+  manager: 'from-blue-600 to-indigo-700',
 }
 
 export const roleLabels: Record<string, string> = {
   admin: 'Administrador',
-  capitan: 'Soporte / Gerente',
-  mesero: 'Vendedor / Cajero',
-  cocina: 'Almacén',
-  bar: 'Mostrador',
-  supervisor: 'Supervisor',
+  supervisor: 'Supervisor / Gerente',
+  vendedor: 'Vendedor / Cajero',
+  almacen: 'Bodega / Almacén',
+  mostrador: 'Piso / Mostrador',
   manager: 'Manager',
 }
 
@@ -383,7 +381,7 @@ function InviteUserModal({ onClose, onSuccess }: { onClose: () => void; onSucces
               Rol del Empleado
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {(['mesero', 'capitan', 'cocina', 'bar', 'supervisor', 'admin'] as UserRole[]).map((role) => (
+              {(['vendedor', 'supervisor', 'almacen', 'mostrador', 'manager', 'admin'] as UserRole[]).map((role) => (
                 <button
                   key={role}
                   type="button"
@@ -496,11 +494,11 @@ function EditUserModal({
               onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
               className="input-field"
             >
-              <option value="mesero">{roleLabels['mesero']}</option>
-              <option value="capitan">{roleLabels['capitan']}</option>
-              <option value="cocina">{roleLabels['cocina']}</option>
-              <option value="bar">{roleLabels['bar']}</option>
+              <option value="vendedor">{roleLabels['vendedor']}</option>
+              <option value="almacen">{roleLabels['almacen']}</option>
+              <option value="mostrador">{roleLabels['mostrador']}</option>
               <option value="supervisor">{roleLabels['supervisor']}</option>
+              <option value="manager">{roleLabels['manager']}</option>
               <option value="admin">{roleLabels['admin']}</option>
             </select>
           </div>

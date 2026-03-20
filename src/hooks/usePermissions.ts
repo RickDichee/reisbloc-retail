@@ -14,34 +14,34 @@ export function usePermissions() {
   const canManageDevices = role === 'admin' || role === 'supervisor'
   const canViewLogs = role === 'admin' || role === 'supervisor'
   const canExportReports = role === 'admin' || role === 'supervisor'
-  
+
   // Permisos operativos
-  const canCreateSales = ['admin', 'capitan', 'mesero', 'bar'].includes(role || '')
-  const canModifyOrders = ['admin', 'capitan', 'mesero'].includes(role || '')
+  const canCreateSales = ['admin', 'supervisor', 'vendedor', 'mostrador'].includes(role || '')
+  const canModifyOrders = ['admin', 'supervisor', 'vendedor'].includes(role || '')
   const canDeleteProducts = role === 'admin'
-  const canAccessKitchen = ['admin', 'cocina'].includes(role || '')
-  const canAccessBar = ['admin', 'bar'].includes(role || '')
-  const canManageTables = ['admin', 'capitan', 'supervisor'].includes(role || '')
-  // Solo admin/capitan/supervisor acceden a monitor - mesero usa OrdersToServe
+  const canAccessKitchen = ['admin', 'almacen'].includes(role || '')
+  const canAccessBar = ['admin', 'mostrador'].includes(role || '')
+  const canManageTables = ['admin', 'supervisor'].includes(role || '')
+  // Solo admin/supervisor acceden a monitor - vendedor usa OrdersToServe
   const canAccessTableMonitor = canManageTables
-  
+
   // Permisos de reportes
   const canViewReports = ['admin', 'supervisor'].includes(role || '')
   const canViewSalesReport = ['admin', 'supervisor'].includes(role || '')
   const canViewInventoryReport = ['admin', 'supervisor'].includes(role || '')
   const canViewEmployeeMetrics = role === 'admin'
-  
+
   // Permisos financieros
   const canCloseCashRegister = role === 'admin'
   const canCloseRegister = role === 'admin'
   const canViewFinancialData = ['admin', 'supervisor'].includes(role || '')
   const canApplyDiscounts = ['admin', 'capitan'].includes(role || '')
-  
+
   // Helper: verificar si tiene al menos uno de los roles
   const hasAnyRole = (roles: UserRole[]) => {
     return roles.includes(role as UserRole)
   }
-  
+
   // Helper: verificar si es rol de solo lectura
   const isReadOnly = role === 'supervisor'
 
@@ -52,7 +52,7 @@ export function usePermissions() {
     canManageDevices,
     canViewLogs,
     canExportReports,
-    
+
     // Permisos operativos
     canCreateSales,
     canModifyOrders,
@@ -61,19 +61,19 @@ export function usePermissions() {
     canAccessBar,
     canManageTables,
     canAccessTableMonitor,
-    
+
     // Permisos de reportes
     canViewReports,
     canViewSalesReport,
     canViewInventoryReport,
     canViewEmployeeMetrics,
-    
+
     // Permisos financieros
     canCloseCashRegister,
     canCloseRegister,
     canViewFinancialData,
     canApplyDiscounts,
-    
+
     // Helpers
     hasAnyRole,
     isReadOnly,

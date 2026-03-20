@@ -66,7 +66,7 @@ export default function KitchenTicket({
           <div style={{ fontWeight: 'bold', fontSize: '14px', letterSpacing: '2px' }}>
             {destination}
           </div>
-          <div style={{ fontSize: '10px', marginTop: '4px' }}>COMANDA DE ORDEN</div>
+          <div style={{ fontSize: '10px', marginTop: '4px' }}>TICKET DE ORDEN</div>
         </div>
 
         {/* Orden Info */}
@@ -79,7 +79,7 @@ export default function KitchenTicket({
           </div>
           {ticketNumber && (
             <div>
-              <strong>Comanda:</strong> #{ticketNumber}
+              <strong>Folio:</strong> #{ticketNumber}
             </div>
           )}
         </div>
@@ -125,7 +125,7 @@ export default function KitchenTicket({
         className="hidden"
         style={{ display: 'none' }}
       >
-        Imprimir Comanda
+        Imprimir Ticket
       </button>
     </>
   )

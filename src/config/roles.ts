@@ -5,7 +5,7 @@
  * Sincronizado con: MEMENTO_RETAIL_STRATEGY.sql
  */
 
-export type UserRole = 'admin' | 'manager' | 'capitan' | 'mesero' | 'cocina' | 'bar' | 'supervisor';
+export type UserRole = 'admin' | 'manager' | 'supervisor' | 'vendedor' | 'almacen' | 'mostrador';
 
 // Definición centralizada de permisos
 export const PERMISSIONS = {
@@ -21,8 +21,8 @@ export const PERMISSIONS = {
   canCloseDay: ['admin', 'manager'],       // Hacer corte de caja (Z)
 
   // 🧢 STAFF (Operativo)
-  canOperatePOS: ['admin', 'manager', 'capitan', 'mesero', 'supervisor'], // Vender
-  canVoidOrders: ['admin', 'manager', 'capitan', 'supervisor'],           // Cancelar órdenes (Capitán para arriba)
+  canOperatePOS: ['admin', 'manager', 'supervisor', 'vendedor'], // Vender
+  canVoidOrders: ['admin', 'manager', 'supervisor'],           // Cancelar órdenes
 } as const;
 
 export type PermissionAction = keyof typeof PERMISSIONS;

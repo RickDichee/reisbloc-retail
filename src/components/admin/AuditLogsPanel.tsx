@@ -3,10 +3,9 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { AuditLog } from '@/types/index'
 import supabaseService from '@/services/supabaseService'
 import logger from '@/utils/logger'
-import { 
-  FileText, 
+import {
+  FileText,
   Filter,
-  Calendar,
   User,
   Eye,
   Search,
@@ -255,6 +254,22 @@ export default function AuditLogsPanel() {
                           <span className="text-gray-600">Dispositivo:</span>{' '}
                           <span className="font-mono text-xs text-gray-900">{log.deviceId}</span>
                         </div>
+                      )}
+                      {log.location && (
+                        <>
+                          <div className="col-span-2 mt-2 pt-2 border-t border-gray-100 flex items-center gap-3">
+                            <div>
+                              <span className="text-gray-600 text-xs">Conexión:</span>{' '}
+                              <span className="font-semibold text-xs text-gray-900">{log.location}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono text-gray-500 bg-gray-100 px-1 rounded">{log.ipAddress}</span>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${log.sessionType === 'Local' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                {log.sessionType === 'Local' ? 'On-Site' : 'Remote'}
+                              </span>
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
 
