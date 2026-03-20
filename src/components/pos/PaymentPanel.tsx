@@ -68,6 +68,7 @@ export default function PaymentPanel({
       .on('broadcast', { event: 'clip_payment' }, (payload: any) => {
         if (payload.payload.saleId === pendingSaleId) {
           logger.info('payment', 'Clip payment confirmed via Broadcast', payload.payload)
+          setPaidAmount(prev => prev + Number(payload.payload.amount))
         }
       })
       .subscribe()

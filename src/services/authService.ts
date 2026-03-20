@@ -172,48 +172,22 @@ export async function getCurrentUser(): Promise<User | null> {
   return null
 }
 
-/**
- * Registra un login exitoso en la bitácora de auditoría Enterprise.
- * Intercepta la IP y la geolocalización.
- */
-export async function logSuccessfulLogin(userId: string): Promise<void> {
+export async function logSuccessfulLogin(): Promise<void> {
   try {
-    let ipAddress = 'Desconocida'
-    let location = 'Desconocida'
-    let sessionType = 'External'
-
-    // Intentar obtener IP y Geolocalización
-    try {
-      const response = await fetch('https://get.geojs.io/v1/ip/geo.json')
-      if (response.ok) {
-        const geoData = await response.json()
-        ipAddress = geoData.ip || 'Desconocida'
-        location = `${geoData.city || 'Ciudad Desconocida'}, ${geoData.country || 'País Desconocido'}`
-
-        // Lógica súper básica para "Local" vs "External" basada en IP estática (Hardcoded o configurada)
-        // Por ahora, como es demo, lo marcaremos todo dependiendo si existe la IP
-        sessionType = 'External' // Idealmente se compara con una IP guardada en organization.settings
-      }
-    } catch (geoError) {
-      logger.warn('auth', 'No se pudo obtener la geolocalización', geoError)
-    }
-
     const { currentDevice } = useAppStore.getState()
 
-    await supabaseService.createAuditLog({
-      userId,
-      action: 'login',
-      entityType: 'auth',
-      entityId: userId,
-      ipAddress,
-      location,
-      deviceId: currentDevice?.id,
-      sessionType,
-      details: `Inicio de sesión exitoso desde ${location}`
+    // Llamada centralizada a Edge Function para registro de logs y geolocalización segura por el backend.
+    const { data, error } = await supabase.functions.invoke('log-auth-event', {
+      body: {
+        deviceId: currentDevice?.id || null,
+        sessionType: 'External'
+      }
     })
 
-    logger.info('auth', `📍 Login auditado. IP: ${ipAddress}, Location: ${location}, Type: ${sessionType}`)
+    if (error) throw error
+
+    logger.info('auth', `📍 Login auditado centralizado. Detalles:`, data)
   } catch (error) {
-    logger.error('auth', '❌ Error al auditar el login', error)
+    logger.error('auth', '❌ Error al auditar el login vía Edge Function', error)
   }
 }

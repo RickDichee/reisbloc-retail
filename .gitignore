@@ -81,3 +81,4 @@ supabase/snippets/
 # Archivos personales de configuración (Opcional)
  # 🧠 MEMENTO 𝜋: Bitácora de Consciencia.local 
  # 🧠 MEMENTO 𝜋: Bitácora de Consciencia.md
+*.hprof

@@ -53,7 +53,7 @@ export default function Login() {
     if (result.success) {
       if (result.user?.id) {
         // Ejecutar silenciosamente auditoría Enterprise
-        logSuccessfulLogin(result.user.id).catch(console.error)
+        logSuccessfulLogin().catch(console.error)
       }
       navigate('/admin') // Admins van al dashboard
     } else {

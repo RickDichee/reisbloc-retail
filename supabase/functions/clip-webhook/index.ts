@@ -131,20 +131,23 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ status: 'unmatched', amount: paidAmount }), { status: 200, headers: corsHeaders });
         }
 
-        // 3. Register the payment
-        const { data: saleInfo } = await supabase.from('retail_sales').select('organization_id').eq('id', matchedSaleId).single();
+        // 3. Mark the sale as paid
+        const { data: saleInfo } = await supabase.from('retail_sales').select('organization_id, total, status').eq('id', matchedSaleId).single();
 
         const { error: paymentError } = await supabase
-            .from('retail_sale_payments')
-            .insert({
-                sale_id: matchedSaleId,
-                organization_id: saleInfo.organization_id,
-                payment_method: 'card_clip',
-                amount: paidAmount,
-                reference_id: transaction_id
-            });
+            .from('retail_sales')
+            .update({
+                status: 'paid',
+                payment_method: 'clip',
+                paid_amount: paidAmount,
+                notes: `Clip TransID: ${transaction_id}`
+            })
+            .eq('id', matchedSaleId);
 
-        if (paymentError) throw paymentError;
+        if (paymentError) {
+            console.error('❌ Error updating retail_sale:', paymentError);
+            throw paymentError;
+        }
 
         // 4. Audit Log
         await supabase.from('audit_logs').insert({
@@ -163,7 +166,7 @@ Deno.serve(async (req) => {
 
         // 5. Notify POS via Realtime Broadcast
         // (Supabase triggers on retail_sales status change will also work, but broadcast is faster)
-        await supabase.channel(`org-${saleInfo.organization_id}`).send({
+        await supabase.channel(`sale-payments-${matchedSaleId}`).send({
             type: 'broadcast',
             event: 'clip_payment',
             payload: { saleId: matchedSaleId, amount: paidAmount, status: 'confirmed' }
