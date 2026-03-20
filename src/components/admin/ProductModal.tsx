@@ -2,7 +2,9 @@ import React, { useState } from 'react'
 import { Product } from '@/types/index'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
-import { X, Save, Loader2 } from 'lucide-react'
+import { storageService } from '@/services/storageService'
+import { compressImage } from '@/utils/imageCompression'
+import { X, Save, Loader2, Image as ImageIcon, Camera } from 'lucide-react'
 
 interface ProductModalProps {
     product?: Product
@@ -27,8 +29,33 @@ export default function ProductModal({
         currentStock: product?.currentStock || 0,
         minimumStock: product?.minimumStock || 10,
         active: product?.active ?? true,
+        image: product?.image || '',
     })
     const [loading, setLoading] = useState(false)
+    const [isBulk, setIsBulk] = useState(false)
+    const [bulkSizes, setBulkSizes] = useState('')
+
+    // Image Upload states
+    const [imageFile, setImageFile] = useState<File | null>(null)
+    const [imagePreview, setImagePreview] = useState<string | null>(product?.image || null)
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        if (file.size > 5 * 1024 * 1024) {
+            alert('El archivo es demasiado grande. El máximo permitido es 5MB.')
+            return
+        }
+        setImageFile(file)
+        setImagePreview(URL.createObjectURL(file))
+    }
+
+    const generateBarcode = () => {
+        // Generates a 12 digit string starting with 750 (Mexico prefix)
+        const prefix = "750"
+        const random = Math.floor(100000000 + Math.random() * 900000000).toString()
+        setFormData(prev => ({ ...prev, barcode: prefix + random }))
+    }
 
     const categories = [
         'General',
@@ -47,30 +74,66 @@ export default function ProductModal({
         e.preventDefault()
         setLoading(true)
         try {
+            let finalImageUrl = formData.image
+
+            // Si hay un archivo nuevo, lo comprimimos y lo subimos
+            if (imageFile) {
+                // Comprimir a max 800x800, calidad 0.7
+                const compressedBlob = await compressImage(imageFile, 800, 800, 0.7)
+                // Usamos un ID temporal o el real si ya existe al subir a storage
+                const storageId = product ? product.id : `draft_${Date.now()}`
+                finalImageUrl = await storageService.uploadProductImage(storageId, compressedBlob)
+            }
+
+            const payload = { ...formData, image: finalImageUrl }
+
             if (product) {
-                await supabaseService.updateRetailProduct(product.id, formData)
+                await supabaseService.updateRetailProduct(product.id, payload)
                 await supabaseService.createAuditLog({
                     userId: currentUser?.id || 'unknown',
                     action: 'PRODUCT_UPDATED',
                     entityType: 'PRODUCT',
                     entityId: product.id,
-                    newValue: formData,
-                    timestamp: new Date()
+                    newValue: payload
                 })
             } else {
-                const newId = await supabaseService.createRetailProduct({
-                    ...formData,
-                    createdAt: new Date(),
-                })
+                if (isBulk && bulkSizes.trim() !== '') {
+                    // Split sizes by comma
+                    const sizes = bulkSizes.split(',').map(s => s.trim()).filter(s => s)
 
-                await supabaseService.createAuditLog({
-                    userId: currentUser?.id || 'unknown',
-                    action: 'PRODUCT_CREATED',
-                    entityType: 'PRODUCT',
-                    entityId: newId,
-                    newValue: formData,
-                    timestamp: new Date()
-                })
+                    for (const size of sizes) {
+                        const variantName = `${formData.name} (${size})`
+                        const variantBarcode = `750${Math.floor(100000000 + Math.random() * 900000000)}`
+
+                        const newId = await supabaseService.createRetailProduct({
+                            ...payload,
+                            name: variantName,
+                            barcode: variantBarcode,
+                            createdAt: new Date(),
+                        })
+
+                        await supabaseService.createAuditLog({
+                            userId: currentUser?.id || 'unknown',
+                            action: 'PRODUCT_CREATED',
+                            entityType: 'PRODUCT',
+                            entityId: newId,
+                            newValue: { ...payload, name: variantName, barcode: variantBarcode }
+                        })
+                    }
+                } else {
+                    const newId = await supabaseService.createRetailProduct({
+                        ...payload,
+                        createdAt: new Date(),
+                    })
+
+                    await supabaseService.createAuditLog({
+                        userId: currentUser?.id || 'unknown',
+                        action: 'PRODUCT_CREATED',
+                        entityType: 'PRODUCT',
+                        entityId: newId,
+                        newValue: payload
+                    })
+                }
             }
             onSuccess()
             onClose()
@@ -100,6 +163,26 @@ export default function ProductModal({
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Image Upload Area */}
+                    <div className="flex justify-center mb-6">
+                        <div className="relative group">
+                            <div className="w-40 h-40 rounded-3xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center relative shadow-inner">
+                                {imagePreview ? (
+                                    <img src={imagePreview} alt="Product Preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="flex flex-col items-center text-slate-400">
+                                        <ImageIcon size={48} className="mb-2 opacity-50" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-center px-4">Agregar Foto<br />(Recomendado)</span>
+                                    </div>
+                                )}
+                            </div>
+                            <label className="absolute -bottom-3 -right-3 p-3 bg-slate-900 text-white rounded-2xl shadow-xl cursor-pointer hover:bg-slate-800 transition-all hover:scale-110">
+                                <Camera size={20} />
+                                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                            </label>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
                             <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
@@ -141,17 +224,62 @@ export default function ProductModal({
                             />
                         </div>
 
+                        {!product && (
+                            <div className="md:col-span-2 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex flex-col gap-3">
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="checkbox"
+                                        id="isBulk"
+                                        checked={isBulk}
+                                        onChange={(e) => setIsBulk(e.target.checked)}
+                                        className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                                    />
+                                    <label htmlFor="isBulk" className="text-sm font-black text-indigo-900 cursor-pointer uppercase tracking-tight">
+                                        Generar Múltiples Variantes (Ej. Tallas S, M, L)
+                                    </label>
+                                </div>
+                                {isBulk && (
+                                    <div className="animate-scaleIn">
+                                        <label className="block text-xs font-bold text-indigo-700 mb-2">
+                                            Escribe las variaciones separadas por coma:
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={bulkSizes}
+                                            onChange={(e) => setBulkSizes(e.target.value)}
+                                            className="w-full px-4 py-3 bg-white border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-600/10 outline-none font-bold text-indigo-900"
+                                            placeholder="S, M, L, XL, Paquete 10 pz..."
+                                        />
+                                        <p className="text-[10px] text-indigo-500 mt-2">
+                                            Se crearán {bulkSizes.split(',').filter(s => s.trim()).length} productos individuales automáticamente.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div>
-                            <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                Código de Barras / QR
-                            </label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-black text-slate-400 uppercase tracking-widest text-[10px]">
+                                    Código de Barras / QR
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={generateBarcode}
+                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded-md transition-colors"
+                                >
+                                    Auto-Generar EAN
+                                </button>
+                            </div>
                             <input
                                 type="text"
                                 value={formData.barcode}
                                 onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                                 className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold"
                                 placeholder="Escanear o Escribir"
+                                disabled={isBulk}
                             />
+                            {isBulk && <p className="text-[10px] text-gray-400 mt-1">Los códigos se autogenerarán para cada variante.</p>}
                         </div>
 
                         <div>

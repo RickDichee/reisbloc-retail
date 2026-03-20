@@ -12,9 +12,11 @@ import {
   CheckCircle,
   TrendingUp,
   TrendingDown,
-  Eye
+  Eye,
+  Printer
 } from 'lucide-react'
 import ProductModal from './ProductModal'
+import printService from '@/services/printService'
 
 export default function InventoryManagement() {
   const { products, setProducts, currentUser } = useAppStore()
@@ -51,8 +53,7 @@ export default function InventoryManagement() {
         entityType: 'PRODUCT',
         entityId: product.id,
         oldValue: { active: product.active },
-        newValue: { active: !product.active },
-        timestamp: new Date()
+        newValue: { active: !product.active }
       })
       await loadProducts()
     } catch (error) {
@@ -75,8 +76,7 @@ export default function InventoryManagement() {
         action: 'PRODUCT_DELETED',
         entityType: 'PRODUCT',
         entityId: product.id,
-        oldValue: { name: product.name },
-        timestamp: new Date()
+        oldValue: { name: product.name }
       })
       await loadProducts()
     } catch (error) {
@@ -102,13 +102,45 @@ export default function InventoryManagement() {
         entityType: 'PRODUCT',
         entityId: product.id,
         oldValue: { stock: product.currentStock },
-        newValue: { stock: newStock, adjustment },
-        timestamp: new Date()
+        newValue: { stock: newStock, adjustment }
       })
       await loadProducts()
     } catch (error) {
       console.error('Error adjusting stock:', error)
       alert('Error al ajustar inventario')
+    }
+  }
+
+  const handlePrintLabel = async (product: Product) => {
+    try {
+      if (!product.barcode) {
+        alert('Este producto no tiene un Código de Barras / EAN configurado.');
+        return;
+      }
+
+      // We use bwip-js external API for raw SVG/PNG generation within a static HTML string
+      const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(product.barcode)}&scale=3&height=12&includetext`;
+
+      const htmlContent = `
+        <div style="text-align: center; width: 58mm; padding: 2px; font-family: monospace;">
+          <h2 style="font-size: 14px; margin: 0 0 5px 0; text-transform: uppercase; word-wrap: break-word; font-weight: 900;">
+            ${product.name}
+          </h2>
+          <p style="font-size: 18px; font-weight: bold; margin: 0 0 5px 0;">
+            $${product.price.toFixed(2)}
+          </p>
+          <div style="display: flex; justify-content: center; width: 100%;">
+            <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto;" alt="barcode">
+          </div>
+          <p style="font-size: 9px; margin-top: 5px; color: #555;">REISBLOC RETAIL</p>
+        </div>
+      `;
+
+      await printService.printHTML(htmlContent, { width: 58, title: `Label-${product.barcode}` });
+
+    } catch (error) {
+      console.error('Error printing label:', error);
+      alert('Error al mandar impresión de etiqueta térmica.');
     }
   }
 
@@ -324,6 +356,14 @@ export default function InventoryManagement() {
                           }`}
                       >
                         {product.active ? 'Desactivar' : 'Activar'}
+                      </button>
+
+                      <button
+                        onClick={() => handlePrintLabel(product)}
+                        title="Imprimir Etiqueta"
+                        className="p-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg transition-all"
+                      >
+                        <Printer size={18} />
                       </button>
 
                       <button
