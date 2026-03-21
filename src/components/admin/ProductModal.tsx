@@ -17,7 +17,7 @@ export default function ProductModal({
     onClose,
     onSuccess
 }: ProductModalProps) {
-    const { currentUser } = useAppStore()
+    const { currentUser, products } = useAppStore()
     const [formData, setFormData] = useState({
         name: product?.name || '',
         price: product?.price || 0,
@@ -30,10 +30,13 @@ export default function ProductModal({
         minimumStock: product?.minimumStock || 10,
         active: product?.active ?? true,
         image: product?.image || '',
+        parentId: product?.parentId || '',
+        packQuantity: product?.packQuantity || 1,
     })
     const [loading, setLoading] = useState(false)
     const [isBulk, setIsBulk] = useState(false)
     const [bulkSizes, setBulkSizes] = useState('')
+    const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
 
     // Image Upload states
     const [imageFile, setImageFile] = useState<File | null>(null)
@@ -85,7 +88,12 @@ export default function ProductModal({
                 finalImageUrl = await storageService.uploadProductImage(storageId, compressedBlob)
             }
 
-            const payload = { ...formData, image: finalImageUrl }
+            const payload = { 
+                ...formData, 
+                image: finalImageUrl,
+                parentId: isWholesale && formData.parentId ? formData.parentId : undefined,
+                packQuantity: isWholesale ? Number(formData.packQuantity) : 1
+            }
 
             if (product) {
                 await supabaseService.updateRetailProduct(product.id, payload)
@@ -318,9 +326,51 @@ export default function ProductModal({
                                 </datalist>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
+                    <div className="md:col-span-2 bg-amber-50 border border-amber-100 p-4 rounded-2xl flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                id="isWholesale"
+                                checked={isWholesale}
+                                onChange={(e) => setIsWholesale(e.target.checked)}
+                                className="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-600 cursor-pointer"
+                            />
+                            <label htmlFor="isWholesale" className="text-sm font-black text-amber-900 cursor-pointer uppercase tracking-tight">
+                                Producto Mayorista (Ej. Bulto que descuenta cajas)
+                            </label>
+                        </div>
+                        {isWholesale && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-scaleIn">
+                                <div>
+                                    <label className="block text-xs font-bold text-amber-700 mb-2">Producto Padre (El que pierde Stock)</label>
+                                    <select
+                                        value={formData.parentId}
+                                        onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+                                        className="w-full px-4 py-3 bg-white border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-600/10 outline-none font-bold text-amber-900"
+                                    >
+                                        <option value="">-- Seleccionar Producto --</option>
+                                        {products.filter(p => p.id !== product?.id && p.hasInventory).map(p => (
+                                            <option key={p.id} value={p.id}>{p.name} - Stock: {p.currentStock}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-amber-700 mb-2">Unidades a descontar por Venta</label>
+                                    <input
+                                        type="number"
+                                        value={formData.packQuantity}
+                                        onChange={(e) => setFormData({ ...formData, packQuantity: parseInt(e.target.value) || 1 })}
+                                        className="w-full px-4 py-3 bg-white border border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-600/10 outline-none font-bold text-amber-900"
+                                        min="1"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
                         <div className="flex items-center gap-4">
                             <input
                                 type="checkbox"

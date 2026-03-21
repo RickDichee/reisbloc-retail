@@ -25,7 +25,6 @@ import {
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import AdminCard from '@/components/common/AdminCard'
 import UsersManagement from '@/components/admin/UsersManagement'
-import InventoryManagement from '@/components/admin/InventoryManagement'
 import AuditLogs from '@/components/admin/AuditLogs'
 import logger from '@/utils/logger'
 
@@ -153,6 +152,7 @@ export default function Admin() {
                   onClick={() => {
                     if (tab.id === 'reports') navigate('/reports')
                     else if (tab.id === 'closing') navigate('/closing')
+                    else if (tab.id === 'inventory') navigate('/inventory')
                     else setActiveTab(tab.id)
                   }}
                   brandColor={
@@ -167,7 +167,6 @@ export default function Admin() {
           )}
 
           {activeTab === 'users' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><UsersManagement /></div>}
-          {activeTab === 'inventory' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><InventoryManagement /></div>}
           {activeTab === 'promotions' && (
             <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4 border border-slate-100">
               <Percent size={64} className="mx-auto opacity-20" />

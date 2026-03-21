@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import DeviceApprovalPanel from '@/components/admin/DeviceApprovalPanel'
-import AuditLogsPanel from '@/components/admin/AuditLogsPanel'
+import AuditLogs from '@/components/admin/AuditLogs'
 import { supabase } from '@/config/supabase'
 import supabaseService from '@/services/supabaseService'
 import logger from '@/utils/logger'
@@ -323,7 +323,7 @@ export default function Settings() {
                     )}
 
                     {activeTab === 'devices' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><DeviceApprovalPanel /></div>}
-                    {activeTab === 'logs' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><AuditLogsPanel /></div>}
+                    {activeTab === 'logs' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><AuditLogs /></div>}
                     {activeTab === 'branding' && (
                         <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4">
                             <Globe size={64} className="mx-auto opacity-20" />

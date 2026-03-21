@@ -141,6 +141,8 @@ export const useAppStore = create<AppStore>(
             addedAt: new Date(),
             addedBy,
             canBeDeleted: true,
+            parentId: product.parentId,
+            packQuantity: product.packQuantity,
           }
 
           return {

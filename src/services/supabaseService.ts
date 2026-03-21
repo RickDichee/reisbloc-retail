@@ -1636,7 +1636,9 @@ class SupabaseService {
         currentStock: p.current_stock,
         minimumStock: p.minimum_stock,
         hasInventory: p.has_inventory,
-        createdAt: new Date(p.created_at)
+        createdAt: new Date(p.created_at),
+        parentId: p.parent_id,
+        packQuantity: p.pack_quantity
       })) as Product[]
     }).catch(error => {
       logger.error('supabase', 'Error getting retail products', error as any)
@@ -1658,7 +1660,9 @@ class SupabaseService {
         current_stock: product.currentStock || 0,
         minimum_stock: product.minimumStock || 0,
         has_inventory: product.hasInventory ?? true,
-        active: product.active ?? true
+        active: product.active ?? true,
+        parent_id: product.parentId || null,
+        pack_quantity: product.packQuantity || 1
       }
 
       const { data, error } = await supabase
@@ -1690,6 +1694,14 @@ class SupabaseService {
       if ('hasInventory' in updates) {
         payload.has_inventory = updates.hasInventory
         delete payload.hasInventory
+      }
+      if ('parentId' in updates) {
+        payload.parent_id = updates.parentId
+        delete payload.parentId
+      }
+      if ('packQuantity' in updates) {
+        payload.pack_quantity = updates.packQuantity
+        delete payload.packQuantity
       }
 
       delete payload.id
@@ -1741,7 +1753,9 @@ class SupabaseService {
         currentStock: data.current_stock,
         minimumStock: data.minimum_stock,
         hasInventory: data.has_inventory,
-        createdAt: new Date(data.created_at)
+        createdAt: new Date(data.created_at),
+        parentId: data.parent_id,
+        packQuantity: data.pack_quantity
       } as Product
     } catch (error) {
       logger.error('supabase', 'Error getting retail product by code', error as any)
@@ -1787,12 +1801,18 @@ class SupabaseService {
       if (itemsError) throw itemsError
 
       // 3. Update stock for items that have inventory
-      const stockUpdates = items
-        .filter(item => item.productId && !item.id.toLowerCase().startsWith('manual-'))
-        .map(item => ({
-          productId: item.productId,
-          quantity: -item.quantity // Deduct
-        }))
+      const aggregatedStock: Record<string, number> = {}
+      items.forEach(item => {
+        if (!item.productId || item.id.toLowerCase().startsWith('manual-')) return
+        const targetId = item.parentId || item.productId
+        const qtyToDeduct = item.quantity * (item.packQuantity || 1)
+        aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct
+      })
+
+      const stockUpdates = Object.entries(aggregatedStock).map(([productId, quantity]) => ({
+        productId,
+        quantity // This is already negative
+      }))
 
       if (stockUpdates.length > 0) {
         await this.updateRetailStockBatch(stockUpdates)

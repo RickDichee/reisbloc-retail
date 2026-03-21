@@ -44,6 +44,8 @@ export interface Product {
   active: boolean;
   image?: string;
   createdAt: Date;
+  parentId?: string;
+  packQuantity?: number;
   barcode?: string;
   sku?: string;
   description?: string;
@@ -62,6 +64,8 @@ export interface OrderItem {
   deletedBy?: string;
   deleteReason?: string;
   notes?: string;
+  parentId?: string;
+  packQuantity?: number;
 }
 
 export interface Order {
