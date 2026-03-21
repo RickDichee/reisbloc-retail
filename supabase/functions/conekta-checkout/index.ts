@@ -64,13 +64,22 @@ serve(async (req) => {
       throw new Error(data.details?.[0]?.message || 'Error al procesar pago en Conekta')
     }
 
-    // Conekta devuelve un checkout_id dentro de data.checkout.id y el URL
+    // Conekta devuelve checkout.id — la URL pública se construye con ese ID
+    const checkoutId = data.checkout?.id
+    if (!checkoutId) {
+      console.error('Conekta response missing checkout.id:', JSON.stringify(data))
+      throw new Error('Conekta no retornó un checkout ID válido')
+    }
+
+    // URL pública del checkout de Conekta (funciona con Apple Pay, OXXO y Tarjeta)
+    const checkoutUrl = `https://pay.conekta.com/checkout/${checkoutId}`
+
     return new Response(
       JSON.stringify({
         success: true,
         transactionId: data.id,
-        checkoutId: data.checkout.id,
-        checkoutUrl: data.checkout.url
+        checkoutId: checkoutId,
+        checkoutUrl: checkoutUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
