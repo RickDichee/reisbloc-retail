@@ -173,7 +173,7 @@ export default function AuditLogs() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {log.action === 'login' && log.location ? (
+                                            {log.location ? (
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
                                                         <Globe size={12} className="text-slate-400" />

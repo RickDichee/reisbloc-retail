@@ -3,6 +3,7 @@ import { Package, Plus, Search, AlertTriangle, Share2, Edit2 } from 'lucide-reac
 import { useAppStore } from '@/store/appStore'
 import logger from '@/utils/logger'
 import supabaseService from '@/services/supabaseService'
+import printService from '@/services/printService'
 import ProductModal from '@/components/admin/ProductModal'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 
@@ -52,6 +53,39 @@ export default function Inventory() {
     } else {
       navigator.clipboard.writeText(text)
       alert('📋 Promo copiada al portapapeles')
+    }
+  }
+
+  const handlePrintLabel = async (product: any) => {
+    try {
+      if (!product.barcode) {
+        alert('Este producto no tiene un Código de Barras / EAN configurado.');
+        return;
+      }
+
+      // We use bwip-js external API for raw SVG/PNG generation within a static HTML string
+      const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(product.barcode)}&scale=3&height=12&includetext`;
+
+      const htmlContent = `
+        <div style="text-align: center; width: 58mm; padding: 2px; font-family: monospace;">
+          <h2 style="font-size: 14px; margin: 0 0 5px 0; text-transform: uppercase; word-wrap: break-word; font-weight: 900;">
+            ${product.name}
+          </h2>
+          <p style="font-size: 18px; font-weight: bold; margin: 0 0 5px 0;">
+            $${product.price ? Number(product.price).toFixed(2) : '0.00'}
+          </p>
+          <div style="display: flex; justify-content: center; width: 100%;">
+            <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto;" alt="barcode">
+          </div>
+          <p style="font-size: 9px; margin-top: 5px; color: #555;">REISBLOC RETAIL</p>
+        </div>
+      `;
+
+      await printService.printHTML(htmlContent, { width: 58, title: `Label-${product.barcode}` });
+
+    } catch (error) {
+      console.error('Error printing label:', error);
+      alert('Error al mandar impresión de etiqueta térmica.');
     }
   }
 
@@ -192,6 +226,13 @@ export default function Inventory() {
               </div>
 
               <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex gap-2">
+                <button
+                  onClick={() => handlePrintLabel(product)}
+                  className="p-3 bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all rounded-xl shadow-sm text-xs font-black flex items-center justify-center group/print"
+                  title="Imprimir Etiqueta Térmica"
+                >
+                  <Printer size={16} className="group-hover/print:scale-110 transition-transform" />
+                </button>
                 <button
                   onClick={() => handleShareProduct(product)}
                   className="flex-1 bg-white border border-slate-200 p-3 rounded-xl text-slate-600 hover:text-slate-900 hover:shadow-md transition-all flex items-center justify-center gap-2 text-xs font-black group/btn"

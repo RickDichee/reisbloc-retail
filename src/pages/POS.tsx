@@ -201,11 +201,12 @@ export default function POS() {
     // Combine all items to be sold
     const allItems = [...currentDraft, ...orders.flatMap(o => o.items || [])]
 
-    // Agrupar por producto para sumar cantidades totales
+    // Agrupar por producto para sumar cantidades totales (Considerando Productos Mayoristas)
     const totals: Record<string, number> = {}
     allItems.forEach(item => {
-      if (item.productId) {
-        totals[item.productId] = (totals[item.productId] || 0) + item.quantity
+      const targetId = item.parentId || item.productId
+      if (targetId) {
+        totals[targetId] = (totals[targetId] || 0) + (item.quantity * (item.packQuantity || 1))
       }
     })
 

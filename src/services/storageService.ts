@@ -45,9 +45,25 @@ export const storageService = {
         })
 
       if (error) {
-        // If the products bucket doesn't exist, we fallback to storing them in public/avatars folder 'products' for now
-        logger.warn('storage', 'Buckets list might miss "products", attempting fallback if possible', error)
-        throw error
+        // Fallback: If 'products' bucket doesn't exist, we use the public 'avatars' bucket 
+        // and put it in a 'products/' folder. This prevents crashes on new databases.
+        logger.warn('storage', 'Bucket "products" no encontrado. Usando fallback en "avatars/products/"...')
+        const fallbackFileName = `products/${fileName}`
+        
+        const { data: fallbackData, error: fallbackError } = await supabase.storage
+          .from('avatars')
+          .upload(fallbackFileName, fileBlob, {
+            contentType: 'image/jpeg',
+            upsert: true
+          })
+          
+        if (fallbackError) throw fallbackError
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fallbackData.path)
+          
+        return publicUrl
       }
 
       const { data: { publicUrl } } = supabase.storage
