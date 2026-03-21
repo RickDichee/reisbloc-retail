@@ -37,6 +37,7 @@ export default function POS() {
   const [activeTableOrders, setActiveTableOrders] = useState<any[]>([])
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
   const cashRegisterAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [receiptModal, setReceiptModal] = useState<{ isOpen: boolean; html: string; total: number } | null>(null)
 
   const [paymentPanel, setPaymentPanel] = useState<{
     isOpen: boolean
@@ -295,18 +296,14 @@ export default function POS() {
             tableNumber={tableNumber}
           />
         )
-        // Eliminamos el await para evitar bloquear el UI Thread si window.print() abre diálogos modales restrictivos
-        printService.printReceipt(ticketHTML, { title: 'Ticket de Pago', width: 58 }).catch(e => {
-          logger.warn('pos', 'Fallo silencioso en printReceipt', e)
-        })
+        setReceiptModal({ isOpen: true, html: ticketHTML, total: result.total })
       } catch (printErr) {
-        logger.warn('pos', 'No se pudo imprimir ticket final', printErr as any)
+        logger.warn('pos', 'No se pudo generar ticket final', printErr as any)
       }
 
       clearDraftForTable(tableNumber)
       setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })
       cashRegisterAudioRef.current?.play().catch(() => { })
-      alert(`✅ Venta completada!\nTotal: $${result.total.toFixed(2)}`)
     } catch (error: any) {
       logger.error('pos', 'Error recording sale', error)
       alert(`Error: ${error.message}`)
@@ -419,6 +416,40 @@ export default function POS() {
         </div>
 
         {/* Modals */}
+        {receiptModal?.isOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-black text-slate-900">✅ Venta Completada</h2>
+                <span className="text-2xl font-black text-emerald-600">${receiptModal.total.toFixed(2)}</span>
+              </div>
+
+              <div
+                className="bg-slate-50 rounded-xl p-3 max-h-64 overflow-y-auto text-xs font-mono border border-slate-200"
+                dangerouslySetInnerHTML={{ __html: receiptModal.html }}
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    printService.printReceipt(receiptModal.html, { title: 'Ticket', width: 58 })
+                  }}
+                  className="flex-1 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Printer size={18} />
+                  Imprimir Ticket
+                </button>
+                <button
+                  onClick={() => setReceiptModal(null)}
+                  className="flex-1 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition-all"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {paymentPanel.isOpen && (
           <PaymentPanel
             orderId={paymentPanel.orderId || ''}
