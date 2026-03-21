@@ -1,4 +1,5 @@
 import logger from '@/utils/logger'
+import { supabase } from '@/config/supabase'
 
 interface ConektaPaymentIntent {
     amount: number;
@@ -8,54 +9,50 @@ interface ConektaPaymentIntent {
 }
 
 export class ConektaService {
-    private apiKey: string | null = null;
     private isInitialized = false;
-
-    constructor() {
-        // Inicialización preparada para el futuro con Supabase/env
-        this.apiKey = import.meta.env.VITE_CONEKTA_PUBLIC_KEY || null;
-    }
 
     public async initialize(): Promise<boolean> {
         if (this.isInitialized) return true;
-
-        if (!this.apiKey) {
-            logger.warn('conekta-service', 'No API key provided for Conekta');
-            return false;
-        }
-
-        try {
-            // Aquí se cargaría el SDK de Conekta (ej. script de JavaScript) o
-            // se verificaría la conectividad con la API para terminales físicas.
-            logger.info('conekta-service', 'Conekta services initialized');
-            this.isInitialized = true;
-            return true;
-        } catch (error) {
-            logger.error('conekta-service', 'Failed to initialize Conekta', error as Error);
-            return false;
-        }
+        
+        logger.info('conekta-service', 'Conekta services initialized');
+        this.isInitialized = true;
+        return true;
     }
 
-    public async createPaymentIntent(intent: ConektaPaymentIntent): Promise<{ success: boolean; transactionId?: string; error?: string }> {
-        logger.info('conekta-service', 'Creating payment intent', intent);
+    public async createPaymentIntent(intent: ConektaPaymentIntent): Promise<{ success: boolean; transactionId?: string; error?: string; checkoutUrl?: string }> {
+        logger.info('conekta-service', 'Creating payment intent via Edge Function', intent);
 
-        // Mock simulation for development/testing
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const isSuccess = Math.random() > 0.1; // 90% success rate
-                if (isSuccess) {
-                    resolve({
-                        success: true,
-                        transactionId: `conekta_test_${Date.now()}`
-                    });
-                } else {
-                    resolve({
-                        success: false,
-                        error: 'Payment declined by processor'
-                    });
+        try {
+            const { data, error } = await supabase.functions.invoke('conekta-checkout', {
+                body: {
+                    amount: intent.amount,
+                    currency: intent.currency,
+                    description: intent.description,
+                    orderId: intent.orderId
                 }
-            }, 2000); // 2 seconds simulated delay
-        });
+            })
+
+            if (error) throw error
+
+            if (data?.success) {
+                return {
+                    success: true,
+                    transactionId: data.transactionId,
+                    checkoutUrl: data.checkoutUrl
+                }
+            } else {
+                return {
+                    success: false,
+                    error: data?.error || 'No se pudo crear el checkout de Conekta'
+                }
+            }
+        } catch (error: any) {
+            logger.error('conekta-service', 'Failed to create Conekta checkout', error.message || error);
+            return {
+                success: false,
+                error: error.message || 'Error de conexión con la pasarela.'
+            }
+        }
     }
 }
 

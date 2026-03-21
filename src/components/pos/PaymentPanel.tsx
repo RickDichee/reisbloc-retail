@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import logger from '@/utils/logger'
+import conektaService from '@/services/conektaService'
 import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X } from 'lucide-react'
 
 export interface PaymentResult {
@@ -35,6 +36,8 @@ export default function PaymentPanel({
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [conektaCheckoutUrl, setConektaCheckoutUrl] = useState<string | null>(null)
+  const [conektaTransactionId, setConektaTransactionId] = useState('')
 
   const handlePayment = async () => {
     try {
@@ -54,6 +57,23 @@ export default function PaymentPanel({
             total: finalTotal,
           })
         }, 1500)
+      } else if (paymentMethod === 'card_conekta') {
+        const result = await conektaService.createPaymentIntent({
+          amount: finalTotal,
+          currency: currency,
+          orderId: ids.join('-'),
+          description: `Venta POS Reisbloc - Tk ${tableNumber}`
+        })
+
+        if (!result.success || !result.checkoutUrl) {
+          throw new Error(result.error || 'Error con Conekta API')
+        }
+
+        setConektaCheckoutUrl(result.checkoutUrl)
+        setConektaTransactionId(result.transactionId || `conekta_${Date.now()}`)
+        setLoading(false)
+      } else {
+        throw new Error('Método de pago no implementado por completo aún.')
       }
     } catch (err: any) {
       const msg = err?.message || 'Error al procesar cobro'
@@ -132,46 +152,89 @@ export default function PaymentPanel({
           </div>
 
           {/* Payment Method Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-bold text-gray-900 mb-3">Métodos de Cobro Integrados</label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => setPaymentMethod('cash')}
-                disabled={loading || success}
-                className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'cash'
-                  ? 'bg-emerald-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600'
-                  }`}
-              >
-                <DollarSign size={20} strokeWidth={2.5} />
-                <span className="text-[10px] font-black uppercase">Efectivo</span>
-              </button>
+          {!conektaCheckoutUrl ? (
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-gray-900 mb-3">Métodos de Cobro Integrados</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setPaymentMethod('cash')}
+                  disabled={loading || success}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'cash'
+                    ? 'bg-emerald-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <DollarSign size={20} strokeWidth={2.5} />
+                  <span className="text-[10px] font-black uppercase">Efectivo</span>
+                </button>
 
-              <button
-                onClick={() => setPaymentMethod('card_conekta')}
-                disabled={loading || success}
-                className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_conekta'
-                  ? 'bg-indigo-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600'
-                  }`}
-              >
-                <CreditCard size={20} />
-                <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
-              </button>
+                <button
+                  onClick={() => setPaymentMethod('card_conekta')}
+                  disabled={loading || success}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_conekta'
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <CreditCard size={20} />
+                  <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
+                </button>
 
-              <button
-                onClick={() => setPaymentMethod('card_stripe')}
-                disabled={loading || success}
-                className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_stripe'
-                  ? 'bg-indigo-900 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600'
-                  }`}
-              >
-                <CreditCard size={20} />
-                <span className="text-[10px] font-black uppercase text-center">Stripe IP</span>
-              </button>
+                <button
+                  onClick={() => setPaymentMethod('card_stripe')}
+                  disabled={loading || success}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_stripe'
+                    ? 'bg-indigo-900 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <CreditCard size={20} />
+                  <span className="text-[10px] font-black uppercase text-center">Stripe IP</span>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="mb-6 text-center animate-scaleIn bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+               <h3 className="font-black text-indigo-900 mb-2">Escanea para Pagar</h3>
+               <p className="text-xs text-indigo-600 font-bold mb-4">Compatible con Apple Pay, Tarjetas y OXXO</p>
+               
+               <div className="flex justify-center mb-6">
+                  <div className="bg-white p-3 rounded-2xl shadow-lg inline-block">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(conektaCheckoutUrl)}`} 
+                      alt="QR de Pago Conekta" 
+                      className="w-40 h-40 object-contain"
+                    />
+                  </div>
+               </div>
+
+               <div className="flex flex-col gap-3">
+                 <button
+                   onClick={() => window.open(conektaCheckoutUrl, '_blank')}
+                   className="w-full py-3 bg-white border border-indigo-200 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition-colors"
+                 >
+                   Abrir Link en esta Tablet
+                 </button>
+                 <button
+                   onClick={() => {
+                     setSuccess(true);
+                     setTimeout(() => {
+                       onPaymentComplete({
+                         transactionId: conektaTransactionId,
+                         paymentMethod: 'card_conekta',
+                         currency,
+                         total: orderTotal
+                       });
+                     }, 1000);
+                   }}
+                   disabled={success}
+                   className="w-full py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
+                 >
+                   {success ? <><CheckCircle size={20} /> ¡Aprobado!</> : 'Confirmar Pago Exitoso'}
+                 </button>
+               </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -188,55 +251,59 @@ export default function PaymentPanel({
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-2 flex-col">
-            <div className="flex gap-3">
-              <button
-                onClick={onCancel}
-                disabled={loading || success}
-                className="flex-1 px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancelar
-              </button>
+          {!conektaCheckoutUrl && (
+            <div className="flex gap-2 flex-col">
+              <div className="flex gap-3">
+                <button
+                  onClick={onCancel}
+                  disabled={loading || success}
+                  className="flex-1 px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar
+                </button>
 
-              <button
-                onClick={handlePayment}
-                disabled={loading || success}
-                className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin" />
-                    Procesando...
-                  </>
-                ) : success ? (
-                  <>
-                    <CheckCircle size={20} />
-                    ¡Completado!
-                  </>
-                ) : (
-                  <>Pagar ${orderTotal.toFixed(2)}</>
-                )}
-              </button>
+                <button
+                  onClick={handlePayment}
+                  disabled={loading || success}
+                  className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={20} className="animate-spin" />
+                      Procesando...
+                    </>
+                  ) : success ? (
+                    <>
+                      <CheckCircle size={20} />
+                      ¡Completado!
+                    </>
+                  ) : (
+                    <>
+                      {paymentMethod === 'card_conekta' ? 'Generar Terminal / QR' : `Pagar $${orderTotal.toFixed(2)}`}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Dividir Cuenta Button - only for multiple orders */}
+              {ids.length > 1 && !loading && (
+                <button
+                  onClick={() => onPaymentComplete({
+                    transactionId: `split-request-${Date.now()}`,
+                    paymentMethod: 'cash',
+                    currency: 'MXN',
+                    total: 0,
+                    splitRequested: true,
+                  })}
+                  disabled={loading || success}
+                  className="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Users size={18} />
+                  Dividir Cobro
+                </button>
+              )}
             </div>
-
-            {/* Dividir Cuenta Button - only for multiple orders */}
-            {ids.length > 1 && !loading && (
-              <button
-                onClick={() => onPaymentComplete({
-                  transactionId: `split-request-${Date.now()}`,
-                  paymentMethod: 'cash',
-                  currency: 'MXN',
-                  total: 0,
-                  splitRequested: true,
-                })}
-                disabled={loading || success}
-                className="w-full px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Users size={18} />
-                Dividir Cobro
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

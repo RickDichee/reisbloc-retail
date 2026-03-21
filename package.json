@@ -25,6 +25,7 @@
     "axios": "^1.6.2",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.4.1",
+    "conekta": "^8.0.1",
     "date-fns": "^2.30.0",
     "idb": "^8.0.3",
     "lucide-react": "^0.294.0",
