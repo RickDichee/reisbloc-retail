@@ -295,7 +295,10 @@ export default function POS() {
             tableNumber={tableNumber}
           />
         )
-        await printService.printReceipt(ticketHTML, { title: 'Ticket de Pago', width: 58 })
+        // Eliminamos el await para evitar bloquear el UI Thread si window.print() abre diálogos modales restrictivos
+        printService.printReceipt(ticketHTML, { title: 'Ticket de Pago', width: 58 }).catch(e => {
+          logger.warn('pos', 'Fallo silencioso en printReceipt', e)
+        })
       } catch (printErr) {
         logger.warn('pos', 'No se pudo imprimir ticket final', printErr as any)
       }
