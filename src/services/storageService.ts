@@ -47,8 +47,12 @@ export const storageService = {
       if (error) {
         // Fallback: If 'products' bucket doesn't exist, we use the public 'avatars' bucket 
         // and put it in a 'products/' folder. This prevents crashes on new databases.
-        logger.warn('storage', 'Bucket "products" no encontrado. Usando fallback en "avatars/products/"...')
-        const fallbackFileName = `products/${fileName}`
+        logger.warn('storage', 'Bucket "products" no encontrado. Usando fallback seguro en "avatars/"...')
+        const { data: { user } } = await supabase.auth.getUser()
+        const uid = user?.id || 'public'
+        
+        // Lo guardamos dentro de la carpeta del usuario para respetar RLS del bucket "avatars"
+        const fallbackFileName = `${uid}/products_${fileName.replace('/', '_')}`
         
         const { data: fallbackData, error: fallbackError } = await supabase.storage
           .from('avatars')
@@ -57,7 +61,10 @@ export const storageService = {
             upsert: true
           })
           
-        if (fallbackError) throw fallbackError
+        if (fallbackError) {
+          logger.error('storage', 'Error crítico en fallback de avatars', fallbackError)
+          throw fallbackError
+        }
         
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
