@@ -266,15 +266,13 @@ export default function POS() {
 
   const handlePaymentComplete = async (result: PaymentResult) => {
     if (!currentUser || isReadOnly) return
-    const { orderIds } = paymentPanel
-    const targetIds = orderIds || (paymentPanel.orderId ? [paymentPanel.orderId] : [])
-    if (targetIds.length === 0) return
 
     try {
       const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'transfer' ? 'transferencia' : result.paymentMethod)
 
-      // Fetch combined items: Draft + any previously open orders
-      const ordersToProcess = activeTableOrders.filter(o => (targetIds || []).includes(o.id))
+      // Items del borrador activo + (órdenes activas si las hay)
+      const { orderIds } = paymentPanel
+      const ordersToProcess = activeTableOrders.filter(o => (orderIds || []).includes(o.id))
       const allItems = [...items, ...ordersToProcess.flatMap(o => o.items || [])]
 
       await supabaseService.createRetailSale({
@@ -286,6 +284,7 @@ export default function POS() {
         notes: 'Venta Directa Retail'
       }, allItems)
 
+      // Generar ticket y mostrar modal
       try {
         const ticketHTML = renderToStaticMarkup(
           <ReceiptTicket
@@ -296,9 +295,10 @@ export default function POS() {
             tableNumber={tableNumber}
           />
         )
+        // Abrir modal ANTES de limpiar el borrador
         setReceiptModal({ isOpen: true, html: ticketHTML, total: result.total })
       } catch (printErr) {
-        logger.warn('pos', 'No se pudo generar ticket final', printErr as any)
+        logger.warn('pos', 'No se pudo generar ticket', printErr as any)
       }
 
       clearDraftForTable(tableNumber)
