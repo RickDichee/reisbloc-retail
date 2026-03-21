@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Package, Plus, Search, AlertTriangle, Share2, Edit2 } from 'lucide-react'
+import { Package, Plus, Search, AlertTriangle, Share2, Edit2, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import logger from '@/utils/logger'
 import supabaseService from '@/services/supabaseService'
