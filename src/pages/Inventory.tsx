@@ -172,6 +172,22 @@ export default function Inventory() {
               className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group overflow-hidden flex flex-col"
             >
               <div className="p-5 flex-1 space-y-4">
+                {/* Product Image */}
+                {product.image ? (
+                  <div className="w-full h-36 rounded-2xl overflow-hidden bg-slate-100 -mx-0 -mt-0">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-24 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                    <Package size={32} className="text-slate-300" />
+                  </div>
+                )}
+
                 {/* 1. Product Name (Top Priority) */}
                 <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-2 uppercase tracking-tight leading-tight">
                   {product.name}

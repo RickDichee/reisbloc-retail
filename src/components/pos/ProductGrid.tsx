@@ -59,29 +59,42 @@ export function ProductGrid({ products, onAdd, disableAdd = false }: ProductGrid
                 : 'border-gray-200 bg-white hover:shadow-md hover:border-indigo-300 hover:-translate-y-0.5'
                 }`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border ${categoryColors[product.category || 'Otros']?.includes('blue')
-                  ? 'bg-blue-50 text-blue-700 border-blue-100'
-                  : 'bg-indigo-50 text-indigo-700 border-indigo-100'
-                  }`}>
-                  {product.category || 'General'}
-                </span>
+              {/* Product Image / Placeholder */}
+              {product.image ? (
+                <div className="w-full h-28 overflow-hidden rounded-t-xl">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    onError={(e) => { (e.target as HTMLImageElement).parentElement!.className = 'w-full h-28 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center' }}
+                  />
+                </div>
+              ) : (
+                <div className={`w-full h-20 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center rounded-t-xl opacity-80`}>
+                  <Package size={28} className="text-white/80" />
+                </div>
+              )}
 
-                {product.hasInventory && (
-                  <div className="text-xs">
-                    {isOutOfStock(product) ? (
-                      <span className="text-red-600 font-bold flex items-center gap-1"><AlertTriangle size={10} /> Agotado</span>
-                    ) : isLowStock(product) ? (
-                      <span className="text-amber-600 font-bold flex items-center gap-1"><AlertTriangle size={10} /> Bajo: {product.currentStock}</span>
-                    ) : (
-                      <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={10} /> Stock: {product.currentStock}</span>
-                    )}
-                  </div>
-                )}
-              </div>
+              <div className="p-3">
+                <div className="flex justify-between items-start mb-1.5">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 uppercase tracking-wide">
+                    {product.category || 'General'}
+                  </span>
 
-              <div>
-                <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate">{product.name}</h3>
+                  {product.hasInventory && (
+                    <div className="text-xs">
+                      {isOutOfStock(product) ? (
+                        <span className="text-red-600 font-bold flex items-center gap-1"><AlertTriangle size={10} /> Agotado</span>
+                      ) : isLowStock(product) ? (
+                        <span className="text-amber-600 font-bold flex items-center gap-1"><AlertTriangle size={10} /> Bajo: {product.currentStock}</span>
+                      ) : (
+                        <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={10} /> {product.currentStock}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate text-sm">{product.name}</h3>
                 <p className="text-lg font-black text-indigo-600">
                   {currency.format(product.price)}
                 </p>
