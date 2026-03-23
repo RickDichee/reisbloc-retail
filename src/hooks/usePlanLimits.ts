@@ -5,35 +5,48 @@
  */
 
 import { useAppStore } from '@/store/appStore'
+import { PLANS, getPlanDisplayName, PlanType as NewPlanType } from '@/config/plans'
 
-export type PlanType = 'free' | 'pro' | 'enterprise'
+export type PlanType = 'free' | 'starter' | 'growth' | 'scale' | 'enterprise'
 
 export type PlanFeature =
-  | 'product_images'   // Imágenes en productos
-  | 'conekta'          // Pagos QR / Conekta
-  | 'mercadopago'      // Pagos QR / MercadoPago
-  | 'realtime'         // Subscripciones Realtime
-  | 'audit_logs'       // Audit logs
-  | 'advanced_reports' // Reportes avanzados + export
-  | 'thermal_printer'  // Impresora térmica (todos los planes, pero Free tiene branding)
-  | 'multi_register'   // Más de 1 caja
-  | 'multi_user'       // Más de 1 usuario
-  | 'multi_branch'     // Sucursales múltiples
-  | 'sales_history_full' // Historial completo (12+ meses)
+  | 'product_images'
+  | 'conekta'
+  | 'mercadopago'
+  | 'realtime'
+  | 'audit_logs'
+  | 'advanced_reports'
+  | 'thermal_printer'
+  | 'multi_register'
+  | 'multi_user'
+  | 'multi_branch'
+  | 'sales_history_full'
 
-export type PlanResource = 'products' | 'users' | 'registers'
+export type PlanResource = 'products' | 'employees' | 'registers'
 
 const PLAN_LIMITS: Record<PlanType, Record<PlanResource, number>> = {
-  free:       { products: 50,   users: 1,  registers: 1 },
-  pro:        { products: 500,  users: 5,  registers: 3 },
-  enterprise: { products: 9999, users: 99, registers: 99 },
+  free:       { products: 100,  employees: 3,  registers: 1 },
+  starter:    { products: 1000, employees: 10, registers: 3 },
+  growth:     { products: 5000, employees: 25, registers: 5 },
+  scale:      { products: -1,   employees: -1, registers: -1 },
+  enterprise: { products: -1,   employees: -1, registers: -1 },
 }
 
 const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
   free: [
-    'thermal_printer', // sí, pero con branding
+    'thermal_printer',
   ],
-  pro: [
+  starter: [
+    'thermal_printer',
+    'product_images',
+    'conekta',
+    'mercadopago',
+    'realtime',
+    'audit_logs',
+    'multi_register',
+    'multi_user',
+  ],
+  growth: [
     'thermal_printer',
     'product_images',
     'conekta',
@@ -44,6 +57,19 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
     'multi_register',
     'multi_user',
     'sales_history_full',
+  ],
+  scale: [
+    'thermal_printer',
+    'product_images',
+    'conekta',
+    'mercadopago',
+    'realtime',
+    'audit_logs',
+    'advanced_reports',
+    'multi_register',
+    'multi_user',
+    'sales_history_full',
+    'multi_branch',
   ],
   enterprise: [
     'thermal_printer',
@@ -62,33 +88,51 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
 
 export function usePlanLimits() {
   const { orgPlan } = useAppStore()
-  const plan: PlanType = (orgPlan as PlanType) || 'free'
+  
+  // Map old plan names to new ones
+  const planMap: Record<string, PlanType> = {
+    'free': 'free',
+    'pro': 'starter',
+    'essential': 'free',
+    'starter': 'starter',
+    'growth': 'growth',
+    'scale': 'scale',
+    'enterprise': 'enterprise',
+  }
+  
+  const plan: PlanType = planMap[orgPlan as string] || 'free'
+  const planLimits = PLANS[plan as NewPlanType]
 
   const canUseFeature = (feature: PlanFeature): boolean => {
     return PLAN_FEATURES[plan]?.includes(feature) ?? false
   }
 
   const isWithinLimit = (resource: PlanResource, count: number): boolean => {
-    return count < PLAN_LIMITS[plan][resource]
+    const limit = PLAN_LIMITS[plan]?.[resource] ?? 0
+    if (limit === -1) return true
+    return count < limit
   }
 
   const getLimit = (resource: PlanResource): number => {
-    return PLAN_LIMITS[plan][resource]
+    return PLAN_LIMITS[plan]?.[resource] ?? 0
   }
 
   const showBranding = plan === 'free'
-  const planName = plan === 'free' ? 'Esencial' : plan === 'pro' ? 'Pro' : 'Enterprise'
-  const isPro = plan === 'pro' || plan === 'enterprise'
-  const isEnterprise = plan === 'enterprise'
+  const planName = getPlanDisplayName(plan as NewPlanType)
+  const isPro = plan !== 'free'
+  const isEnterprise = plan === 'enterprise' || plan === 'scale'
+  const isScale = plan === 'scale'
 
   return {
     plan,
     planName,
     isPro,
     isEnterprise,
+    isScale,
     showBranding,
     canUseFeature,
     isWithinLimit,
     getLimit,
+    planLimits,
   }
 }

@@ -50,7 +50,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
         { label: 'Operación', isHeader: true },
         { label: 'Punto de Venta', icon: Banknote, path: '/pos' },
-        { label: 'Monitor de Operaciones', icon: LayoutGrid, path: '/tables' },
+        { label: 'Cuentas', icon: LayoutGrid, path: '/tables' },
         { label: 'E-commerce', icon: Store, path: '/ecommerce' },
 
         { label: 'Gestión', isHeader: true },
