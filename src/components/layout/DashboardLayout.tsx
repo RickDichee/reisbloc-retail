@@ -16,9 +16,11 @@ import {
     ChevronRight,
     Settings,
     Banknote,
-    Coins
+    Coins,
+    Zap
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -29,6 +31,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const location = useLocation();
     const { currentUser, organizationSettings } = useAppStore();
     const { logout } = useAuth();
+    const { planName, isPro } = usePlanLimits();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isMini, setIsMini] = useState(() => {
         const saved = localStorage.getItem('sidebar_mini');
@@ -141,9 +144,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         {!isMini && (
-                            <div className="overflow-hidden animate-fadeIn">
-                                <p className="text-sm font-bold text-slate-900 truncate">{currentUser?.username || 'Usuario'}</p>
-                                <p className="text-xs text-slate-500 truncate capitalize">{currentUser?.role || 'Staff'}</p>
+                            <div className="overflow-hidden animate-fadeIn space-y-1 mt-1">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900 truncate">{currentUser?.username || 'Usuario'}</p>
+                                    <p className="text-[10px] text-slate-500 truncate uppercase font-black tracking-widest">{currentUser?.role || 'Staff'}</p>
+                                </div>
+                                
+                                <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                                    isPro 
+                                        ? 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 border border-indigo-200 shadow-sm' 
+                                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                }`}>
+                                    {isPro && <Zap size={10} className="fill-indigo-600 text-indigo-600" />}
+                                    Plan {planName}
+                                </div>
                             </div>
                         )}
                     </div>
