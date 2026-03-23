@@ -6,7 +6,7 @@ import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 export interface PaymentResult {
   transactionId: string
-  paymentMethod: 'cash' | 'card_conekta' | 'card_stripe' | 'card'
+  paymentMethod: 'cash' | 'card_conekta' | 'card'
   currency?: 'MXN' | 'USD'
   total: number
   splitRequested?: boolean
@@ -32,7 +32,7 @@ export default function PaymentPanel({
   // Support both old (orderId) and new (orderIds) interfaces
   const ids = orderIds || (orderId ? [orderId] : [])
 
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_conekta' | 'card_stripe' | 'card'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_conekta' | 'card'>('cash')
   const { canUseFeature } = usePlanLimits()
   const [currency, setCurrency] = useState<'MXN' | 'USD'>('MXN')
   const [loading, setLoading] = useState(false)
@@ -48,8 +48,8 @@ export default function PaymentPanel({
 
       const finalTotal = orderTotal
 
-      if (paymentMethod === 'cash') {
-        const transactionId = `cash-${Date.now()}`
+      if (paymentMethod === 'cash' || paymentMethod === 'card') {
+        const transactionId = `${paymentMethod}-${Date.now()}`
         setSuccess(true)
         setTimeout(() => {
           onPaymentComplete({
@@ -197,15 +197,15 @@ export default function PaymentPanel({
                 )}
 
                 <button
-                  onClick={() => setPaymentMethod('card_stripe')}
+                  onClick={() => setPaymentMethod('card')}
                   disabled={loading || success}
-                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_stripe'
-                    ? 'bg-indigo-900 text-white shadow-lg'
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card'
+                    ? 'bg-slate-900 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                 >
                   <CreditCard size={20} />
-                  <span className="text-[10px] font-black uppercase text-center">Stripe IP</span>
+                  <span className="text-[10px] font-black uppercase text-center leading-tight">Terminal<br/>Física</span>
                 </button>
               </div>
             </div>
@@ -295,7 +295,11 @@ export default function PaymentPanel({
                     </>
                   ) : (
                     <>
-                      {paymentMethod === 'card_conekta' ? 'Generar Terminal / QR' : `Pagar $${orderTotal.toFixed(2)}`}
+                      {paymentMethod === 'card_conekta' 
+                        ? 'Generar Terminal / QR' 
+                        : paymentMethod === 'card'
+                          ? 'Registrar Cobro en Terminal' 
+                          : `Recibir $${orderTotal.toFixed(2)} en Efectivo`}
                     </>
                   )}
                 </button>
