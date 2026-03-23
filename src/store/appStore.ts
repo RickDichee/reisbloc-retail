@@ -33,6 +33,8 @@ interface AppState {
   users: User[]
   draftOrders: Record<number, OrderItem[]>
   organizationSettings: any | null
+  orgPlan: string        // 'free' | 'pro' | 'enterprise'
+  orgPlanNote: string | null
   accessibility: AccessibilityState
 }
 
@@ -54,6 +56,7 @@ interface AppActions {
   removeDraftItem: (tableNumber: number, itemId: string) => void
   clearDraftForTable: (tableNumber: number) => void
   setOrganizationSettings: (settings: any) => void
+  setOrgPlan: (plan: string, note?: string | null) => void
   setAccessibility: (settings: Partial<AccessibilityState>) => void
 }
 
@@ -77,6 +80,8 @@ const initialState: AppState = {
   users: [],
   draftOrders: {},
   organizationSettings: null,
+  orgPlan: 'free',
+  orgPlanNote: null,
   // ♿ Accesibilidad (Persistente por dispositivo)
   accessibility: {
     highContrast: false,
@@ -207,6 +212,9 @@ export const useAppStore = create<AppStore>(
 
       // Organization Settings
       setOrganizationSettings: (settings: any) => set({ organizationSettings: settings }),
+
+      // Plan del tenant
+      setOrgPlan: (plan: string, note: string | null = null) => set({ orgPlan: plan, orgPlanNote: note }),
 
       // Accessibility Action
       setAccessibility: (newSettings) => set((state) => ({

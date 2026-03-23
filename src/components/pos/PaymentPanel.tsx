@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import logger from '@/utils/logger'
 import conektaService from '@/services/conektaService'
-import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X } from 'lucide-react'
+import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X, Zap } from 'lucide-react'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 export interface PaymentResult {
   transactionId: string
@@ -32,6 +33,7 @@ export default function PaymentPanel({
   const ids = orderIds || (orderId ? [orderId] : [])
 
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_conekta' | 'card_stripe' | 'card'>('cash')
+  const { canUseFeature } = usePlanLimits()
   const [currency, setCurrency] = useState<'MXN' | 'USD'>('MXN')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -168,17 +170,31 @@ export default function PaymentPanel({
                   <span className="text-[10px] font-black uppercase">Efectivo</span>
                 </button>
 
-                <button
-                  onClick={() => setPaymentMethod('card_conekta')}
-                  disabled={loading || success}
-                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_conekta'
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  <CreditCard size={20} />
-                  <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
-                </button>
+                {canUseFeature('conekta') ? (
+                  <button
+                    onClick={() => setPaymentMethod('card_conekta')}
+                    disabled={loading || success}
+                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_conekta'
+                      ? 'bg-indigo-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    <CreditCard size={20} />
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative group"
+                    title="Requiere Plan Pro"
+                  >
+                    <CreditCard size={20} />
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
+                    <span className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                      <Zap size={7} className="fill-current" />Pro
+                    </span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => setPaymentMethod('card_stripe')}
