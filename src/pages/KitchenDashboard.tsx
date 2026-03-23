@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import logger from '@/utils/logger'
 import supabaseService from '@/services/supabaseService'
 import { Order, Product } from '@/types/index'
-import { Clock, CheckCircle, Flame } from 'lucide-react'
+import { CheckCircle, Flame } from 'lucide-react'
 
 export default function KitchenDashboard() {
   const [sentOrders, setSentOrders] = useState<Order[]>([])

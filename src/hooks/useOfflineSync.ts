@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import offlineDBService from '../services/offlineDBService'
+import offlineDBService from '@/services/offlineDBService'
 
 import logger from '@/utils/logger'
 
@@ -84,7 +84,7 @@ export function useOfflineSync() {
     try {
       // Sincronizar órdenes
       const pendingOrders = await offlineDBService.getPendingOrders()
-      for (const order of pendingOrders) {
+      for (const _order of pendingOrders) {
         try {
           // Enviar orden a Supabase
           // TODO: Implementar con supabaseService si es necesario
@@ -95,7 +95,7 @@ export function useOfflineSync() {
 
       // Sincronizar ventas
       const pendingSales = await offlineDBService.getPendingSales()
-      for (const sale of pendingSales) {
+      for (const _sale of pendingSales) {
         try {
           // Enviar venta a Supabase
           // TODO: Implementar con supabaseService si es necesario

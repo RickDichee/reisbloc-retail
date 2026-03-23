@@ -44,16 +44,19 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
           Puedes intentar continuar o recargar la aplicación si el problema persiste.
         </p>
 
-        {error && (
-          <details className="mb-4">
-            <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 mb-2">
-              Ver detalles técnicos
-            </summary>
-            <pre className="text-xs bg-gray-50 border border-gray-200 rounded p-3 overflow-auto max-h-32 text-gray-600">
-              {error.message}
-            </pre>
-          </details>
-        )}
+        {(() => {
+          const hasMessage = typeof error === 'object' && error !== null && 'message' in error;
+          return hasMessage ? (
+            <details className="mb-4">
+              <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 mb-2">
+                Ver detalles técnicos
+              </summary>
+              <pre className="text-xs bg-gray-50 border border-gray-200 rounded p-3 overflow-auto max-h-32 text-gray-600">
+                {(error as Error).message}
+              </pre>
+            </details>
+          ) : null;
+        })()}
 
         <div className="flex gap-2">
           {!isRecurring && (
@@ -83,11 +86,11 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
 }
 
 // Función para manejar errores capturados
-function onError(error: Error, info: { componentStack: string }) {
+function onError(error: unknown, info: React.ErrorInfo) {
   errorCount++
 
   // Detectar error de carga de módulos (común tras un nuevo deploy en Vercel)
-  const errorStr = error?.message || String(error);
+  const errorStr = error instanceof Error ? error.message : String(error);
   if (
     errorStr.includes('Failed to fetch dynamically imported module') ||
     errorStr.includes('Load chunk') ||
@@ -101,7 +104,7 @@ function onError(error: Error, info: { componentStack: string }) {
 
   logger.error('error-boundary', 'Error capturado por ErrorBoundary', {
     error,
-    componentStack: info.componentStack,
+    componentStack: info.componentStack ?? undefined,
     errorCount
   })
 }
@@ -119,7 +122,7 @@ interface ErrorBoundaryProps {
 export default function ErrorBoundary({ children }: ErrorBoundaryProps) {
   return (
     <ReactErrorBoundary
-      FallbackComponent={(props) => <ErrorFallback {...props} errorCount={errorCount} />}
+      FallbackComponent={(props: FallbackProps) => <ErrorFallback {...props} errorCount={errorCount} />}
       onError={onError}
       onReset={onReset}
     >

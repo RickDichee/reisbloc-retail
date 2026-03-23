@@ -4,7 +4,6 @@ import { Wine, Clock, AlertCircle, Bell } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
 import { Order } from '@/types/index'
 import { sendNotificationToUsers } from '@/services/sendNotificationHelper'
-import { useAppStore } from '@/store/appStore'
 import { useToast } from '@/contexts/ToastContext'
 
 type BarFilter = 'all' | 'sent' | 'ready' | 'served'

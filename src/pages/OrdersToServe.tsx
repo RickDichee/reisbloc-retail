@@ -208,7 +208,6 @@ export default function OrdersToServe() {
 
                 <div className="space-y-3">
                   {group.orders.map(order => {
-                    const itemCount = order.items?.length || 0
                     const waitTime = order.sentToKitchenAt
                       ? humanizeDuration(order.sentToKitchenAt)
                       : 'N/A'

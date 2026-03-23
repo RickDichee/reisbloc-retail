@@ -14,12 +14,3 @@ export function EnvironmentBanner() {
   );
 }
 
-// En App.tsx
-function App() {
-  return (
-    <>
-      <EnvironmentBanner />
-      {/* resto de tu app */}
-    </>
-  );
-}

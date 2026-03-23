@@ -14,7 +14,7 @@
  */
 
 // Servicio para gestionar dispositivos
-import { Device, User } from '@types/index';
+import { Device } from '@/types';
 import logger from '@/utils/logger'
 
 class DeviceService {

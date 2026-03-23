@@ -1,5 +1,5 @@
 // Servicio para gestión de propinas y cierre de caja
-import { Sale, DailyClose, TipDistribution, User } from '@types/index';
+import { Sale, DailyClose, TipDistribution, User } from '@/types';
 import auditService from './auditService';
 
 class ClosingService {
@@ -74,6 +74,7 @@ class ClosingService {
       }
       return sum;
     }, 0);
+    void totalNoCashPayments;
 
     const totalNoCashTips = clipPayments.reduce((sum, payment) => sum + (payment.tip || 0), 0);
 
@@ -99,8 +100,8 @@ class ClosingService {
       .filter(s => s.paymentMethod === 'cash' || s.paymentMethod === 'mixed')
       .reduce((sum, s) => sum + (s.cashAmount || 0), 0);
 
-    const totalNoCash = sales
-      .filter(s => ['transferencia', 'tarjeta', 'digital', 'clip'].includes(s.paymentMethod))
+    const totalDigital = sales
+      .filter(s => ['transferencia', 'digital', 'clip'].includes(s.paymentMethod))
       .reduce((sum, s) => sum + s.total, 0);
 
     const totalTips = sales.reduce((sum, sale) => sum + (sale.tip || 0), 0);
@@ -115,7 +116,7 @@ class ClosingService {
       sales,
       totalSales,
       totalCash,
-      totalNoCash,
+      totalDigital,
       totalTips,
       tipsDistribution,
       adjustments,
@@ -127,7 +128,7 @@ class ClosingService {
       dailyClose.id,
       totalSales,
       totalCash,
-      totalNoCash,
+      totalDigital,
       deviceId
     );
 
@@ -235,7 +236,7 @@ RESUMEN DE VENTAS
 ────────────────────────────────────
 Total Ventas:         $${dailyClose.totalSales.toFixed(2)}
 ├─ En Efectivo:       $${dailyClose.totalCash.toFixed(2)}
-├─ Tarjeta/Transf:    $${dailyClose.totalNoCash.toFixed(2)}
+├─ Tarjeta/Transf:    $${(dailyClose.totalDigital || 0).toFixed(2)}
 └─ Propinas Totales:  $${dailyClose.totalTips.toFixed(2)}
 
 ────────────────────────────────────

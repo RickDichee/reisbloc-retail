@@ -54,12 +54,47 @@ export default function POS() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showManualItemModal, setShowManualItemModal] = useState(false)
   const [activeShift, setActiveShift] = useState<any>(null)
+  const [stockWarning, setStockWarning] = useState<{ isOpen: boolean, items: any[] }>({ isOpen: false, items: [] })
 
   const tableNumber = currentTableNumber || 1
   const items = draftOrders[tableNumber] || []
   const isReadOnly = currentUser?.role === 'supervisor'
 
-  // 🔫 Scanner Integration
+  const tableButtons = useMemo(() => {
+    const baseTables = tables.length ? tables : Array.from({ length: 3 }, (_, i) => i + 1)
+    return baseTables.slice(0, 3)
+  }, [tables])
+
+  const filteredProducts = useMemo(() => {
+    let result = products
+    if (!searchTerm) return result
+    const lower = searchTerm.toLowerCase()
+    return result.filter(p =>
+      p.name.toLowerCase().includes(lower) ||
+      // @ts-ignore
+      p.sku?.toLowerCase().includes(lower) ||
+      // @ts-ignore
+      p.barcode?.includes(lower)
+    )
+  }, [products, searchTerm])
+
+  useEffect(() => {
+    cashRegisterAudioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU7/3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/w==')
+    loadProducts()
+    checkShift()
+  }, [])
+
+  useEffect(() => {
+    if (!currentTableNumber) {
+      setActiveTableOrders([])
+      return
+    }
+    const unsubscribe = supabaseService.subscribeToActiveOrders((orders) => {
+      setActiveTableOrders(orders.filter(o => o.tableNumber === currentTableNumber))
+    })
+    return () => unsubscribe?.()
+  }, [currentTableNumber])
+
   useBarcodeScanner((code) => {
     if (isReadOnly || !currentUser) return
     // @ts-ignore
@@ -70,12 +105,6 @@ export default function POS() {
   if (!currentUser && !loading) {
     return <Navigate to="/login" replace />
   }
-
-  useEffect(() => {
-    cashRegisterAudioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU7/3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/w==')
-    loadProducts()
-    checkShift()
-  }, [])
 
   const checkShift = async () => {
     if (!currentUser) return
@@ -99,17 +128,6 @@ export default function POS() {
     }
   }
 
-  useEffect(() => {
-    if (!currentTableNumber) {
-      setActiveTableOrders([])
-      return
-    }
-    const unsubscribe = supabaseService.subscribeToActiveOrders((orders) => {
-      setActiveTableOrders(orders.filter(o => o.tableNumber === currentTableNumber))
-    })
-    return () => unsubscribe?.()
-  }, [currentTableNumber])
-
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm) {
       // @ts-ignore
@@ -125,19 +143,6 @@ export default function POS() {
       }
     }
   }
-
-  const filteredProducts = useMemo(() => {
-    let result = products
-    if (!searchTerm) return result
-    const lower = searchTerm.toLowerCase()
-    return result.filter(p =>
-      p.name.toLowerCase().includes(lower) ||
-      // @ts-ignore
-      p.sku?.toLowerCase().includes(lower) ||
-      // @ts-ignore
-      p.barcode?.includes(lower)
-    )
-  }, [products, searchTerm])
 
   const handleUpdateItemNote = (itemId: string, note: string) => {
     useAppStore.setState(state => {
@@ -178,7 +183,6 @@ export default function POS() {
       if (total === 0) return
 
       const allItems = [...ordersToPrint.flatMap(o => o.items || []), ...draftItems]
-      const itemsForTicket = [{ id: 'consolidated', items: allItems }]
 
       const ticketHTML = renderToStaticMarkup(
         <ReceiptTicket
@@ -195,8 +199,6 @@ export default function POS() {
       alert('Error al imprimir cuenta')
     }
   }
-
-  const [stockWarning, setStockWarning] = useState<{ isOpen: boolean, items: any[] }>({ isOpen: false, items: [] })
 
   const checkStockAvailability = (orders: any[], currentDraft: any[]) => {
     // Combine all items to be sold
@@ -268,7 +270,7 @@ export default function POS() {
     if (!currentUser || isReadOnly) return
 
     try {
-      const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'transfer' ? 'transferencia' : result.paymentMethod)
+      const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'card_conekta' || result.paymentMethod === 'card_mercadopago' ? 'transferencia' : result.paymentMethod)
 
       // Items del borrador activo + (órdenes activas si las hay)
       const { orderIds } = paymentPanel
@@ -309,11 +311,6 @@ export default function POS() {
       alert(`Error: ${error.message}`)
     }
   }
-
-  const tableButtons = useMemo(() => {
-    const baseTables = tables.length ? tables : Array.from({ length: 3 }, (_, i) => i + 1)
-    return baseTables.slice(0, 3)
-  }, [tables])
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Cargando...</div>
 
@@ -455,7 +452,6 @@ export default function POS() {
             orderId={paymentPanel.orderId || ''}
             orderIds={paymentPanel.orderIds}
             orderTotal={paymentPanel.orderTotal}
-            items={[...items, ...activeTableOrders.filter(o => paymentPanel.orderIds?.includes(o.id)).flatMap(o => o.items || [])]}
             tableNumber={tableNumber}
             onPaymentComplete={handlePaymentComplete}
             onCancel={() => setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })}

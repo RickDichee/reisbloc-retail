@@ -1,4 +1,4 @@
-import { X, AlertCircle, CheckCircle, Info, Package, Bell } from 'lucide-react'
+import { X, AlertCircle, CheckCircle, Info, Bell } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export type ToastType = 'success' | 'error' | 'info' | 'order' | 'alert'

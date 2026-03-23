@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import logger from '@/utils/logger'
 import conektaService from '@/services/conektaService'
+import mercadopagoService from '@/services/mercadopagoService'
 import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X, Zap } from 'lucide-react'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 export interface PaymentResult {
   transactionId: string
-  paymentMethod: 'cash' | 'card_conekta' | 'card'
+  paymentMethod: 'cash' | 'card_conekta' | 'card_mercadopago' | 'card'
   currency?: 'MXN' | 'USD'
   total: number
   splitRequested?: boolean
@@ -32,7 +33,7 @@ export default function PaymentPanel({
   // Support both old (orderId) and new (orderIds) interfaces
   const ids = orderIds || (orderId ? [orderId] : [])
 
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_conekta' | 'card'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_conekta' | 'card_mercadopago' | 'card'>('cash')
   const { canUseFeature } = usePlanLimits()
   const [currency, setCurrency] = useState<'MXN' | 'USD'>('MXN')
   const [loading, setLoading] = useState(false)
@@ -40,6 +41,8 @@ export default function PaymentPanel({
   const [error, setError] = useState<string | null>(null)
   const [conektaCheckoutUrl, setConektaCheckoutUrl] = useState<string | null>(null)
   const [conektaTransactionId, setConektaTransactionId] = useState('')
+  const [mercadopagoUrl, setMercadopagoUrl] = useState<string | null>(null)
+  const [mercadopagoId, setMercadopagoId] = useState('')
 
   const handlePayment = async () => {
     try {
@@ -73,6 +76,20 @@ export default function PaymentPanel({
 
         setConektaCheckoutUrl(result.checkoutUrl)
         setConektaTransactionId(result.transactionId || `conekta_${Date.now()}`)
+        setLoading(false)
+      } else if (paymentMethod === 'card_mercadopago') {
+        const result = await mercadopagoService.createPaymentPreference({
+          amount: finalTotal,
+          description: `Venta POS Reisbloc - Tk ${tableNumber}`,
+          orderId: ids.join('-'),
+        })
+
+        if (!result.id) {
+          throw new Error('Error al crear preferencia de Mercado Pago')
+        }
+
+        setMercadopagoUrl(result.init_point)
+        setMercadopagoId(result.id)
         setLoading(false)
       } else {
         throw new Error('Método de pago no implementado por completo aún.')
@@ -154,7 +171,7 @@ export default function PaymentPanel({
           </div>
 
           {/* Payment Method Selection */}
-          {!conektaCheckoutUrl ? (
+          {!conektaCheckoutUrl && !mercadopagoUrl ? (
             <div className="mb-6">
               <label className="block text-sm font-bold text-gray-900 mb-3">Métodos de Cobro Integrados</label>
               <div className="grid grid-cols-3 gap-2">
@@ -196,6 +213,34 @@ export default function PaymentPanel({
                   </button>
                 )}
 
+                {canUseFeature('mercadopago') ? (
+                  <button
+                    onClick={() => setPaymentMethod('card_mercadopago')}
+                    disabled={loading || success}
+                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_mercadopago'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center p-0.5">
+                       <img src="https://www.mercadopago.com/instore/merchant/bundle/mptools/assets/mp-logo.png" alt="MP" className="w-full h-full object-contain" />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">M. Pago</span>
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative group"
+                    title="Requiere Plan Pro"
+                  >
+                    <CreditCard size={20} />
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">M. Pago</span>
+                    <span className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                      <Zap size={7} className="fill-current" />Pro
+                    </span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => setPaymentMethod('card')}
                   disabled={loading || success}
@@ -209,7 +254,7 @@ export default function PaymentPanel({
                 </button>
               </div>
             </div>
-          ) : (
+          ) : conektaCheckoutUrl ? (
             <div className="mb-6 text-center animate-scaleIn bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
               <h3 className="font-black text-indigo-900 mb-2">Escanea para Pagar</h3>
               <p className="text-xs text-indigo-600 font-bold mb-4">Compatible con Apple Pay, Tarjetas y OXXO</p>
@@ -250,7 +295,48 @@ export default function PaymentPanel({
                 </button>
               </div>
             </div>
-          )}
+          ) : mercadopagoUrl ? (
+            <div className="mb-6 text-center animate-scaleIn bg-blue-50 p-6 rounded-2xl border border-blue-100">
+              <h3 className="font-black text-blue-900 mb-2">Pagar con Mercado Pago</h3>
+              <p className="text-xs text-blue-600 font-bold mb-4">Escanea el QR o usa el botón inferior</p>
+
+              <div className="flex justify-center mb-6">
+                <div className="bg-white p-3 rounded-2xl shadow-lg inline-block">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mercadopagoUrl)}`}
+                    alt="QR Mercado Pago"
+                    className="w-40 h-40 object-contain"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => window.open(mercadopagoUrl, '_blank')}
+                  className="w-full py-3 bg-white border border-blue-200 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition-colors"
+                >
+                  Continuar en Mercado Pago
+                </button>
+                <button
+                  onClick={() => {
+                    setSuccess(true);
+                    setTimeout(() => {
+                      onPaymentComplete({
+                        transactionId: mercadopagoId,
+                        paymentMethod: 'card_mercadopago',
+                        currency,
+                        total: orderTotal
+                      });
+                    }, 1000);
+                  }}
+                  disabled={success}
+                  className="w-full py-3 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
+                >
+                  {success ? <><CheckCircle size={20} /> ¡Aprobado!</> : 'Confirmar Pago Exitoso'}
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {/* Error Message */}
           {error && (
@@ -267,7 +353,7 @@ export default function PaymentPanel({
           )}
 
           {/* Action Buttons */}
-          {!conektaCheckoutUrl && (
+          {!conektaCheckoutUrl && !mercadopagoUrl && (
             <div className="flex gap-2 flex-col">
               <div className="flex gap-3">
                 <button
@@ -297,9 +383,11 @@ export default function PaymentPanel({
                     <>
                       {paymentMethod === 'card_conekta' 
                         ? 'Generar Terminal / QR' 
-                        : paymentMethod === 'card'
-                          ? 'Registrar Info (Pago Externo)'
-                          : `Cobrar $${orderTotal.toFixed(2)} en Efectivo`}
+                        : paymentMethod === 'card_mercadopago'
+                          ? 'Generar Link Mercado Pago'
+                          : paymentMethod === 'card'
+                            ? 'Registrar Info (Pago Externo)'
+                            : `Cobrar $${orderTotal.toFixed(2)} en Efectivo`}
                     </>
                   )}
                 </button>

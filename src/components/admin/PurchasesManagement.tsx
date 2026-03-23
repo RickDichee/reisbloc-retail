@@ -15,7 +15,7 @@ import { useAppStore } from '@/store/appStore'
 import { Supplier, PurchaseOrder } from '@/types'
 
 export default function PurchasesManagement() {
-  const { currentUser } = useAppStore()
+  useAppStore()
   const [activeView, setActiveView] = useState<'orders' | 'providers'>('orders')
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<PurchaseOrder[]>([])

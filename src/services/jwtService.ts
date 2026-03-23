@@ -51,5 +51,5 @@ export function clearAuthToken(): void {
  */
 export function isTokenValid(): boolean {
   const token = getStoredToken()
-  return !!(token && token.accessToken && token.expiresAt > Date.now())
+  return !!(token && token.accessToken && (token.expiresAt ?? 0) > Date.now())
 }

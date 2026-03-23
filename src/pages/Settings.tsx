@@ -7,7 +7,6 @@ import {
     Smartphone,
     FileText,
     Save,
-    ShoppingCart,
     Globe,
     LayoutDashboard,
     ShieldCheck,
@@ -15,7 +14,6 @@ import {
     Users,
     BarChart3,
     DollarSign,
-    Calculator,
     Banknote,
     Coins,
     Store
