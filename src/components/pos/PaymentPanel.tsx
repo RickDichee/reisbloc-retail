@@ -205,50 +205,50 @@ export default function PaymentPanel({
                     }`}
                 >
                   <CreditCard size={20} />
-                  <span className="text-[10px] font-black uppercase text-center leading-tight">Terminal<br/>Física</span>
+                  <span className="text-[10px] font-black uppercase tracking-tighter text-center leading-tight">Tarjeta<br />(Manual)</span>
                 </button>
               </div>
             </div>
           ) : (
             <div className="mb-6 text-center animate-scaleIn bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
-               <h3 className="font-black text-indigo-900 mb-2">Escanea para Pagar</h3>
-               <p className="text-xs text-indigo-600 font-bold mb-4">Compatible con Apple Pay, Tarjetas y OXXO</p>
-               
-               <div className="flex justify-center mb-6">
-                  <div className="bg-white p-3 rounded-2xl shadow-lg inline-block">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(conektaCheckoutUrl)}`} 
-                      alt="QR de Pago Conekta" 
-                      className="w-40 h-40 object-contain"
-                    />
-                  </div>
-               </div>
+              <h3 className="font-black text-indigo-900 mb-2">Escanea para Pagar</h3>
+              <p className="text-xs text-indigo-600 font-bold mb-4">Compatible con Apple Pay, Tarjetas y OXXO</p>
 
-               <div className="flex flex-col gap-3">
-                 <button
-                   onClick={() => window.open(conektaCheckoutUrl, '_blank')}
-                   className="w-full py-3 bg-white border border-indigo-200 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition-colors"
-                 >
-                   Abrir Link en esta Tablet
-                 </button>
-                 <button
-                   onClick={() => {
-                     setSuccess(true);
-                     setTimeout(() => {
-                       onPaymentComplete({
-                         transactionId: conektaTransactionId,
-                         paymentMethod: 'card_conekta',
-                         currency,
-                         total: orderTotal
-                       });
-                     }, 1000);
-                   }}
-                   disabled={success}
-                   className="w-full py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
-                 >
-                   {success ? <><CheckCircle size={20} /> ¡Aprobado!</> : 'Confirmar Pago Exitoso'}
-                 </button>
-               </div>
+              <div className="flex justify-center mb-6">
+                <div className="bg-white p-3 rounded-2xl shadow-lg inline-block">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(conektaCheckoutUrl)}`}
+                    alt="QR de Pago Conekta"
+                    className="w-40 h-40 object-contain"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => window.open(conektaCheckoutUrl, '_blank')}
+                  className="w-full py-3 bg-white border border-indigo-200 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition-colors"
+                >
+                  Abrir Link en esta Tablet
+                </button>
+                <button
+                  onClick={() => {
+                    setSuccess(true);
+                    setTimeout(() => {
+                      onPaymentComplete({
+                        transactionId: conektaTransactionId,
+                        paymentMethod: 'card_conekta',
+                        currency,
+                        total: orderTotal
+                      });
+                    }, 1000);
+                  }}
+                  disabled={success}
+                  className="w-full py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
+                >
+                  {success ? <><CheckCircle size={20} /> ¡Aprobado!</> : 'Confirmar Pago Exitoso'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -298,8 +298,8 @@ export default function PaymentPanel({
                       {paymentMethod === 'card_conekta' 
                         ? 'Generar Terminal / QR' 
                         : paymentMethod === 'card'
-                          ? 'Registrar Cobro en Terminal' 
-                          : `Recibir $${orderTotal.toFixed(2)} en Efectivo`}
+                          ? 'Registrar Info (Pago Externo)'
+                          : `Cobrar $${orderTotal.toFixed(2)} en Efectivo`}
                     </>
                   )}
                 </button>
