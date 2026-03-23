@@ -1,10 +1,29 @@
+import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { ShoppingBag, Globe, ExternalLink, Activity } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
+import supabaseService from '@/services/supabaseService'
 
 export default function Ecommerce() {
     const { currentUser } = useAppStore()
-    const storeUrl = `${window.location.origin}/p/${currentUser?.organizationId || 'demo'}`
+    const [orgSlug, setOrgSlug] = useState<string | undefined>(undefined)
+
+    useEffect(() => {
+        const loadOrgSlug = async () => {
+            if (!currentUser?.organizationId) return
+            try {
+                const org = await supabaseService.getOrganizationById(currentUser.organizationId)
+                if (org?.slug) {
+                    setOrgSlug(org.slug)
+                }
+            } catch (e) {
+                console.error('Error loading org slug', e)
+            }
+        }
+        loadOrgSlug()
+    }, [currentUser?.organizationId])
+
+    const storeUrl = orgSlug ? `${window.location.origin}/p/${orgSlug}` : undefined
 
     return (
         <DashboardLayout>
@@ -20,11 +39,18 @@ export default function Ecommerce() {
                             <p className="text-slate-500 font-medium">Gestiona tu tienda en línea y pedidos digitales.</p>
                         </div>
                     </div>
-                    <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl">
-                        <Globe size={20} />
-                        Ver Tienda Online
-                        <ExternalLink size={16} className="text-slate-400" />
-                    </a>
+                    {orgSlug ? (
+                        <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl">
+                            <Globe size={20} />
+                            Ver Tienda Online
+                            <ExternalLink size={16} className="text-slate-400" />
+                        </a>
+                    ) : (
+                        <button disabled className="flex items-center gap-2 px-6 py-3 bg-slate-300 text-slate-500 rounded-xl font-bold cursor-not-allowed">
+                            <Globe size={20} />
+                            Configurando...
+                        </button>
+                    )}
                 </div>
 
                 {/* Content */}

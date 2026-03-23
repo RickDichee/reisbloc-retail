@@ -157,9 +157,9 @@ export default function MarketingAgent() {
               El agente está programado para escribir con un tono <strong>profesional, directo y aspiracional</strong>. Ideal para negocios B2B y dueños de PYMES retail en México.
             </p>
             <div className="text-xs bg-black/30 p-3 rounded-lg border border-white/10 text-slate-400 font-mono">
-              Model: GPT-4o-Mini<br/>
-              Max tokens: 300<br/>
-              Status: Conectado
+              Model: Gemini 2.0 Flash<br/>
+              Max tokens: 500<br/>
+              Status: {process.env.VITE_GEMINI_API_KEY ? 'Conectado' : 'Configurar GEMINI_API_KEY'}
             </div>
           </div>
         </div>
