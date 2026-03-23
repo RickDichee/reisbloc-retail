@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Search, Plus, Edit2, Trash2, Phone, Mail, X, Save, Loader2, UserPlus, TrendingUp, Calendar } from 'lucide-react'
+import { Users, Search, Plus, Edit2, Trash2, Phone, Mail, X, Save, Loader2, Calendar } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
 import logger from '@/utils/logger'

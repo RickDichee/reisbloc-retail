@@ -1,4 +1,3 @@
-import React from 'react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { ShoppingBag, Globe, ExternalLink, Activity } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'

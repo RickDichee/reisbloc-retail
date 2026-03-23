@@ -66,7 +66,6 @@ export const forceAuthHeader = (token: string) => {
   if (!token) return
   // @ts-expect-error - Internal REST property access
   if (supabase.rest) supabase.rest.headers['Authorization'] = `Bearer ${token}`
-  // @ts-expect-error - Internal Realtime property access
   if (supabase.realtime) supabase.realtime.setAuth(token)
   // @ts-expect-error - Internal Storage property access
   if (supabase.storage) supabase.storage.headers['Authorization'] = `Bearer ${token}`

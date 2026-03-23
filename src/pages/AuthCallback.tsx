@@ -49,7 +49,7 @@ export function AuthCallback() {
         setStatus('¡Verificación exitosa! Accediendo...')
 
         // Ejecutar silenciosamente auditoría Enterprise (Login Georeferenciado)
-        logSuccessfulLogin(session.user.id).catch(console.error)
+        logSuccessfulLogin().catch(console.error)
 
         // Pequeña pausa para que el usuario lea el mensaje
         setTimeout(() => navigate('/admin'), 800)

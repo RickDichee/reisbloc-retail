@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Shield, Check, Lock, AlertCircle } from 'lucide-react';
+import { Shield, Check, Lock } from 'lucide-react';
 
 export default function OAuthConsent() {
   const [searchParams] = useSearchParams();

@@ -71,7 +71,7 @@ export default function AcceptInvite() {
         setLoading(true)
         try {
             // 1. Crear usuario en Auth (con el email invitado)
-            const { data: authData, error: authError } = await supabase.auth.signUp({
+            const { error: authError } = await supabase.auth.signUp({
                 email: inviteData.email,
                 password: password,
             })

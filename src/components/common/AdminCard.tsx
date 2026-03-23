@@ -1,4 +1,4 @@
-import React, { ElementType } from 'react'
+import { ElementType } from 'react'
 import { ArrowRight } from 'lucide-react'
 
 interface AdminCardProps {
@@ -7,7 +7,6 @@ interface AdminCardProps {
     icon: ElementType
     onClick: () => void
     brandColor: string
-    gradient?: string
 }
 
 export default function AdminCard({
@@ -16,7 +15,6 @@ export default function AdminCard({
     icon: Icon,
     onClick,
     brandColor,
-    gradient = 'from-slate-700 to-slate-900'
 }: AdminCardProps) {
     // Dynamic color mapping based on brandColor
     const colorMap: any = {

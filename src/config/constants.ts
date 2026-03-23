@@ -1,5 +1,3 @@
-import { getRequiredEnv, getOptionalEnv } from './env';
-
 // Configuración de aplicación
 export const APP_CONFIG = {
   // Tiempo de bloqueo para eliminar productos (en minutos)

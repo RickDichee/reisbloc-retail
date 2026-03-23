@@ -11,6 +11,7 @@ export type PlanType = 'free' | 'pro' | 'enterprise'
 export type PlanFeature =
   | 'product_images'   // Imágenes en productos
   | 'conekta'          // Pagos QR / Conekta
+  | 'mercadopago'      // Pagos QR / MercadoPago
   | 'realtime'         // Subscripciones Realtime
   | 'audit_logs'       // Audit logs
   | 'advanced_reports' // Reportes avanzados + export
@@ -36,6 +37,7 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
     'thermal_printer',
     'product_images',
     'conekta',
+    'mercadopago',
     'realtime',
     'audit_logs',
     'advanced_reports',
@@ -47,6 +49,7 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
     'thermal_printer',
     'product_images',
     'conekta',
+    'mercadopago',
     'realtime',
     'audit_logs',
     'advanced_reports',

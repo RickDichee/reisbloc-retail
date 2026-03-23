@@ -1,21 +1,26 @@
 // src/services/deviceAuth.ts
 
 import { ENV } from '@/config/environment';
+import { supabase } from '@/config/supabase';
+import logger from '@/utils/logger';
 
 export async function validateDevice(deviceId: string, userId: string): Promise<boolean> {
-  // ✅ SKIP en desarrollo (tu máquina siempre pasa)
   if (ENV.features.skipMacValidation) {
-    devLog('⚠️ MAC validation skipped (development mode)');
+    logger.info('device-auth', 'MAC validation skipped (development mode)');
     return true;
   }
 
-  // Validación normal para staging/production
-  const { data: device } = await supabase
+  const { data: device, error } = await supabase
     .from('devices')
     .select('status')
     .eq('id', deviceId)
     .eq('user_id', userId)
     .single();
+
+  if (error) {
+    logger.error('device-auth', 'Error validating device', error);
+    return false;
+  }
 
   return device?.status === 'approved';
 }

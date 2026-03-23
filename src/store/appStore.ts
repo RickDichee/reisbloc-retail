@@ -90,7 +90,7 @@ const initialState: AppState = {
   }
 }
 
-export const useAppStore = create<AppStore>(
+export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
       ...initialState,

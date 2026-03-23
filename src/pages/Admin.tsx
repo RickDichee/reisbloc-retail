@@ -20,7 +20,9 @@ import {
   Copy,
   Check,
   Settings,
-  History
+  History,
+  Megaphone,
+  Activity
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import AdminCard from '@/components/common/AdminCard'
@@ -33,8 +35,10 @@ import AgentChat from '@/components/agent/AgentChat'
 import PurchasesManagement from '@/components/admin/PurchasesManagement'
 import supabaseService from '@/services/supabaseService'
 import ClientsManagement from '@/components/admin/ClientsManagement'
+import MarketingAgent from '@/components/admin/MarketingAgent'
+import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard'
 
-type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs'
+type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'marketing' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs' | 'analytics'
 
 export default function Admin() {
   const { currentUser } = useAppStore()
@@ -87,6 +91,7 @@ export default function Admin() {
   if (currentUser.role !== 'admin') return <Navigate to="/pos" replace />
 
   const tabs = [
+    { id: 'analytics' as AdminTab, label: 'Analytics', icon: Activity, enabled: true },
     { id: 'reports' as AdminTab, label: 'Reportes', icon: BarChart3, enabled: true },
     { id: 'closing' as AdminTab, label: 'Cierre de Caja', icon: DollarSign, enabled: true },
     { id: 'users' as AdminTab, label: 'Personal', icon: UserCheck, enabled: canManageUsers },
@@ -94,7 +99,7 @@ export default function Admin() {
     { id: 'promotions' as AdminTab, label: 'Promociones', icon: Percent, enabled: true },
     { id: 'clients' as AdminTab, label: 'Clientes', icon: Users, enabled: true },
     { id: 'purchases' as AdminTab, label: 'Compras', icon: ShoppingCart, enabled: true },
-    { id: 'ecommerce' as AdminTab, label: 'E-commerce', icon: Globe, enabled: true },
+    { id: 'marketing' as AdminTab, label: 'Marketing AI', icon: Megaphone, enabled: true },
     { id: 'integrations' as AdminTab, label: 'Integraciones', icon: Puzzle, enabled: true },
     { id: 'llm' as AdminTab, label: 'IA Assistant', icon: Bot, enabled: true },
     { id: 'logs' as AdminTab, label: 'Auditoría', icon: History, enabled: true },
@@ -158,8 +163,9 @@ export default function Admin() {
                   brandColor={
                     ['reports', 'closing', 'inventory'].includes(tab.id) ? 'emerald' :
                       ['users', 'clients'].includes(tab.id) ? 'indigo' :
-                        ['logs', 'support'].includes(tab.id) ? 'slate' :
-                          'amber'
+                        ['marketing', 'llm'].includes(tab.id) ? 'purple' :
+                          ['logs', 'support'].includes(tab.id) ? 'slate' :
+                            'amber'
                   }
                 />
               ))}
@@ -188,6 +194,11 @@ export default function Admin() {
               <div className="pt-8">
                 <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-xs font-black uppercase">Módulo Enterprise</span>
               </div>
+            </div>
+          )}
+          {activeTab === 'analytics' && (
+            <div className="animate-fadeIn">
+              <AnalyticsDashboard />
             </div>
           )}
           {activeTab === 'llm' && (
@@ -231,6 +242,7 @@ export default function Admin() {
               </div>
             </div>
           )}
+          {activeTab === 'marketing' && <MarketingAgent />}
           {activeTab === 'logs' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><AuditLogs /></div>}
           {activeTab === 'support' && (
             <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4 border border-slate-100">

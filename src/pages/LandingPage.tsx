@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Rocket, Shield, Zap, Check } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';

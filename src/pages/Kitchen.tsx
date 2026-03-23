@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import logger from '@/utils/logger'
-import { ChefHat, Clock, CheckCircle2, AlertCircle, Bell, Eye } from 'lucide-react'
+import { ChefHat, Clock, AlertCircle, Bell, Eye } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
 import { Order } from '@/types/index'
 import EditOrderModal from '@/components/admin/EditOrderModal'

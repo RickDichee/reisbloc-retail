@@ -52,12 +52,13 @@ const getTableColorStyles = (tableNum: number) => {
 export default function TableMonitor() {
   const { currentUser, tables } = useAppStore()
   const permissions = usePermissions()
-  const canAccessTableMonitor = permissions.canAccessTableMonitor || currentUser?.role === 'capitan'
+  const canAccessTableMonitor = permissions.canAccessTableMonitor
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [_transferTargets] = useState<TransferState>({})
   const [busyOrders, setBusyOrders] = useState<Record<string, boolean>>({})
+  void busyOrders
   const [splitBillOrder, setSplitBillOrder] = useState<Order | null>(null)
   const [editOrder, setEditOrder] = useState<Order | null>(null)
   const [paymentOrder, setPaymentOrder] = useState<{ ids: string[]; total: number; tableNumber: number } | null>(null)
@@ -233,7 +234,7 @@ export default function TableMonitor() {
     const ordersToProcess = orders.filter(o => orderIds.includes(o.id))
     const allItems = ordersToProcess.flatMap(o => o.items || [])
     const subTotal = allItems.reduce((s, i) => s + (i.unitPrice * i.quantity), 0)
-    const finalMethod = result.paymentMethod === 'card_clip' || result.paymentMethod === 'card' ? 'card' : (result.paymentMethod === 'card_mp' ? 'digital' : 'cash')
+    const finalMethod = result.paymentMethod === 'card' ? 'card' : (result.paymentMethod === 'card_mercadopago' ? 'digital' : 'cash')
     try {
       await supabaseService.createSale({
         organizationId: currentUser.organizationId,
@@ -388,7 +389,6 @@ export default function TableMonitor() {
           orderIds={paymentOrder.ids}
           orderTotal={paymentOrder.total}
           tableNumber={paymentOrder.tableNumber}
-          items={orders.filter(o => paymentOrder.ids.includes(o.id)).flatMap(o => o.items || [])}
           onPaymentComplete={handlePaymentComplete}
           onCancel={() => setPaymentOrder(null)}
         />

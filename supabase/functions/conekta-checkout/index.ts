@@ -18,8 +18,12 @@ serve(async (req) => {
       throw new Error('El monto es requerido (amount).')
     }
 
-    // Usar la Sandbox Key provista por el usuario como fallback si no hay entorno (Solo para pruebas)
-    const CONEKTA_API_KEY = Deno.env.get('CONEKTA_PRIVATE_KEY') || 'key_KxVcsdTeIjyYN5URWa9FNvr'
+    // La API key de Conekta DEBE estar configurada en las variables de entorno del proyecto
+    const CONEKTA_API_KEY = Deno.env.get('CONEKTA_PRIVATE_KEY')
+    
+    if (!CONEKTA_API_KEY) {
+      throw new Error('CONEKTA_PRIVATE_KEY no está configurada. Configura la variable de entorno en el dashboard de Supabase.')
+    }
     
     // Conekta requiere Basic Auth con la Private Key como username y vacío como password
     const encodeAuth = btoa(`${CONEKTA_API_KEY}:`)

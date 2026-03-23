@@ -1,7 +1,5 @@
 import { useRef } from 'react'
-import logger from '@/utils/logger'
 import { Order, Product } from '@/types/index'
-import { Printer } from 'lucide-react'
 
 interface KitchenTicketProps {
   order: Order
@@ -17,7 +15,6 @@ export default function KitchenTicket({
   products,
   tableNumber,
   isBar = false,
-  businessName = 'TIENDA POS',
   ticketNumber,
 }: KitchenTicketProps) {
   const ticketRef = useRef<HTMLDivElement>(null)

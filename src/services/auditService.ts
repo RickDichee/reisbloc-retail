@@ -1,7 +1,20 @@
 // Servicio para gestión de auditoría
-import { AuditLog } from '@types/index';
 import databaseService from './databaseService'
 import logger from '@/utils/logger'
+
+interface AuditLog {
+  id?: string;
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  oldValue?: any;
+  newValue?: any;
+  ipAddress?: string;
+  deviceId?: string;
+  timestamp?: Date;
+  created_at?: string;
+}
 
 class AuditService {
   /**
@@ -17,7 +30,7 @@ class AuditService {
     deviceId?: string
   ): Promise<void> {
     try {
-      const auditLog: Omit<AuditLog, 'id' | 'created_at'> = {
+      const auditLog = {
         userId: userId || '',
         action,
         entityType,
@@ -26,6 +39,7 @@ class AuditService {
         newValue,
         ipAddress: await this.getClientIP(),
         deviceId,
+        timestamp: new Date(),
       };
 
       // Guardar en Supabase via databaseService
@@ -69,7 +83,7 @@ class AuditService {
     productName: string,
     quantityBefore: number,
     quantityAfter: number,
-    reason: string,
+    _reason: string,
     deviceId?: string
   ): Promise<void> {
     await this.logAction(
@@ -162,13 +176,6 @@ class AuditService {
     } catch {
       return undefined;
     }
-  }
-
-  /**
-   * Guardar audit log en Supabase
-   */
-  private async saveAuditLog(log: AuditLog): Promise<void> {
-    // Se hace en logAction via databaseService.createAuditLog
   }
 
   /**
