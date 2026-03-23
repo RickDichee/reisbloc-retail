@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Order, Product } from '@/types/index'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 interface ReceiptTicketProps {
   order: Order
@@ -23,6 +24,7 @@ export default function ReceiptTicket({
   phone = '',
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
+  const { showBranding } = usePlanLimits()
 
   // Agrupar items por categoría
   const itemsByCategory = order.items.reduce((acc, item) => {
@@ -129,18 +131,20 @@ export default function ReceiptTicket({
           "Tu negocio, sin límites"
         </div>
 
-        {/* Publicidad Reisbloc */}
-        <div style={{
-          marginTop: '6px',
-          borderTop: '1px dashed #000',
-          paddingTop: '6px',
-          width: '100%',
-          fontSize: '9px',
-          fontWeight: 'bold'
-        }}>
-          <div>⚡ Power by REISBLOC</div>
-          <div style={{ fontSize: '8px', fontWeight: 'normal', marginTop: '2px' }}>Software POS Gratuito</div>
-        </div>
+        {/* Publicidad Reisbloc (Solo en plan Free) */}
+        {showBranding && (
+          <div style={{
+            marginTop: '6px',
+            borderTop: '1px dashed #000',
+            paddingTop: '6px',
+            width: '100%',
+            fontSize: '9px',
+            fontWeight: 'bold'
+          }}>
+            <div>⚡ Powered by REISBLOC</div>
+            <div style={{ fontSize: '8px', fontWeight: 'normal', marginTop: '2px' }}>reisbloc.store</div>
+          </div>
+        )}
       </div>
 
       {/* Hidden styles para impresión */}

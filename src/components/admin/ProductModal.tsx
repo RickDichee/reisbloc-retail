@@ -5,6 +5,7 @@ import supabaseService from '@/services/supabaseService'
 import { storageService } from '@/services/storageService'
 import { compressImage } from '@/utils/imageCompression'
 import { X, Save, Loader2, Image as ImageIcon, Camera } from 'lucide-react'
+import PlanGate from '@/components/common/PlanGate'
 
 interface ProductModalProps {
     product?: Product
@@ -173,22 +174,24 @@ export default function ProductModal({
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Image Upload Area */}
                     <div className="flex justify-center mb-6">
-                        <div className="relative group">
-                            <div className="w-40 h-40 rounded-3xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center relative shadow-inner">
-                                {imagePreview ? (
-                                    <img src={imagePreview} alt="Product Preview" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="flex flex-col items-center text-slate-400">
-                                        <ImageIcon size={48} className="mb-2 opacity-50" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-center px-4">Agregar Foto<br />(Recomendado)</span>
-                                    </div>
-                                )}
+                        <PlanGate feature="product_images" upgradeLabel="Fotos de Productos">
+                            <div className="relative group">
+                                <div className="w-40 h-40 rounded-3xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center relative shadow-inner">
+                                    {imagePreview ? (
+                                        <img src={imagePreview} alt="Product Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="flex flex-col items-center text-slate-400">
+                                            <ImageIcon size={48} className="mb-2 opacity-50" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-center px-4">Agregar Foto<br />(Recomendado)</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <label className="absolute -bottom-3 -right-3 p-3 bg-slate-900 text-white rounded-2xl shadow-xl cursor-pointer hover:bg-slate-800 transition-all hover:scale-110">
+                                    <Camera size={20} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                </label>
                             </div>
-                            <label className="absolute -bottom-3 -right-3 p-3 bg-slate-900 text-white rounded-2xl shadow-xl cursor-pointer hover:bg-slate-800 transition-all hover:scale-110">
-                                <Camera size={20} />
-                                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                            </label>
-                        </div>
+                        </PlanGate>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
