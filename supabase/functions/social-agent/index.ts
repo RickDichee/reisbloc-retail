@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-import OpenAI from "npm:openai@4.68.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,12 +41,14 @@ serve(async (req) => {
     // 2. Parse request
     const { topic = "Tips de retail para PYMES", platform = "twitter" } = await req.json().catch(() => ({}));
 
-    // 3. Setup OpenAI
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openAIApiKey) {
-      throw new Error("Missing OPENAI_API_KEY environment variable");
+    // 3. Setup Gemini (unified to save costs)
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiApiKey) {
+      return new Response(JSON.stringify({ 
+        error: "GEMINI_API_KEY not configured",
+        message: "Contacta al administrador para configurar la API key de Gemini."
+      }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const openai = new OpenAI({ apiKey: openAIApiKey });
 
     const systemPrompt = `Eres el estratega de comunicación de 'Reisbloc Retail'. Tu visión es proyectar una marca que es tanto una herramienta de alta precisión como un movimiento de trascendencia colectiva para el retail. 
 Propuesta de valor: "Tu negocio, sin límites." El talento excepcional adquiere su verdadero significado cuando se integra en una visión compartida.
@@ -59,27 +60,41 @@ Pilares estratégicos a usar:
 - Excelencia Operativa: Elegancia en la ejecución que reduce el estrés.
 
 Tu tono es intelectualmente estimulante, elegante y directo. Habla con autoridad tecnológica y empatía.
-Formato objetivo: ${platform === 'twitter' ? 'Un hilo corto o Tweet punchy (menos de 280 caracteres)' : 'Un post estructurado para LinkedIn'}.
-Cierra con un llamado a la acción hacia reisbloc.store. Usa emojis minimalistas.`;
+Formato objetivo: ${platform === 'twitter' ? 'Un Tweet punchy de menos de 280 caracteres' : 'Un post estructurado para LinkedIn de 150-200 palabras'}.
+Cierra con un llamado a la acción hacia reisbloc.store. Usa emojis minimalistas (máximo 2).`;
 
-    // 4. Generate Content
-    const completion = await openai.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Genera un post sobre: ${topic}` }
-      ],
-      model: "gpt-4o-mini", // Cost-effective, fast
-      max_tokens: 300,
-      temperature: 0.7,
-    });
+    const userPrompt = `Genera un post sobre: ${topic}`;
 
-    const generatedContent = completion.choices[0]?.message?.content?.trim();
+    // 4. Call Gemini API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+          generationConfig: {
+            maxOutputTokens: 500,
+            temperature: 0.7,
+          }
+        })
+      }
+    );
 
-    if (!generatedContent) {
-      throw new Error("La IA no generó contenido");
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API Error:', errorData);
+      throw new Error(`Gemini API error: ${JSON.stringify(errorData)}`);
     }
 
-    // 5. Save to database using Service Role to bypass RLS for insertion
+    const data = await response.json();
+    const generatedContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!generatedContent) {
+      throw new Error("No content generated from AI");
+    }
+
+    // 5. Save to database
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -92,7 +107,7 @@ Cierra con un llamado a la acción hacia reisbloc.store. Usa emojis minimalistas
         content: generatedContent,
         platform,
         status: 'draft',
-        ai_model_used: 'gpt-4o-mini'
+        ai_model_used: 'gemini-2.0-flash'
       })
       .select()
       .single();
@@ -105,7 +120,7 @@ Cierra con un llamado a la acción hacia reisbloc.store. Usa emojis minimalistas
     });
 
   } catch (err: any) {
-    console.error("AI Agent Error:", err.message);
+    console.error("Marketing Agent Error:", err.message);
     return new Response(JSON.stringify({ error: err.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
