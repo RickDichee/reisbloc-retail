@@ -66,14 +66,12 @@ export default function POS() {
   }, [tables])
 
   const filteredProducts = useMemo(() => {
-    let result = products
+    const result = products
     if (!searchTerm) return result
     const lower = searchTerm.toLowerCase()
     return result.filter(p =>
       p.name.toLowerCase().includes(lower) ||
-      // @ts-ignore
       p.sku?.toLowerCase().includes(lower) ||
-      // @ts-ignore
       p.barcode?.includes(lower)
     )
   }, [products, searchTerm])
@@ -97,7 +95,6 @@ export default function POS() {
 
   useBarcodeScanner((code) => {
     if (isReadOnly || !currentUser) return
-    // @ts-ignore
     const product = products.find(p => p.barcode === code || p.sku === code)
     if (product) handleAddProduct(product)
   })
@@ -130,7 +127,6 @@ export default function POS() {
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm) {
-      // @ts-ignore
       const exactMatch = products.find(p => p.barcode === searchTerm || p.sku === searchTerm)
       if (exactMatch) {
         handleAddProduct(exactMatch)
@@ -216,10 +212,7 @@ export default function POS() {
     const warnings: any[] = []
 
     Object.keys(totals).forEach(prodId => {
-      // @ts-ignore
       const product = products.find(p => p.id === prodId)
-      // Solo validar si el producto existe y tiene control de inventario (hasInventory)
-      // Y excluimos items manuales que no tienen ID real en products
       if (product && product.hasInventory) {
         const currentStock = product.currentStock || 0
         if (currentStock < totals[prodId]) {
