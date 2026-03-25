@@ -1433,7 +1433,7 @@ class SupabaseService {
     try {
       const { data, error } = await supabase
         .from('organizations')
-        .select('id, name, slug, logo_url, settings')
+        .select('id, name, slug, logo_url, settings, plan, plan_note')
         .eq('id', orgId)
         .eq('active', true)
         .maybeSingle()
@@ -1450,7 +1450,7 @@ class SupabaseService {
     try {
       const { data, error } = await supabase
         .from('organizations')
-        .select('id, name, slug, logo_url, settings')
+        .select('id, name, slug, logo_url, settings, plan, plan_note')
         .eq('slug', slug)
         .eq('active', true)
         .maybeSingle()
