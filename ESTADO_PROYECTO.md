@@ -202,11 +202,28 @@ npx supabase secrets list     # Ver secrets configurados
 
 ## 🎯 Pendiente
 
-- [ ] Implementar sistema de tokens en backend
-- [ ] Agregar pagos reales (Stripe/MercadoPago)
+- [x] Implementar sistema de tokens en backend
+- [x] Sistema de pagos: Solana Pay + SPEI
 - [ ] Unificar servicios offline (offlineStorage + offlineDBService)
 - [ ] Agregar tests unitarios
 - [ ] Landing page profesional
+
+### Sistema de Tokens (Completado Marzo 2026)
+- `supabase/migrations/20260325000000_token_system.sql` - Tablas y funciones
+- `supabase/functions/token-manager/` - Edge function
+- `src/hooks/useTokens.ts` - Hook de frontend
+- `src/components/common/WalletWidget.tsx` - Widget de wallet
+
+### Sistema de Pagos Crypto (Completado Marzo 2026)
+- `supabase/migrations/20260325000001_crypto_payments.sql` - Tablas y RLS
+- `supabase/functions/crypto-payment/` - Generación de pagos
+- `supabase/functions/payment-webhook/` - Webhook de confirmación
+- `src/hooks/useTokenPurchase.ts` - Hook de compra
+- `src/components/common/TokenPurchaseModal.tsx` - Modal de recarga
+
+**Métodos de pago:**
+- USDC/SOL via Solana Pay (instantáneo, ~$0 comisión)
+- SPEI (24-48h de confirmación)
 
 ---
 
