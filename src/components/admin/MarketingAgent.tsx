@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Megaphone, Sparkles, Loader2, Twitter, Linkedin, Copy, Check, History } from 'lucide-react'
+import { Megaphone, Sparkles, Loader2, Twitter, Linkedin, Copy, Check, History, Calendar, Zap } from 'lucide-react'
 import { supabase, getAuthToken, forceAuthHeader } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
 
@@ -9,7 +9,8 @@ interface Post {
   topic: string
   content: string
   platform: 'twitter' | 'linkedin' | 'facebook' | 'instagram'
-  status: 'draft' | 'published' | 'failed'
+  status: 'draft' | 'published' | 'failed' | 'scheduled'
+  scheduled_for?: string | null
   ai_model_used: string
 }
 
@@ -20,6 +21,11 @@ export default function MarketingAgent() {
   const [topic, setTopic] = useState('')
   const [platform, setPlatform] = useState<'twitter' | 'linkedin'>('twitter')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  
+  const [autoSchedule, setAutoSchedule] = useState(false)
+  const [scheduleCount, setScheduleCount] = useState(5)
+  const [scheduleDays, setScheduleDays] = useState(1)
+  
   const { currentUser } = useAppStore()
 
   useEffect(() => {
@@ -36,14 +42,10 @@ export default function MarketingAgent() {
         .from('marketing_posts')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(50)
 
       if (error) {
         console.error('Error fetching marketing posts:', error)
-        const errStatus = (error as any).status
-        if (error.code === 'PGRST116' || errStatus === 403) {
-          alert('No tienes permisos para ver los posts. Solo los admins principales pueden acceder.')
-        }
         return
       }
       setPosts(data || [])
@@ -60,18 +62,52 @@ export default function MarketingAgent() {
     setGenerating(true)
     try {
       const token = await getAuthToken()
-      const { error } = await supabase.functions.invoke('social-agent', {
-        body: { topic, platform },
+      const { data, error } = await supabase.functions.invoke('social-agent', {
+        body: { 
+          topic, 
+          platform,
+          auto_schedule: false
+        },
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       })
 
       if (error) throw error
+      if (data?.error) throw new Error(data.error)
       
       setTopic('')
       await fetchPosts()
     } catch (err: any) {
       console.error('Error generating post:', err.message)
       alert('Error al generar el post: ' + err.message)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const handleGenerateCalendar = async () => {
+    if (!currentUser) return
+
+    setGenerating(true)
+    try {
+      const token = await getAuthToken()
+      const { data, error } = await supabase.functions.invoke('social-agent', {
+        body: { 
+          platform,
+          count: scheduleCount,
+          schedule_days: scheduleDays,
+          auto_schedule: true
+        },
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      
+      alert(`¡Generados ${data.posts_generated} posts programados!`)
+      await fetchPosts()
+    } catch (err: any) {
+      console.error('Error generating calendar:', err.message)
+      alert('Error al generar calendario: ' + err.message)
     } finally {
       setGenerating(false)
     }
@@ -93,24 +129,28 @@ export default function MarketingAgent() {
         .update({ status: 'published', published_at: new Date().toISOString() })
         .eq('id', id)
       
-      if (error) {
-        console.error('Error updating status:', error)
-        const errStatus = (error as any).status
-        if (errStatus === 403) {
-          alert('No tienes permisos para publicar posts. Solo los admins principales pueden hacerlo.')
-        }
-        return
-      }
+      if (error) throw error
       
       setPosts(posts.map(p => p.id === id ? { ...p, status: 'published' } : p))
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating status:', err)
+      alert('Error: ' + err.message)
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'published': return 'bg-emerald-100 text-emerald-700'
+      case 'scheduled': return 'bg-purple-100 text-purple-700'
+      case 'draft': return 'bg-amber-100 text-amber-700'
+      case 'failed': return 'bg-red-100 text-red-700'
+      default: return 'bg-slate-100 text-slate-700'
     }
   }
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Generador */}
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex-1">
           <div className="flex items-center gap-3 mb-6">
@@ -164,16 +204,72 @@ export default function MarketingAgent() {
             <button
               onClick={handleGenerate}
               disabled={generating || !topic.trim()}
-              className="w-full py-4 mt-2 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {generating ? <Loader2 size={20} className="animate-spin" /> : <Megaphone size={20} />}
-              {generating ? 'Redactando con IA...' : 'Generar Publicación'}
+              {generating ? 'Redactando con IA...' : 'Generar Post Individual'}
             </button>
+
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <button
+                onClick={() => setAutoSchedule(!autoSchedule)}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold transition-all ${
+                  autoSchedule 
+                    ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <Calendar size={18} />
+                Generar Calendario de Posts
+              </button>
+
+              {autoSchedule && (
+                <div className="mt-4 p-4 bg-purple-50 rounded-xl space-y-3">
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-slate-600 mb-1">Cantidad de Posts</label>
+                      <select
+                        value={scheduleCount}
+                        onChange={(e) => setScheduleCount(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-white border border-purple-200 rounded-lg text-sm font-medium"
+                      >
+                        <option value={3}>3 posts</option>
+                        <option value={5}>5 posts</option>
+                        <option value={7}>7 posts (1 semana)</option>
+                        <option value={14}>14 posts (2 semanas)</option>
+                        <option value={30}>30 posts (1 mes)</option>
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-slate-600 mb-1">Días entre posts</label>
+                      <select
+                        value={scheduleDays}
+                        onChange={(e) => setScheduleDays(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-white border border-purple-200 rounded-lg text-sm font-medium"
+                      >
+                        <option value={1}>Diario</option>
+                        <option value={2}>Cada 2 días</option>
+                        <option value={3}>Cada 3 días</option>
+                        <option value={7}>Semanal</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleGenerateCalendar}
+                    disabled={generating}
+                    className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-300 text-white font-black rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    {generating ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+                    {generating ? 'Generando...' : `Generar ${scheduleCount} Posts Programados`}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Info lateral */}
-        <div className="md:w-1/3 bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-center">
+        <div className="lg:w-80 bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-center">
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-2xl rounded-full"></div>
           <div className="relative z-10">
             <h3 className="text-lg font-black uppercase mb-2 text-indigo-300">Brand Voice Activa</h3>
@@ -181,9 +277,9 @@ export default function MarketingAgent() {
               El agente está programado para escribir con un tono <strong>profesional, directo y aspiracional</strong>. Ideal para negocios B2B y dueños de PYMES retail en México.
             </p>
             <div className="text-xs bg-black/30 p-3 rounded-lg border border-white/10 text-slate-400 font-mono">
-              Model: Gemini 2.0 Flash<br/>
-              Max tokens: 500<br/>
-              Status: {process.env.VITE_GEMINI_API_KEY ? 'Conectado' : 'Configurar GEMINI_API_KEY'}
+              Model: Gemini 2.5 Flash<br/>
+              Max tokens: 2000<br/>
+              Scheduling: ✓ Activo
             </div>
           </div>
         </div>
@@ -194,6 +290,7 @@ export default function MarketingAgent() {
         <h3 className="text-lg font-black text-slate-900 uppercase mb-4 flex items-center gap-2">
           <History size={20} className="text-slate-400" />
           Historial de Publicaciones
+          <span className="ml-auto text-sm font-medium text-slate-400">{posts.length} posts</span>
         </h3>
 
         {loading ? (
@@ -205,17 +302,30 @@ export default function MarketingAgent() {
             {posts.map(post => (
               <div key={post.id} className="border border-slate-100 rounded-2xl p-4 hover:border-indigo-100 transition-colors bg-slate-50/50">
                 <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {post.platform === 'twitter' ? <Twitter size={16} className="text-[#1DA1F2]" /> : <Linkedin size={16} className="text-[#0A66C2]" />}
-                    <span className="text-xs font-bold text-slate-500 uppercase">{new Date(post.created_at).toLocaleDateString()}</span>
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${post.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className="text-xs font-bold text-slate-500 uppercase">
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${getStatusBadge(post.status)}`}>
                       {post.status}
                     </span>
+                    {post.scheduled_for && (
+                      <span className="text-[10px] font-medium text-purple-600 flex items-center gap-1">
+                        <Calendar size={10} />
+                        {new Date(post.scheduled_for).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     {post.status === 'draft' && (
                       <button onClick={() => markAsPublished(post.id)} className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-                        Marcar Publicado
+                        Publicar
+                      </button>
+                    )}
+                    {post.status === 'scheduled' && (
+                      <button onClick={() => markAsPublished(post.id)} className="text-xs font-bold text-purple-600 hover:text-purple-700 bg-purple-50 px-3 py-1.5 rounded-lg transition-colors">
+                        Publicar Ahora
                       </button>
                     )}
                     <button 
@@ -229,7 +339,7 @@ export default function MarketingAgent() {
                 </div>
                 <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed font-medium">{post.content}</p>
                 <div className="mt-3 pt-3 border-t border-slate-200 text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                  Tema original: {post.topic}
+                  Tema: {post.topic}
                 </div>
               </div>
             ))}
