@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Megaphone, Sparkles, Loader2, Twitter, Linkedin, Copy, Check, History } from 'lucide-react'
-import { supabase } from '@/config/supabase'
+import { supabase, getAuthToken, forceAuthHeader } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
 
 interface Post {
@@ -29,13 +29,23 @@ export default function MarketingAgent() {
   const fetchPosts = async () => {
     setLoading(true)
     try {
+      const token = await getAuthToken()
+      if (token) forceAuthHeader(token)
+      
       const { data, error } = await supabase
         .from('marketing_posts')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching marketing posts:', error)
+        const errStatus = (error as any).status
+        if (error.code === 'PGRST116' || errStatus === 403) {
+          alert('No tienes permisos para ver los posts. Solo los admins principales pueden acceder.')
+        }
+        return
+      }
       setPosts(data || [])
     } catch (err) {
       console.error('Error fetching marketing posts:', err)
@@ -49,14 +59,16 @@ export default function MarketingAgent() {
 
     setGenerating(true)
     try {
+      const token = await getAuthToken()
       const { error } = await supabase.functions.invoke('social-agent', {
-        body: { topic, platform }
+        body: { topic, platform },
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       })
 
       if (error) throw error
       
       setTopic('')
-      await fetchPosts() // Refrescar lista
+      await fetchPosts()
     } catch (err: any) {
       console.error('Error generating post:', err.message)
       alert('Error al generar el post: ' + err.message)
@@ -73,10 +85,22 @@ export default function MarketingAgent() {
 
   const markAsPublished = async (id: string) => {
     try {
-      await supabase
+      const token = await getAuthToken()
+      if (token) forceAuthHeader(token)
+      
+      const { error } = await supabase
         .from('marketing_posts')
         .update({ status: 'published', published_at: new Date().toISOString() })
         .eq('id', id)
+      
+      if (error) {
+        console.error('Error updating status:', error)
+        const errStatus = (error as any).status
+        if (errStatus === 403) {
+          alert('No tienes permisos para publicar posts. Solo los admins principales pueden hacerlo.')
+        }
+        return
+      }
       
       setPosts(posts.map(p => p.id === id ? { ...p, status: 'published' } : p))
     } catch (err) {
