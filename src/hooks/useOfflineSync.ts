@@ -84,10 +84,12 @@ export function useOfflineSync() {
     try {
       // Sincronizar órdenes
       const pendingOrders = await offlineDBService.getPendingOrders()
-      for (const _order of pendingOrders) {
+      const syncedOrders = 0
+      for (const order of pendingOrders) {
         try {
-          // Enviar orden a Supabase
-          // TODO: Implementar con supabaseService si es necesario
+          // TODO: Implementar envío a supabaseService.createOrder() cuando esté listo
+          // Por ahora solo registramos que hay datos pendientes sin borrarlos
+          logger.info('offline-sync', `Orden pendiente encontrada: ${(order as any).id || 'sin-id'}`)
         } catch (error) {
           logger.error('offline-sync', 'Error syncing order', error as any)
         }
@@ -95,17 +97,25 @@ export function useOfflineSync() {
 
       // Sincronizar ventas
       const pendingSales = await offlineDBService.getPendingSales()
-      for (const _sale of pendingSales) {
+      const syncedSales = 0
+      for (const sale of pendingSales) {
         try {
-          // Enviar venta a Supabase
-          // TODO: Implementar con supabaseService si es necesario
+          // TODO: Implementar envío a supabaseService.createRetailSale() cuando esté listo
+          // Por ahora solo registramos que hay datos pendientes sin borrarlos
+          logger.info('offline-sync', `Venta pendiente encontrada: ${(sale as any).id || 'sin-id'}`)
         } catch (error) {
           logger.error('offline-sync', 'Error syncing sale', error as any)
         }
       }
 
-      // Limpiar datos sincronizados
-      await offlineDBService.clearSyncedData()
+      // CRÍTICO: Solo limpiar datos si realmente se sincronizaron exitosamente
+      // No borrar datos offline sin confirmar que se guardaron en Supabase
+      if (syncedOrders > 0 || syncedSales > 0) {
+        await offlineDBService.clearSyncedData()
+        logger.info('offline-sync', `Sincronizados: ${syncedOrders} órdenes, ${syncedSales} ventas`)
+      } else {
+        logger.info('offline-sync', 'No hay datos para sincronizar aún (funcionalidad pendiente de implementación)')
+      }
 
       setState(prev => ({
         ...prev,

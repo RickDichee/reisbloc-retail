@@ -25,17 +25,32 @@ import AcceptInvite from '@/pages/AcceptInvite'
 import StoreFront from '@/pages/StoreFront'
 import Ecommerce from '@/pages/Ecommerce'
 import Help from '@/pages/Help'
+import Marketing from '@/pages/Marketing'
+import Agent from '@/pages/Agent'
+import Analytics from '@/pages/Analytics'
+import Kitchen from '@/pages/Kitchen'
+import Bar from '@/pages/Bar'
 import OfflineIndicator from '@/components/common/OfflineIndicator'
 import PrivacyPolicy from '@/pages/PrivacyPolicy'
 import TermsOfService from '@/pages/TermsOfService'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
+// Rutas que usan DashboardLayout (tienen su propia navegación sidebar)
+const DASHBOARD_ROUTES = [
+  '/pos', '/tables', '/admin', '/settings', '/inventory',
+  '/purchases', '/reports', '/closing', '/clients', '/ecommerce',
+  '/help', '/marketing', '/agent', '/analytics', '/serve',
+  '/kitchen', '/bar'
+]
+
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
 
-  // No mostrar NavBar en el Storefront Público (B2C), Invitación o páginas legales
-  const hideNavBar = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms'
+  // Ocultar NavBar en: público, invitaciones, legales, Y rutas con DashboardLayout
+  const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms'
+  const isDashboardPage = DASHBOARD_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
+  const hideNavBar = isPublicPage || isDashboardPage
 
   return (
     <>
@@ -55,6 +70,8 @@ function AppLayout() {
         <Route path="/pos" element={<POS />} />
         <Route path="/serve" element={<OrdersToServe />} />
         <Route path="/tables" element={<AccountMonitor />} />
+        <Route path="/kitchen" element={<Kitchen />} />
+        <Route path="/bar" element={<Bar />} />
 
         {/* ⚙️ Administración */}
         <Route path="/admin" element={<Admin />} />
@@ -66,6 +83,11 @@ function AppLayout() {
         <Route path="/clients" element={<Clients />} />
         <Route path="/ecommerce" element={<Ecommerce />} />
         <Route path="/help" element={<Help />} />
+
+        {/* 🤖 IA & Marketing */}
+        <Route path="/marketing" element={<Marketing />} />
+        <Route path="/agent" element={<Agent />} />
+        <Route path="/analytics" element={<Analytics />} />
 
         {/* 🚫 Manejo de errores */}
         <Route path="/404" element={<NotFound />} />
@@ -91,11 +113,20 @@ export default function App() {
         if (!session) {
           const tokenData = getStoredToken()
           if (tokenData && tokenData.accessToken) {
+            // Restaurar sesión sin refresh_token (no disponible en JWT local).
+            // Usar solo access_token para autenticar requests inmediatos.
+            // El refresh se manejará cuando Supabase lo necesite vía su propio flujo.
             const { data, error: setSessionError } = await supabase.auth.setSession({
               access_token: tokenData.accessToken,
               refresh_token: tokenData.accessToken
             })
-            if (!setSessionError) session = data.session
+            if (setSessionError) {
+              // Si falla setSession, forzar header manualmente
+              const { forceAuthHeader } = await import('@/config/supabase')
+              forceAuthHeader(tokenData.accessToken)
+            } else {
+              session = data.session
+            }
           }
         }
 

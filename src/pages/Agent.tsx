@@ -1,10 +1,10 @@
 import { Navigate } from 'react-router-dom'
-import ClientsManagement from '@/components/admin/ClientsManagement'
-import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
+import DashboardLayout from '@/components/layout/DashboardLayout'
+import AgentChat from '@/components/agent/AgentChat'
 
-export default function Clients() {
+export default function Agent() {
   const { currentUser } = useAppStore()
   const { hasAnyRole } = usePermissions()
 
@@ -13,9 +13,7 @@ export default function Clients() {
 
   return (
     <DashboardLayout>
-      <div className="relative space-y-6">
-        <ClientsManagement />
-      </div>
+      <AgentChat />
     </DashboardLayout>
   )
 }
