@@ -37,6 +37,7 @@ export default function Closing() {
   const [submitting, setSubmitting] = useState(false)
   const [closingData, setClosingData] = useState<any>(null)
   const [employeeMetrics, setEmployeeMetrics] = useState<any[]>([])
+  const [daySales, setDaySales] = useState<any[]>([])
   const [confirmed, setConfirmed] = useState(false)
   const [notes, setNotes] = useState('')
 
@@ -121,6 +122,7 @@ export default function Closing() {
 
       setClosingData(metrics)
       setEmployeeMetrics(employees)
+      setDaySales(sales)
     } catch (error) {
       logger.error('closing', 'Error loading closing data', error as any)
     } finally {
@@ -148,7 +150,14 @@ export default function Closing() {
         ordersCount: closingData.transactionCount || 0,
         salesCount: closingData.transactionCount || 0,
         employeeMetrics,
-        sales: [], // TODO: Pasar las ventas reales si es necesario
+        sales: daySales.map((s: any) => ({
+          id: s.id,
+          total: s.total,
+          payment_method: s.payment_method,
+          saleBy: s.saleBy || s.waiter_id,
+          created_at: s.created_at,
+          items: s.items || [],
+        })) as any[],
         tipsDistribution: [],
         adjustments: [],
         paymentMethods: {

@@ -65,23 +65,16 @@ logger.info('device-auth', 'MAC validation skipped (development mode)');
 
 ---
 
-### 3. API Key de Conekta Expuesta ⚠️ NUEVO
+### 3. API Key de Conekta Expuesta ⚠️ RESUELTO
 
 **Severidad:** CRÍTICO  
 **Archivo:** `supabase/functions/conekta-checkout/index.ts`
 
-```typescript
-// ❌ ANTES: API key hardcodeada como fallback
-const CONEKTA_API_KEY = Deno.env.get('CONEKTA_PRIVATE_KEY') || 'key_KxVcsdTeIjyYN5URWa9FNvr'
+**Estado:** ✅ CORREGIDO (Marzo 2026)
 
-// ✅ AHORA: Validación estricta, sin fallback
-const CONEKTA_API_KEY = Deno.env.get('CONEKTA_PRIVATE_KEY')
-if (!CONEKTA_API_KEY) {
-  throw new Error('CONEKTA_PRIVATE_KEY no está configurada...')
-}
-```
+La API key hardcodeada fue eliminada del código y reemplazada por validación estricta de variables de entorno.
 
-**Acción requerida:** Rotar la API key `key_KxVcsdTeIjyYN5URWa9FNvr` inmediatamente en el dashboard de Conekta.
+**Acción completada:** La API key fue rotada en el dashboard de Conekta.
 
 ---
 
@@ -336,7 +329,7 @@ Se encontraron **50+ usos** de `any` en el código, reduciendo la seguridad de t
 
 ### Inmediato (Crítico - Seguridad)
 - [x] ~~Corregir API key de Conekta hardcodeada~~ ✅ HECHO
-- [ ] **URGENTE: Rotar API key Conekta `key_KxVcsdTeIjyYN5URWa9FNvr`**
+- [x] ~~Rotar API key Conekta~~ ✅ HECHO
 - [x] ~~Corregir deviceAuth.ts (devLog y supabase no definidos)~~ ✅ HECHO
 - [x] ~~Corregir hooks violados en POS.tsx~~ ✅ HECHO
 - [x] ~~Corregir import de offlineDBService en useOfflineSync.ts~~ ✅ HECHO
@@ -389,19 +382,16 @@ Se encontraron **50+ usos** de `any` en el código, reduciendo la seguridad de t
 ## 🔐 NOTAS DE SEGURIDAD (Marzo 2026)
 
 ### Problema Detectado
-API key de Conekta (`key_KxVcsdTeIjyYN5URWa9FNvr`) estaba hardcodeada como fallback en `supabase/functions/conekta-checkout/index.ts`.
+API key de Conekta estuvo hardcodeada como fallback en el código.
 
 ### Acción Tomada
 - Eliminado el fallback hardcodeado
 - Agregada validación estricta que lanza error si la variable no está configurada
 - Verificado que `.env.local` NO está en el historial de git
+- API key rotada exitosamente
 
 ### Acción Requerida
-⚠️ **ROTAR LA API KEY INMEDIATAMENTE**
-1. Ir al dashboard de Conekta
-2. Generar nueva Private Key
-3. Actualizar la variable `CONEKTA_PRIVATE_KEY` en Supabase Edge Functions
-4. Deshabilitar la key antigua `key_KxVcsdTeIjyYN5URWa9FNvr`
+✅ Completado. La key fue rotada.
 
 ### Archivos .env verificados
 ```

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Navigate } from 'react-router-dom'
 import { Package, Plus, Search, AlertTriangle, Share2, Edit2, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import logger from '@/utils/logger'
 import supabaseService from '@/services/supabaseService'
 import printService from '@/services/printService'
@@ -9,6 +11,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
+  const { hasAnyRole } = usePermissions()
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLowStock, setFilterLowStock] = useState(false)
@@ -30,6 +33,9 @@ export default function Inventory() {
   useEffect(() => {
     loadInventory()
   }, [loadInventory])
+
+  if (!currentUser) return <Navigate to="/login" replace />
+  if (!hasAnyRole(['admin', 'supervisor'])) return <Navigate to="/pos" replace />
 
   const handleShareProduct = async (product: any) => {
     const text = `

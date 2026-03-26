@@ -231,6 +231,8 @@ export const useAppStore = create<AppStore>()(
         currentTableNumber: state.currentTableNumber,
         draftOrders: state.draftOrders, // CRÍTICO: órdenes en progreso
         organizationSettings: state.organizationSettings,
+        orgPlan: state.orgPlan, // Persistir plan del tenant
+        orgPlanNote: state.orgPlanNote,
         accessibility: state.accessibility, // ♿ Persistir preferencias visuales
       } as any),
     }

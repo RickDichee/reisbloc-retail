@@ -17,7 +17,10 @@ import {
     Settings,
     Banknote,
     Coins,
-    Zap
+    Zap,
+    Megaphone,
+    Bot,
+    TrendingUp
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
@@ -47,6 +50,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const menuItems: { label: string; icon?: LucideIcon; path?: string; isHeader?: boolean }[] = [
         { label: 'Sistema', isHeader: true },
         { label: 'Administración', icon: Shield, path: '/admin' },
+
+        { label: 'IA & Marketing', isHeader: true },
+        { label: 'Marketing AI', icon: Megaphone, path: '/marketing' },
+        { label: 'IA Agent', icon: Bot, path: '/agent' },
+        { label: 'Analytics', icon: TrendingUp, path: '/analytics' },
 
         { label: 'Operación', isHeader: true },
         { label: 'Punto de Venta', icon: Banknote, path: '/pos' },
@@ -190,7 +198,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
                 {/* Mobile Bottom Navigation */}
                 <div className="lg:hidden bg-white border-t border-slate-200 flex items-center justify-around py-1 safe-bottom w-full overflow-hidden">
-                    {menuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Gestión de Cuentas', 'Cierre de Caja'].includes(item.label)).map((item) => {
+                    {menuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Cuentas', 'Cierre de Caja'].includes(item.label)).map((item) => {
                         const Icon = item.icon!;
                         const isActive = location.pathname === item.path;
                         return (

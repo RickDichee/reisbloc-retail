@@ -18,7 +18,10 @@ import {
   Minimize,
   ShoppingBag,
   LifeBuoy,
-  Users
+  Users,
+  Megaphone,
+  Bot,
+  TrendingUp
 } from 'lucide-react'
 
 export default function NavBar() {
@@ -78,6 +81,9 @@ export default function NavBar() {
     { path: '/clients', label: 'Clientes', icon: Users, roles: ['admin', 'supervisor', 'staff'] },
     { path: '/purchases', label: 'Compras', icon: ShoppingBag, roles: ['admin', 'supervisor'] },
     { path: '/closing', label: 'Cierre', icon: DollarSign, roles: ['admin', 'supervisor'] },
+    { path: '/marketing', label: 'Marketing', icon: Megaphone, roles: ['admin'] },
+    { path: '/agent', label: 'IA Agent', icon: Bot, roles: ['admin', 'supervisor'] },
+    { path: '/analytics', label: 'Analytics', icon: TrendingUp, roles: ['admin'] },
     { path: '/admin', label: 'Admin', icon: Shield, roles: ['admin', 'supervisor'] },
     { path: '/settings', label: 'Ajustes', icon: Settings, roles: ['admin'] },
   ]
