@@ -72,7 +72,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         { label: 'Accesibilidad y Diseño', icon: Settings, path: '/settings' },
     ];
 
-    const DEFAULT_SIDEBAR_ITEMS = ['/pos', '/tables', '/inventory', '/clients', '/reports', '/purchases'];
+    const DEFAULT_SIDEBAR_ITEMS = ['/pos', '/tables', '/inventory', '/clients', '/reports', '/purchases', '/marketing', '/agent', '/analytics'];
 
     const handleLogout = async () => {
         await logout();

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { useTokens } from '@/hooks/useTokens'
 import {
   Users,
   UserCheck,
@@ -22,7 +24,10 @@ import {
   Settings,
   History,
   Megaphone,
-  Activity
+  Activity,
+  Coins,
+  Crown,
+  Zap
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import AdminCard from '@/components/common/AdminCard'
@@ -37,6 +42,8 @@ import supabaseService from '@/services/supabaseService'
 import ClientsManagement from '@/components/admin/ClientsManagement'
 import MarketingAgent from '@/components/admin/MarketingAgent'
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard'
+import UpgradeModal from '@/components/common/UpgradeModal'
+import TokenPurchaseModal from '@/components/common/TokenPurchaseModal'
 
 type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'marketing' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs' | 'analytics'
 
@@ -44,7 +51,11 @@ export default function Admin() {
   const { currentUser } = useAppStore()
   const navigate = useNavigate()
   const { canManageUsers, canManageInventory } = usePermissions()
+  const { isPro, planName } = usePlanLimits()
+  const { balance } = useTokens()
   const [activeTab, setActiveTab] = useState<AdminTab>('hub')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showTokenModal, setShowTokenModal] = useState(false)
 
   // AI Insights Data (Free Tier)
   const [aiMetrics, setAiMetrics] = useState<any>(null)
@@ -147,7 +158,77 @@ export default function Admin() {
         {/* Tab Content */}
         <div className="animate-fadeIn">
           {activeTab === 'hub' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-6">
+              {/* Sección de Plan y Tokens */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-xl border border-white/10">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
+                      {isPro ? <Crown size={28} className="text-white" /> : <Zap size={28} className="text-white" />}
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Tu Plan</p>
+                      <h3 className="text-2xl font-black">{planName}</h3>
+                      {isPro ? (
+                        <p className="text-sm text-emerald-400 font-medium">Acceso completo a todos los features</p>
+                      ) : (
+                        <p className="text-sm text-slate-400 font-medium">
+                          {balance > 0 ? `${balance} tokens disponibles` : 'Sin tokens - Recarga para continuar usando IA'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {!isPro && (
+                      <>
+                        <button
+                          onClick={() => setShowTokenModal(true)}
+                          className="flex items-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-colors border border-white/20"
+                        >
+                          <Coins size={18} />
+                          Recargar Tokens
+                        </button>
+                        <button
+                          onClick={() => setShowUpgradeModal(true)}
+                          className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 rounded-xl font-bold text-sm transition-colors shadow-lg"
+                        >
+                          <Crown size={18} />
+                          Mejorar Plan
+                        </button>
+                      </>
+                    )}
+                    {isPro && (
+                      <div className="flex items-center gap-2 px-4 py-3 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
+                        <Check size={18} className="text-emerald-400" />
+                        <span className="font-bold text-emerald-300 text-sm">Plan Activo</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Barra de progreso de tokens (si no es Pro) */}
+                {!isPro && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-slate-400">Tokens para Features IA</span>
+                      <span className="font-bold text-amber-400">{balance} tokens</span>
+                    </div>
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all"
+                        style={{ width: `${Math.min((balance / 100) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                      AI Chat: 1 token | Marketing: 5 tokens | Insights: 3 tokens
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Grid de módulos */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {tabs.filter(tab => tab.enabled).map(tab => (
                 <AdminCard
                   key={tab.id}
@@ -169,6 +250,7 @@ export default function Admin() {
                   }
                 />
               ))}
+            </div>
             </div>
           )}
 
@@ -400,6 +482,17 @@ function EcommerceDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Modales de Plan y Tokens */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason="Accede a todos los features premium"
+      />
+      <TokenPurchaseModal
+        isOpen={showTokenModal}
+        onClose={() => setShowTokenModal(false)}
+      />
     </div>
   )
 }
