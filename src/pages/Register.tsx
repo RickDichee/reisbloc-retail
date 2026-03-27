@@ -38,8 +38,10 @@ const Register = () => {
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        alert('¡Registro exitoso! Por favor verifica tu correo para activar tu cuenta.');
-        navigate('/login');
+        // Almacenar org_name para usar después
+        localStorage.setItem('pending_org_name', formData.orgName)
+        // Ir al onboarding para configurar el negocio
+        navigate('/onboarding');
       }
     } catch (err: any) {
       console.error('Registration error:', err);
