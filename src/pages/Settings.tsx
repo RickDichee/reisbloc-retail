@@ -16,7 +16,10 @@ import {
     DollarSign,
     Banknote,
     Coins,
-    Store
+    Store,
+    Megaphone,
+    Bot,
+    TrendingUp
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import DeviceApprovalPanel from '@/components/admin/DeviceApprovalPanel'
@@ -162,6 +165,9 @@ export default function Settings() {
         { id: '/closing', label: 'Cierre de Caja', icon: DollarSign },
         { id: '/purchases', label: 'Compras', icon: Coins },
         { id: '/admin', label: 'Administración', icon: ShieldCheck },
+        { id: '/marketing', label: 'Marketing AI', icon: Megaphone, ai: true },
+        { id: '/agent', label: 'IA Agent', icon: Bot, ai: true },
+        { id: '/analytics', label: 'Analytics', icon: TrendingUp, ai: true },
     ]
 
     return (
@@ -267,6 +273,11 @@ export default function Settings() {
                                                 <div className="flex items-center gap-4">
                                                     <module.icon size={20} className={favorites.sidebar.includes(module.id) ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'} />
                                                     <span className="font-bold text-sm">{module.label}</span>
+                                                    {(module as any).ai && (
+                                                        <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-black rounded uppercase">
+                                                            IA
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <input
                                                     type="checkbox"
@@ -302,6 +313,11 @@ export default function Settings() {
                                                 <div className="flex items-center gap-4">
                                                     <module.icon size={20} className={favorites.navbar.includes(module.id) ? 'text-white' : 'text-slate-400 group-hover:text-emerald-600'} />
                                                     <span className="font-bold text-sm">{module.label}</span>
+                                                    {(module as any).ai && (
+                                                        <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[10px] font-black rounded uppercase">
+                                                            IA
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <input
                                                     type="checkbox"

@@ -100,9 +100,14 @@ export default function UpgradeModal({
                 ))
               }
             </ul>
-            <button className="w-full mt-6 py-4 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-colors">
-              Hacer Upgrade Ahora
-            </button>
+            <a 
+              href="/pricing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full mt-6 py-4 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-colors text-center"
+            >
+              Hacer Upgrade Ahora →
+            </a>
           </div>
 
           {/* Other Plans */}
