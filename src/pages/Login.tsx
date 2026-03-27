@@ -28,15 +28,10 @@ export default function Login() {
       // es una sesión Zombie que causará un Loop Infinito. Debe ser destruida.
       if (session && !isAuthenticated) {
         if (window.location.search.includes('zombie=cleared')) {
-          console.warn('⚠️ Falló la limpieza de la Sesión Zombie o fue abortada. Deteniendo loop por seguridad.')
           return
         }
 
-        console.warn('⚠️ Sesión Zombie detectada. Eliminando sesión para romper loop infinito.')
-        await authLogout() // Limpia localStorage y token
-
-        // Forzamos un reinicio completo del cliente para limpiar cualquier estado
-        // de react-router o Zustand que haya quedado en memoria.
+        await authLogout()
         window.location.replace('/login?zombie=cleared')
       }
     }
@@ -64,14 +59,11 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      console.log('🌍 Iniciando Google Auth...')
       setError(null)
       setLoading(true)
 
-      console.log('🧹 Limpiando tokens fantasma locales...')
       await authLogout()
 
-      console.log('🚀 Ejecutando signInWithOAuth...')
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -83,22 +75,16 @@ export default function Login() {
         }
       })
 
-      console.log('✅ Resultado auth:', { data, error })
-
       if (error) {
-        console.error('❌ Error devuelto por Supabase:', error)
         throw error
       }
 
-      // Si llegamos aqui y no redirigió...
       if (data?.url) {
-        console.warn('⚠️ Supabase devolvió URL pero no redirigió automáticamente! Forzando redirección manual:', data.url)
         window.location.assign(data.url)
       }
 
     } catch (err: any) {
-      console.error('❌ Error capturado en handleGoogleLogin:', err)
-      setError(err?.message || JSON.stringify(err) || 'Error desconocido al iniciar OAuth')
+      setError(err?.message || 'Error al iniciar sesión con Google')
       setLoading(false)
     }
   }

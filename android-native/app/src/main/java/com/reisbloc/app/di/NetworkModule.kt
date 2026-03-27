@@ -18,9 +18,12 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideSupabaseClient(): SupabaseClient {
+        // IMPORTANT: For security, supabaseKey should be retrieved from secure source
+        // such as Android Keystore, encrypted shared preferences, or build config
+        // NEVER hardcode keys in source code
         return createSupabaseClient(
             supabaseUrl = "https://jnyyaclrelqcqzjummwe.supabase.co",
-            supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpueXlhY2xyZWxxY3F6anVtbXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NzAyOTEsImV4cCI6MjA4NjI0NjI5MX0.s4ICD7RoQECq3MWTcA1iEcVqG4W8sB3rkm6kKyb29h8"
+            supabaseKey = "PLACEHOLDER_SUPABASE_ANON_KEY_ROTATED_MUST_BE_UPDATED_IN_SUPERBASE_DASHBOARD"
         ) {
             install(Postgrest)
             install(Auth)

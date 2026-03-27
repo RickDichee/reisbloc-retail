@@ -14,6 +14,7 @@ import { Product, OrderItem } from '@/types/index'
 import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
+import { sanitizeHTML } from '@/utils/sanitize'
 import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
@@ -416,7 +417,7 @@ export default function POS() {
 
               <div
                 className="bg-slate-50 rounded-xl p-3 max-h-64 overflow-y-auto text-xs font-mono border border-slate-200"
-                dangerouslySetInnerHTML={{ __html: receiptModal.html }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHTML(receiptModal.html) }}
               />
 
               <div className="flex gap-3">

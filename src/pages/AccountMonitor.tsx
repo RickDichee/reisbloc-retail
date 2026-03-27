@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import supabaseService from '@/services/supabaseService'
@@ -50,6 +50,7 @@ const getTableColorStyles = (tableNum: number) => {
 }
 
 export default function TableMonitor() {
+  const navigate = useNavigate()
   const { currentUser, tables } = useAppStore()
   const permissions = usePermissions()
   const canAccessTableMonitor = permissions.canAccessTableMonitor
@@ -310,7 +311,22 @@ export default function TableMonitor() {
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
 
         {groupedByTable.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 font-bold shadow-sm uppercase tracking-widest text-sm">No hay {entityName.toLowerCase()}s activas ahora.</div>
+          <>
+          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 font-bold shadow-sm uppercase tracking-widest text-sm">Caja disponible - click para iniciar venta</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {availableTables.filter(t => !groupedByTable.find(g => g.tableNumber === t)).map(tableNum => {
+              const styles = getTableColorStyles(tableNum)
+              return (
+                <div key={tableNum} onClick={() => navigate('/pos')} className={`border-2 ${styles.border} ${styles.bg} rounded-2xl shadow-lg p-5 flex flex-col gap-3 transition-all hover:shadow-xl hover:scale-105 cursor-pointer`}>
+                  <div className={`flex items-center justify-between rounded-xl p-3 bg-gradient-to-r ${styles.header}`}>
+                    <div><p className={`text-sm font-semibold ${styles.text} opacity-70`}>{entityName}</p><p className={`text-3xl font-black ${styles.text}`}>{tableNum}</p></div>
+                  </div>
+                  <p className="text-xs text-slate-400">Click para vender</p>
+                </div>
+              )
+            })}
+          </div>
+          </>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {groupedByTable.map(group => {
