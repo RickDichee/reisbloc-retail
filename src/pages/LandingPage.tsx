@@ -17,24 +17,24 @@ const LandingPage = () => {
     {
       name: 'Free',
       price: '$0',
-      features: ['1 Dispositivo', '3 Usuarios', '50 Productos', 'Soporte Comunitario'],
+      features: ['1 Dispositivo', '3 Empleados', '50 Productos', '20 Queries AI/mes', 'Inventario básico'],
       buttonText: 'Empezar Gratis',
       planKey: 'free'
     },
     {
-      name: 'Pro',
-      price: '$25',
-      features: ['5 Dispositivos', '15 Usuarios', '500 Productos', 'Soporte Prioritario', 'Aprobación de Dispositivos'],
-      buttonText: 'Elegir Pro',
-      planKey: 'pro',
+      name: 'Launch',
+      price: '$149',
+      features: ['3 Dispositivos', '5 Empleados', '500 Productos', '100 Queries AI/día', 'Reportes avanzados', 'Soporte email'],
+      buttonText: 'Elegir Launch',
+      planKey: 'starter',
       highlight: true
     },
     {
-      name: 'Enterprise',
-      price: 'Custom',
-      features: ['Dispositivos Ilimitados', 'Usuarios Ilimitados', 'Productos Ilimitados', 'Soporte 24/7', 'Multi-sucursal'],
-      buttonText: 'Contactar',
-      planKey: 'enterprise'
+      name: 'Growth',
+      price: '$399',
+      features: ['5 Dispositivos', '15 Empleados', '2,000 Productos', 'AI ilimitado', 'Multi-sucursal', 'API Access'],
+      buttonText: 'Elegir Growth',
+      planKey: 'growth'
     }
   ];
 
@@ -42,24 +42,28 @@ const LandingPage = () => {
     <div className="min-h-screen bg-[#0B0B0B] text-white font-sans">
       {/* Hero Section */}
       <header className="container mx-auto px-6 py-16 text-center">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-          Reisbloc Retail
+        <div className="inline-block px-4 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-bold mb-6">
+          🌟 Empieza GRATIS - Sin tarjeta de crédito
+        </div>
+        <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
+          Reisbloc Store
         </h1>
         <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-          La solución definitiva para la gestión de ventas. Offline-first, seguro y diseñado para escalar tu negocio.
+          El sistema de punto de venta que todo negocio necesita. 
+          <br />Cobra rápido, controla tu inventario y grows con IA.
         </p>
         <div className="flex justify-center gap-4">
           <button 
             onClick={() => navigate('/register')}
-            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-full font-bold transition-all transform hover:scale-105"
+            className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-full font-bold transition-all transform hover:scale-105 shadow-lg shadow-emerald-500/30"
           >
-            Registrar mi Negocio
+            Empezar Gratis Hoy
           </button>
           <button 
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/pricing')}
             className="px-8 py-4 border border-gray-700 hover:bg-gray-800 rounded-full font-bold transition-all"
           >
-            Iniciar Sesión
+            Ver Precios
           </button>
         </div>
       </header>
