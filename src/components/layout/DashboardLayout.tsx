@@ -162,7 +162,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                         : 'bg-slate-100 text-slate-600 border border-slate-200'
                                 }`}>
                                     {isPro && <Zap size={10} className="fill-indigo-600 text-indigo-600" />}
-                                    Plan {planName}
+                                    {planName === 'Launch' ? 'Plan Launch' : `Plan ${planName}`}
                                 </div>
                             </div>
                         )}

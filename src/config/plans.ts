@@ -113,7 +113,7 @@ export function isUnlimited(value: number): boolean {
 export function getPlanDisplayName(plan: PlanType): string {
   const names: Record<PlanType, string> = {
     free: 'Free',
-    starter: 'Starter',
+    starter: 'Launch',
     growth: 'Growth',
     scale: 'Scale',
     enterprise: 'Enterprise',
