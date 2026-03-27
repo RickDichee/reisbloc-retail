@@ -34,6 +34,8 @@ import OfflineIndicator from '@/components/common/OfflineIndicator'
 import PrivacyPolicy from '@/pages/PrivacyPolicy'
 import TermsOfService from '@/pages/TermsOfService'
 import Pricing from '@/pages/Pricing'
+import Branches from '@/pages/Branches'
+import Schedules from '@/pages/Schedules'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 // Rutas que usan DashboardLayout (tienen su propia navegación sidebar)
@@ -41,7 +43,7 @@ const DASHBOARD_ROUTES = [
   '/pos', '/tables', '/admin', '/settings', '/inventory',
   '/purchases', '/reports', '/closing', '/clients', '/ecommerce',
   '/help', '/marketing', '/agent', '/analytics', '/serve',
-  '/kitchen', '/bar'
+  '/kitchen', '/bar', '/branches', '/schedules'
 ]
 
 // 🎨 Contenedor Principal con Layout Condicional
@@ -79,6 +81,8 @@ function AppLayout() {
         {/* ⚙️ Administración */}
         <Route path="/admin" element={<Admin />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/branches" element={<Branches />} />
+        <Route path="/schedules" element={<Schedules />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/purchases" element={<Purchases />} />
         <Route path="/reports" element={<Reports />} />
