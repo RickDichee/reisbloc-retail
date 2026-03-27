@@ -141,10 +141,18 @@ serve(async (req) => {
 
         if (error) throw error
 
+        const speiBank = Deno.env.get("SPEI_BANK");
+        const speiClabe = Deno.env.get("SPEI_CLABE");
+        const speiAccountName = Deno.env.get("SPEI_ACCOUNT_NAME");
+        
+        if (!speiBank || !speiClabe || !speiAccountName) {
+          throw new Error("SPEI_BANK, SPEI_CLABE, and SPEI_ACCOUNT_NAME environment variables are required for SPEI payments");
+        }
+        
         const speiConfig = {
-          bank: Deno.env.get("SPEI_BANK") || "BBVA Bancomer",
-          clabe: Deno.env.get("SPEI_CLABE") || "0123456789012345678901",
-          accountName: Deno.env.get("SPEI_ACCOUNT_NAME") || "Reisbloc SA de CV",
+          bank: speiBank,
+          clabe: speiClabe,
+          accountName: speiAccountName,
         }
 
         return new Response(JSON.stringify({
