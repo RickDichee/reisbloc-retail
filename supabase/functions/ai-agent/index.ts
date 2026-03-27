@@ -5,16 +5,8 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
-const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
-  'https://reisbloc.store',
-  'https://www.reisbloc.store',
-  'https://reisbloc-pos-zrxu.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000'
-]
-
 const corsHeaders = {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.join(', '),
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
