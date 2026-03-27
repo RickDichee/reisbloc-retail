@@ -8,6 +8,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '
 const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
   'https://reisbloc.store',
   'https://www.reisbloc.store',
+  'https://reisbloc-pos-zrxu.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000'
 ]

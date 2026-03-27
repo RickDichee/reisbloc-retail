@@ -12,7 +12,6 @@ import Login from '@/pages/Login'
 import POS from '@/pages/POS'
 import Admin from '@/pages/Admin'
 import Inventory from '@/pages/Inventory'
-import AccountMonitor from '@/pages/AccountMonitor'
 import OrdersToServe from '@/pages/OrdersToServe'
 import Closing from '@/pages/Closing'
 import Clients from '@/pages/Clients'
@@ -39,22 +38,13 @@ import Schedules from '@/pages/Schedules'
 import Onboarding from '@/pages/Onboarding'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
-// Rutas que usan DashboardLayout (tienen su propia navegación sidebar)
-const DASHBOARD_ROUTES = [
-  '/pos', '/tables', '/admin', '/settings', '/inventory',
-  '/purchases', '/reports', '/closing', '/clients', '/ecommerce',
-  '/help', '/marketing', '/agent', '/analytics', '/serve',
-  '/kitchen', '/bar', '/branches', '/schedules'
-]
-
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
 
-  // Ocultar NavBar en: público, invitaciones, legales, Y rutas con DashboardLayout
+  // Ocultar NavBar solo en: público, invitaciones, legales
   const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms'
-  const isDashboardPage = DASHBOARD_ROUTES.some(r => pathname === r || pathname.startsWith(r + '/'))
-  const hideNavBar = isPublicPage || isDashboardPage
+  const hideNavBar = isPublicPage
 
   return (
     <>
@@ -76,7 +66,6 @@ function AppLayout() {
         {/* 🛒 Operación del POS */}
         <Route path="/pos" element={<POS />} />
         <Route path="/serve" element={<OrdersToServe />} />
-        <Route path="/tables" element={<AccountMonitor />} />
         <Route path="/kitchen" element={<Kitchen />} />
         <Route path="/bar" element={<Bar />} />
 

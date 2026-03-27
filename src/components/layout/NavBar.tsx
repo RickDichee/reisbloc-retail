@@ -74,7 +74,6 @@ export default function NavBar() {
 
   const navItems = [
     { path: '/pos', label: 'Ventas', icon: ShoppingCart, roles: ['admin', 'supervisor', 'staff'] },
-    { path: '/tables', label: 'Cuentas', icon: Users, roles: ['admin', 'supervisor', 'staff'] },
     { path: '/ecommerce', label: 'E-commerce', icon: ShoppingBag, roles: ['admin', 'supervisor'] },
     { path: '/inventory', label: 'Inventario', icon: Package, roles: ['admin', 'supervisor'] },
     { path: '/reports', label: 'Reportes', icon: BarChart3, roles: ['admin', 'supervisor'] },

@@ -8,7 +8,6 @@ import {
     LogOut,
     Menu,
     Store,
-    LayoutGrid,
     BarChart3,
     DollarSign,
     LucideIcon,
@@ -58,7 +57,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
         { label: 'Operación', isHeader: true },
         { label: 'Punto de Venta', icon: Banknote, path: '/pos' },
-        { label: 'Cuentas', icon: LayoutGrid, path: '/tables' },
         { label: 'E-commerce', icon: Store, path: '/ecommerce' },
 
         { label: 'Gestión', isHeader: true },
