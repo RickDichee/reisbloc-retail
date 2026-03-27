@@ -2,7 +2,7 @@ import { useState } from 'react'
 import logger from '@/utils/logger'
 import conektaService from '@/services/conektaService'
 import mercadopagoService from '@/services/mercadopagoService'
-import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X, Zap } from 'lucide-react'
+import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X } from 'lucide-react'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 export interface PaymentResult {
@@ -173,85 +173,89 @@ export default function PaymentPanel({
           {/* Payment Method Selection */}
           {!conektaCheckoutUrl && !mercadopagoUrl ? (
             <div className="mb-6">
-              <label className="block text-sm font-bold text-gray-900 mb-3">Métodos de Cobro Integrados</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label className="block text-sm font-bold text-gray-900 mb-3">Forma de Pago</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {/* Efectivo - Primero */}
                 <button
                   onClick={() => setPaymentMethod('cash')}
                   disabled={loading || success}
                   className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'cash'
-                    ? 'bg-emerald-600 text-white shadow-lg'
+                    ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                 >
-                  <DollarSign size={20} strokeWidth={2.5} />
-                  <span className="text-[10px] font-black uppercase">Efectivo</span>
+                  <DollarSign size={24} strokeWidth={2.5} />
+                  <span className="text-[11px] font-black uppercase tracking-tight text-center">Efectivo</span>
                 </button>
 
-                {canUseFeature('conekta') ? (
-                  <button
-                    onClick={() => setPaymentMethod('card_conekta')}
-                    disabled={loading || success}
-                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_conekta'
-                      ? 'bg-indigo-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                  >
-                    <CreditCard size={20} />
-                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
-                  </button>
-                ) : (
-                  <button
-                    disabled
-                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative group"
-                    title="Requiere Plan Launch"
-                  >
-                    <CreditCard size={20} />
-                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
-                    <span className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                      <Zap size={7} className="fill-current" />Launch
-                    </span>
-                  </button>
-                )}
+                {/* Tarjeta Manual - Segundo */}
+                <button
+                  onClick={() => setPaymentMethod('card')}
+                  disabled={loading || success}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card'
+                    ? 'bg-slate-900 text-white shadow-lg ring-2 ring-slate-400'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <CreditCard size={24} />
+                  <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta<br />Manual</span>
+                </button>
 
+                {/* MercadoPago - Tercero */}
                 {canUseFeature('mercadopago') ? (
                   <button
                     onClick={() => setPaymentMethod('card_mercadopago')}
                     disabled={loading || success}
                     className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_mercadopago'
-                      ? 'bg-blue-600 text-white shadow-lg'
+                      ? 'bg-[#00B1EA] text-white shadow-lg ring-2 ring-[#00B1EA]'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                   >
-                    <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center p-0.5">
-                       <img src="https://www.mercadopago.com/instore/merchant/bundle/mptools/assets/mp-logo.png" alt="MP" className="w-full h-full object-contain" />
+                    <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center">
+                      <span className="text-[#00B1EA] font-black text-sm">M</span>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">M. Pago</span>
+                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Pago<br />Móvil</span>
                   </button>
                 ) : (
                   <button
                     disabled
-                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative group"
-                    title="Requiere Plan Launch"
+                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative"
                   >
-                    <CreditCard size={20} />
-                    <span className="text-[10px] font-black uppercase tracking-tighter text-center">M. Pago</span>
-                    <span className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                      <Zap size={7} className="fill-current" />Launch
+                    <div className="w-7 h-7 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-400 font-black text-sm">M</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">Pago<br />Móvil</span>
+                    <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-full">
+                      Launch
                     </span>
                   </button>
                 )}
 
-                <button
-                  onClick={() => setPaymentMethod('card')}
-                  disabled={loading || success}
-                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card'
-                    ? 'bg-slate-900 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  <CreditCard size={20} />
-                  <span className="text-[10px] font-black uppercase tracking-tighter text-center leading-tight">Tarjeta<br />(Manual)</span>
-                </button>
+                {/* Conekta - Cuarto */}
+                {canUseFeature('conekta') ? (
+                  <button
+                    onClick={() => setPaymentMethod('card_conekta')}
+                    disabled={loading || success}
+                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_conekta'
+                      ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    <CreditCard size={24} />
+                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta<br />Online</span>
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative"
+                  >
+                    <CreditCard size={24} />
+                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta<br />Online</span>
+                    <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-full">
+                      Launch
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           ) : conektaCheckoutUrl ? (
