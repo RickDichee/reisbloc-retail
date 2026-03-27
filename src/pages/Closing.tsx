@@ -43,7 +43,7 @@ export default function Closing() {
 
   // Gestión de Planes: Verificar si la organización tiene acceso a features premium
   const userPlan = (currentUser as any)?.plan || 'free' // Por defecto free si no hay dato
-  const canSendEmail = ['pro', 'enterprise'].includes(userPlan)
+  const canSendEmail = ['starter', 'growth', 'scale', 'enterprise'].includes(userPlan)
 
   useEffect(() => {
     loadClosingData()

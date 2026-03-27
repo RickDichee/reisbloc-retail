@@ -203,12 +203,12 @@ export default function PaymentPanel({
                   <button
                     disabled
                     className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative group"
-                    title="Requiere Plan Pro"
+                    title="Requiere Plan Launch"
                   >
                     <CreditCard size={20} />
                     <span className="text-[10px] font-black uppercase tracking-tighter text-center">Conekta</span>
                     <span className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                      <Zap size={7} className="fill-current" />Pro
+                      <Zap size={7} className="fill-current" />Launch
                     </span>
                   </button>
                 )}
@@ -231,12 +231,12 @@ export default function PaymentPanel({
                   <button
                     disabled
                     className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative group"
-                    title="Requiere Plan Pro"
+                    title="Requiere Plan Launch"
                   >
                     <CreditCard size={20} />
                     <span className="text-[10px] font-black uppercase tracking-tighter text-center">M. Pago</span>
                     <span className="absolute -top-1.5 -right-1.5 flex items-center gap-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                      <Zap size={7} className="fill-current" />Pro
+                      <Zap size={7} className="fill-current" />Launch
                     </span>
                   </button>
                 )}

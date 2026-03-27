@@ -10,11 +10,11 @@ interface TokenPurchaseModalProps {
 }
 
 const PACKAGES: Partial<TokenPackage>[] = [
-  { id: 'starter', name: 'Starter', tokens: 500, price_mxn: 99, price_usd: 5.50 },
-  { id: 'growth', name: 'Growth', tokens: 2000, price_mxn: 299, price_usd: 16.50 },
-  { id: 'scale', name: 'Scale', tokens: 5000, price_mxn: 599, price_usd: 33.00 },
-  { id: 'pro', name: 'Pro', tokens: 15000, price_mxn: 1299, price_usd: 72.00 },
-  { id: 'business', name: 'Business', tokens: 50000, price_mxn: 3499, price_usd: 194.00 },
+  { id: 'launch_tokens', name: 'Launch', tokens: 500, price_mxn: 99, price_usd: 5.50 },
+  { id: 'growth_tokens', name: 'Growth', tokens: 2000, price_mxn: 299, price_usd: 16.50 },
+  { id: 'scale_tokens', name: 'Scale', tokens: 5000, price_mxn: 599, price_usd: 33.00 },
+  { id: 'pro_tokens', name: 'Pro', tokens: 15000, price_mxn: 1299, price_usd: 72.00 },
+  { id: 'enterprise_tokens', name: 'Enterprise', tokens: 50000, price_mxn: 3499, price_usd: 194.00 },
 ]
 
 export default function TokenPurchaseModal({ isOpen, onClose, onSuccess }: TokenPurchaseModalProps) {
