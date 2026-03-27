@@ -36,6 +36,7 @@ import TermsOfService from '@/pages/TermsOfService'
 import Pricing from '@/pages/Pricing'
 import Branches from '@/pages/Branches'
 import Schedules from '@/pages/Schedules'
+import Onboarding from '@/pages/Onboarding'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 // Rutas que usan DashboardLayout (tienen su propia navegación sidebar)
@@ -70,6 +71,7 @@ function AppLayout() {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/upgrade" element={<Pricing />} />
+        <Route path="/onboarding" element={<Onboarding />} />
 
         {/* 🛒 Operación del POS */}
         <Route path="/pos" element={<POS />} />
