@@ -17,11 +17,26 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+}
+
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+  
   try {
     // Validate method
     if (req.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    
+    // CORS preflight check - reject requests without proper origin
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Authorization required" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Optional: basic verification of Supabase webhook signature
@@ -30,7 +45,7 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => null);
     if (!body) {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Supabase sends events like { "user": { ... }, "event": "user.created" } depending on setup.
@@ -42,12 +57,12 @@ Deno.serve(async (req: Request) => {
     if (!event || !user) {
       // reply with 200 so Supabase doesn't keep retrying if it's not our webhook format
       console.warn("Unrecognized webhook payload", { event, user });
-      return new Response(JSON.stringify({ ok: false, reason: "unrecognized payload" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: false, reason: "unrecognized payload" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Only handle user.created (adjust if your webhook uses a different event name)
     if (event !== "user.created" && event !== "auth.user.created" && event !== "USER_CREATED") {
-      return new Response(JSON.stringify({ ok: true, skipped: true, event }), { status: 200, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, skipped: true, event }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Extract fields from user payload
@@ -57,7 +72,7 @@ Deno.serve(async (req: Request) => {
 
     if (!authUid) {
       console.error("No auth UID in webhook payload", user);
-      return new Response(JSON.stringify({ ok: false, reason: "no auth uid" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: false, reason: "no auth uid" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Upsert into public.users: create if not exists
@@ -89,7 +104,7 @@ Deno.serve(async (req: Request) => {
         const { error: updErr } = await admin.from("users").update({ email }).eq("auth_uid", authUid);
         if (updErr) console.error("Error updating existing user email", updErr);
       }
-      return new Response(JSON.stringify({ ok: true, existed: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, existed: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Insert new user row
@@ -98,7 +113,7 @@ Deno.serve(async (req: Request) => {
     if (insErr) {
       // If conflict on unique constraint (race) try to ignore
       console.error("Insert error", insErr);
-      return new Response(JSON.stringify({ ok: false, error: insErr.message }), { status: 200, headers: { "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: false, error: insErr.message }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Optionally create audit entry
@@ -109,9 +124,9 @@ Deno.serve(async (req: Request) => {
       row_data: inserted ?? insertPayload,
     });
 
-    return new Response(JSON.stringify({ ok: true, inserted }), { status: 200, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, inserted }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("Unhandled error in webhook function", e);
-    return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 500, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
