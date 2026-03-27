@@ -1,5 +1,5 @@
 // Servicio para gestión de auditoría
-import databaseService from './databaseService'
+import supabaseService from './supabaseService'
 import logger from '@/utils/logger'
 
 interface AuditLog {
@@ -43,7 +43,7 @@ class AuditService {
       };
 
       // Guardar en Supabase via databaseService
-      await databaseService.createAuditLog(auditLog as any);
+      await supabaseService.createAuditLog(auditLog as any);
 
       // Log en consola para desarrollo
       logger.info('audit', `Audit log: ${action} on ${entityType}/${entityId}`)
@@ -193,7 +193,7 @@ class AuditService {
   ): Promise<AuditLog[]> {
     try {
       // Obtener todos los logs (limit es opcional, default 100)
-      let logs = await databaseService.getAuditLogs?.(filters.limit || 100) || []
+      let logs = await supabaseService.getAuditLogs?.(filters.limit || 100) || []
 
       // Aplicar filtros localmente
       if (filters.userId) {

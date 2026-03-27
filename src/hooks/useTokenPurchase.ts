@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { supabase, getAuthToken, forceAuthHeader } from '@/config/supabase'
+import { supabase, getAuthToken } from '@/config/supabase'
 
 export interface TokenPackage {
   id: string
