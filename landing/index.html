@@ -4,11 +4,11 @@
   <base href="./">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Reisbloc Store: Sistema de Punto de Venta inteligente con Agentes de IA para el mercado textil de Moroleón. Offline-first, multi-sucursal, facturaci&#243;n autom&#225;tica." />
+  <meta name="description" content="Reisbloc Store: Sistema de Punto de Venta inteligente con Agentes de IA para el mercado textil de Morole&#243;n. Offline-first, multi-sucursal." />
 
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Reisbloc Store — POS Inteligente para Morole&#243;n" />
-  <meta property="og:description" content="Sistema de Punto de Venta con Agentes de IA para el mercado textil. Offline-first, multi-sucursal, facturaci&#243;n autom&#225;tica." />
+  <meta property="og:description" content="Sistema de Punto de Venta para el mercado textil. Offline-first, multi-sucursal, inventario en tiempo real." />
   <meta property="og:image" content="https://reisbloc-retail.vercel.app/icon.svg" />
 
   <title>Reisbloc Store — POS Inteligente para el Mercado Textil de Morole&#243;n</title>
@@ -84,6 +84,21 @@
     .price-popular {
       background: linear-gradient(135deg, #1F293B, #2d3f55);
     }
+    .coming-soon {
+      position: relative;
+    }
+    .coming-soon::after {
+      content: 'Pronto';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #F59E0B;
+      color: white;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 9999px;
+    }
   </style>
 </head>
 <body class="bg-[#F8FAFC] text-[#1F293B]">
@@ -128,7 +143,7 @@
           </span>
         </h1>
         <p class="text-lg text-slate-300 mb-10 max-w-md leading-relaxed">
-          Sistema de Punto de Venta con Agentes de IA para mayoreo y menudeo textil. Funciona sin internet, multi-sucursal, facturaci&#243;n autom&#225;tica.
+          Sistema de Punto de Venta dise&#241;ado para el comercio textil. Funciona sin internet, multi-sucursal, inventario en tiempo real.
         </p>
         <div class="flex flex-wrap gap-4">
           <a
@@ -154,113 +169,156 @@
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
-            <p class="text-center text-white/80 text-sm font-medium">POS + Agente IA<br/><span class="text-blue-300 font-bold">Textil Mayoreo</span></p>
+            <p class="text-center text-white/80 text-sm font-medium">POS para Textil<br/><span class="text-blue-300 font-bold">Mayoreo y Menudeo</span></p>
             <div class="flex gap-2">
               <span class="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">&#9679; Sin internet</span>
-              <span class="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">IA activa</span>
+              <span class="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">Multi-sucursal</span>
             </div>
           </div>
           <div class="absolute -top-4 -right-4 bg-white text-[#1F293B] text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
-            &#129302; IA lista
+            &#9889; Funciona offline
           </div>
           <div class="absolute -bottom-4 -left-4 bg-[#1F293B] text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
-            &#9889; Offline-first
+            &#128203; F&#225;cil de usar
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- USE CASES - MOROLE&#211;N TEXTILE -->
+  <!-- FEATURES - LO QUE SÍ FUNCIONA -->
   <section id="features" class="max-w-6xl mx-auto px-6 py-24">
     <div class="text-center mb-16">
       <span class="inline-block mb-3 px-3 py-1 rounded-full bg-[#1F293B]/8 text-[#1F293B] text-xs font-semibold uppercase tracking-widest">
-        Casos de Uso
+        Caracter&#237;sticas
       </span>
-      <h2 class="text-4xl font-extrabold">Dise&#241;ado para Morole&#243;n</h2>
+      <h2 class="text-4xl font-extrabold">Lo que puedes hacer hoy</h2>
       <p class="mt-4 text-[#64748B] text-lg max-w-xl mx-auto">
-        Adaptado a las necesidades del mercado textil guanajuatense: rapidez, volumen y atenci&#243;n personalizada.
+        Funcionalidades reales y probadas para el mercado textil guanajuatense.
       </p>
     </div>
 
     <div class="grid md:grid-cols-3 gap-8">
 
+      <!-- POS Nativo -->
+      <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
+        <div class="w-14 h-14 mb-6 rounded-2xl bg-[#3B82F6] flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <h3 class="text-2xl font-bold mb-3">Punto de Venta</h3>
+        <p class="text-[#64748B] leading-relaxed flex-grow">
+          Venta r&#225;pida por pieza o por kilo. Interfaz optimizada para el ritmo del mayoreo textil.
+        </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#1F293B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Funciona sin internet</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Sincroniza autom&#225;ticamente</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> M&#250;ltiples formas de pago</li>
+        </ul>
+      </div>
+
+      <!-- Inventario -->
       <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
         <div class="w-14 h-14 mb-6 rounded-2xl bg-[#3B82F6] flex items-center justify-center">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
           </svg>
         </div>
-        <h3 class="text-2xl font-bold mb-3">Mayoreo R&#225;pido</h3>
+        <h3 class="text-2xl font-bold mb-3">Inventario en Tiempo Real</h3>
         <p class="text-[#64748B] leading-relaxed flex-grow">
-          Venta r&#225;pida por pieza o por kilo. Calcula precios de mayoreo autom&#225;ticamente y genera tickets en segundos.
+          Control de telas, hilados y accesorios. Alertas de stock m&#237;nimo y reportes por categor&#237;a.
         </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#1F293B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Control de producto</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Alertas de stock</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Reportes de venta</li>
+        </ul>
       </div>
 
+      <!-- Multi-Sucursal -->
+      <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
+        <div class="w-14 h-14 mb-6 rounded-2xl bg-[#3B82F6] flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <h3 class="text-2xl font-bold mb-3">Multi-Sucursal</h3>
+        <p class="text-[#64748B] leading-relaxed flex-grow">
+          Controla tu tienda principal y locales en el Centro, San Sebasti&#225;n o zonas textiles desde un solo panel.
+        </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#1F293B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Dashboard centralizado</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Empleados y horarios</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Reportes por sucursal</li>
+        </ul>
+      </div>
+
+      <!-- Clientes -->
       <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
         <div class="w-14 h-14 mb-6 rounded-2xl bg-[#3B82F6] flex items-center justify-center">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         </div>
-        <h3 class="text-2xl font-bold mb-3">Multi-Sucursal</h3>
+        <h3 class="text-2xl font-bold mb-3">Agenda de Clientes</h3>
         <p class="text-[#64748B] leading-relaxed flex-grow">
-          Controla tu tienda principal y locales en el Centro, San Sebasti&#225;n o zonas纺织 desde un solo panel.
+          Registra clientes frecuentes y sus condiciones de cr&#233;dito. Nombres, tel&#233;fonos, l&#237;mite de cr&#233;dito.
         </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#1F293B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Base de clientes</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Cr&#233;dito disponible</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Historial de compras</li>
+        </ul>
       </div>
 
-      <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
-        <div class="w-14 h-14 mb-6 rounded-2xl bg-[#3B82F6] flex items-center justify-center">
+      <!-- Agente IA - COMING SOON -->
+      <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col relative coming-soon">
+        <div class="w-14 h-14 mb-6 rounded-2xl bg-[#94A3B8] flex items-center justify-center">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-          </svg>
-        </div>
-        <h3 class="text-2xl font-bold mb-3">Facturaci&#243;n Auto</h3>
-        <p class="text-[#64748B] leading-relaxed flex-grow">
-          Genera facturas CFDI 4.0 autom&#225;ticamente. Tu contador lo agradecer&#225;.
-        </p>
-      </div>
-
-      <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
-        <div class="w-14 h-14 mb-6 rounded-2xl bg-[#3B82F6] flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-        </div>
-        <h3 class="text-2xl font-bold mb-3">Agenda Clientes</h3>
-        <p class="text-[#64748B] leading-relaxed flex-grow">
-          Registra a tus clientes frecuentes y sus condiciones de cr&#233;dito. Nombres, tel&#233;fonos, cr&#233;dito disponible.
-        </p>
-      </div>
-
-      <div class="card-hover bg-[#1F293B] text-white rounded-3xl p-8 border border-[#1F293B] shadow-lg flex flex-col">
-        <div class="w-14 h-14 mb-6 rounded-2xl bg-white/15 flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="#60A5FA"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="#FFF"/>
           </svg>
         </div>
-        <div class="inline-flex mb-4 px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold w-fit">
-          &#9733; Agente IA
-        </div>
-        <h3 class="text-2xl font-bold mb-3">Agente de Ventas 24/7</h3>
-        <p class="text-slate-300 leading-relaxed flex-grow">
-          Agente IA que responde cotizaciones por WhatsApp, hace seguimiento a clientes y cierra ventas mientras cerras tu negocio.
+        <h3 class="text-2xl font-bold mb-3">Agente IA de Ventas</h3>
+        <p class="text-[#64748B] leading-relaxed flex-grow">
+          Agente que responde cotizaciones por WhatsApp, hace seguimiento y cierra ventas 24/7.
         </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#64748B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-yellow-500">&#10003;</span> WhatsApp Business</li>
+          <li class="flex items-center gap-2"><span class="text-yellow-500">&#10003;</span> Cotizaciones auto</li>
+          <li class="flex items-center gap-2"><span class="text-yellow-500">&#10003;</span> Seguimiento a clientes</li>
+        </ul>
       </div>
 
+      <!-- Reportes -->
       <div class="card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col">
         <div class="w-14 h-14 mb-6 rounded-2xl bg-[#3B82F6] flex items-center justify-center">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
           </svg>
         </div>
-        <h3 class="text-2xl font-bold mb-3">Inventario Real</h3>
+        <h3 class="text-2xl font-bold mb-3">Reportes y An&#225;lisis</h3>
         <p class="text-[#64748B] leading-relaxed flex-grow">
-          Control de telas, hilados y accesorios. Alertas de stock m&#237;nimo y reportes de venta por categor&#237;a.
+          Dashboard con ventas, productos m&#225;s vendidos, margen de ganancia y tendencias.
         </p>
+        <ul class="mt-6 space-y-2 text-sm text-[#1F293B] font-medium">
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Ventas por d&#237;a</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Productos populares</li>
+          <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> M&#225;rgenes de ganancia</li>
+        </ul>
       </div>
 
+    </div>
+
+    <!-- Próximamente -->
+    <div class="mt-16 text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-semibold">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Pr&#243;ximamente: Facturaci&#243;n CFDI 4.0
+      </div>
     </div>
   </section>
 
@@ -292,11 +350,10 @@
           <ul class="space-y-3 text-sm text-[#1F293B] mb-8 flex-grow">
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 1 sucursal</li>
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 1 usuario</li>
-            <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 500 tickets/mes</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 500 ventas/mes</li>
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Inventario b&#225;sico</li>
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Reportes simples</li>
-            <li class="flex items-center gap-2 text-[#64748B]"><span>&#10007;</span> M&#250;ltiples sucursales</li>
-            <li class="flex items-center gap-2 text-[#64748B]"><span>&#10007;</span> Agente IA</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Soporte por WhatsApp</li>
           </ul>
           <a href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20el%20plan%20Launch%20de%20Reisbloc%20Store" target="_blank" rel="noopener noreferrer" class="btn-dark text-white font-semibold px-6 py-3 rounded-full text-center">
             Comenzar
@@ -319,7 +376,7 @@
           <ul class="space-y-3 text-sm text-slate-200 mb-8 flex-grow">
             <li class="flex items-center gap-2"><span class="text-blue-400">&#10003;</span> 3 sucursales</li>
             <li class="flex items-center gap-2"><span class="text-blue-400">&#10003;</span> 5 usuarios</li>
-            <li class="flex items-center gap-2"><span class="text-blue-400">&#10003;</span> 2,000 tickets/mes</li>
+            <li class="flex items-center gap-2"><span class="text-blue-400">&#10003;</span> 2,000 ventas/mes</li>
             <li class="flex items-center gap-2"><span class="text-blue-400">&#10003;</span> Inventario completo</li>
             <li class="flex items-center gap-2"><span class="text-blue-400">&#10003;</span> Agente IA b&#225;sico</li>
             <li class="flex items-center gap-2"><span class="text-blue-400">&#10003;</span> Reportes avanzados</li>
@@ -343,7 +400,7 @@
           <ul class="space-y-3 text-sm text-[#1F293B] mb-8 flex-grow">
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Sucursales ilimitadas</li>
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Usuarios ilimitados</li>
-            <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 10,000 tickets/mes</li>
+            <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> 10,000 ventas/mes</li>
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Inventario + batch</li>
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> Agente IA completo</li>
             <li class="flex items-center gap-2"><span class="text-green-500">&#10003;</span> API + integraciones</li>
@@ -371,7 +428,7 @@
       </div>
       <div class="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
         <div class="text-4xl font-extrabold text-[#1F293B]">24/7</div>
-        <div class="text-[#64748B] text-sm mt-1">Agente IA activo</div>
+        <div class="text-[#64748B] text-sm mt-1">Disponible siempre</div>
       </div>
       <div class="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
         <div class="text-4xl font-extrabold text-[#1F293B]">&lt;2s</div>
