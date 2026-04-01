@@ -9,12 +9,15 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const referralCode = searchParams.get('ref');
+  const selectedPlan = searchParams.get('plan') || 'launch';
+
   const [formData, setFormData] = useState({
     orgName: '',
     fullName: '',
     email: '',
     password: '',
-    plan: searchParams.get('plan') || 'free'
+    plan: selectedPlan
   });
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -30,7 +33,8 @@ const Register = () => {
           data: {
             full_name: formData.fullName,
             org_name: formData.orgName,
-            plan: formData.plan
+            plan: formData.plan,
+            referral_code: referralCode
           }
         }
       });
@@ -38,8 +42,10 @@ const Register = () => {
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        // Almacenar org_name para usar después
-        localStorage.setItem('pending_org_name', formData.orgName)
+        // Save referral code for later processing
+        if (referralCode) {
+          localStorage.setItem('pending_referral_code', referralCode)
+        }
         // Ir al onboarding para configurar el negocio
         navigate('/onboarding');
       }
@@ -79,6 +85,13 @@ const Register = () => {
         {error && (
           <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 rounded-xl text-red-400 text-sm">
             {error}
+          </div>
+        )}
+
+        {referralCode && (
+          <div className="mb-6 p-4 bg-green-900/20 border border-green-500/50 rounded-xl">
+            <p className="text-green-400 text-sm font-medium">🎁 ¡Te recomendó un amigo!</p>
+            <p className="text-green-300 text-xs mt-1">Código: <span className="font-bold">{referralCode}</span> - Ambos ganan crédito al registrarte.</p>
           </div>
         )}
 
