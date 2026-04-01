@@ -92,17 +92,8 @@ export default function NavBar() {
   ]
 
   const visibleItems = navItems.filter(item => {
+    // Always show all items that the user's role allows
     const hasRole = item.roles.includes(currentUser?.role || '')
-
-    // Fix: If no favorites are configured (or settings are null), show ALL authorized items.
-    // Only filter by favorites if the user has explicitly set them.
-    const favorites = organizationSettings?.favorites?.navbar
-    const hasFavoritesConfigured = Array.isArray(favorites) && favorites.length > 0
-
-    if (hasFavoritesConfigured) {
-      return hasRole && (favorites.includes(item.path) || location.pathname === item.path)
-    }
-
     return hasRole
   })
 
