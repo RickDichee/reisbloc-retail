@@ -37,6 +37,7 @@ import Branches from '@/pages/Branches'
 import Schedules from '@/pages/Schedules'
 import Onboarding from '@/pages/Onboarding'
 import Invoicing from '@/pages/Invoicing'
+import Referral from '@/pages/Referral'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 // 🎨 Contenedor Principal con Layout Condicional
@@ -88,6 +89,7 @@ function AppLayout() {
         <Route path="/agent" element={<Agent />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/invoicing" element={<Invoicing />} />
+        <Route path="/referral" element={<Referral />} />
 
         {/* 🚫 Manejo de errores */}
         <Route path="/404" element={<NotFound />} />

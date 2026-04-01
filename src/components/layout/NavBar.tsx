@@ -22,7 +22,8 @@ import {
   Megaphone,
   Bot,
   TrendingUp,
-  Receipt
+  Receipt,
+  Gift
 } from 'lucide-react'
 
 export default function NavBar() {
@@ -85,6 +86,7 @@ export default function NavBar() {
     { path: '/agent', label: 'IA Agent', icon: Bot, roles: ['admin', 'supervisor'] },
     { path: '/analytics', label: 'Analytics', icon: TrendingUp, roles: ['admin'] },
     { path: '/invoicing', label: 'Facturas', icon: Receipt, roles: ['admin'] },
+    { path: '/referral', label: 'Referidos', icon: Gift, roles: ['admin', 'supervisor'] },
     { path: '/admin', label: 'Admin', icon: Shield, roles: ['admin', 'supervisor'] },
     { path: '/settings', label: 'Ajustes', icon: Settings, roles: ['admin'] },
   ]

@@ -87,13 +87,20 @@ serve(async (req) => {
 
     const result = await response.json()
 
+    // Get user profile for organization_id
+    const { data: profile } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single()
+
     // Log invoice in database
     const { data: invoice, error: dbError } = await supabase
       .from('invoices')
       .insert({
         facturapi_id: result.id,
         user_id: user.id,
-        organization_id: (await supabase.from('users').select('organization_id').eq('id', user.id).single())?.data?.organization_id,
+        organization_id: profile?.organization_id,
         folio_number: result.folio_number,
         series: result.series,
         status: result.status,
@@ -110,6 +117,10 @@ serve(async (req) => {
       })
       .select()
       .single()
+
+    if (dbError) {
+      console.error('DB error:', dbError)
+    }
 
     return new Response(JSON.stringify({
       success: true,

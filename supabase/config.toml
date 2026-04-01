@@ -415,3 +415,11 @@ entrypoint = "./functions/social-agent/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/social-agent/*.html" ]
+
+[functions.whatsapp-webhook]
+enabled = true
+verify_jwt = false
+
+[functions.facturapi-webhook]
+enabled = true
+verify_jwt = false
