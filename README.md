@@ -1,74 +1,166 @@
-# 🧠 MEMENTO 4.0: Reisbloc Retail SaaS (Pure Retail Architecture)
+# Reisbloc POS
 
-> "La simplicidad es la máxima sofisticación. Hemos purgado lo innecesario para dejar la esencia operativa pura."
+**Sistema de Punto de Venta SaaS para retail mexicano** - Una plataforma moderna de gestión comercial con multi-sucursal, pagos integrados y asistente IA.
 
-## 🛡️ ESTADO DE MISIÓN: COBERTURA TOTAL
-- **Versión:** 4.1.0-RC1 (Release Candidate) 🚀
-- **Arquitectura:** Pure Retail (No Restaurant Logic)
-- **Integraciones:** Clip (Smart Match), MercadoPago (QR), Gemini AI (Intelligence)
-- **Seguridad:** Zero Trust, RLS End-to-End, Rate Limiting
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61dafb)](https://reactjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Enabled-3ecf8e)](https://supabase.com/)
 
----
+## 🚀 Demo
 
-## 🏗️ PILARES DE REINGENIERÍA (v4.0)
+🌐 **[reisbloc.store](https://reisbloc.store)** - Landing page de producto
 
-### 1. 🛒 Pure Retail Core
-El sistema ha evolucionado. Adiós a las mesas, cocinas y comandas.
-- **Cuentas & Cajas:** Gestión atómica de transacciones.
-- **Inventario Real:** Catálogo  independiente.
-- **Venta Directa:** Flujo optimizado .
+## ✨ Features
 
-### 2. 💰 Pagos de Alta Frecuencia
-- **Clip Smart Match:** Sincronización automática de terminales bancarias vía Webhook + Edge Function.
-- **MercadoPago QR:** Generación dinámica de QR para cobro sin contacto.
-- **Balance Inteligente:** Detección de pagos parciales y cálculo de restante en tiempo real.
+### Core POS
+- **Punto de Venta** - Venta en 3 taps con múltiples formas de pago
+- **Inventario Inteligente** - Control de stock, alertas de reabastecimiento
+- **Multi-Sucursal** - Gestiona varias tiendas desde un solo panel
+- **Caja y Turnos** - Control de efectivo con arqueo automático
 
-### 3. 🧠 Reisbloc Intelligence (AI)
-- **Consultor Virtual:** Análisis de ventas y tendencias con Gemini Pro.
-- **Predicción de Inventario:** Alertas inteligentes de reabastecimiento.
-- **Auditoría Cognitiva:** Detección de patrones anómalos en cancelaciones.
+### Pagos Integrados
+- **MercadoPago QR** - Cobro sin contacto con código QR dinámico
+- **Clip Smart Match** - Sincronización automática de terminales bancarias
+- **Efectivo/Tarjeta** - Soporte para cualquier forma de pago
 
----
+### Inteligencia de Negocio
+- **Dashboard Analytics** - Ventas, tendencias y métricas en tiempo real
+- **Reportes Avanzados** - Productos top, ganancias por período, exports
+- **Asistente IA** - Chatbot de WhatsApp con respuestas automatizadas (Dify)
 
-## 🔐 PROTOCOLOS DE SEGURIDAD
+### Monetización & Facturación
+- **CFDI 4.0** - Facturación electrónica con PAC integrado
+- **Tokens** - Sistema de créditos para features premium
+- **Planes de Suscripción** - Launch, Grow, Scale (multi-tenant SaaS)
 
-### Bóveda RLS (Row Level Security)
-Cada organización es un silo impenetrable. Los datos de  son invisibles física y lógicamente para .
+### Seguridad Enterprise
+- **Row Level Security (RLS)** - Aislamiento total por organización
+- **Device Fingerprinting** - Validación de dispositivos autorizados
+- **Rate Limiting** - Protección contra abuse en webhooks
+- **OAuth 2.0** - Autenticación con Google
 
-### Edge Defense
-- **Rate Limiting:** Protección contra DDoS en webhooks públicos.
-- **Geo-Fencing:** (En Roadmap) Restricción de accesos por ubicación.
-- **Device Fingerprint:** Validación de hardware autorizado por MAC Address virtual.
+## 🏗️ Stack Tecnológico
 
----
+| Capa | Tecnología |
+|------|------------|
+| Frontend | React 18, TypeScript, Vite |
+| Estilos | Tailwind CSS, Lucide Icons |
+| Estado | Zustand |
+| Backend | Supabase (PostgreSQL + Edge Functions) |
+| Auth | Supabase Auth + Google OAuth |
+| Pagos | MercadoPago SDK, Clip Webhooks |
+| IA | Dify.ai, Gemini Pro |
+| Facturación | Facturapi (CFDI 4.0) |
+| Móvil | Capacitor (Android/iOS-ready) |
 
-## 🚀 DESPLIEGUE & OPERACIONES
+## 📁 Estructura del Proyecto
 
-### Stack Tecnológico
-- **Frontend:** React 18 + Vite (Ultraligero)
-- **Estilos:** TailwindCSS (Diseño Atómico Premium)
-- **Backend:** Supabase (PostgreSQL + Edge Functions)
-- **AI:** Google Gemini Pro
-
-### Comandos de Poder
-```bash
-# Iniciar Motores
-npm run dev
-
-# Compilación de Producción
-npm run build
-
-# Despliegue de Funciones Edge
-supabase functions deploy clip-webhook
-supabase functions deploy ai-insights
+```
+reisbloc-store/
+├── src/
+│   ├── components/        # Componentes reutilizables
+│   │   ├── admin/        # Panel administrativo
+│   │   ├── auth/          # Login, OAuth, PIN
+│   │   ├── layout/       # NavBar, Sidebar
+│   │   └── pos/           # Componentes de punto de venta
+│   ├── pages/             # Vistas principales
+│   │   ├── POS.tsx        # Punto de Venta
+│   │   ├── Inventory.tsx  # Gestión de inventario
+│   │   ├── Analytics.tsx  # Dashboard de métricas
+│   │   ├── Invoicing.tsx  # Facturación CFDI
+│   │   └── Settings.tsx   # Configuración
+│   ├── hooks/             # Custom React hooks
+│   ├── services/          # API clients y servicios
+│   └── utils/             # Helpers y utilities
+├── supabase/
+│   ├── functions/         # Edge Functions (Deno)
+│   │   ├── clip-webhook/  # Webhook de Clip
+│   │   ├── whatsapp-webhook/ # Bot IA de WhatsApp
+│   │   ├── mercadopago-proxy/ # Proxy de pagos
+│   │   └── ai-insights/   # Análisis con IA
+│   ├── migrations/        # Schema y migrations DB
+│   └── seed.sql           # Datos iniciales
+├── docs/                   # Documentación técnica
+└── landing/               # Landing page estática
 ```
 
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm o pnpm
+- Cuenta de [Supabase](https://supabase.com)
+- Git
+
+### Instalación
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/RickDichee/reisbloc-retail.git
+cd reisbloc-retail
+
+# Instalar dependencias
+npm install
+
+# Copiar variables de entorno
+cp .env.example .env.local
+# Editar .env.local con tus credenciales de Supabase
+
+# Iniciar desarrollo
+npm run dev
+```
+
+### Variables de Entorno
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_ENVIRONMENT=development
+```
+
+### Deploy de Edge Functions
+
+```bash
+# Login a Supabase CLI
+npx supabase login
+
+# Deploy función individual
+supabase functions deploy clip-webhook
+
+# Deploy todas las funciones
+supabase functions deploy
+```
+
+## 🔐 Seguridad
+
+- **Multi-Tenancy**: Cada organización tiene su propio espacio de datos aislado
+- **RLS Policies**: Row Level Security en todas las tablas
+- **JWT Validation**: Verificación de tokens en cada request
+- **Device Authorization**:-whitelist de dispositivos por usuario
+- **Webhook Signatures**: Validación HMAC de webhooks externos
+
+## 📈 Roadmap
+
+- [ ] PWA offline mode completo
+- [ ] App móvil nativa (iOS/Android)
+- [ ] Integración con más PACs de facturación
+- [ ] Panel de admin multi-tenant
+- [ ] Webhooks para integraciones de terceros
+
+## 🤝 Contributing
+
+1. Fork el repositorio
+2. Crea tu branch (`git checkout -b feature/amazing-feature`)
+3. Commit tus cambios (`git commit -m 'feat: add amazing feature'`)
+4. Push a la branch (`git push origin feature/amazing-feature`)
+5. Abre un Pull Request
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
 ---
 
-## 📜 MANIFIESTO DEL ARQUITECTO
-"No construimos software, forjamos herramientas de libertad. Reisbloc no es solo un POS, es el sistema nervioso de tu negocio retail. Rápido, seguro y diseñado para escalar sin límites."
-
----
-
-**Hecho con ❤️ y ☕ en el Laboratorio Reisbloc.**
-*v4.1.0 - The Retail Revolution*
+**Construido con ❤️ para el retail mexicano**
