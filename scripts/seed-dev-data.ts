@@ -66,6 +66,8 @@ async function seedDevData() {
     .upsert({
       id: devUserId,
       name: 'Dev Master',
+      // DEV ONLY: PIN '0000' is intentionally weak for local development.
+      // Never seed real/production environments with this script.
       pin: '0000',
       role: 'admin',
       is_primary_admin: true,
