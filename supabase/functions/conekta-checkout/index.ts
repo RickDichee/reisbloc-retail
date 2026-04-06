@@ -33,7 +33,7 @@ serve(async (req) => {
       customer_info: {
         name: customerName,
         email: customerEmail || Deno.env.get('CONEKTA_DEFAULT_CUSTOMER_EMAIL') || 'noreply@reisbloc.store',
-        phone: customerPhone || Deno.env.get('CONEKTA_DEFAULT_CUSTOMER_PHONE') || '+525500000000'
+        phone: customerPhone || Deno.env.get('CONEKTA_DEFAULT_CUSTOMER_PHONE') || '+520000000000'
       },
       line_items: [
         {
