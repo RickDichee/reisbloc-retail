@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, currency = "MXN", description = "Venta Mostrador Reisbloc", customerName = "Cliente", orderId = `pos_${Date.now()}` } = await req.json()
+    const { amount, currency = "MXN", description = "Venta Mostrador Reisbloc", customerName = "Cliente", customerEmail, customerPhone, orderId = `pos_${Date.now()}` } = await req.json()
 
     if (!amount) {
       throw new Error('El monto es requerido (amount).')
@@ -32,8 +32,8 @@ serve(async (req) => {
       currency,
       customer_info: {
         name: customerName,
-        email: "cajero@reisbloc.store",
-        phone: "+525500000000"
+        email: customerEmail || Deno.env.get('CONEKTA_DEFAULT_CUSTOMER_EMAIL') || 'noreply@reisbloc.store',
+        phone: customerPhone || Deno.env.get('CONEKTA_DEFAULT_CUSTOMER_PHONE') || '+525500000000'
       },
       line_items: [
         {
