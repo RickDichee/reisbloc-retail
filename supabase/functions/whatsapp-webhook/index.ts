@@ -7,48 +7,22 @@ const corsHeaders = {
 }
 
 const VERIFY_TOKEN = Deno.env.get('WHATSAPP_VERIFY_TOKEN') || 'reisbloc_whatsapp_verify'
-const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')!
-const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN')!
+const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || '980061948534829'
+const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') || ''
 
-const WHATSAPP_BUSINESS_NUMBER = '5215665848231'
+const DIFY_API_URL = Deno.env.get('DIFY_API_URL') || 'http://host.docker.internal:80/v1'
+const DIFY_API_KEY = Deno.env.get('DIFY_API_KEY') || ''
+const DIFY_APP_ID = Deno.env.get('DIFY_APP_ID') || ''
 
-interface ConversationState {
-  stage: 'new' | 'greeting' | 'qualifying' | 'interest' | 'demo' | 'closing' | 'closed'
-  name?: string
-  business?: string
-  needs?: string[]
-  products?: string[]
-  interest?: string
-  nextAction?: string
-  lastContact?: string
-  messages: Message[]
-}
+const WELCOME_MESSAGE = `¡Hola! 👋 Soy el asistente virtual de Reisbloc Store.
 
-interface Message {
-  from: string
-  body: string
-  timestamp: string
-  direction: 'inbound' | 'outbound'
-}
+Te ayudo con:
+🛒 Catálogo de productos
+💰 Precios y promociones
+📦 Información de pedidos
+🏪 Ubicación de tiendas
 
-// Pricing info
-const PRICING = {
-  launch: { name: 'Launch', price: 997, features: ['1 sucursal', '1 usuario', '500 ventas/mes', 'Inventario básico'] },
-  grow: { name: 'Grow', price: 2497, features: ['3 sucursales', '5 usuarios', '2,000 ventas/mes', 'Agente IA', 'Reportes avanzados'] },
-  scale: { name: 'Scale', price: 4997, features: ['Sucursales ilimitadas', 'Usuarios ilimitados', '10,000 ventas/mes', 'API'] }
-}
-
-const PRODUCT_FEATURES = [
-  { keyword: 'caja', feature: '💰 Punto de Venta - Vende en 3 taps, múltiples formas de pago' },
-  { keyword: 'inventario', feature: '📦 Inventario Inteligente - Control automático, alertas de stock bajo' },
-  { keyword: 'reporte', feature: '📊 Reportes - Ventas diarias, productos top, ganancias' },
-  { keyword: 'offline', feature: '⚡ Funciona sin internet - Nunca pierdes una venta' },
-  { keyword: 'sucursal', feature: '🏪 Multi-sucursal - Controla todo desde un panel' },
-  { keyword: 'ticket', feature: '🎫 Tickets digitales - Envía por WhatsApp directo' },
-  { keyword: 'cfdi', feature: '📄 Facturas CFDI 4.0 - Integración con PAC' },
-  { keyword: 'credito', feature: '💳 Control de Crédito - Gestiona fiados y cobros' },
-  { keyword: 'empleado', feature: '👥 Gestión de Empleados - Horarios, permisos, ventas por vendedor' }
-]
+¿En qué puedo ayudarte hoy?`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -63,7 +37,7 @@ serve(async (req) => {
 
     if (mode === 'subscribe') {
       if (token === VERIFY_TOKEN) {
-        console.log('WhatsApp Sales Agent verified successfully')
+        console.log('WhatsApp webhook verified successfully')
         return new Response(challenge, { status: 200, headers: corsHeaders })
       } else {
         return new Response('Forbidden', { status: 403, headers: corsHeaders })
@@ -71,7 +45,7 @@ serve(async (req) => {
     }
 
     const payload = await req.json()
-    console.log('WhatsApp Sales Agent received:', JSON.stringify(payload))
+    console.log('WhatsApp received:', JSON.stringify(payload))
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -87,7 +61,7 @@ serve(async (req) => {
 
     return new Response('ok', { status: 200 })
   } catch (error) {
-    console.error('WhatsApp Sales Agent error:', error)
+    console.error('WhatsApp error:', error)
     return new Response('error', { status: 500 })
   }
 })
@@ -103,317 +77,100 @@ async function handleMessages(supabase: any, value: any) {
 
     if (!body) continue
 
-    await logMessage(supabase, from, phoneNumberId, body, messageId, 'inbound')
     await markAsRead(phoneNumberId, messageId)
 
-    const response = await processMessage(supabase, from, body, phoneNumberId)
-    
-    if (response) {
-      await sendMessage(from, response)
-      await logMessage(supabase, phoneNumberId, from, response, messageId + '_out', 'outbound')
-    }
-  }
-}
+    await logMessage(supabase, from, phoneNumberId, body, messageId, 'inbound')
 
-async function processMessage(supabase: any, from: string, body: string, phoneNumberId: string): Promise<string | null> {
-  const lowerBody = body.toLowerCase().trim()
-  
-  // Get or create conversation state
-  const state = await getConversationState(supabase, from)
-  const newState = { ...state }
-  let response: string | null = null
+    let response: string
 
-  // Check for specific intents
-  if (lowerBody.includes('agendar') || lowerBody.includes('demo') || lowerBody.includes('prueba')) {
-    response = getDemoSchedulingMessage()
-    newState.stage = 'demo'
-  } else if (lowerBody.includes('precio') || lowerBody.includes('cuanto cuesta') || lowerBody.includes('costo')) {
-    response = getPricingMessage()
-    newState.stage = 'interest'
-  } else if (lowerBody.includes('launch') || lowerBody.includes('grow') || lowerBody.includes('scale')) {
-    response = getPlanDetailMessage(lowerBody)
-    newState.stage = 'closing'
-  } else if (lowerBody.includes('comprar') || lowerBody.includes('empezar') || lowerBody.includes('contratar')) {
-    response = getClosingMessage()
-    newState.stage = 'closing'
-  } else if (lowerBody.includes('ayuda') || lowerBody.includes('help')) {
-    response = getHelpMessage()
-  } else if (lowerBody.includes('producto') || lowerBody.includes('que tienen') || lowerBody.includes('servicio')) {
-    response = getProductOverview()
-    newState.stage = 'interest'
-  } else if (lowerBody.includes('gracias') || lowerBody.includes('okay') || lowerBody.includes('ok')) {
-    response = getThankYouMessage()
-  } else {
-    // Check for feature keywords
-    const featureMatch = PRODUCT_FEATURES.find(f => lowerBody.includes(f.keyword))
-    if (featureMatch) {
-      response = `${featureMatch.feature}\n\n¿Te gustaría agendar una demo para verlo en acción?`
-      newState.stage = 'demo'
+    console.log('DIFY_API_KEY:', DIFY_API_KEY ? 'set' : 'not set')
+    console.log('DIFY_API_URL:', DIFY_API_URL)
+
+    if (DIFY_API_KEY) {
+      response = await getDifyResponse(from, body)
+    } else if (body.toLowerCase().includes('hola') || body.toLowerCase().includes('buenos') || body.toLowerCase().includes('saludos')) {
+      response = WELCOME_MESSAGE
+      await saveContact(supabase, from, 'new_contact')
     } else {
-      // Default response based on stage
-      response = getDefaultResponse(state.stage)
+      response = `Recibí tu mensaje: "${body}"
+
+Un asesor te atenderá pronto. 😊
+
+Mientras tanto, puedes visitar nuestra tienda en línea:
+📱 www.reisbloc.store`
     }
-  }
 
-  // Update conversation state
-  await updateConversationState(supabase, from, newState)
-  
-  return response
-}
-
-function getDemoSchedulingMessage(): string {
-  return `¡Genial! 🎉 Me encanta el interés.
-
-Para agendar tu demo personalizada necesito saber:
-
-1️⃣ ¿En qué giro está tu negocio?
-   (tienda de ropa, restaurant, ferretería, etc.)
-
-2️⃣ ¿Cuántas sucursales manejas actualmente?
-
-Con eso te preparo una demo a tu medida. 
-¿Me los compartes?
-
-Puedes также escribirme directamente cuando tengas tiempo. 
-¡Estoy aquí para ayudarte! 💪`
-}
-
-function getPricingMessage(): string {
-  return `💰 Nuestros planes:
-
-━━━━━━━━━━━━━━━━━
-🥇 LAUNCH - $997/mes
-• 1 sucursal
-• 1 usuario  
-• 500 ventas/mes
-• Inventario básico
-━━━━━━━━━━━━━━━━━
-
-⭐ GROW - $2,497/mes (más popular)
-• 3 sucursales
-• 5 usuarios
-• 2,000 ventas/mes
-• 🤖 Agente IA incluido
-• Reportes avanzados
-━━━━━━━━━━━━━━━━━
-
-🏆 SCALE - $4,997/mes
-• Sucursales ilimitadas
-• Usuarios ilimitados
-• 10,000 ventas/mes
-• API + integraciones
-━━━━━━━━━━━━━━━━━
-
-¿Te late alguno en particular?
-¿O quieres la demo gratuita para conocerlo primero? 😊`
-}
-
-function getPlanDetailMessage(plan: string): string {
-  if (plan.includes('launch')) {
-    return `¡El plan Launch es perfecto para empezar! 🚀
-
-Con $997/mes tienes:
-✅ Punto de Venta completo
-✅ Inventario básico
-✅ Reportes
-✅ 1 sucursal, 1 usuario
-✅ Funciona sin internet
-
-Ideal paratiendas pequeñas o primer cambio a digital.
-
-¿Empezamos? Te hago el contrato en 5 minutos. 💼`
-  } else if (plan.includes('grow')) {
-    return `¡Grow es nuestro plan más popular! ⭐
-
-Por $2,497/mes obtienes TODO lo de Launch +:
-
-✅ 3 sucursales
-✅ 5 usuarios
-✅ 2,000 ventas/mes
-✅ 🤖 Agente IA que responde WhatsApp 24/7
-✅ Reportes avanzados
-
-La IA sola te recupera la inversión porque responde cotizaciones y hace seguimiento mientras tú cierras tu negocio.
-
-¿Te ayudo a empezar?`
-  } else {
-    return `¡Scale es el plan completo para dominar! 🏆
-
-Por $4,997/mes:
-
-✅ Todo de Grow
-✅ Sucursales ilimitadas
-✅ Usuarios ilimitados
-✅ 10,000 ventas/mes
-✅ API para desarrolladores
-✅ Soporte dedicado
-
-Para negocios establecidos que necesitan escalar sin límites.
-
-¿Hablamos para personalizarlo a tu medida?`
+    await sendMessage(from, response)
+    await logMessage(supabase, phoneNumberId, from, response, messageId + '_out', 'outbound')
   }
 }
 
-function getClosingMessage(): string {
-  return `¡Excelente decisión! 🎉
-
-Para empezar necesito:
-
-1️⃣ Nombre de tu negocio
-2️⃣ Tu correo electrónico
-3️⃣ ¿Qué plan te interesa?
-
-Con eso te genero el contrato y puedes empezar HOY.
-
-¿Te late el Launch ($997) o el Grow ($2,497)?`
-}
-
-function getHelpMessage(): string {
-  return `¡Estoy aquí para ayudarte! 😊
-
-Puedes preguntarme sobre:
-
-🛒 **Productos** - ¿Qué incluye el sistema?
-💰 **Precios** - Nuestros planes y precios
-📅 **Demo** - Agendar una demostración gratuita
-⚡ **Features** - Funciones específicas
-📱 **App** - App móvil para tu negocio
-
-¿En qué te puedo ayudar hoy?`
-}
-
-function getProductOverview(): string {
-  return `¡Tenemos todo lo que necesitas para digitalizar tu negocio! 📱✨
-
-Aquí va nuestro menú completo:
-
-🖥️ **PUNTO DE VENTA**
-• Venta en 3 taps
-• Efectivo, tarjeta, transferencia
-• Tickets por WhatsApp
-• Funciona SIN INTERNET ⚡
-
-📦 **INVENTARIO**
-• Control automático de stock
-• Alertas cuando algo está bajo
-• Categorías y variants
-• Lectura de códigos de barra
-
-📊 **REPORTES**
-• Ventas del día/semana/mes
-• Productos más vendidos
-• Ganancias por período
-• Envío automático por WhatsApp
-
-🤖 **AGENTE IA (Grow+)** ⭐
-• Responde WhatsApp 24/7
-• Cotizaciones automáticas
-• Seguimiento a clientes
-
-🏪 **MULTI-SUCURSAL**
-• Controla todo desde un panel
-• Empleados y horarios
-• Reportes por ubicación
-
-¿Te interesa algo específico?`
-}
-
-function getThankYouMessage(): string {
-  return `¡De nada! 😊
-
-Recuerda que estoy aquí cuando me necesites.
-
-Si tienes más preguntas o quieres agendar tu demo, 
-simplemente escríbeme.
-
-¡Te deseo mucho éxito en tu negocio! 🚀`
-}
-
-function getDefaultResponse(stage: string): string {
-  switch (stage) {
-    case 'new':
-      return `¡Hola! 👋 Soy el asistente de Reisbloc Store.
-
-Te ayudo a digitalizar tu negocio con un sistema de punto de venta que funciona sin internet.
-
-Antes de mostrarte todo, dime:
-
-🏪 ¿En qué giro está tu negocio?
-   (ropa, restaurant, abarrotes, ferretería, etc.)
-
-Con eso te puedo dar información más específica. 🎯`
-    
-    case 'greeting':
-      return `¡Qué bueno saber de ti! 😊
-
-Para darte la mejor información, necesito saber:
-
-1️⃣ ¿Tienes negocio propio?
-2️⃣ ¿Ya usas algún sistema de ventas?
-3️⃣ ¿Qué te gustaría mejorar?
-
-Con esas回答 puedo ayudarte mejor. 💪`
-
-    case 'qualifying':
-      return `¡Perfecto! Vamos muy bien. 👍
-
-Solo unas preguntitas más:
-
-📍 ¿En qué zona está tu negocio?
-🏪 ¿Cuántas sucursales manejas?
-📅 ¿Hace cuánto tiempo tienes el negocio?
-
-Esto me ayuda a darte soluciones que sí te funcionen.`
-
-    case 'interest':
-      return `¡Me encanta tu interés! 🔥
-
-Te puedo ayudar de varias formas:
-
-1️⃣ **Demo gratuita** - Te muestro en 5 minutos cómo funciona
-2️⃣ **Plan detallado** - Te explico cada feature
-3️⃣ **Empezar HOY** - Te hago el contrato y operas mañana
-
-¿Cuál prefieres?`
-
-    default:
-      return `Entiendo. 😊
-
-Para ayudarte mejor, dime qué necesitas:
-
-💬 **¿Qué te gustaría saber?**
-📅 **¿Quieres agendar una demo?**
-💰 **¿Tienes dudas sobre precios?**
-
-Estoy aquí para ayudarte a hacer crecer tu negocio. 🚀`
-  }
-}
-
-async function getConversationState(supabase: any, waId: string): Promise<ConversationState> {
-  const { data } = await supabase
-    .from('whatsapp_contacts')
-    .select('*')
-    .eq('wa_id', waId)
-    .single()
-  
-  if (data?.conversation_state) {
-    return data.conversation_state
-  }
-  
-  return { stage: 'new', messages: [] }
-}
-
-async function updateConversationState(supabase: any, waId: string, state: ConversationState) {
-  await supabase
-    .from('whatsapp_contacts')
-    .update({
-      conversation_state: state,
-      last_contact: new Date().toISOString()
+async function getDifyResponse(userId: string, query: string): Promise<string> {
+  try {
+    const response = await fetch(`${DIFY_API_URL}/chat-messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${DIFY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        inputs: {},
+        query: query,
+        response_mode: 'streaming',
+        user: userId,
+        conversation_id: '',
+      }),
     })
-    .eq('wa_id', waId)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Dify API error:', response.status, errorText)
+      return `Gracias por tu mensaje. Un asesor te atenderá pronto. 😊`
+    }
+
+    let fullAnswer = ''
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder()
+
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              if ((data.event === 'message' || data.event === 'agent_message') && data.answer) {
+                fullAnswer += data.answer
+              }
+              if (data.event === 'message_end') {
+                break
+              }
+            } catch (e) {
+              // Ignore parse errors for incomplete chunks
+            }
+          }
+        }
+      }
+    }
+
+    return fullAnswer || 'Gracias por tu mensaje. ¿Hay algo más en lo que pueda ayudarte?'
+  } catch (error) {
+    console.error('Dify connection error:', error)
+    return `Gracias por tu mensaje. ¿Hay algo más en lo que pueda ayudarte? 😊`
+  }
 }
 
 async function sendMessage(to: string, body: string) {
+  if (!WHATSAPP_ACCESS_TOKEN) {
+    console.log('Would send to WhatsApp:', body.substring(0, 50))
+    return
+  }
+
   try {
     await fetch(`https://graph.facebook.com/v18.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`, {
       method: 'POST',
@@ -433,24 +190,9 @@ async function sendMessage(to: string, body: string) {
   }
 }
 
-async function logMessage(supabase: any, from: string, to: string, content: string, messageId: string, direction: 'inbound' | 'outbound') {
-  try {
-    await supabase.from('whatsapp_messages').insert({
-      from_number: from,
-      to_number: to,
-      direction,
-      message_type: 'text',
-      content,
-      whatsapp_message_id: messageId,
-      wa_id: from,
-      status: direction === 'outbound' ? 'sent' : 'delivered',
-    })
-  } catch (error) {
-    console.error('Error logging message:', error)
-  }
-}
-
 async function markAsRead(phoneNumberId: string, messageId: string) {
+  if (!WHATSAPP_ACCESS_TOKEN) return
+
   try {
     await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
       method: 'POST',
@@ -466,5 +208,37 @@ async function markAsRead(phoneNumberId: string, messageId: string) {
     })
   } catch (error) {
     console.error('Error marking as read:', error)
+  }
+}
+
+async function saveContact(supabase: any, waId: string, name?: string) {
+  try {
+    await supabase.from('whatsapp_contacts').upsert({
+      wa_id: waId,
+      name: name || 'Contact',
+      last_contact: new Date().toISOString(),
+      source: 'whatsapp_webhook',
+    }, {
+      onConflict: 'wa_id'
+    })
+  } catch (error) {
+    console.error('Error saving contact:', error)
+  }
+}
+
+async function logMessage(supabase: any, from: string, to: string, content: string, messageId: string, direction: 'inbound' | 'outbound') {
+  try {
+    await supabase.from('whatsapp_messages').insert({
+      from_number: from,
+      to_number: to,
+      direction,
+      message_type: 'text',
+      content,
+      whatsapp_message_id: messageId,
+      wa_id: from,
+      status: direction === 'outbound' ? 'sent' : 'delivered',
+    })
+  } catch (error) {
+    console.error('Error logging message:', error)
   }
 }
