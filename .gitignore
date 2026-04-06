@@ -66,6 +66,9 @@ SHARED_DB_PROTOCOL.md
 
 fixnpm.sh
 
+# AI / IDE tool configs (may contain project refs or tokens)
+.gemini/
+
 # Pre commit 
 .pre-commit.sh
 .check-env.sh

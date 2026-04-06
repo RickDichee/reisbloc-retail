@@ -15,8 +15,8 @@ Abre el archivo `.env.local` en este editor y pega los valores en sus respectivo
 
 ```bash
 # 🌐 Copia 'Project URL' aquí (mantenlo igual en ambos campos)
-VITE_SUPABASE_URL=https://jnyyaclrelqcqzjummwe.supabase.co
-SUPABASE_URL=https://jnyyaclrelqcqzjummwe.supabase.co
+VITE_SUPABASE_URL=https://your_project_ref.supabase.co
+SUPABASE_URL=https://your_project_ref.supabase.co
 
 # 🔑 Copia 'anon / public' aquí
 VITE_SUPABASE_ANON_KEY=TU_NUEVA_ANON_KEY
