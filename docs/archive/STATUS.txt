@@ -1,4 +1,0 @@
-🚀 REISBLOC POS - ESTADO ACTUAL
-Sistema migrado a Supabase.
-Pendiente: Actualizar variables a prefijo VITE_ en Vercel.
-Próximo hito: Despliegue de Frontend en Staging.
