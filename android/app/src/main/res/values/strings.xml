@@ -4,4 +4,8 @@
     <string name="title_activity_main">Reisbloc POS</string>
     <string name="package_name">com.reisbloclab.pos</string>
     <string name="custom_url_scheme">com.reisbloclab.pos</string>
+    
+    <!-- Privacy Policy and Terms URLs for App Store compliance -->
+    <string name="privacy_policy_url">https://reisbloc.com/privacy</string>
+    <string name="terms_of_service_url">https://reisbloc.com/terms</string>
 </resources>
