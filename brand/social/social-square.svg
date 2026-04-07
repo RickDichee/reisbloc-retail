@@ -1,0 +1,22 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cardGradient" x1="0" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F293B"/>
+      <stop offset="1" stop-color="#2d3f55"/>
+    </linearGradient>
+  </defs>
+  
+  <rect width="400" height="400" rx="24" fill="url(#cardGradient)"/>
+  
+  <!-- Icon -->
+  <g transform="translate(140, 100)">
+    <path d="M60 0L111.961 30V90L60 120L8.03865 90V30L60 0Z" fill="#1F293B" fill-opacity="0.3"/>
+    <path d="M60 10L102.961 35V85L60 110L17.0386 85V35L60 10Z" stroke="#00F5FF" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M60 10V110" stroke="#00F5FF" stroke-width="1.5" stroke-dasharray="3 3"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="200" y="270" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="800" font-size="36" fill="#FFFFFF">Reisbloc</text>
+  <text x="200" y="310" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="300" font-size="20" fill="#3B82F6">Store</text>
+  <text x="200" y="350" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="400" font-size="12" fill="#94A3B8">POS Inteligente</text>
+</svg>

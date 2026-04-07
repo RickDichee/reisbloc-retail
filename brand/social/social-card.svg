@@ -1,0 +1,50 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heroGradient" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F293B"/>
+      <stop offset="0.5" stop-color="#2d3f55"/>
+      <stop offset="1" stop-color="#1F293B"/>
+    </linearGradient>
+    <linearGradient id="glowGradient" x1="600" y1="200" x2="600" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00F5FF" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#00F5FF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#heroGradient)"/>
+  
+  <!-- Glow effect -->
+  <ellipse cx="600" cy="350" rx="400" ry="250" fill="url(#glowGradient)"/>
+  
+  <!-- Grid pattern -->
+  <g opacity="0.05">
+    <path d="M0 100H1200M0 200H1200M0 300H1200M0 400H1200M0 500H1200" stroke="#FFFFFF" stroke-width="1"/>
+    <path d="M200 0V630M400 0V630M600 0V630M800 0V630M1000 0V630" stroke="#FFFFFF" stroke-width="1"/>
+  </g>
+  
+  <!-- Main Icon - Hexagon -->
+  <g transform="translate(480, 180)">
+    <path d="M120 0L219.923 60V180L120 240L20.0769 180V60L120 0Z" fill="#1F293B" fill-opacity="0.5"/>
+    <path d="M120 20L204.923 70V170L120 220L35.0769 170V70L120 20Z" stroke="#00F5FF" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M120 20V220" stroke="#00F5FF" stroke-width="2" stroke-dasharray="4 4"/>
+    <path d="M120 60L168.549 90V170L120 200" stroke="#00F5FF" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.4"/>
+    <path d="M120 60L71.4507 90V170L120 200" stroke="#00F5FF" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.4"/>
+  </g>
+  
+  <!-- Brand text -->
+  <text x="600" y="500" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="800" font-size="72" fill="#FFFFFF">Reisbloc</text>
+  <text x="600" y="560" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="300" font-size="36" fill="#3B82F6">Store</text>
+  
+  <!-- Tagline -->
+  <text x="600" y="600" text-anchor="middle" font-family="'Outfit', sans-serif" font-weight="400" font-size="18" fill="#94A3B8">POS Inteligente para el Mercado Textil</text>
+  
+  <!-- Decorative elements -->
+  <circle cx="150" cy="150" r="60" stroke="#00F5FF" stroke-width="1" opacity="0.1"/>
+  <circle cx="150" cy="150" r="80" stroke="#00F5FF" stroke-width="0.5" opacity="0.05"/>
+  <circle cx="1050" cy="500" r="80" stroke="#00F5FF" stroke-width="1" opacity="0.1"/>
+  <circle cx="1050" cy="500" r="100" stroke="#00F5FF" stroke-width="0.5" opacity="0.05"/>
+  
+  <!-- Mexico indicator -->
+  <text x="1150" y="620" text-anchor="end" font-family="'Outfit', sans-serif" font-weight="500" font-size="14" fill="#64748B">Hecho en México 🇲🇽</text>
+</svg>

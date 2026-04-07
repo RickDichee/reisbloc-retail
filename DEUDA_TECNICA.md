@@ -1,17 +1,18 @@
-# Deuda T&#233;cnica - Reisbloc Store
+# Deuda Técnica - Reisbloc Store
 
 ## Completado
 
 ### CFDI 4.0
-- **Estado**: C&#243;digo listo, requiere configuraci&#243;n
+- **Estado**: Código listo, requiere configuración
 - **Archivos**: 
-  - `src/services/facturapiService.ts` - Servicio de integraci&#243;n
+  - `src/services/facturapiService.ts` - Servicio de integración
   - `supabase/functions/facturapi-webhook/index.ts` - Webhook handler
   - `supabase/migrations/20260328000000_invoices.sql` - Tabla invoices
+  - `src/pages/LandingPage.tsx` - Badge de CFDI 4.0 agregado (feature activa)
 - **Pendiente**: Configurar `VITE_FACTURAPI_API_KEY` en variables de entorno
 
 ### WhatsApp Business
-- **Estado**: C&#243;digo listo, requiere configuraci&#243;n
+- **Estado**: Código listo, requiere configuración
 - **Archivos**:
   - `src/services/whatsappService.ts` - Servicio de WhatsApp
   - `supabase/functions/whatsapp-webhook/index.ts` - Webhook con auto-respuestas
@@ -21,22 +22,26 @@
   - Obtener WhatsApp Business API token de Meta
   - Registrar webhook en WhatsApp Business API
 
-## Pendiente
+### Ticket Sharing (COMPLETADO)
+- **Estado**: Implementado ✅
+- **Archivos**:
+  - `src/services/ticketService.ts` - Servicio de generación y envío de tickets
+  - `src/components/pos/TicketShareModal.tsx` - Modal para compartir tickets
+  - `src/pages/POS.tsx` - Botón "Compartir" en modal de ticket
+- **Funcionalidades**:
+  - Genera PDF del ticket desde HTML
+  - Envío por WhatsApp (con API o fallback a wa.me)
+  - Envío por Email con PDF adjunto
+  - Formateo de número de teléfono automático
+- **Pendiente**:
+  - Crear bucket de storage `tickets` en Supabase (políticas RLS)
+  - Configurar variables de WhatsApp Business
 
-### Ticket Sharing
-- Implementar funcionalidad para compartir tickets v&#237;a WhatsApp/email
-- User story: El usuario quiere enviar el ticket de compra a un cliente por WhatsApp
-- API necesaria: Usar whatsappService.sendDocumentMessage() con PDF del ticket
-
-### Landing Page - CFDI Badge
-- El landing ya dice "Pr&#243;ximamente: Facturaci&#243;n CFDI 4.0"
-- Una vez configurado, cambiar a feature activa
-
-## Notas de Configuraci&#243;n
+## Notas de Configuración
 
 ### Facturapi
 1. Crear cuenta en https://www.facturapi.io
-2. Obtener API Key de prueba/producci&#243;n
+2. Obtener API Key de prueba/producción
 3. Configurar en Supabase:
    - `FACTURAPI_API_KEY`
    - `FACTURAPI_WEBHOOK_SECRET`
@@ -45,10 +50,27 @@
 ### WhatsApp Business
 1. Crear app en Meta for Developers
 2. Agregar producto WhatsApp Business
-3. Configurar n&#250;mero de tel&#233;fono
+3. Configurar número de teléfono
 4. Obtener Phone Number ID y Access Token
 5. Configurar en Supabase:
    - `WHATSAPP_PHONE_NUMBER_ID`
    - `WHATSAPP_ACCESS_TOKEN`
-   - `WHATSAPP_VERIFY_TOKEN` (token aleatorio para verificaci&#243;n)
+   - `WHATSAPP_VERIFY_TOKEN` (token aleatorio para verificación)
 6. Registrar webhook: `https://[project].supabase.co/functions/v1/whatsapp-webhook?hub.verify_token=[WHATSAPP_VERIFY_TOKEN]&hub.mode=subscribe`
+
+### Supabase Storage (Tickets)
+1. Crear bucket público `tickets`
+2. Configurar políticas RLS:
+```sql
+-- Política para usuarios autenticados subir tickets propios
+CREATE POLICY "Users can upload own tickets"
+ON storage.buckets FOR INSERT
+TO authenticated
+WITH CHECK (name = 'tickets');
+
+-- Política para leer tickets propios
+CREATE POLICY "Users can read own tickets"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (bucket_id = 'tickets');
+```

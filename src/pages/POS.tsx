@@ -9,13 +9,14 @@ import PaymentPanel, { PaymentResult } from '@/components/pos/PaymentPanel'
 import OrderNoteModal from '@/components/pos/OrderNoteModal'
 import ManualItemModal from '@/components/pos/ManualItemModal'
 import ReceiptTicket from '@/components/pos/ReceiptTicket'
+import TicketShareModal from '@/components/pos/TicketShareModal'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Product, OrderItem } from '@/types/index'
 import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 export default function POS() {
@@ -38,7 +39,14 @@ export default function POS() {
   const [activeTableOrders, setActiveTableOrders] = useState<any[]>([])
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
   const cashRegisterAudioRef = useRef<HTMLAudioElement | null>(null)
-  const [receiptModal, setReceiptModal] = useState<{ isOpen: boolean; html: string; total: number } | null>(null)
+  const [receiptModal, setReceiptModal] = useState<{
+    isOpen: boolean;
+    html: string;
+    total: number;
+    items: any[];
+    orderId: string;
+    paymentMethod: string;
+  } | null>(null)
 
   const [paymentPanel, setPaymentPanel] = useState<{
     isOpen: boolean
@@ -56,6 +64,7 @@ export default function POS() {
   const [showManualItemModal, setShowManualItemModal] = useState(false)
   const [activeShift, setActiveShift] = useState<any>(null)
   const [stockWarning, setStockWarning] = useState<{ isOpen: boolean, items: any[] }>({ isOpen: false, items: [] })
+  const [showShareModal, setShowShareModal] = useState(false)
 
   const tableNumber = currentTableNumber || 1
   const items = draftOrders[tableNumber] || []
@@ -292,7 +301,15 @@ export default function POS() {
           />
         )
         // Abrir modal ANTES de limpiar el borrador
-        setReceiptModal({ isOpen: true, html: ticketHTML, total: result.total })
+        const saleId = `sale-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        setReceiptModal({
+          isOpen: true,
+          html: ticketHTML,
+          total: result.total,
+          items: allItems,
+          orderId: saleId,
+          paymentMethod: mappedMethod
+        })
       } catch (printErr) {
         logger.warn('pos', 'No se pudo generar ticket', printErr as any)
       }
@@ -428,17 +445,47 @@ export default function POS() {
                   className="flex-1 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
                 >
                   <Printer size={18} />
-                  Imprimir Ticket
+                  Imprimir
                 </button>
                 <button
-                  onClick={() => setReceiptModal(null)}
-                  className="flex-1 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition-all"
+                  onClick={() => setShowShareModal(true)}
+                  className="flex-1 py-3 bg-green-500 text-white font-black rounded-xl hover:bg-green-600 transition-all flex items-center justify-center gap-2"
                 >
-                  Cerrar
+                  <Share2 size={18} />
+                  Compartir
                 </button>
               </div>
+              <button
+                onClick={() => setReceiptModal(null)}
+                className="w-full py-2.5 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-all"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
+        )}
+
+        {receiptModal?.isOpen && showShareModal && (
+          <TicketShareModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            ticketHtml={receiptModal.html}
+            ticketData={{
+              orderId: receiptModal.orderId,
+              items: receiptModal.items.map((item: any) => ({
+                name: item.productName || item.name || 'Producto',
+                quantity: item.quantity,
+                price: item.unitPrice || item.price
+              })),
+              subtotal: receiptModal.total / 1.16,
+              tax: receiptModal.total - (receiptModal.total / 1.16),
+              total: receiptModal.total,
+              paymentMethod: receiptModal.paymentMethod,
+              tableNumber: tableNumber,
+              businessName: currentUser?.businessName || 'REISBLOC STORE',
+              cashier: currentUser?.username
+            }}
+          />
         )}
 
         {paymentPanel.isOpen && (

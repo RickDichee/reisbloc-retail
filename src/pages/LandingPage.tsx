@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, Check, Bot } from 'lucide-react';
+import { Shield, Zap, Check, Bot, FileText } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
 
 const LandingPage = () => {
@@ -41,6 +41,7 @@ const LandingPage = () => {
         '100 Consultas AI/día',
         'Reportes avanzados',
         'Marketing AI',
+        'Facturación CFDI 4.0',
         'Soporte email'
       ],
       buttonText: 'Elegir Launch',
@@ -131,7 +132,7 @@ const LandingPage = () => {
       </header>
 
       {/* Features */}
-      <section className="container mx-auto px-6 py-20 grid md:grid-cols-3 gap-12">
+      <section className="container mx-auto px-6 py-20 grid md:grid-cols-4 gap-12">
         <div className="p-8 bg-gray-900/50 rounded-3xl border border-gray-800">
           <Zap className="text-yellow-400 mb-4" size={40} />
           <h3 className="text-2xl font-bold mb-2">Offline-First</h3>
@@ -146,6 +147,14 @@ const LandingPage = () => {
           <Bot className="text-purple-400 mb-4" size={40} />
           <h3 className="text-2xl font-bold mb-2">IA Integrada</h3>
           <p className="text-gray-400">Asistente virtual que te ayuda a tomar mejores decisiones para tu negocio.</p>
+        </div>
+        <div className="p-8 bg-gradient-to-br from-emerald-900/50 to-teal-900/50 rounded-3xl border border-emerald-500/30 relative overflow-hidden">
+          <div className="absolute top-2 right-2 px-2 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded-full">
+            NUEVO
+          </div>
+          <FileText className="text-emerald-400 mb-4" size={40} />
+          <h3 className="text-2xl font-bold mb-2">CFDI 4.0</h3>
+          <p className="text-gray-400">Facturación electrónica integrada. Genera facturas válidas ante el SAT directamente desde tu POS.</p>
         </div>
       </section>
 

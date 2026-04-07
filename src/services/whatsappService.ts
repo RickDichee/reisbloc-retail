@@ -2,7 +2,7 @@ import { supabase } from '../config/supabase';
 
 const WHATSAPP_BUSINESS_API_URL = 'https://graph.facebook.com/v18.0';
 const WHATSAPP_PHONE_NUMBER_ID = import.meta.env.VITE_WHATSAPP_PHONE_NUMBER_ID || '';
-const WHATSAPP_ACCESS_TOKEN = import.meta.env.VITE_WHATSAPP_ACCESS_TOKEN || '';
+const WHATSAPP_ACCESS_TOKEN = import.meta.env.VITE_WHATSAPP_TOKEN || '';
 
 export interface WhatsAppMessage {
   to: string;
