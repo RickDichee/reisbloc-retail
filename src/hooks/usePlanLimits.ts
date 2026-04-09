@@ -11,7 +11,6 @@ export type PlanType = 'free' | 'starter' | 'growth' | 'scale' | 'enterprise'
 
 export type PlanFeature =
   | 'product_images'
-  | 'conekta'
   | 'mercadopago'
   | 'realtime'
   | 'audit_logs'
@@ -39,7 +38,6 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
   starter: [
     'thermal_printer',
     'product_images',
-    'conekta',
     'mercadopago',
     'realtime',
     'audit_logs',
@@ -49,7 +47,6 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
   growth: [
     'thermal_printer',
     'product_images',
-    'conekta',
     'mercadopago',
     'realtime',
     'audit_logs',
@@ -61,7 +58,6 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
   scale: [
     'thermal_printer',
     'product_images',
-    'conekta',
     'mercadopago',
     'realtime',
     'audit_logs',
@@ -74,7 +70,6 @@ const PLAN_FEATURES: Record<PlanType, PlanFeature[]> = {
   enterprise: [
     'thermal_printer',
     'product_images',
-    'conekta',
     'mercadopago',
     'realtime',
     'audit_logs',
