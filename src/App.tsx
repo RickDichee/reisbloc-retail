@@ -43,10 +43,26 @@ import Referral from '@/pages/Referral'
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
+  const { accessibility } = useAppStore()
 
   // Ocultar NavBar solo en: público, invitaciones, legales
   const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms'
   const hideNavBar = isPublicPage
+
+  // Aplicar clases de accesibilidad al body
+  useEffect(() => {
+    const root = document.documentElement
+    if (accessibility.largeText) {
+      root.classList.add('accessibility-large-text')
+    } else {
+      root.classList.remove('accessibility-large-text')
+    }
+    if (accessibility.highContrast) {
+      root.classList.add('high-contrast')
+    } else {
+      root.classList.remove('high-contrast')
+    }
+  }, [accessibility.largeText, accessibility.highContrast])
 
   return (
     <>
