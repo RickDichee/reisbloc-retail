@@ -31,7 +31,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { currentUser, organizationSettings } = useAppStore();
+    const { currentUser, organizationSettings, accessibility } = useAppStore();
     const { logout } = useAuth();
     const { planName, isPro } = usePlanLimits();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -187,8 +187,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-                <div className="flex-1 overflow-auto p-2 lg:p-8">
+            <main className={`flex-1 flex flex-col h-full overflow-hidden relative ${accessibility.largeText ? 'text-lg' : ''} ${accessibility.highContrast ? 'high-contrast-mode' : ''}`}>
+                <div className={`flex-1 overflow-auto p-2 lg:p-8 ${accessibility.largeText ? 'text-lg' : ''}`}>
                     <div className="max-w-7xl mx-auto h-full">
                         {children}
                     </div>

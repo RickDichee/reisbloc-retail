@@ -97,6 +97,26 @@ body {
   font-weight: 900 !important;
 }
 
+/* ♿ Large Text Mode */
+.accessibility-large-text {
+  font-size: 110%;
+}
+
+.accessibility-large-text button,
+.accessibility-large-text input,
+.accessibility-large-text select,
+.accessibility-large-text textarea {
+  font-size: 110%;
+}
+
+.accessibility-large-text .text-sm {
+  font-size: 115%;
+}
+
+.accessibility-large-text .text-xs {
+  font-size: 100%;
+}
+
 .high-contrast .text-slate-500,
 .high-contrast .text-gray-500,
 .high-contrast .text-slate-400 {
