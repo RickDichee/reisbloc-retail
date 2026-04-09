@@ -1477,6 +1477,7 @@ class SupabaseService {
 
       return (data || []).map((p: any) => ({
         ...p,
+        image: p.image || p.image_url || null,
         active: p.available,
         currentStock: p.current_stock,
         minimumStock: p.minimum_stock,
