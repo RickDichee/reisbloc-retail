@@ -1896,6 +1896,167 @@ class SupabaseService {
       logger.error('supabase', 'Error updating retail stock batch', error as any)
     }
   }
+
+  // ==================== PROMOTIONS ====================
+  
+  async getPromotions(): Promise<any[]> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      logger.error('supabase', 'Error fetching promotions', error as any)
+      return []
+    }
+  }
+
+  async createPromotion(promotion: any): Promise<string> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const { data, error } = await supabase
+        .from('promotions')
+        .insert({ ...promotion, organization_id: orgId })
+        .select('id')
+        .single()
+      if (error) throw error
+      return data.id
+    } catch (error) {
+      logger.error('supabase', 'Error creating promotion', error as any)
+      throw error
+    }
+  }
+
+  async updatePromotion(id: string, updates: any): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('promotions')
+        .update(updates)
+        .eq('id', id)
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating promotion', error as any)
+      throw error
+    }
+  }
+
+  async deletePromotion(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('promotions')
+        .delete()
+        .eq('id', id)
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting promotion', error as any)
+      throw error
+    }
+  }
+
+  async getActivePromotions(): Promise<any[]> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const now = new Date().toISOString()
+      const { data, error } = await supabase
+        .from('promotions')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
+        .lte('start_date', now)
+        .or(`end_date.is.null,end_date.gte.${now}`)
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      logger.error('supabase', 'Error fetching active promotions', error as any)
+      return []
+    }
+  }
+
+  // ==================== COUPONS ====================
+
+  async getCoupons(): Promise<any[]> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data || []
+    } catch (error) {
+      logger.error('supabase', 'Error fetching coupons', error as any)
+      return []
+    }
+  }
+
+  async createCoupon(coupon: any): Promise<string> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const { data, error } = await supabase
+        .from('coupons')
+        .insert({ ...coupon, organization_id: orgId })
+        .select('id')
+        .single()
+      if (error) throw error
+      return data.id
+    } catch (error) {
+      logger.error('supabase', 'Error creating coupon', error as any)
+      throw error
+    }
+  }
+
+  async updateCoupon(id: string, updates: any): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('coupons')
+        .update(updates)
+        .eq('id', id)
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating coupon', error as any)
+      throw error
+    }
+  }
+
+  async deleteCoupon(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('coupons')
+        .delete()
+        .eq('id', id)
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error deleting coupon', error as any)
+      throw error
+    }
+  }
+
+  async applyCoupon(code: string): Promise<any | null> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const now = new Date().toISOString()
+      const { data, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('code', code.toUpperCase())
+        .eq('is_active', true)
+        .lte('valid_from', now)
+        .or(`valid_until.is.null,valid_until.gte.${now}`)
+        .single()
+      if (error || !data) return null
+      
+      if (data.max_uses && data.current_uses >= data.max_uses) return null
+      return data
+    } catch (error) {
+      return null
+    }
+  }
 }
 
 // Singleton export

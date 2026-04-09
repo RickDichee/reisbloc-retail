@@ -44,6 +44,8 @@ import MarketingAgent from '@/components/admin/MarketingAgent'
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard'
 import UpgradeModal from '@/components/common/UpgradeModal'
 import TokenPurchaseModal from '@/components/common/TokenPurchaseModal'
+import EcommerceDashboard from '@/components/admin/EcommerceDashboard'
+import PromotionsManager from '@/components/admin/PromotionsManager'
 
 type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'marketing' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs' | 'analytics'
 
@@ -255,16 +257,7 @@ export default function Admin() {
           )}
 
           {activeTab === 'users' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><UsersManagement /></div>}
-          {activeTab === 'promotions' && (
-            <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4 border border-slate-100">
-              <Percent size={64} className="mx-auto opacity-20" />
-              <h2 className="text-2xl font-black text-slate-900 uppercase">Promociones y Descuentos</h2>
-              <p className="max-w-md mx-auto font-medium">Configura Happy Hours, cupones y reglas de descuento automáticas para fidelizar a tus clientes.</p>
-              <div className="pt-8">
-                <span className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black uppercase">Módulo en Desarrollo</span>
-              </div>
-            </div>
-          )}
+          {activeTab === 'promotions' && <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100"><PromotionsManager /></div>}
           {activeTab === 'clients' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><ClientsManagement /></div>}
           {activeTab === 'purchases' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><PurchasesManagement /></div>}
           {activeTab === 'ecommerce' && <EcommerceDashboard />}
