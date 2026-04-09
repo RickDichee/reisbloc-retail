@@ -9,16 +9,35 @@ const corsHeaders = {
 
 const MP_API_URL = 'https://api.mercadopago.com'
 
+// Helper para obtener credenciales según ambiente
+function getMercadoPagoCredentials() {
+  const env = Deno.env.get("DENO_ENV") || Deno.env.get("VERCEL_ENV") || "production"
+  
+  if (env === "production") {
+    return {
+      accessToken: Deno.env.get("MERCADOPAGO_ACCESS_TOKEN"),
+      isSandbox: false
+    }
+  }
+  
+  return {
+    accessToken: Deno.env.get("MERCADOPAGO_ACCESS_TOKEN_TEST") || Deno.env.get("MERCADOPAGO_ACCESS_TOKEN"),
+    isSandbox: true
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const accessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
+    const { accessToken, isSandbox } = getMercadoPagoCredentials()
     if (!accessToken) {
       throw new Error('MERCADOPAGO_ACCESS_TOKEN no configurado en Edge Functions')
     }
+
+    console.log('🧪 MP Proxy - Modo Sandbox:', isSandbox)
 
     // Verify auth
     const authHeader = req.headers.get('Authorization')
@@ -44,11 +63,15 @@ serve(async (req) => {
       case 'create_preference': {
         if (!amount) throw new Error('El monto es requerido')
 
+        // F2: Idempotency key
+        const idempotencyKey = `pos_${orderId || Date.now()}_${Math.random().toString(36).slice(2)}`
+
         const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
+            'Authorization': `Bearer ${accessToken}`,
+            'X-Idempotency-Key': idempotencyKey
           },
           body: JSON.stringify({
             items: [{
@@ -69,6 +92,7 @@ serve(async (req) => {
           id: data.id,
           init_point: data.init_point,
           sandbox_init_point: data.sandbox_init_point,
+          is_sandbox: isSandbox
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
@@ -78,7 +102,11 @@ serve(async (req) => {
         if (!paymentId) throw new Error('paymentId es requerido')
 
         const response = await fetch(`${MP_API_URL}/v1/payments/${paymentId}`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
+          headers: { 
+            Authorization: `Bearer ${accessToken}`,
+            // Idempotency key para consultas
+            'X-Idempotency-Key': `status_${paymentId}`
+          },
         })
 
         const data = await response.json()
