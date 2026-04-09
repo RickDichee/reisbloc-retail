@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import supabaseService from '@/services/supabaseService'
+import { supabase } from '@/config/supabase'
 import {
   TrendingUp,
   DollarSign,
@@ -15,7 +16,11 @@ import {
   Target,
   ArrowDownUp,
   ShoppingBag,
-  ArrowDownRight
+  ArrowDownRight,
+  Coins,
+  Zap,
+  Gift,
+  Users
 } from 'lucide-react'
 import {
   LineChart,
@@ -36,8 +41,10 @@ import {
 } from 'recharts'
 import AIInsightsWidget from '@/components/common/AIInsightsWidget'
 import DashboardLayout from '@/components/layout/DashboardLayout'
+import { useTokens } from '@/hooks/useTokens'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
 
-type ReportTab = 'sales' | 'inventory' | 'employees' | 'goals' | 'purchases'
+type ReportTab = 'sales' | 'inventory' | 'employees' | 'goals' | 'purchases' | 'tokens'
 
 export default function Reports() {
   const { currentUser } = useAppStore()
@@ -234,6 +241,7 @@ export default function Reports() {
             { id: 'employees' as const, label: '👥 Empleados', enabled: canViewEmployeeMetrics },
             { id: 'goals' as const, label: '🎯 Metas', enabled: true },
             { id: 'purchases' as const, label: '🛍️ Compras', enabled: true },
+            { id: 'tokens' as const, label: '⚡ Tokens', enabled: true },
           ]
             .filter(t => t.enabled)
             .map(tab => (
@@ -492,10 +500,239 @@ export default function Reports() {
               Próximamente podrás gestionar proveedores, órdenes de compra y costos detallados aquí.
             </p>
             <span className="mt-6 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-200">En Desarrollo</span>
-          </div>
+        </div>
+        )}
+
+        {/* Tokens Report */}
+        {activeTab === 'tokens' && (
+          <TokensReport />
         )}
       </div>
     </DashboardLayout>
+  )
+}
+
+// ⚡ Reporte de Tokens AI
+function TokensReport() {
+  const { balance, transactions, fetchTransactions } = useTokens()
+  const { planLimits, getLimit } = usePlanLimits()
+  const [productCount, setProductCount] = useState(0)
+  const [employeeCount, setEmployeeCount] = useState(0)
+
+  useEffect(() => {
+    loadTokenData()
+  }, [])
+
+  const loadTokenData = async () => {
+    await fetchTransactions()
+    try {
+      const { currentUser } = useAppStore.getState()
+      if (currentUser?.organizationId) {
+        const { count: products } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', currentUser.organizationId)
+        setProductCount(products || 0)
+
+        const { count: employees } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', currentUser.organizationId)
+        setEmployeeCount(employees || 0)
+      }
+    } catch (e) { console.error(e) }
+  }
+
+  const planDailyLimit = planLimits?.aiTokensPerDay || 20
+  const planMonthlyLimit = planLimits?.aiTokensPerMonth || 60
+
+  const todayUsage = transactions
+    .filter(t => t.type === 'usage' && t.created_at?.startsWith(new Date().toISOString().split('T')[0]))
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+  const weekUsage = transactions
+    .filter(t => {
+      if (t.type !== 'usage') return false
+      const txDate = new Date(t.created_at)
+      const weekAgo = new Date()
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      return txDate >= weekAgo
+    })
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+  const getUsagePercentage = (current: number, limit: number) => Math.min(100, Math.round((current / limit) * 100))
+  const getUsageColor = (current: number, limit: number) => {
+    const pct = (current / limit) * 100
+    if (pct >= 90) return 'bg-red-500'
+    if (pct >= 70) return 'bg-amber-500'
+    return 'bg-emerald-500'
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Token Balance Header */}
+      <div className="bg-slate-900 text-white rounded-[2rem] shadow-lg overflow-hidden">
+        <div className="px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-amber-500/20 rounded-2xl border border-amber-500/30">
+              <Coins size={32} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="text-[10px] text-amber-400 uppercase tracking-wider font-black">Balance de Tokens</p>
+              <p className="text-4xl font-black">{balance}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-slate-400 text-sm">Límites del Plan</p>
+            <p className="font-bold">{planDailyLimit} / día • {planMonthlyLimit} / mes</p>
+          </div>
+        </div>
+
+        {/* Usage Bar */}
+        <div className="px-8 pb-6">
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-slate-300">Uso hoy</span>
+            <span className="font-bold">{todayUsage} / {planDailyLimit} tokens</span>
+          </div>
+          <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${getUsageColor(todayUsage, planDailyLimit)}`}
+              style={{ width: `${getUsagePercentage(todayUsage, planDailyLimit)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-amber-100 rounded-xl">
+              <Zap size={20} className="text-amber-600" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase">Uso Hoy</p>
+              <p className="text-2xl font-black text-slate-900">{todayUsage}</p>
+            </div>
+          </div>
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${getUsageColor(todayUsage, planDailyLimit)}`} style={{ width: `${getUsagePercentage(todayUsage, planDailyLimit)}%` }} />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-purple-100 rounded-xl">
+              <Calendar size={20} className="text-purple-600" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase">Esta Semana</p>
+              <p className="text-2xl font-black text-slate-900">{weekUsage}</p>
+            </div>
+          </div>
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${getUsageColor(weekUsage, planMonthlyLimit)}`} style={{ width: `${getUsagePercentage(weekUsage, planMonthlyLimit)}%` }} />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 rounded-xl">
+              <Package size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase">Productos</p>
+              <p className="text-2xl font-black text-slate-900">{productCount}</p>
+            </div>
+          </div>
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${getUsageColor(productCount, getLimit('products'))}`} style={{ width: `${getUsagePercentage(productCount, getLimit('products'))}%` }} />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-emerald-100 rounded-xl">
+              <Users size={20} className="text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-slate-400 uppercase">Empleados</p>
+              <p className="text-2xl font-black text-slate-900">{employeeCount}</p>
+            </div>
+          </div>
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${getUsageColor(employeeCount, getLimit('employees'))}`} style={{ width: `${getUsagePercentage(employeeCount, getLimit('employees'))}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Transaction History */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+          <BarChart3 size={20} className="text-slate-400" />
+          <h3 className="font-black text-slate-900 uppercase">Historial de Tokens</h3>
+        </div>
+        <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
+          {transactions.length === 0 ? (
+            <div className="p-8 text-center text-slate-400">
+              <Coins size={32} className="mx-auto mb-2 opacity-50" />
+              <p>No hay transacciones aún</p>
+              <p className="text-sm">Usa el IA Agent para comenzar</p>
+            </div>
+          ) : (
+            transactions.slice(0, 15).map((tx) => (
+              <div key={tx.id} className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${
+                    tx.type === 'usage' ? 'bg-red-50 text-red-600' :
+                    tx.type === 'purchase' ? 'bg-emerald-50 text-emerald-600' :
+                    'bg-amber-50 text-amber-600'
+                  }`}>
+                    {tx.type === 'usage' ? <Zap size={16} /> :
+                     tx.type === 'purchase' ? <Coins size={16} /> :
+                     <Gift size={16} />}
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-900">{tx.description || tx.feature || 'Transacción'}</p>
+                    <p className="text-xs text-slate-400">{new Date(tx.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+                <span className={`font-bold ${
+                  tx.type === 'usage' ? 'text-red-600' :
+                  tx.type === 'purchase' ? 'text-emerald-600' :
+                  'text-amber-600'
+                }`}>
+                  {tx.type === 'usage' ? '-' : '+'}{Math.abs(tx.amount)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Plan Limits Info */}
+      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+        <h4 className="font-black text-slate-900 uppercase mb-4">Límites de tu Plan</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-white rounded-xl">
+            <p className="text-2xl font-black text-slate-900">{getLimit('products')}</p>
+            <p className="text-xs text-slate-500 uppercase">Productos</p>
+          </div>
+          <div className="text-center p-4 bg-white rounded-xl">
+            <p className="text-2xl font-black text-slate-900">{getLimit('employees')}</p>
+            <p className="text-xs text-slate-500 uppercase">Empleados</p>
+          </div>
+          <div className="text-center p-4 bg-white rounded-xl">
+            <p className="text-2xl font-black text-slate-900">{getLimit('registers')}</p>
+            <p className="text-xs text-slate-500 uppercase">Cajas</p>
+          </div>
+          <div className="text-center p-4 bg-white rounded-xl">
+            <p className="text-2xl font-black text-slate-900">{planLimits?.aiTokensPerDay || 0}</p>
+            <p className="text-xs text-slate-500 uppercase">AI/día</p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
