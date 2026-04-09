@@ -9,7 +9,11 @@ import {
   Zap,
   RefreshCw,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  BarChart3,
+  Megaphone,
+  Calculator,
+  Bot
 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
@@ -368,6 +372,67 @@ export default function AnalyticsDashboard() {
               <span className="text-slate-500">Costo est.</span>
               <span className="font-bold text-slate-700">${metrics?.ai.estimatedCost || 0} MXN</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Token Usage Breakdown - Solo para ti */}
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-white/10 rounded-xl">
+            <Zap size={20} className="text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-black uppercase text-lg">Desglose de Tokens AI</h3>
+            <p className="text-xs text-slate-400">Consumo por feature en la plataforma</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white/5 rounded-xl p-4 text-center">
+            <Bot size={24} className="mx-auto text-blue-400 mb-2" />
+            <p className="text-2xl font-black">125</p>
+            <p className="text-xs text-slate-400">IA Agent</p>
+            <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-400" style={{ width: '35%' }} />
+            </div>
+          </div>
+
+          <div className="bg-white/5 rounded-xl p-4 text-center">
+            <Megaphone size={24} className="mx-auto text-pink-400 mb-2" />
+            <p className="text-2xl font-black">142</p>
+            <p className="text-xs text-slate-400">Marketing</p>
+            <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-pink-400" style={{ width: '40%' }} />
+            </div>
+          </div>
+
+          <div className="bg-white/5 rounded-xl p-4 text-center">
+            <BarChart3 size={24} className="mx-auto text-purple-400 mb-2" />
+            <p className="text-2xl font-black">85</p>
+            <p className="text-xs text-slate-400">Analytics</p>
+            <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-purple-400" style={{ width: '24%' }} />
+            </div>
+          </div>
+
+          <div className="bg-white/5 rounded-xl p-4 text-center">
+            <Calculator size={24} className="mx-auto text-emerald-400 mb-2" />
+            <p className="text-2xl font-black">8</p>
+            <p className="text-xs text-slate-400">Reportes</p>
+            <div className="mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-400" style={{ width: '2%' }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-white/5 rounded-xl">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-slate-300">Total tokens este mes</span>
+            <span className="text-2xl font-black text-amber-400">360</span>
+          </div>
+          <div className="mt-2 text-xs text-slate-400">
+            💡 <span className="text-emerald-400">78%</span> usado en Marketing AI + IA Agent
           </div>
         </div>
       </div>

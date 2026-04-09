@@ -27,6 +27,7 @@ import Help from '@/pages/Help'
 import Marketing from '@/pages/Marketing'
 import Agent from '@/pages/Agent'
 import Analytics from '@/pages/Analytics'
+import Dashboard from '@/pages/Dashboard'
 import Kitchen from '@/pages/Kitchen'
 import Bar from '@/pages/Bar'
 import OfflineIndicator from '@/components/common/OfflineIndicator'
@@ -103,6 +104,7 @@ function AppLayout() {
         {/* 🤖 IA & Marketing */}
         <Route path="/marketing" element={<Marketing />} />
         <Route path="/agent" element={<Agent />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/invoicing" element={<Invoicing />} />
         <Route path="/referral" element={<Referral />} />

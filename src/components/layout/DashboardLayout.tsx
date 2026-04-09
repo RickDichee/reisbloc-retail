@@ -53,7 +53,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         { label: 'IA & Marketing', isHeader: true },
         { label: 'Marketing AI', icon: Megaphone, path: '/marketing' },
         { label: 'IA Agent', icon: Bot, path: '/agent' },
-        { label: 'Analytics', icon: TrendingUp, path: '/analytics' },
+        { label: 'Dashboard', icon: TrendingUp, path: '/dashboard' },
 
         { label: 'Operación', isHeader: true },
         { label: 'Punto de Venta', icon: Banknote, path: '/pos' },
