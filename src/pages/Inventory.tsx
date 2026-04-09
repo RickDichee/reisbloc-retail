@@ -7,6 +7,7 @@ import logger from '@/utils/logger'
 import supabaseService from '@/services/supabaseService'
 import printService from '@/services/printService'
 import ProductModal from '@/components/admin/ProductModal'
+import ImportProductsModal from '@/components/admin/ImportProductsModal'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 
 export default function Inventory() {
@@ -16,6 +17,7 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLowStock, setFilterLowStock] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
 
   const loadInventory = useCallback(async () => {
@@ -130,6 +132,12 @@ export default function Inventory() {
             >
               <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
               NUEVO PRODUCTO
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95"
+            >
+              IMPORTAR
             </button>
           </div>
         </div>
@@ -301,6 +309,17 @@ export default function Inventory() {
               setEditingProduct(null)
               loadInventory()
             }}
+          />
+        )}
+
+        {showImportModal && (
+          <ImportProductsModal
+            onClose={() => setShowImportModal(false)}
+            onSuccess={() => {
+              setShowImportModal(false)
+              loadInventory()
+            }}
+            currentProductsCount={products.length}
           />
         )}
       </div>

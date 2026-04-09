@@ -14,6 +14,7 @@ import {
   BarChart3,
   Smartphone
 } from 'lucide-react'
+import { PlanType } from '@/config/plans'
 
 const STEPS = [
   {
@@ -104,7 +105,7 @@ const STEPS = [
 
 export default function Onboarding() {
   const navigate = useNavigate()
-  const { currentUser, setOrganizationSettings } = useAppStore()
+  const { currentUser, setOrganizationSettings, setOrgPlan } = useAppStore()
   const { createBranch, selectBranch } = useBranches()
 
   const [currentStep, setCurrentStep] = useState(0)
@@ -190,6 +191,9 @@ export default function Onboarding() {
       }
 
       await setOrganizationSettings(settings)
+      
+      // Establecer plan por defecto como 'free' al crear organización
+      setOrgPlan('free', 'Onboarding completado')
       
       // Actualizar en Supabase
       const { supabase } = await import('@/config/supabase')

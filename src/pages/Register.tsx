@@ -10,7 +10,10 @@ const Register = () => {
   const [error, setError] = useState<string | null>(null);
 
   const referralCode = searchParams.get('ref');
-  const selectedPlan = searchParams.get('plan') || 'launch';
+  
+  const validPlans = ['free', 'launch', 'starter', 'growth', 'scale', 'enterprise']
+  const urlPlan = searchParams.get('plan')?.toLowerCase() || 'free'
+  const selectedPlan = validPlans.includes(urlPlan) ? urlPlan : 'free';
 
   const [formData, setFormData] = useState({
     orgName: '',

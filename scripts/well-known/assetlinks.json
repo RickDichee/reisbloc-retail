@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.reisbloclab.pos",
       "sha256_cert_fingerprints": [
-        "A3:36:76:5A:66:43:D6:65:C9:49:42:A2:99:06:88:67:B6:16:AC:24:B8:A6:DF:CA:BA:C5:6E:49:4B:5C:C7:6E"
+        "A3:36:76:5A:66:43:D6:65:C9:49:42:A2:99:06:88:67:B6:16:AC:24:B8:A6:DF:CA:BA:C5:6E:49:4B:5C:C7:6Edel",
+        
       ]
     }
   }
