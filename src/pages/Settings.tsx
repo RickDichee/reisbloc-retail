@@ -19,7 +19,10 @@ import {
     Store,
     Megaphone,
     Bot,
-    TrendingUp
+    TrendingUp,
+    Upload,
+    Check,
+    AlertCircle
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import DeviceApprovalPanel from '@/components/admin/DeviceApprovalPanel'
@@ -339,18 +342,216 @@ export default function Settings() {
                     {activeTab === 'devices' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><DeviceApprovalPanel /></div>}
                     {activeTab === 'logs' && <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100"><AuditLogs /></div>}
                     {activeTab === 'branding' && (
-                        <div className="bg-white rounded-3xl p-12 text-center text-slate-400 space-y-4">
-                            <Globe size={64} className="mx-auto opacity-20" />
-                            <h2 className="text-2xl font-black text-slate-900">Configuración de Marca Blanca</h2>
-                            <p className="max-w-md mx-auto">Sube tu logo, establece tus colores corporativos y personaliza el subdominio de tu catálogo digital.</p>
-                            <div className="pt-8">
-                                <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-xs font-black uppercase">Módulo Pro en Desarrollo</span>
-                            </div>
-                        </div>
+                        <BrandingSettings currentUser={currentUser} />
                     )}
                 </div>
             </div>
         </DashboardLayout>
+    )
+}
+
+function BrandingSettings({ currentUser }: { currentUser: any }) {
+    const [org, setOrg] = useState<any>(null)
+    const [slug, setSlug] = useState('')
+    const [logoUrl, setLogoUrl] = useState('')
+    const [saving, setSaving] = useState(false)
+    const [saved, setSaved] = useState(false)
+    const [error, setError] = useState('')
+    const [checkingSlug, setCheckingSlug] = useState(false)
+
+    useEffect(() => {
+        const loadOrg = async () => {
+            if (!currentUser?.organizationId) return
+            const data = await supabaseService.getOrganizationById(currentUser.organizationId)
+            if (data) {
+                setOrg(data)
+                setSlug(data.slug || '')
+                setLogoUrl(data.logo_url || '')
+            }
+        }
+        loadOrg()
+    }, [currentUser?.organizationId])
+
+    const isValidSlug = (s: string) => /^[a-z0-9-]+$/.test(s) && s.length >= 3 && s.length <= 50
+
+    const checkSlugAvailability = async (newSlug: string) => {
+        if (!isValidSlug(newSlug) || newSlug === org?.slug) return true
+        setCheckingSlug(true)
+        try {
+            const exists = await supabaseService.getOrganizationBySlug(newSlug)
+            setCheckingSlug(false)
+            return !exists
+        } catch {
+            setCheckingSlug(false)
+            return false
+        }
+    }
+
+    const handleSlugChange = async (value: string) => {
+        const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-')
+        setSlug(sanitized)
+        setSaved(false)
+        setError('')
+    }
+
+    const handleSave = async () => {
+        if (!isValidSlug(slug)) {
+            setError('El slug debe tener entre 3 y 50 caracteres (solo letras, números y guiones)')
+            return
+        }
+
+        const available = await checkSlugAvailability(slug)
+        if (!available) {
+            setError('Este enlace ya está en uso. Prueba otro.')
+            return
+        }
+
+        setSaving(true)
+        setError('')
+        try {
+            await supabase
+                .from('organizations')
+                .update({ 
+                    slug: slug.trim(),
+                    logo_url: logoUrl.trim()
+                })
+                .eq('id', currentUser.organizationId)
+            
+            setSaved(true)
+            setTimeout(() => setSaved(false), 3000)
+        } catch (e: any) {
+            setError(e.message || 'Error al guardar')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const storeUrl = slug ? `${window.location.origin}/p/${slug}` : ''
+
+    return (
+        <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 space-y-8">
+            <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
+                <div className="p-3 bg-purple-100 rounded-xl">
+                    <Globe size={24} className="text-purple-600" />
+                </div>
+                <div>
+                    <h2 className="text-xl font-black text-slate-900">Tu Tienda Online</h2>
+                    <p className="text-sm text-slate-500">Personaliza el enlace y logo de tu catálogo digital</p>
+                </div>
+            </div>
+
+            {/* Logo Upload */}
+            <div className="space-y-4">
+                <label className="block text-sm font-bold text-slate-700">Logo de tu negocio</label>
+                <div className="flex items-center gap-6">
+                    <div className="w-24 h-24 bg-slate-100 rounded-2xl overflow-hidden flex items-center justify-center border-2 border-dashed border-slate-300">
+                        {logoUrl ? (
+                            <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                        ) : (
+                            <Globe size={32} className="text-slate-300" />
+                        )}
+                    </div>
+                    <div className="flex-1">
+                        <input
+                            type="text"
+                            value={logoUrl}
+                            onChange={(e) => setLogoUrl(e.target.value)}
+                            placeholder="URL de tu logo (https://...)"
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-bold focus:border-purple-500 outline-none"
+                        />
+                        <p className="text-xs text-slate-400 mt-2">Sube tu logo a Storage o usa una URL pública</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Slug / Subdomain */}
+            <div className="space-y-4">
+                <label className="block text-sm font-bold text-slate-700">Enlace de tu tienda</label>
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-400 font-bold">{window.location.origin}/p/</span>
+                    <input
+                        type="text"
+                        value={slug}
+                        onChange={(e) => handleSlugChange(e.target.value)}
+                        placeholder="mi-negocio"
+                        className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl font-mono font-bold focus:border-purple-500 outline-none"
+                    />
+                </div>
+                {slug && isValidSlug(slug) && (
+                    <div className="flex items-center gap-2 text-sm">
+                        {checkingSlug ? (
+                            <span className="text-slate-400">Verificando...</span>
+                        ) : slug === org?.slug ? (
+                            <span className="text-emerald-600 font-bold flex items-center gap-1">
+                                <Check size={14} /> Tu enlace actual
+                            </span>
+                        ) : (
+                            <span className="text-emerald-600 font-bold flex items-center gap-1">
+                                <Check size={14} /> Disponible
+                            </span>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Preview Link */}
+            {slug && isValidSlug(slug) && (
+                <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100">
+                    <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mb-2">Vista previa</p>
+                    <div className="flex items-center justify-between">
+                        <a 
+                            href={storeUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-lg font-black text-purple-700 hover:underline"
+                        >
+                            {storeUrl}
+                        </a>
+                        <a
+                            href={storeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700"
+                        >
+                            Visitar →
+                        </a>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+                <div className="flex items-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl">
+                    <AlertCircle size={18} />
+                    <span className="font-bold text-sm">{error}</span>
+                </div>
+            )}
+
+            {/* Save Button */}
+            <div className="flex justify-end pt-4 border-t border-slate-100">
+                <button
+                    onClick={handleSave}
+                    disabled={saving || !slug}
+                    className={`flex items-center gap-2 px-8 py-4 rounded-xl font-bold transition-all ${
+                        saved 
+                            ? 'bg-emerald-500 text-white' 
+                            : 'bg-purple-600 text-white hover:bg-purple-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                    {saving ? (
+                        'Guardando...'
+                    ) : saved ? (
+                        <>
+                            <Check size={20} /> Guardado
+                        </>
+                    ) : (
+                        <>
+                            <Save size={20} /> Guardar Configuración
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
     )
 }
 
