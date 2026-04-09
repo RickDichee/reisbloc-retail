@@ -273,7 +273,7 @@ export default function POS() {
     if (!currentUser || isReadOnly) return
 
     try {
-      const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'card_conekta' || result.paymentMethod === 'card_mercadopago' ? 'transferencia' : result.paymentMethod)
+      const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'card_mercadopago' ? 'transferencia' : result.paymentMethod)
 
       // Items del borrador activo + (órdenes activas si las hay)
       const { orderIds } = paymentPanel

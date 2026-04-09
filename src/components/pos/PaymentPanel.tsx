@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import logger from '@/utils/logger'
-import conektaService from '@/services/conektaService'
 import mercadopagoService from '@/services/mercadopagoService'
 import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X } from 'lucide-react'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 export interface PaymentResult {
   transactionId: string
-  paymentMethod: 'cash' | 'card_conekta' | 'card_mercadopago' | 'card'
+  paymentMethod: 'cash' | 'card_mercadopago' | 'card'
   currency?: 'MXN' | 'USD'
   total: number
   splitRequested?: boolean
@@ -30,17 +29,14 @@ export default function PaymentPanel({
   onPaymentComplete,
   onCancel,
 }: PaymentPanelProps) {
-  // Support both old (orderId) and new (orderIds) interfaces
   const ids = orderIds || (orderId ? [orderId] : [])
 
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_conekta' | 'card_mercadopago' | 'card'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_mercadopago' | 'card'>('cash')
   const { canUseFeature } = usePlanLimits()
   const [currency, setCurrency] = useState<'MXN' | 'USD'>('MXN')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [conektaCheckoutUrl, setConektaCheckoutUrl] = useState<string | null>(null)
-  const [conektaTransactionId, setConektaTransactionId] = useState('')
   const [mercadopagoUrl, setMercadopagoUrl] = useState<string | null>(null)
   const [mercadopagoId, setMercadopagoId] = useState('')
 
@@ -62,21 +58,6 @@ export default function PaymentPanel({
             total: finalTotal,
           })
         }, 1500)
-      } else if (paymentMethod === 'card_conekta') {
-        const result = await conektaService.createPaymentIntent({
-          amount: finalTotal,
-          currency: currency,
-          orderId: ids.join('-'),
-          description: `Venta POS Reisbloc - Tk ${tableNumber}`
-        })
-
-        if (!result.success || !result.checkoutUrl) {
-          throw new Error(result.error || 'Error con Conekta API')
-        }
-
-        setConektaCheckoutUrl(result.checkoutUrl)
-        setConektaTransactionId(result.transactionId || `conekta_${Date.now()}`)
-        setLoading(false)
       } else if (paymentMethod === 'card_mercadopago') {
         const result = await mercadopagoService.createPaymentPreference({
           amount: finalTotal,
@@ -91,8 +72,6 @@ export default function PaymentPanel({
         setMercadopagoUrl(result.init_point)
         setMercadopagoId(result.id)
         setLoading(false)
-      } else {
-        throw new Error('Método de pago no implementado por completo aún.')
       }
     } catch (err: any) {
       const msg = err?.message || 'Error al procesar cobro'
@@ -106,7 +85,6 @@ export default function PaymentPanel({
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-fadeIn max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-2xl p-6 relative overflow-hidden flex-shrink-0">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12" />
@@ -127,7 +105,6 @@ export default function PaymentPanel({
         </div>
 
         <div className="p-6 overflow-y-auto">
-          {/* Currency Selection */}
           <div className="mb-6">
             <label className="block text-sm font-bold text-gray-900 mb-2">Moneda de Pago</label>
             <div className="flex gap-2">
@@ -154,7 +131,6 @@ export default function PaymentPanel({
             </div>
           </div>
 
-          {/* Final Balance Info */}
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-5 rounded-xl mb-6 shadow-inner relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10">
               <DollarSign size={48} className="text-white" />
@@ -170,12 +146,10 @@ export default function PaymentPanel({
             </div>
           </div>
 
-          {/* Payment Method Selection */}
-          {!conektaCheckoutUrl && !mercadopagoUrl ? (
+          {!mercadopagoUrl ? (
             <div className="mb-6">
               <label className="block text-sm font-bold text-gray-900 mb-3">Forma de Pago</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {/* Efectivo - Primero */}
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setPaymentMethod('cash')}
                   disabled={loading || success}
@@ -188,7 +162,6 @@ export default function PaymentPanel({
                   <span className="text-[11px] font-black uppercase tracking-tight text-center">Efectivo</span>
                 </button>
 
-                {/* Tarjeta Manual - Segundo */}
                 <button
                   onClick={() => setPaymentMethod('card')}
                   disabled={loading || success}
@@ -198,10 +171,9 @@ export default function PaymentPanel({
                     }`}
                 >
                   <CreditCard size={24} />
-                  <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta<br />Manual</span>
+                  <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta</span>
                 </button>
 
-                {/* MercadoPago - Tercero */}
                 {canUseFeature('mercadopago') ? (
                   <button
                     onClick={() => setPaymentMethod('card_mercadopago')}
@@ -214,7 +186,7 @@ export default function PaymentPanel({
                     <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center">
                       <span className="text-[#00B1EA] font-black text-sm">M</span>
                     </div>
-                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Pago<br />Móvil</span>
+                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Mercado<br />Pago</span>
                   </button>
                 ) : (
                   <button
@@ -224,33 +196,7 @@ export default function PaymentPanel({
                     <div className="w-7 h-7 bg-gray-200 rounded-lg flex items-center justify-center">
                       <span className="text-gray-400 font-black text-sm">M</span>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">Pago<br />Móvil</span>
-                    <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-full">
-                      Launch
-                    </span>
-                  </button>
-                )}
-
-                {/* Conekta - Cuarto */}
-                {canUseFeature('conekta') ? (
-                  <button
-                    onClick={() => setPaymentMethod('card_conekta')}
-                    disabled={loading || success}
-                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_conekta'
-                      ? 'bg-indigo-600 text-white shadow-lg ring-2 ring-indigo-400'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                  >
-                    <CreditCard size={24} />
-                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta<br />Online</span>
-                  </button>
-                ) : (
-                  <button
-                    disabled
-                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative"
-                  >
-                    <CreditCard size={24} />
-                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta<br />Online</span>
+                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">Mercado<br />Pago</span>
                     <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-full">
                       Launch
                     </span>
@@ -258,48 +204,7 @@ export default function PaymentPanel({
                 )}
               </div>
             </div>
-          ) : conektaCheckoutUrl ? (
-            <div className="mb-6 text-center animate-scaleIn bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
-              <h3 className="font-black text-indigo-900 mb-2">Escanea para Pagar</h3>
-              <p className="text-xs text-indigo-600 font-bold mb-4">Compatible con Apple Pay, Tarjetas y OXXO</p>
-
-              <div className="flex justify-center mb-6">
-                <div className="bg-white p-3 rounded-2xl shadow-lg inline-block">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(conektaCheckoutUrl)}`}
-                    alt="QR de Pago Conekta"
-                    className="w-40 h-40 object-contain"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => window.open(conektaCheckoutUrl, '_blank')}
-                  className="w-full py-3 bg-white border border-indigo-200 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition-colors"
-                >
-                  Abrir Link en esta Tablet
-                </button>
-                <button
-                  onClick={() => {
-                    setSuccess(true);
-                    setTimeout(() => {
-                      onPaymentComplete({
-                        transactionId: conektaTransactionId,
-                        paymentMethod: 'card_conekta',
-                        currency,
-                        total: orderTotal
-                      });
-                    }, 1000);
-                  }}
-                  disabled={success}
-                  className="w-full py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2"
-                >
-                  {success ? <><CheckCircle size={20} /> ¡Aprobado!</> : 'Confirmar Pago Exitoso'}
-                </button>
-              </div>
-            </div>
-          ) : mercadopagoUrl ? (
+          ) : (
             <div className="mb-6 text-center animate-scaleIn bg-blue-50 p-6 rounded-2xl border border-blue-100">
               <h3 className="font-black text-blue-900 mb-2">Pagar con Mercado Pago</h3>
               <p className="text-xs text-blue-600 font-bold mb-4">Escanea el QR o usa el botón inferior</p>
@@ -323,15 +228,15 @@ export default function PaymentPanel({
                 </button>
                 <button
                   onClick={() => {
-                    setSuccess(true);
+                    setSuccess(true)
                     setTimeout(() => {
                       onPaymentComplete({
                         transactionId: mercadopagoId,
                         paymentMethod: 'card_mercadopago',
                         currency,
                         total: orderTotal
-                      });
-                    }, 1000);
+                      })
+                    }, 1000)
                   }}
                   disabled={success}
                   className="w-full py-3 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2"
@@ -340,24 +245,21 @@ export default function PaymentPanel({
                 </button>
               </div>
             </div>
-          ) : null}
+          )}
 
-          {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
 
-          {/* Multiple Orders Info */}
           {ids.length > 1 && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-700 font-semibold">ℹ️ Múltiples órdenes consolidadas</p>
             </div>
           )}
 
-          {/* Action Buttons */}
-          {!conektaCheckoutUrl && !mercadopagoUrl && (
+          {!mercadopagoUrl && (
             <div className="flex gap-2 flex-col">
               <div className="flex gap-3">
                 <button
@@ -385,19 +287,16 @@ export default function PaymentPanel({
                     </>
                   ) : (
                     <>
-                      {paymentMethod === 'card_conekta' 
-                        ? 'Generar Terminal / QR' 
-                        : paymentMethod === 'card_mercadopago'
-                          ? 'Generar Link Mercado Pago'
-                          : paymentMethod === 'card'
-                            ? 'Registrar Info (Pago Externo)'
-                            : `Cobrar $${orderTotal.toFixed(2)} en Efectivo`}
+                      {paymentMethod === 'card_mercadopago'
+                        ? 'Generar Link Mercado Pago'
+                        : paymentMethod === 'card'
+                          ? 'Registrar Info (Pago Externo)'
+                          : `Cobrar $${orderTotal.toFixed(2)} en Efectivo`}
                     </>
                   )}
                 </button>
               </div>
 
-              {/* Dividir Cuenta Button - only for multiple orders */}
               {ids.length > 1 && !loading && (
                 <button
                   onClick={() => onPaymentComplete({
