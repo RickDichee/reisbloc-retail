@@ -23,3 +23,9 @@ echo "- O ejecutar: waydroid app launch com.reisbloc.store"
 echo ""
 echo "=== Para ver logs en tiempo real: ==="
 echo "waydroid logcat"
+
+
+secretp Oauth  reisbloc  auth 
+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
+openrouter
+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

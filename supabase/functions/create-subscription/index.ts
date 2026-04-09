@@ -97,7 +97,7 @@ serve(async (req) => {
         pending: `${Deno.env.get("VITE_APP_URL") || "https://reisbloc.store"}/settings?subscription=pending`
       },
       external_reference: `${user.id}_${plan}`,
-      notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-webhook`,
+      notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercadopago-webhook`,
       auto_return: "approved"
     }
 
