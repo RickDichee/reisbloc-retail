@@ -4,6 +4,24 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.4"
 const MERCADOPAGO_API = "https://api.mercadopago.com"
 const MERCADOPAGO_SITE_ID = "MLM"
 
+// Helper para obtener credenciales según ambiente
+function getMercadoPagoCredentials() {
+  const env = Deno.env.get("DENO_ENV") || Deno.env.get("VERCEL_ENV") || "production"
+  
+  if (env === "production") {
+    return {
+      accessToken: Deno.env.get("MERCADOPAGO_ACCESS_TOKEN"),
+      isSandbox: false
+    }
+  }
+  
+  // Sandbox/development
+  return {
+    accessToken: Deno.env.get("MERCADOPAGO_ACCESS_TOKEN_TEST") || Deno.env.get("MERCADOPAGO_ACCESS_TOKEN"),
+    isSandbox: true
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -64,7 +82,7 @@ serve(async (req) => {
     }
 
     const planConfig = PLAN_CONFIG[plan as keyof typeof PLAN_CONFIG]
-    const accessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")
+    const { accessToken, isSandbox } = getMercadoPagoCredentials()
     
     if (!accessToken) {
       console.error("MERCADOPAGO_ACCESS_TOKEN no está configurado")
@@ -76,6 +94,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+
+    // F2: Idempotency Key - evitar pagos duplicados
+    const idempotencyKey = `${user.id}_${plan}_${Date.now()}`
 
     const preferenceData = {
       items: [
@@ -102,12 +123,15 @@ serve(async (req) => {
     }
 
     console.log("Creando preferencia de pago:", JSON.stringify(preferenceData, null, 2))
+    console.log("🧪 Modo Sandbox:", isSandbox)
 
+    // F2: Include Idempotency Key header
     const mpResponse = await fetch(`${MERCADOPAGO_API}/checkout/preferences`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`
+        "Authorization": `Bearer ${accessToken}`,
+        "X-Idempotency-Key": idempotencyKey
       },
       body: JSON.stringify(preferenceData)
     })
@@ -130,7 +154,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       init_point: mpData.init_point,
       sandbox_init_point: mpData.sandbox_init_point,
-      preference_id: mpData.id
+      preference_id: mpData.id,
+      is_sandbox: isSandbox
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
