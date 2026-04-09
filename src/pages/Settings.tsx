@@ -170,7 +170,6 @@ export default function Settings() {
         { id: '/admin', label: 'Administración', icon: ShieldCheck },
         { id: '/marketing', label: 'Marketing AI', icon: Megaphone, ai: true },
         { id: '/agent', label: 'IA Agent', icon: Bot, ai: true },
-        { id: '/dashboard', label: 'Dashboard', icon: TrendingUp, ai: true },
         { id: '/analytics', label: 'Analytics', icon: TrendingUp, ai: true },
     ]
 

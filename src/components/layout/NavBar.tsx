@@ -84,7 +84,6 @@ export default function NavBar() {
     { path: '/closing', label: 'Cierre', icon: DollarSign, roles: ['admin', 'supervisor'] },
     { path: '/marketing', label: 'Marketing', icon: Megaphone, roles: ['admin'] },
     { path: '/agent', label: 'IA Agent', icon: Bot, roles: ['admin', 'supervisor'] },
-    { path: '/dashboard', label: 'Dashboard', icon: TrendingUp, roles: ['admin'] },
     { path: '/analytics', label: 'Analytics', icon: BarChart3, roles: ['admin'] },
     { path: '/invoicing', label: 'Facturas', icon: Receipt, roles: ['admin'] },
     { path: '/referral', label: 'Referidos', icon: Gift, roles: ['admin', 'supervisor'] },
