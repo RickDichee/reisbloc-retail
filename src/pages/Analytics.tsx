@@ -118,7 +118,7 @@ export default function Analytics() {
           <button
             onClick={loadAnalytics}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-colors"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             Actualizar
@@ -126,21 +126,21 @@ export default function Analytics() {
         </div>
 
         {/* Token Balance Card - Destacado */}
-        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-8 text-white shadow-xl">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 text-white shadow-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur">
+              <div className="p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/30">
                 <Coins size={32} className="text-white" />
               </div>
               <div>
-                <p className="text-white/80 text-sm font-medium">Tu Balance de Tokens</p>
+                <p className="text-slate-400 text-sm font-medium">Tu Balance de Tokens</p>
                 <p className="text-5xl font-black">{balance}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-white/80 text-sm">Plan {planName}</p>
+              <p className="text-slate-400 text-sm">Plan {planName}</p>
               <p className="text-lg font-bold">{planDailyLimit} tokens/día</p>
-              <p className="text-sm text-white/70">{planMonthlyLimit} tokens/mes</p>
+              <p className="text-sm text-slate-500">{planMonthlyLimit} tokens/mes</p>
             </div>
           </div>
           
@@ -150,7 +150,7 @@ export default function Analytics() {
               <span>Uso hoy</span>
               <span>{todayUsage} / {planDailyLimit} tokens</span>
             </div>
-            <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+            <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${getUsageColor(todayUsage, planDailyLimit)}`}
                 style={{ width: `${getUsagePercentage(todayUsage, planDailyLimit)}%` }}
@@ -162,10 +162,10 @@ export default function Analytics() {
         {/* Usage Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Daily Usage */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-100 rounded-xl">
-                <Zap size={20} className="text-amber-600" />
+              <div className="p-3 bg-slate-100 rounded-xl">
+                <Zap size={20} className="text-slate-600" />
               </div>
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase">Uso Hoy</p>
@@ -182,10 +182,10 @@ export default function Analytics() {
           </div>
 
           {/* Weekly Usage */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-purple-100 rounded-xl">
-                <Calendar size={20} className="text-purple-600" />
+              <div className="p-3 bg-slate-100 rounded-xl">
+                <Calendar size={20} className="text-slate-600" />
               </div>
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase">Esta Semana</p>
@@ -202,10 +202,10 @@ export default function Analytics() {
           </div>
 
           {/* Products */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-blue-100 rounded-xl">
-                <ShoppingBag size={20} className="text-blue-600" />
+              <div className="p-3 bg-slate-100 rounded-xl">
+                <ShoppingBag size={20} className="text-slate-600" />
               </div>
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase">Productos</p>
@@ -222,9 +222,9 @@ export default function Analytics() {
           </div>
 
           {/* Employees */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-emerald-100 rounded-xl">
+              <div className="p-3 bg-emerald-50 rounded-xl">
                 <Users size={20} className="text-emerald-600" />
               </div>
               <div>
@@ -243,8 +243,8 @@ export default function Analytics() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
             <TrendingUp size={20} className="text-slate-400" />
             <h3 className="font-black text-slate-900 uppercase">Historial de Tokens</h3>
           </div>
@@ -260,9 +260,9 @@ export default function Analytics() {
                 <div key={tx.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-xl ${
-                      tx.type === 'usage' ? 'bg-red-50 text-red-600' :
-                      tx.type === 'purchase' ? 'bg-emerald-50 text-emerald-600' :
-                      'bg-amber-50 text-amber-600'
+                      tx.type === 'usage' ? 'bg-slate-100 text-slate-600' :
+                      tx.type === 'purchase' ? 'bg-emerald-100 text-emerald-600' :
+                      'bg-amber-100 text-amber-600'
                     }`}>
                       {tx.type === 'usage' ? <Zap size={16} /> :
                        tx.type === 'purchase' ? <Coins size={16} /> :
@@ -274,7 +274,7 @@ export default function Analytics() {
                     </div>
                   </div>
                   <span className={`font-bold ${
-                    tx.type === 'usage' ? 'text-red-600' :
+                    tx.type === 'usage' ? 'text-slate-600' :
                     tx.type === 'purchase' ? 'text-emerald-600' :
                     'text-amber-600'
                   }`}>
@@ -287,32 +287,32 @@ export default function Analytics() {
         </div>
 
         {/* Plan Limits */}
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
             <Receipt size={20} className="text-slate-400" />
             <h3 className="font-black text-slate-900 uppercase">Límites de tu Plan {planName}</h3>
           </div>
-          <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-slate-50 rounded-xl">
+          <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-slate-50 rounded-2xl">
               <p className="text-2xl font-black text-slate-900">{getLimit('products')}</p>
               <p className="text-xs text-slate-500 uppercase">Productos</p>
             </div>
-            <div className="text-center p-4 bg-slate-50 rounded-xl">
+            <div className="text-center p-4 bg-slate-50 rounded-2xl">
               <p className="text-2xl font-black text-slate-900">{getLimit('employees')}</p>
               <p className="text-xs text-slate-500 uppercase">Empleados</p>
             </div>
-            <div className="text-center p-4 bg-slate-50 rounded-xl">
+            <div className="text-center p-4 bg-slate-50 rounded-2xl">
               <p className="text-2xl font-black text-slate-900">{getLimit('registers')}</p>
               <p className="text-xs text-slate-500 uppercase">Cajas</p>
             </div>
-            <div className="text-center p-4 bg-slate-50 rounded-xl">
+            <div className="text-center p-4 bg-slate-50 rounded-2xl">
               <p className="text-2xl font-black text-slate-900">{planLimits?.aiTokensPerDay || 0}</p>
               <p className="text-xs text-slate-500 uppercase">AI/día</p>
             </div>
           </div>
           {(productCount >= getLimit('products') || employeeCount >= getLimit('employees')) && (
-            <div className="p-4 bg-red-50 border-t border-red-100">
-              <div className="flex items-center gap-3 text-red-700">
+            <div className="p-4 bg-amber-50 border-t border-amber-100">
+              <div className="flex items-center gap-3 text-amber-700">
                 <AlertTriangle size={20} />
                 <div>
                   <p className="font-bold">Estás cerca de alcanzar un límite</p>
