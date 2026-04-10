@@ -12,17 +12,24 @@ const MP_API_URL = 'https://api.mercadopago.com'
 // Helper para obtener credenciales según ambiente
 function getMercadoPagoCredentials() {
   const env = Deno.env.get("DENO_ENV") || Deno.env.get("VERCEL_ENV") || "production"
+  const testToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN_TEST")
+  const prodToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN")
   
-  if (env === "production") {
+  console.log('🧪 MP Env:', env)
+  console.log('🧪 MP Test Token exists:', !!testToken)
+  console.log('🧪 MP Prod Token exists:', !!prodToken)
+  
+  // Si estamos en desarrollo local o hay token test, usar sandbox
+  if (env === "development" || testToken) {
     return {
-      accessToken: Deno.env.get("MERCADOPAGO_ACCESS_TOKEN"),
-      isSandbox: false
+      accessToken: testToken || prodToken,
+      isSandbox: !!testToken
     }
   }
   
   return {
-    accessToken: Deno.env.get("MERCADOPAGO_ACCESS_TOKEN_TEST") || Deno.env.get("MERCADOPAGO_ACCESS_TOKEN"),
-    isSandbox: true
+    accessToken: prodToken,
+    isSandbox: false
   }
 }
 
@@ -66,6 +73,31 @@ serve(async (req) => {
         // F2: Idempotency key
         const idempotencyKey = `pos_${orderId || Date.now()}_${Math.random().toString(36).slice(2)}`
 
+        const preferenceBody = {
+          site_id: 'MLM', // Mercado Libre Mexico
+          items: [{
+            title: description?.substring(0, 100) || 'Venta Mostrador Reisbloc',
+            quantity: 1,
+            currency_id: 'MXN',
+            unit_price: parseFloat(amount.toFixed(2)),
+          }],
+          external_reference: orderId || `pos_${Date.now()}`,
+          payer: { 
+            email: email || 'customer@email.com',
+            name: 'Cliente Reisbloc'
+          },
+          payment_methods: {
+            excluded_payment_types: [],
+            installments: 1
+          },
+          back_urls: {
+            success: `${req.headers.get('origin') || ''}/payment/success`,
+            failure: `${req.headers.get('origin') || ''}/payment/failure`,
+            pending: `${req.headers.get('origin') || ''}/payment/pending`
+          },
+          auto_return: 'approved'
+        }
+
         const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
           method: 'POST',
           headers: {
@@ -73,16 +105,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${accessToken}`,
             'X-Idempotency-Key': idempotencyKey
           },
-          body: JSON.stringify({
-            items: [{
-              title: description || 'Venta Mostrador Reisbloc',
-              quantity: 1,
-              currency_id: 'MXN',
-              unit_price: amount,
-            }],
-            external_reference: orderId || `pos_${Date.now()}`,
-            payer: { email: email || 'customer@email.com' },
-          }),
+          body: JSON.stringify(preferenceBody),
         })
 
         const data = await response.json()
