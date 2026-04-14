@@ -1,23 +1,30 @@
-# 🐳 REISBLOC POS - Enterprise Dockerfile
-# Base image: Node.js 20 Alpine for stability and small size
-FROM node:20-alpine
+# =============================================================================
+# REISBLOC POS - Multi-stage Dockerfile
+# =============================================================================
 
-# Set working directory
+# --- DEPS STAGE ---
+FROM node:20-alpine AS deps
 WORKDIR /app
-
-# Install dependencies first (for better caching)
 COPY package*.json ./
 RUN npm install
 
-# Copy source code
+# --- DEV STAGE ---
+FROM node:20-alpine AS dev
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Expose port (Vite default is 5173)
 EXPOSE 5173
-
-# Standard environment variables
-ENV NODE_ENV=development
-ENV HOST=0.0.0.0
-
-# Start development server
 CMD ["npm", "run", "dev", "--", "--host"]
+
+# --- BUILD STAGE ---
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+# --- PROD STAGE ---
+FROM nginx:stable-alpine AS prod
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

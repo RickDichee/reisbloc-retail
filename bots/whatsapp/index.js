@@ -1,10 +1,10 @@
 import express from 'express';
 import crypto from 'crypto';
 
-const VERIFY_TOKEN = 'reisbloc_whatsapp_verify';
-const WHATSAPP_PHONE_NUMBER_ID = '980061948534829';
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || '';
+const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const DIFY_API_URL = 'http://localhost/v1';
+const DIFY_API_URL = process.env.DIFY_API_URL || 'http://localhost/v1';
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
 
 const app = express();
