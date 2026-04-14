@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
-    "@google/gemini-cli": "^0.28.2",
+    "@google/gemini-cli": "^0.38.0",
     "@mercadopago/sdk-react": "^1.0.7",
     "@supabase/supabase-js": "^2.93.1",
     "@types/dompurify": "^3.0.5",
@@ -54,8 +54,8 @@
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.23",
     "cross-env": "^7.0.3",
@@ -71,6 +71,9 @@
   },
   "overrides": {
     "tar": "^7.5.7",
-    "glob": "^10.4.5"
+    "glob": "^10.4.5",
+    "minimatch": "^10.2.3",
+    "serialize-javascript": "^7.0.5",
+    "@xmldom/xmldom": "^0.9.9"
   }
 }
