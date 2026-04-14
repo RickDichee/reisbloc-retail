@@ -1,10 +1,18 @@
 import express from 'express';
 import crypto from 'crypto';
 
-const VERIFY_TOKEN = 'reisbloc_whatsapp_verify';
-const WHATSAPP_PHONE_NUMBER_ID = '980061948534829';
+const requiredEnvVars = ['WHATSAPP_VERIFY_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID'];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`Missing required environment variable: ${envVar}`);
+    process.exit(1);
+  }
+}
+
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const DIFY_API_URL = 'http://localhost/v1';
+const DIFY_API_URL = process.env.DIFY_API_URL;
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
 
 const app = express();
@@ -17,7 +25,7 @@ app.get('/webhook', (req, res) => {
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log('Webhook verified');
-    res.status(200).send(challenge);
+    res.status(200).send(String(challenge));
   } else {
     res.sendStatus(403);
   }

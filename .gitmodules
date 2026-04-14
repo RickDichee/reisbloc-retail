@@ -1,3 +1,0 @@
-[submodule "gemini-extension"]
-	path = gemini-extension
-	url = https://github.com/supabase-community/gemini-extension.git
