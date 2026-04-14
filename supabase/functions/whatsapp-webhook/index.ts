@@ -6,12 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-hub-signature-256',
 }
 
-const VERIFY_TOKEN = Deno.env.get('WHATSAPP_VERIFY_TOKEN') || 'WHATSAPP_VERIFY_TOKEN_PLACEHOLDER'
-const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || process.env.WHATSAPP_PHONE_NUMBER_ID
-const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') || ''
+const VERIFY_TOKEN = Deno.env.get('WHATSAPP_VERIFY_TOKEN') ?? ''
+const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') ?? ''
+const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') ?? ''
 
-const DIFY_API_URL = Deno.env.get('DIFY_API_URL') || 'http://host.docker.internal:80/v1'
-const DIFY_API_KEY = Deno.env.get('DIFY_API_KEY') || ''
+const DIFY_API_URL = Deno.env.get('DIFY_API_URL') ?? ''
+const DIFY_API_KEY = Deno.env.get('DIFY_API_KEY') ?? ''
 const DIFY_APP_ID = Deno.env.get('DIFY_APP_ID') || ''
 
 const WELCOME_MESSAGE = `¡Hola! 👋 Soy el asistente virtual de Reisbloc Store.

@@ -16,7 +16,7 @@
 ### 2. Conectar Repositorio Local con GitHub
 
 ```bash
-cd /home/r1ck/TPV_solutions
+cd /path/to/project
 
 # Cambiar rama de 'master' a 'main' (opcional pero recomendado)
 git branch -M main

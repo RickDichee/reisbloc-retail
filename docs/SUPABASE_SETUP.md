@@ -51,7 +51,7 @@
 
 ## Paso 5: Configurar .env.local (2 min)
 
-En `/home/r1ck/reisbloc-pos/.env.local`, actualiza:
+En `/path/to/reisbloc-pos/.env.local`, actualiza:
 
 ```bash
 # Supabase Configuration
@@ -68,7 +68,7 @@ VITE_SUPABASE_DB_ENABLED=true
 ## Paso 6: Migrar Datos (10 min)
 
 ```bash
-cd /home/r1ck/reisbloc-pos
+cd /path/to/reisbloc-pos
 npm install  # si no lo hiciste
 npm run migrate:supabase
 ```

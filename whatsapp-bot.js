@@ -1,11 +1,16 @@
 import express from 'express';
 import crypto from 'crypto';
 
-const VERIFY_TOKEN = 'WHATSAPP_VERIFY_TOKEN_PLACEHOLDER';
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
-const DIFY_API_URL = 'http://localhost/v1';
+const DIFY_API_URL = process.env.DIFY_API_URL;
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
+
+if (!VERIFY_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
+  console.error('Missing required environment variables: WHATSAPP_VERIFY_TOKEN, WHATSAPP_PHONE_NUMBER_ID');
+  process.exit(1);
+}
 
 const app = express();
 app.use(express.json());

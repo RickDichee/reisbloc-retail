@@ -46,7 +46,7 @@ Unificar WhatsApp, Facebook Messenger e Instagram en un solo agente de IA entren
 
 ## PASO 1: Preparar Documentos de Entrenamiento
 
-Ya tienes los documentos en `/home/r1ck/reisbloc-store/docs/`:
+Ya tienes los documentos en `/path/to/reisbloc-store/docs/`:
 
 1. `KIT_VENTAS_PROSPECTOR.md` - Scripts de ventas
 2. `ONE_PAGER_PROSPECTO.md` - Pitch para prospectos
@@ -204,7 +204,7 @@ Para conectar WhatsApp + Messenger + Instagram:
      "user": "{{ $json.from }}",
      "conversation_id": "{{ $json.conversation_id }}"
    }
-   Headers: Authorization: Bearer TU_DIFY_API_KEY
+   Headers: Authorization: Bearer $DIFY_API_KEY
    ```
 5. **Switch** node → Detectar canal origen
 6. **HTTP Request** nodes → Responder al canal correspondiente

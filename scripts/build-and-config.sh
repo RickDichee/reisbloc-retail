@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_DIR="/home/r1ck/reisbloc-store"
+PROJECT_DIR="${REISBLOC_PROJECT_DIR:-$(pwd)}"
 cd "$PROJECT_DIR"
 
 echo "=============================================="

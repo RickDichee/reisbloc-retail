@@ -49,7 +49,7 @@ Esta guía te lleva paso a paso para migrar Reisbloc POS de Firebase a Supabase.
 
 ### 2.2 Guardar en .env.local
 ```bash
-cd /home/r1ck/reisbloc-pos
+cd /path/to/reisbloc-pos
 cp .env.example .env.local
 ```
 

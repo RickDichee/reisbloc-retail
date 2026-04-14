@@ -482,13 +482,4 @@ SEMANA 4: Preparar raise / inversión
 ---
 
 *Generado: Abril 2026*
-*Última actualización: [FECHA]*
-
-
-prueba: 
-Whats: ***REDACTED_META_TOKEN***
-Identificador de número de teléfono: [REDACTED]
-Identificador de la cuenta de WhatsApp Business: ***REDACTED_WA_BUSINESS_ID***
-***REDACTED_PASSWORD***
-
-
+*Última actualización: Abril 2026*
