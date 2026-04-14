@@ -1,7 +1,7 @@
 {
   "name": "reisbloc-pos",
   "version": "3.7.3",
-  "description": "POS Restaurante profesional con MercadoPago, UI moderna y control de inventario avanzado",
+  "description": "Reisbloc Store - Software Retail Multitenant SaaS",
   "type": "module",
   "scripts": {
     "env": "sh scripts/check-env.sh",

@@ -70,13 +70,13 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  tableNumber: number;
+  ticketNumber: number;  // Número de ticket/orden (antes "tableNumber" - legado restaurante)
   items: OrderItem[];
   status: 'open' | 'sent' | 'ready' | 'served' | 'completed' | 'cancelled';
   subtotal?: number;
   total?: number;
-  isCourtesy?: boolean; // Mesa cortesía sin costo
-  authorizedBy?: string; // Admin que autorizó mesa cortesía
+  isCourtesy?: boolean; // Ticket de cortesía sin costo
+  authorizedBy?: string; // Admin que autorizó cortesía
   createdAt: Date;
   sentToKitchenAt?: Date;
   createdBy: string;
@@ -88,12 +88,14 @@ export interface Order {
   cancelledAt?: Date;
   cancelledBy?: string;
   cancelReason?: string;
+  // Legacy compatibility - eliminar después de migración completa
+  tableNumber?: number;
 }
 
 export interface Sale {
   id: string;
   orderIds: string[];
-  tableNumber: number;
+  ticketNumber: number;  // Número de ticket (antes "tableNumber" - legado restaurante)
   items: OrderItem[];
   subtotal: number;
   discounts: number;
@@ -118,6 +120,8 @@ export interface Sale {
   saleBy: string;
   createdAt: Date;
   printedAt?: Date;
+  // Legacy compatibility
+  tableNumber?: number;
 }
 
 export interface DailyClose {
@@ -272,4 +276,80 @@ export interface AuthContext {
   login: (pin: string) => Promise<void>;
   logout: () => Promise<void>;
   registerDevice: (device: Device) => Promise<void>;
+}
+
+// ==================== E-COMMERCE TYPES ====================
+
+export interface EcommerceOrder {
+  id: string;
+  organizationId: string;
+  clientId?: string;
+  client?: EcommerceClient;
+  items: EcommerceOrderItem[];
+  subtotal: number;
+  shippingCost: number;
+  tax: number;
+  total: number;
+  status: EcommerceOrderStatus;
+  shippingMethod:ShippingMethod;
+  shippingAddress?: Address;
+  paymentMethod: 'mercadopago' | 'cash' | 'transferencia';
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  paymentId?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt?: Date;
+  completedAt?: Date;
+}
+
+export type EcommerceOrderStatus = 'pending' | 'confirmed' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
+
+export interface EcommerceOrderItem {
+  productId: string;
+  product?: Product;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface EcommerceClient {
+  id: string;
+  organizationId: string;
+  email: string;
+  name: string;
+  phone?: string;
+  addresses: Address[];
+  createdAt: Date;
+}
+
+export interface Address {
+  id: string;
+  street: string;
+  exterior: string;
+  interior?: string;
+  colony: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
+export type ShippingMethod = 'pickup' | 'local' | 'delivery' | 'paquetemia' | 'estafeta' | 'dhl';
+
+export interface CartItem {
+  productId: string;
+  product: Product;
+  quantity: number;
+}
+
+export interface EcommerceSettings {
+  storeName: string;
+  storeDescription?: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  shippingMethods: ShippingMethod[];
+  freeShippingThreshold?: number;
+  minimumOrder?: number;
+  active: boolean;
 }

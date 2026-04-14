@@ -51,7 +51,7 @@ const getTableColorStyles = (tableNum: number) => {
 
 export default function TableMonitor() {
   const navigate = useNavigate()
-  const { currentUser, tables } = useAppStore()
+  const { currentUser, tickets } = useAppStore()
   const permissions = usePermissions()
   const canAccessTableMonitor = permissions.canAccessTableMonitor
   const [orders, setOrders] = useState<Order[]>([])
@@ -169,8 +169,9 @@ export default function TableMonitor() {
   const groupedByTable = useMemo(() => {
     const groups: { [key: number]: Order[] } = {}
     orders.forEach(o => {
-      if (!groups[o.tableNumber]) groups[o.tableNumber] = []
-      groups[o.tableNumber].push(o)
+      const ticketNum = o.tableNumber ?? o.ticketNumber ?? 0
+      if (!groups[ticketNum]) groups[ticketNum] = []
+      groups[ticketNum].push(o)
     })
     return Object.entries(groups).map(([num, ords]) => ({ tableNumber: parseInt(num), orders: ords.sort((a, b) => normalizeDate(a.createdAt).getTime() - normalizeDate(b.createdAt).getTime()) }))
   }, [orders])
@@ -288,7 +289,9 @@ export default function TableMonitor() {
     </DashboardLayout>
   )
 
-  const availableTables = tables.length ? tables : Array.from({ length: 12 }, (_, i) => i + 1)
+  const availableTables = (tickets || []).length 
+    ? tickets 
+    : Array.from({ length: 12 }, (_, i) => i + 1)
 
   return (
     <DashboardLayout>
@@ -314,7 +317,7 @@ export default function TableMonitor() {
           <>
           <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-400 font-bold shadow-sm uppercase tracking-widest text-sm">Caja disponible - click para iniciar venta</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {availableTables.filter(t => !groupedByTable.find(g => g.tableNumber === t)).map(tableNum => {
+            {(availableTables as number[]).filter((t: number) => !groupedByTable.find(g => g.tableNumber === t)).map((tableNum: number) => {
               const styles = getTableColorStyles(tableNum)
               return (
                 <div key={tableNum} onClick={() => navigate('/pos')} className={`border-2 ${styles.border} ${styles.bg} rounded-2xl shadow-lg p-5 flex flex-col gap-3 transition-all hover:shadow-xl hover:scale-105 cursor-pointer`}>

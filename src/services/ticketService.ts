@@ -13,12 +13,14 @@ export interface TicketData {
   tax: number;
   total: number;
   paymentMethod: string;
-  tableNumber: number;
+  ticketNumber: number;  // Número de ticket (antes "tableNumber")
   businessName: string;
   address?: string;
   phone?: string;
   cashier?: string;
   date?: Date;
+  // Legacy
+  tableNumber?: number;
 }
 
 export const ticketService = {

@@ -1,62 +1,82 @@
 import { useAppStore } from '@/store/appStore'
-import { UserRole } from '@/types/index'
+import { UserRole } from '@/config/roles'
 
 /**
  * Hook para gestionar permisos basados en roles
+ * Sistema Retail Multitenant - Reisbloc Store
  */
 export function usePermissions() {
   const { currentUser } = useAppStore()
-  const role = currentUser?.role
+  const role = currentUser?.role as UserRole | undefined
 
-  // Permisos administrativos completos
-  const canManageUsers = role === 'admin' || role === 'supervisor'
-  const canManageInventory = role === 'admin' || role === 'supervisor'
-  const canManageDevices = role === 'admin' || role === 'supervisor'
-  const canViewLogs = role === 'admin' || role === 'supervisor'
-  const canExportReports = role === 'admin' || role === 'supervisor'
-
+  // 👑 ADMIN - Acceso total
+  const isAdmin = role === 'admin'
+  const canManageUsers = isAdmin
+  const canManageDevices = isAdmin
+  const canDeleteProducts = isAdmin
+  const canViewEmployeeMetrics = isAdmin
+  const canCloseCashRegister = isAdmin
+  const canManageInventory = isAdmin
+  
+  // 👔 MANAGER - Gestión operativa
+  const isManager = role === 'manager'
+  const canManageProducts = isAdmin || isManager
+  const canViewBilling = isAdmin || isManager
+  const canCloseDay = isAdmin || isManager
+  const canApplyDiscounts = isAdmin || isManager
+  const canVoidOrders = isAdmin || isManager
+  const canExportReports = isAdmin || isManager || role === 'supervisor'
+  
+  // 👁️ SUPERVISOR - Solo lectura (ver todo, modificar nada)
+  const isSupervisor = role === 'supervisor'
+  const isReadOnly = isSupervisor
+  
   // Permisos operativos
-  const canCreateSales = ['admin', 'supervisor', 'vendedor', 'mostrador'].includes(role || '')
-  const canModifyOrders = ['admin', 'supervisor', 'vendedor'].includes(role || '')
-  const canDeleteProducts = role === 'admin'
-  const canAccessKitchen = ['admin', 'almacen'].includes(role || '')
-  const canAccessBar = ['admin', 'mostrador'].includes(role || '')
-  const canManageTables = ['admin', 'supervisor'].includes(role || '')
-  // Solo admin/supervisor acceden a monitor - vendedor usa OrdersToServe
-  const canAccessTableMonitor = canManageTables
-
+  const canCreateSales = ['admin', 'manager', 'supervisor', 'cashier', 'employee'].includes(role || '')
+  const canModifyOrders = ['admin', 'manager', 'cashier'].includes(role || '')
+  const canAccessKitchen = false // Legacy - no aplica en retail
+  const canAccessBar = false // Legacy - no aplica en retail
+  const canManageTables = false // Legacy - no aplica en retail
+  const canAccessTableMonitor = false // Legacy
+  
   // Permisos de reportes
-  const canViewReports = ['admin', 'supervisor'].includes(role || '')
-  const canViewSalesReport = ['admin', 'supervisor'].includes(role || '')
-  const canViewInventoryReport = ['admin', 'supervisor'].includes(role || '')
-  const canViewEmployeeMetrics = role === 'admin'
-
-  // Permisos financieros
-  const canCloseCashRegister = role === 'admin'
-  const canCloseRegister = role === 'admin'
-  const canViewFinancialData = ['admin', 'supervisor'].includes(role || '')
-  const canApplyDiscounts = ['admin', 'capitan'].includes(role || '')
+  const canViewReports = ['admin', 'manager', 'supervisor'].includes(role || '')
+  const canViewSalesReport = canViewReports
+  const canViewInventoryReport = canViewReports
+  const canViewFinancialData = canViewReports
+  const canViewLogs = isAdmin || isSupervisor
 
   // Helper: verificar si tiene al menos uno de los roles
   const hasAnyRole = (roles: UserRole[]) => {
     return roles.includes(role as UserRole)
   }
 
-  // Helper: verificar si es rol de solo lectura
-  const isReadOnly = role === 'supervisor'
-
   return {
+    // Roles
+    currentRole: role,
+    isAdmin,
+    isManager,
+    isSupervisor,
+    isReadOnly,
+    
     // Permisos administrativos
     canManageUsers,
-    canManageInventory,
     canManageDevices,
-    canViewLogs,
+    canDeleteProducts,
+    canViewEmployeeMetrics,
+    canCloseCashRegister,
     canExportReports,
+    canManageProducts,
+    canManageInventory,
+    canViewBilling,
+    canCloseDay,
+    canApplyDiscounts,
+    canVoidOrders,
+    canViewLogs,
 
     // Permisos operativos
     canCreateSales,
     canModifyOrders,
-    canDeleteProducts,
     canAccessKitchen,
     canAccessBar,
     canManageTables,
@@ -66,18 +86,9 @@ export function usePermissions() {
     canViewReports,
     canViewSalesReport,
     canViewInventoryReport,
-    canViewEmployeeMetrics,
-
-    // Permisos financieros
-    canCloseCashRegister,
-    canCloseRegister,
     canViewFinancialData,
-    canApplyDiscounts,
 
     // Helpers
     hasAnyRole,
-    isReadOnly,
-    currentRole: role,
-    isAdmin: role === 'admin',
   }
 }

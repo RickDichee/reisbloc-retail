@@ -29,22 +29,28 @@ const corsHeaders = {
 
 const PLAN_CONFIG = {
   starter: {
-    name: "Reisbloc Launch",
-    price: 149,
+    name: "Reisbloc Negocio",
+    price: 199,
     frequency: "monthly",
-    external_reference: "plan_launch"
+    external_reference: "plan_negocio"
   },
   growth: {
-    name: "Reisbloc Growth",
-    price: 399,
+    name: "Reisbloc Empresarial",
+    price: 599,
     frequency: "monthly",
-    external_reference: "plan_growth"
+    external_reference: "plan_empresarial"
   },
   scale: {
-    name: "Reisbloc Scale",
-    price: 799,
+    name: "Reisbloc Negocios",
+    price: 1499,
     frequency: "monthly",
-    external_reference: "plan_scale"
+    external_reference: "plan_negocios"
+  },
+  enterprise: {
+    name: "Reisbloc Corporativo",
+    price: 3999,
+    frequency: "monthly",
+    external_reference: "plan_corporativo"
   }
 }
 

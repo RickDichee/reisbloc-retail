@@ -15,53 +15,51 @@ const LandingPage = () => {
 
   const plans = [
     {
-      name: 'Free',
+      name: 'Libre',
       price: '$0',
       priceNote: 'para siempre',
       features: [
-        '1 Dispositivo',
-        '3 Empleados',
-        '50 Productos',
-        '20 Consultas AI/mes',
+        '1 Usuario',
+        '25 Productos',
+        'Punto de Venta',
+        '10 Consultas AI/día',
         'Inventario básico',
-        'Punto de Venta'
+        'Reportes básicos'
       ],
       buttonText: 'Empezar Gratis',
       planKey: 'free',
       highlight: false
     },
     {
-      name: 'Launch',
-      price: '$149',
+      name: 'Negocio',
+      price: '$199',
       priceNote: 'al mes',
       features: [
-        '3 Dispositivos',
-        '5 Empleados',
-        '500 Productos',
-        '100 Consultas AI/día',
+        '2 Usuarios',
+        '100 Productos',
+        'E-commerce básico',
+        '30 Consultas AI/día',
         'Reportes avanzados',
-        'Marketing AI',
-        'Facturación CFDI 4.0',
         'Soporte email'
       ],
-      buttonText: 'Elegir Launch',
+      buttonText: 'Elegir Negocio',
       planKey: 'starter',
       highlight: true
     },
     {
-      name: 'Growth',
-      price: '$399',
+      name: 'Empresarial',
+      price: '$599',
       priceNote: 'al mes',
       features: [
-        '5 Dispositivos',
-        '15 Empleados',
-        '2,000 Productos',
-        'AI Ilimitado',
+        '5 Usuarios',
+        '500 Productos',
+        'E-commerce completo',
+        'Facturación CFDI 4.0',
+        '100 Consultas AI/día',
         'Multi-sucursal',
-        'API Access',
-        'E-commerce'
+        'API Access'
       ],
-      buttonText: 'Elegir Growth',
+      buttonText: 'Elegir Empresarial',
       planKey: 'growth',
       highlight: false
     }

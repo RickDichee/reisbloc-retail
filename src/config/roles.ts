@@ -2,27 +2,39 @@
  * 🛡️ GUARDIÁN DE ROLES (Role Based Access Control - RBAC)
  * Define qué puede hacer cada quién en la interfaz.
  * 
- * Sincronizado con: MEMENTO_RETAIL_STRATEGY.sql
+ * Sistema Retail Multitenant - Reisbloc Store
  */
 
-export type UserRole = 'admin' | 'manager' | 'supervisor' | 'vendedor' | 'almacen' | 'mostrador';
+export type UserRole = 'admin' | 'manager' | 'supervisor' | 'cashier' | 'employee';
 
 // Definición centralizada de permisos
 export const PERMISSIONS = {
   // 👑 SOLO ADMIN (Dueño)
   canManageUsers: ['admin'],           // Crear/Borrar Staff
-  canManageDevices: ['admin'],         // Aprobar iPads/Celulares
+  canManageDevices: ['admin'],         // Aprobar dispositivos
   canConfigureGlobal: ['admin'],       // Configuración de la cuenta/Billing
+  canDeleteProducts: ['admin'],        // Eliminar productos
+  canViewEmployeeMetrics: ['admin'],   // Métricas de empleados
+  canCloseCashRegister: ['admin'],     // Corte de caja
 
   // 👔 MANAGER (Gerente)
   canManageProducts: ['admin', 'manager'], // Editar precios/stock
-  canViewAnalytics: ['admin', 'manager', 'supervisor'],  // Ver gráficas de ventas
+  canViewAnalytics: ['admin', 'manager', 'supervisor'],  // Ver gráficas
   canViewBilling: ['admin', 'manager'],    // Ver facturas
   canCloseDay: ['admin', 'manager'],       // Hacer corte de caja (Z)
+  canApplyDiscounts: ['admin', 'manager'], // Aplicar descuentos
+  canVoidOrders: ['admin', 'manager'],    // Cancelar órdenes
+  canExportReports: ['admin', 'manager', 'supervisor'],
 
-  // 🧢 STAFF (Operativo)
-  canOperatePOS: ['admin', 'manager', 'supervisor', 'vendedor'], // Vender
-  canVoidOrders: ['admin', 'manager', 'supervisor'],           // Cancelar órdenes
+  // 👁️ SUPERVISOR (Solo lectura)
+  canViewAll: ['admin', 'manager', 'supervisor'], // Ver todo sin modificar
+  canOperatePOS: ['admin', 'manager', 'supervisor', 'cashier', 'employee'],
+  
+  // 💰 CASHIER (Cajero)
+  canCreateSales: ['admin', 'manager', 'supervisor', 'cashier', 'employee'],
+  
+  // 👷 EMPLOYEE (Empleado)
+  canBasicOperation: ['admin', 'manager', 'supervisor', 'cashier', 'employee'],
 } as const;
 
 export type PermissionAction = keyof typeof PERMISSIONS;

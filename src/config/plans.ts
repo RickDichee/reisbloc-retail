@@ -1,4 +1,6 @@
 // src/config/plans.ts
+// 🎯 Estrategia: "Libre para empezar, paga por crecer"
+// Free tier MUY limitado para evitar costos excesivos de DB/AI
 
 export type PlanType = 'free' | 'starter' | 'growth' | 'scale' | 'enterprise'
 
@@ -7,7 +9,7 @@ export interface PlanLimits {
   employees: number
   registers: number
   storageMB: number
-  aiTokensPerDay: number
+  aiTokensPerDay: number        // CRÍTICO: limitar para evitar costos
   aiTokensPerMonth: number
   clients: number
   purchases: number
@@ -16,81 +18,116 @@ export interface PlanLimits {
   branches: number
   allowMultiStore: boolean
   allowApiAccess: boolean
+  allowEcommerce: boolean
+  allowFacturation: boolean
   supportLevel: 'community' | 'email' | 'priority' | 'dedicated'
+  maxTokensPerFeature: Record<string, number> // Límite por feature de AI
 }
 
 export const PLANS: Record<PlanType, PlanLimits> = {
   free: {
-    products: 100,
-    employees: 3,
+    products: 25,               // Reducido para evitar DB costs
+    employees: 1,
     registers: 1,
-    storageMB: 100,
-    aiTokensPerDay: 20,
-    aiTokensPerMonth: 60,
+    storageMB: 50,              // Muy limitado
+    aiTokensPerDay: 10,        // CRÍTICO: 10/día max
+    aiTokensPerMonth: 50,      // 50/month - casi nada
+    clients: 10,
+    purchases: 5,
+    reportsPerMonth: 3,
+    ecommerceProducts: 10,
+    branches: 1,
+    allowMultiStore: false,
+    allowApiAccess: false,
+    allowEcommerce: false,      // NO incluir en free
+    allowFacturation: false,     // NO incluir en free
+    supportLevel: 'community',
+    maxTokensPerFeature: {
+      ai_chat: 5,              // 5 consultas/día max
+      ai_insights: 2,
+      post_generation: 0,        // NO permitido en free
+      report_pdf: 1,
+    }
+  },
+  starter: {
+    products: 100,
+    employees: 2,
+    registers: 1,
+    storageMB: 500,
+    aiTokensPerDay: 30,
+    aiTokensPerMonth: 300,
     clients: 50,
     purchases: 20,
-    reportsPerMonth: 10,
+    reportsPerMonth: 20,
     ecommerceProducts: 50,
     branches: 1,
     allowMultiStore: false,
     allowApiAccess: false,
-    supportLevel: 'community',
+    allowEcommerce: true,
+    allowFacturation: false,
+    supportLevel: 'email',
+    maxTokensPerFeature: {
+      ai_chat: 20,
+      ai_insights: 10,
+      post_generation: 5,
+      report_pdf: 10,
+    }
   },
-  starter: {
+  growth: {
     products: 500,
     employees: 5,
-    registers: 3,
-    storageMB: 1024,
+    registers: 2,
+    storageMB: 2048,
     aiTokensPerDay: 100,
-    aiTokensPerMonth: 3000,
+    aiTokensPerMonth: 1500,
     clients: 200,
-    purchases: 50,
-    reportsPerMonth: 50,
+    purchases: 100,
+    reportsPerMonth: 100,
     ecommerceProducts: 200,
     branches: 1,
     allowMultiStore: false,
     allowApiAccess: false,
+    allowEcommerce: true,
+    allowFacturation: true,      // Facturación incluida
     supportLevel: 'email',
-  },
-  growth: {
-    products: 5000,
-    employees: 25,
-    registers: 5,
-    storageMB: 5120,
-    aiTokensPerDay: 165,
-    aiTokensPerMonth: 5000,
-    clients: 2000,
-    purchases: 500,
-    reportsPerMonth: 500,
-    ecommerceProducts: 2000,
-    branches: 1,
-    allowMultiStore: false,
-    allowApiAccess: false,
-    supportLevel: 'email',
+    maxTokensPerFeature: {
+      ai_chat: 50,
+      ai_insights: 25,
+      post_generation: 20,
+      report_pdf: 30,
+    }
   },
   scale: {
-    products: -1,
-    employees: -1,
-    registers: -1,
-    storageMB: 10240,
-    aiTokensPerDay: 500,
-    aiTokensPerMonth: 15000,
-    clients: -1,
-    purchases: -1,
-    reportsPerMonth: -1,
-    ecommerceProducts: -1,
+    products: 2000,
+    employees: 15,
+    registers: 5,
+    storageMB: 5120,
+    aiTokensPerDay: 300,
+    aiTokensPerMonth: 5000,
+    clients: 1000,
+    purchases: 500,
+    reportsPerMonth: 500,
+    ecommerceProducts: 1000,
     branches: 3,
     allowMultiStore: true,
     allowApiAccess: true,
+    allowEcommerce: true,
+    allowFacturation: true,
     supportLevel: 'priority',
+    maxTokensPerFeature: {
+      ai_chat: 150,
+      ai_insights: 50,
+      post_generation: 50,
+      report_pdf: 100,
+    }
   },
   enterprise: {
     products: -1,
     employees: -1,
     registers: -1,
-    storageMB: 51200,
-    aiTokensPerDay: 1600,
-    aiTokensPerMonth: 50000,
+    storageMB: 20480,
+    aiTokensPerDay: 1000,
+    aiTokensPerMonth: 20000,
     clients: -1,
     purchases: -1,
     reportsPerMonth: -1,
@@ -98,7 +135,15 @@ export const PLANS: Record<PlanType, PlanLimits> = {
     branches: -1,
     allowMultiStore: true,
     allowApiAccess: true,
+    allowEcommerce: true,
+    allowFacturation: true,
     supportLevel: 'dedicated',
+    maxTokensPerFeature: {
+      ai_chat: -1,              // Ilimitado
+      ai_insights: -1,
+      post_generation: -1,
+      report_pdf: -1,
+    }
   },
 }
 
@@ -112,22 +157,40 @@ export function isUnlimited(value: number): boolean {
 
 export function getPlanDisplayName(plan: PlanType): string {
   const names: Record<PlanType, string> = {
-    free: 'Free',
-    starter: 'Launch',
-    growth: 'Growth',
-    scale: 'Scale',
-    enterprise: 'Enterprise',
+    free: 'Libre',
+    starter: 'Negocio',
+    growth: 'Empresarial',
+    scale: 'Negocios',
+    enterprise: 'Corporativo',
   }
-  return names[plan] || 'Free'
+  return names[plan] || 'Libre'
 }
 
 export function getPlanPrice(plan: PlanType): number {
   const prices: Record<PlanType, number> = {
     free: 0,
-    starter: 149,
-    growth: 399,
-    scale: 799,
-    enterprise: 1999,
+    starter: 199,      // $199 MXN - accesible
+    growth: 599,      // $599 MXN - buen valor
+    scale: 1499,      // $1499 MXN - scale
+    enterprise: 3999, // $3999 MXN - enterprise
   }
   return prices[plan] || 0
+}
+
+// Verificar si el plan permite cierta funcionalidad
+export function canAccessFeature(plan: PlanType, feature: string): boolean {
+  const limits = getPlanLimits(plan)
+  
+  switch (feature) {
+    case 'ecommerce':
+      return limits.allowEcommerce
+    case 'facturation':
+      return limits.allowFacturation
+    case 'multiStore':
+      return limits.allowMultiStore
+    case 'api':
+      return limits.allowApiAccess
+    default:
+      return true
+  }
 }

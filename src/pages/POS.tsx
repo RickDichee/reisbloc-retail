@@ -24,9 +24,9 @@ export default function POS() {
     currentUser,
     products,
     setProducts,
-    tables,
-    currentTableNumber,
-    setCurrentTable,
+    tickets,  // Legacy: antes "tables"
+    currentTicketNumber,  // Legacy: antes "currentTableNumber"
+    setCurrentTicket,  // Legacy: antes "setCurrentTable"
     draftOrders,
     addItemToDraft,
     incrementDraftItem,
@@ -66,14 +66,14 @@ export default function POS() {
   const [stockWarning, setStockWarning] = useState<{ isOpen: boolean, items: any[] }>({ isOpen: false, items: [] })
   const [showShareModal, setShowShareModal] = useState(false)
 
-  const tableNumber = currentTableNumber || 1
+  const tableNumber = currentTicketNumber || 1
   const items = draftOrders[tableNumber] || []
   const isReadOnly = currentUser?.role === 'supervisor'
 
   const tableButtons = useMemo(() => {
-    const baseTables = tables.length ? tables : Array.from({ length: 3 }, (_, i) => i + 1)
+    const baseTables = (tickets || []).length ? tickets : Array.from({ length: 3 }, (_, i) => i + 1)
     return baseTables.slice(0, 3)
-  }, [tables])
+  }, [tickets])
 
   const filteredProducts = useMemo(() => {
     const result = products
@@ -93,15 +93,15 @@ export default function POS() {
   }, [])
 
   useEffect(() => {
-    if (!currentTableNumber) {
+    if (!currentTicketNumber) {
       setActiveTableOrders([])
       return
     }
     const unsubscribe = supabaseService.subscribeToActiveOrders((orders) => {
-      setActiveTableOrders(orders.filter(o => o.tableNumber === currentTableNumber))
+      setActiveTableOrders(orders.filter(o => o.tableNumber === currentTicketNumber))
     })
     return () => unsubscribe?.()
-  }, [currentTableNumber])
+  }, [currentTicketNumber])
 
   useBarcodeScanner((code) => {
     if (isReadOnly || !currentUser) return
@@ -340,7 +340,7 @@ export default function POS() {
             {tableButtons.map(num => (
               <button
                 key={num}
-                onClick={() => setCurrentTable(num)}
+                onClick={() => setCurrentTicket(num)}
                 className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${tableNumber === num ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 Caja {num}
@@ -481,7 +481,7 @@ export default function POS() {
               tax: receiptModal.total - (receiptModal.total / 1.16),
               total: receiptModal.total,
               paymentMethod: receiptModal.paymentMethod,
-              tableNumber: tableNumber,
+              ticketNumber: tableNumber,  // Legacy: tableNumber → ticketNumber
               businessName: currentUser?.businessName || 'REISBLOC STORE',
               cashier: currentUser?.username
             }}

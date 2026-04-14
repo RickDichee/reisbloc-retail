@@ -1546,7 +1546,7 @@ class SupabaseService {
     }
   }
 
-  // ==================== PURCHASE ORDERS ====================
+// ==================== PURCHASE ORDERS ====================
 
   async getPurchaseOrders(): Promise<any[]> {
     try {
@@ -1554,8 +1554,8 @@ class SupabaseService {
         supabase.from('purchase_orders').select('*, supplier:suppliers(*)'),
         this.getCurrentOrgId()
       )
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
 
       if (error) throw error
       return (data || []).map((o: any) => ({
@@ -1571,6 +1571,62 @@ class SupabaseService {
     } catch (error) {
       logger.error('supabase', 'Error getting purchase orders', error as any)
       return []
+    }
+  }
+
+  // ==================== E-COMMERCE ORDERS ====================
+
+  async getEcommerceOrders(organizationId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('ecommerce_orders')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      return (data || []).map((o: any) => ({
+        ...o,
+        createdAt: new Date(o.created_at),
+        updatedAt: o.updated_at ? new Date(o.updated_at) : null,
+        completedAt: o.completed_at ? new Date(o.completed_at) : null
+      }))
+    } catch (error) {
+      logger.error('supabase', 'Error getting ecommerce orders', error as any)
+      return []
+    }
+  }
+
+  async createEcommerceOrder(order: any): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('ecommerce_orders')
+        .insert(order)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      logger.error('supabase', 'Error creating ecommerce order', error as any)
+      throw error
+    }
+  }
+
+async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('ecommerce_orders')
+        .update({ 
+          status, 
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+
+      if (error) throw error
+    } catch (error) {
+      logger.error('supabase', 'Error updating ecommerce order', error as any)
+      throw error
     }
   }
 

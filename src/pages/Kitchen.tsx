@@ -74,9 +74,9 @@ export default function Kitchen() {
       // Notificar cuando la orden está lista
       if (newStatus === 'ready' && order && order.tableNumber) {
         try {
-          showOrderToast('✓ Orden Lista', `Mesa ${order.tableNumber} - ${order.items?.length || 0} platillo(s)`, 5000)
+          showOrderToast('✓ Orden Lista', `Ticket ${order.tableNumber} - ${order.items?.length || 0} platillo(s)`, 5000)
           await sendNotificationToUsers({
-            roles: ['vendedor', 'supervisor'],
+            roles: ['cashier', 'supervisor'],  // Legacy: 'vendedor' → 'cashier'
             title: `Pedido empacado - Ticket ${order.tableNumber}`,
             body: `${order.items?.length || 0} artículo(s) listo(s) para entregar`,
             type: 'order',

@@ -44,7 +44,6 @@ import MarketingAgent from '@/components/admin/MarketingAgent'
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard'
 import UpgradeModal from '@/components/common/UpgradeModal'
 import TokenPurchaseModal from '@/components/common/TokenPurchaseModal'
-import EcommerceDashboard from '@/components/admin/EcommerceDashboard'
 import PromotionsManager from '@/components/admin/PromotionsManager'
 
 type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'marketing' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs' | 'analytics'

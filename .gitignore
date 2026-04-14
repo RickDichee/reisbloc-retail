@@ -89,6 +89,34 @@ supabase/snippets/
 # Auditoría hilo de ariadna
 irreversible.md
 
+# =============================================================================
+# DOCUMENTACIÓN INTERNA/SENSIBLE - No commits al repo público
+# =============================================================================
+
 # Guías de venta locales
 MOROLEON_LAUNCH_GUIDE.md
 PRODUCTION_CHECKLIST.md
+
+# Documentación técnica/estratégica con info sensible
+# ⚠️ Estos archivos contienen estrategia, pricing, monetización o datos de usuarios
+*ESTRATEGY*.md
+*MONETIZACION*.md
+*TOKEN*.md
+*TRANSPARENCIA*.md
+*PROTECCION_DATOS*.md
+*DEUDA_TECNICA*.md
+*ESTADO_PROYECTO*.md
+*KEY_ROTATION*.md
+*SISTEMA_ALERTAS*.md
+*PLAYBOOK*.md
+*FEEDBACK_EXPERTO*.md
+*REVISION_PROFUNDA*.md
+*REPORTE_TECNICO*.md
+AUDITORIA_TECNICA.md
+PRICING_STRATEGY.md
+TECNICA.md
+MASTER_PLAN.md
+
+# Archivos con datos SQL o protocolos internos
+SHARED_DB_PROTOCOL.md
+MEMENTO*.sql

@@ -27,11 +27,10 @@ export const roleColors: Record<string, string> = {
 
 export const roleLabels: Record<string, string> = {
   admin: 'Administrador',
-  supervisor: 'Supervisor / Gerente',
-  vendedor: 'Vendedor / Cajero',
-  almacen: 'Bodega / Almacén',
-  mostrador: 'Piso / Mostrador',
-  manager: 'Manager',
+  manager: 'Gerente',
+  supervisor: 'Supervisor (Solo lectura)',
+  cashier: 'Cajero',
+  employee: 'Empleado',
 }
 
 export default function UsersManagement() {
@@ -270,7 +269,7 @@ export default function UsersManagement() {
 function InviteUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [formData, setFormData] = useState({
     email: '',
-    role: 'mesero' as UserRole
+    role: 'employee' as UserRole
   })
   const [loading, setLoading] = useState(false)
   const [devLink, setDevLink] = useState<string | null>(null)
@@ -381,7 +380,7 @@ function InviteUserModal({ onClose, onSuccess }: { onClose: () => void; onSucces
               Rol del Empleado
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {(['vendedor', 'supervisor', 'almacen', 'mostrador', 'manager', 'admin'] as UserRole[]).map((role) => (
+              {(['cashier', 'employee', 'supervisor', 'manager', 'admin'] as UserRole[]).map((role) => (
                 <button
                   key={role}
                   type="button"
@@ -494,9 +493,8 @@ function EditUserModal({
               onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
               className="input-field"
             >
-              <option value="vendedor">{roleLabels['vendedor']}</option>
-              <option value="almacen">{roleLabels['almacen']}</option>
-              <option value="mostrador">{roleLabels['mostrador']}</option>
+              <option value="employee">{roleLabels['employee']}</option>
+              <option value="cashier">{roleLabels['cashier']}</option>
               <option value="supervisor">{roleLabels['supervisor']}</option>
               <option value="manager">{roleLabels['manager']}</option>
               <option value="admin">{roleLabels['admin']}</option>

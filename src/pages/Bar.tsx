@@ -68,9 +68,9 @@ export default function Bar() {
       // Notificar cuando la orden está lista
       if (newStatus === 'ready' && order && order.tableNumber) {
         try {
-          showOrderToast('✓ Bebidas Listas', `Mesa ${order.tableNumber} - ${order.items?.length || 0} bebida(s)`, 5000)
+          showOrderToast('✓ Bebidas Listas', `Ticket ${order.tableNumber} - ${order.items?.length || 0} bebida(s)`, 5000)
           await sendNotificationToUsers({
-            roles: ['vendedor', 'supervisor'],
+            roles: ['cashier', 'supervisor'],  // Legacy: 'vendedor' → 'cashier'
             title: `Mostrador listo - Ticket ${order.tableNumber}`,
             body: `${order.items?.length || 0} artículo(s) listo(s) en mostrador`,
             type: 'order',

@@ -27,11 +27,14 @@ interface AppState {
   isAuthenticated: boolean
   currentUser: User | null
   currentDevice: Device | null
-  tables: number[]
-  currentTableNumber: number | null
+  tickets: number[]  // Números de ticket (antes "tables" - legado restaurante)
+  currentTicketNumber: number | null  // (antes "currentTableNumber")
+  // Legacy compatibility
+  tables?: number[]  // @deprecated - usar tickets
+  currentTableNumber?: number | null  // @deprecated - usar currentTicketNumber
   products: Product[]
   users: User[]
-  draftOrders: Record<number, OrderItem[]>
+  draftOrders: Record<number, OrderItem[]>  // key = ticket number
   organizationSettings: any | null
   orgPlan: string        // 'free' | 'pro' | 'enterprise'
   orgPlanNote: string | null
@@ -44,20 +47,28 @@ interface AppActions {
   setCurrentUser: (user: User | null) => void
   setCurrentDevice: (device: Device | null) => void
   logout: () => void
-  setTables: (tables: number[]) => void
-  setCurrentTable: (tableNumber: number | null) => void
+  setTickets: (tickets: number[]) => void
+  setCurrentTicket: (ticketNumber: number | null) => void  // (antes setCurrentTable)
   setProducts: (products: Product[]) => void
   addProduct: (product: Product) => void
   updateProduct: (productId: string, updates: Partial<Product>) => void
   setUsers: (users: User[]) => void
-  addItemToDraft: (tableNumber: number, product: Product, addedBy: string) => void
-  incrementDraftItem: (tableNumber: number, itemId: string) => void
-  decrementDraftItem: (tableNumber: number, itemId: string) => void
-  removeDraftItem: (tableNumber: number, itemId: string) => void
-  clearDraftForTable: (tableNumber: number) => void
+  addItemToDraft: (ticketNumber: number, product: Product, addedBy: string) => void  // (antes addItemToDraft con tableNumber)
+  incrementDraftItem: (ticketNumber: number, itemId: string) => void
+  decrementDraftItem: (ticketNumber: number, itemId: string) => void
+  removeDraftItem: (ticketNumber: number, itemId: string) => void
+  clearDraftForTicket: (ticketNumber: number) => void  // (antes clearDraftForTable)
   setOrganizationSettings: (settings: any) => void
   setOrgPlan: (plan: string, note?: string | null) => void
   setAccessibility: (settings: Partial<AccessibilityState>) => void
+  // Legacy compatibility
+  setTables?: (tables: number[]) => void  // @deprecated
+  setCurrentTable?: (tableNumber: number | null) => void  // @deprecated
+  addItemToDraftLegacy?: (tableNumber: number, product: Product, addedBy: string) => void  // @deprecated
+  incrementDraftItemLegacy?: (tableNumber: number, itemId: string) => void  // @deprecated
+  decrementDraftItemLegacy?: (tableNumber: number, itemId: string) => void  // @deprecated
+  removeDraftItemLegacy?: (tableNumber: number, itemId: string) => void  // @deprecated
+  clearDraftForTable?: (tableNumber: number) => void  // @deprecated
 }
 
 export interface AccessibilityState {
@@ -74,8 +85,8 @@ const initialState: AppState = {
   isAuthenticated: false,
   currentUser: null,
   currentDevice: null,
-  tables: Array.from({ length: 12 }, (_, i) => i + 1),
-  currentTableNumber: 1,
+  tickets: Array.from({ length: 12 }, (_, i) => i + 1),  // Números de ticket disponibles
+  currentTicketNumber: 1,  // Ticket actual seleccionado
   products: [],
   users: [],
   draftOrders: {},
@@ -102,9 +113,19 @@ export const useAppStore = create<AppStore>()(
       setCurrentDevice: (device: Device | null) => set({ currentDevice: device }),
       logout: () => set({ ...initialState }),
 
-      // Tables
-      setTables: (tables: number[]) => set({ tables }),
-      setCurrentTable: (tableNumber: number | null) => set({ currentTableNumber: tableNumber }),
+      // Tickets (números de orden)
+      setTickets: (tickets: number[]) => set({ tickets }),
+      setCurrentTicket: (ticketNumber: number | null) => set({ currentTicketNumber: ticketNumber }),
+      
+      // Legacy compatibility - mantener nombres antiguos para compatibilidad
+      setTables: (tables: number[]) => set({ tickets: tables }),
+      setCurrentTable: (tableNumber: number | null) => set({ currentTicketNumber: tableNumber }),
+      clearDraftForTable: (tableNumber: number) => set(state => ({
+        draftOrders: { ...state.draftOrders, [tableNumber || 1]: [] }
+      })),
+      clearDraftForTicket: (ticketNumber: number) => set(state => ({
+        draftOrders: { ...state.draftOrders, [ticketNumber || 1]: [] }
+      })),
 
       // Products
       setProducts: (products: Product[]) => set({ products }),
@@ -117,18 +138,18 @@ export const useAppStore = create<AppStore>()(
       // Users
       setUsers: (users: User[]) => set({ users }),
 
-      // Draft orders by table
-      addItemToDraft: (tableNumber: number, product: Product, addedBy: string) =>
+      // Draft orders by ticket
+      addItemToDraft: (ticketNumber: number, product: Product, addedBy: string) =>
         set(state => {
-          const tableKey = tableNumber || 1
-          const currentItems = state.draftOrders[tableKey] || []
+          const ticketKey = ticketNumber || 1
+          const currentItems = state.draftOrders[ticketKey] || []
           const existing = currentItems.find(item => item.productId === product.id)
 
           if (existing) {
             return {
               draftOrders: {
                 ...state.draftOrders,
-                [tableKey]: currentItems.map(item =>
+                [ticketKey]: currentItems.map(item =>
                   item.productId === product.id
                     ? { ...item, quantity: item.quantity + 1 }
                     : item
@@ -153,33 +174,33 @@ export const useAppStore = create<AppStore>()(
           return {
             draftOrders: {
               ...state.draftOrders,
-              [tableKey]: [...currentItems, newItem],
+              [ticketKey]: [...currentItems, newItem],
             },
           }
         }),
 
-      incrementDraftItem: (tableNumber: number, itemId: string) =>
+      incrementDraftItem: (ticketNumber: number, itemId: string) =>
         set(state => {
-          const tableKey = tableNumber || 1
-          const currentItems = state.draftOrders[tableKey] || []
+          const ticketKey = ticketNumber || 1
+          const currentItems = state.draftOrders[ticketKey] || []
           return {
             draftOrders: {
               ...state.draftOrders,
-              [tableKey]: currentItems.map(item =>
+              [ticketKey]: currentItems.map(item =>
                 item.id === itemId ? { ...item, quantity: item.quantity + 1 } : item
               ),
             },
           }
         }),
 
-      decrementDraftItem: (tableNumber: number, itemId: string) =>
+      decrementDraftItem: (ticketNumber: number, itemId: string) =>
         set(state => {
-          const tableKey = tableNumber || 1
-          const currentItems = state.draftOrders[tableKey] || []
+          const ticketKey = ticketNumber || 1
+          const currentItems = state.draftOrders[ticketKey] || []
           return {
             draftOrders: {
               ...state.draftOrders,
-              [tableKey]: currentItems
+              [ticketKey]: currentItems
                 .map(item =>
                   item.id === itemId
                     ? { ...item, quantity: Math.max(1, item.quantity - 1) }
@@ -190,18 +211,28 @@ export const useAppStore = create<AppStore>()(
           }
         }),
 
-      removeDraftItem: (tableNumber: number, itemId: string) =>
+      removeDraftItem: (ticketNumber: number, itemId: string) =>
         set(state => {
-          const tableKey = tableNumber || 1
-          const currentItems = state.draftOrders[tableKey] || []
+          const ticketKey = ticketNumber || 1
+          const currentItems = state.draftOrders[ticketKey] || []
           return {
             draftOrders: {
               ...state.draftOrders,
-              [tableKey]: currentItems.filter(item => item.id !== itemId),
+              [ticketKey]: currentItems.filter(item => item.id !== itemId),
             },
           }
         }),
 
+      // Clear draft functions - legacy + new naming
+      clearDraftForTicket: (ticketNumber: number) =>
+        set(state => ({
+          draftOrders: {
+            ...state.draftOrders,
+            [ticketNumber || 1]: [],
+          },
+        })),
+
+      // Legacy alias
       clearDraftForTable: (tableNumber: number) =>
         set(state => ({
           draftOrders: {
@@ -228,12 +259,12 @@ export const useAppStore = create<AppStore>()(
         isAuthenticated: state.isAuthenticated,
         currentUser: state.currentUser,
         currentDevice: state.currentDevice,
-        currentTableNumber: state.currentTableNumber,
-        draftOrders: state.draftOrders, // CRÍTICO: órdenes en progreso
+        currentTicketNumber: state.currentTicketNumber,
+        draftOrders: state.draftOrders,
         organizationSettings: state.organizationSettings,
-        orgPlan: state.orgPlan, // Persistir plan del tenant
+        orgPlan: state.orgPlan,
         orgPlanNote: state.orgPlanNote,
-        accessibility: state.accessibility, // ♿ Persistir preferencias visuales
+        accessibility: state.accessibility,
       } as any),
     }
   )
