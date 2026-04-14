@@ -12,7 +12,7 @@ const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') ?? ''
 
 const DIFY_API_URL = Deno.env.get('DIFY_API_URL') ?? ''
 const DIFY_API_KEY = Deno.env.get('DIFY_API_KEY') ?? ''
-const DIFY_APP_ID = Deno.env.get('DIFY_APP_ID') || ''
+const DIFY_APP_ID = Deno.env.get('DIFY_APP_ID') ?? ''
 
 const WELCOME_MESSAGE = `¡Hola! 👋 Soy el asistente virtual de Reisbloc Store.
 

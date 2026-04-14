@@ -7,8 +7,8 @@ const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const DIFY_API_URL = process.env.DIFY_API_URL;
 const DIFY_API_KEY = process.env.DIFY_API_KEY;
 
-if (!VERIFY_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
-  console.error('Missing required environment variables: WHATSAPP_VERIFY_TOKEN, WHATSAPP_PHONE_NUMBER_ID');
+if (!VERIFY_TOKEN || !WHATSAPP_PHONE_NUMBER_ID || !DIFY_API_URL) {
+  console.error('Missing required environment variables: WHATSAPP_VERIFY_TOKEN, WHATSAPP_PHONE_NUMBER_ID, DIFY_API_URL');
   process.exit(1);
 }
 
