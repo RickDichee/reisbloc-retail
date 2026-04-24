@@ -75,19 +75,19 @@ export default function NavBar() {
   }
 
   const navItems = [
-    { path: '/pos', label: 'Ventas', icon: ShoppingCart, roles: ['admin', 'supervisor', 'staff'] },
-    { path: '/ecommerce', label: 'E-commerce', icon: ShoppingBag, roles: ['admin', 'supervisor'] },
-    { path: '/inventory', label: 'Inventario', icon: Package, roles: ['admin', 'supervisor'] },
-    { path: '/reports', label: 'Reportes', icon: BarChart3, roles: ['admin', 'supervisor'] },
-    { path: '/clients', label: 'Clientes', icon: Users, roles: ['admin', 'supervisor', 'staff'] },
-    { path: '/purchases', label: 'Compras', icon: ShoppingBag, roles: ['admin', 'supervisor'] },
-    { path: '/closing', label: 'Cierre', icon: DollarSign, roles: ['admin', 'supervisor'] },
+    { path: '/pos', label: 'Ventas', icon: ShoppingCart, roles: ['admin', 'manager', 'supervisor', 'cashier', 'employee'] },
+    { path: '/inventory', label: 'Inventario', icon: Package, roles: ['admin', 'manager', 'supervisor'] },
+    { path: '/reports', label: 'Reportes', icon: BarChart3, roles: ['admin', 'manager', 'supervisor'] },
+    { path: '/clients', label: 'Clientes', icon: Users, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+    { path: '/ecommerce', label: 'Tienda', icon: ShoppingBag, roles: ['admin', 'manager', 'supervisor'] },
+    { path: '/purchases', label: 'Compras', icon: ShoppingBag, roles: ['admin', 'manager'] },
+    { path: '/closing', label: 'Cierre', icon: DollarSign, roles: ['admin', 'manager'] },
     { path: '/marketing', label: 'Marketing', icon: Megaphone, roles: ['admin'] },
-    { path: '/agent', label: 'IA Agent', icon: Bot, roles: ['admin', 'supervisor'] },
-    { path: '/analytics', label: 'Analytics', icon: BarChart3, roles: ['admin'] },
+    { path: '/agent', label: 'IA Agent', icon: Bot, roles: ['admin', 'manager', 'supervisor'] },
+    { path: '/analytics', label: 'Analytics', icon: TrendingUp, roles: ['admin', 'manager'] },
     { path: '/invoicing', label: 'Facturas', icon: Receipt, roles: ['admin'] },
-    { path: '/referral', label: 'Referidos', icon: Gift, roles: ['admin', 'supervisor'] },
-    { path: '/admin', label: 'Admin', icon: Shield, roles: ['admin', 'supervisor'] },
+    { path: '/referral', label: 'Referidos', icon: Gift, roles: ['admin', 'manager'] },
+    { path: '/admin', label: 'Admin', icon: Shield, roles: ['admin'] },
     { path: '/settings', label: 'Ajustes', icon: Settings, roles: ['admin'] },
   ]
 
