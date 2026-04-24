@@ -19,11 +19,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
-<<<<<<< Updated upstream
-    "@google/gemini-cli": "^0.38.0",
-=======
     "@google/gemini-cli": "^0.39.1",
->>>>>>> Stashed changes
     "@mercadopago/sdk-react": "^1.0.7",
     "@supabase/supabase-js": "^2.93.1",
     "@types/dompurify": "^3.0.5",

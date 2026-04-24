@@ -169,12 +169,21 @@ export function getPlanDisplayName(plan: PlanType): string {
 export function getPlanPrice(plan: PlanType): number {
   const prices: Record<PlanType, number> = {
     free: 0,
-    starter: 199,      // $199 MXN - accesible
-    growth: 599,      // $599 MXN - buen valor
-    scale: 1499,      // $1499 MXN - scale
-    enterprise: 3999, // $3999 MXN - enterprise
+    starter: 499,      // $499 MXN - para empezar
+    growth: 999,      // $999 MXN - crecimiento
+    scale: 2499,      // $2499 MXN - multi-sucursal
+    enterprise: 4999, // $4999 MXN - corporativo
   }
   return prices[plan] || 0
+}
+
+// Trial temporal para Growth (7 días gratis)
+export const GROWTH_TRIAL_DAYS = 7
+
+export function getTrialEndDate(): string {
+  const endDate = new Date()
+  endDate.setDate(endDate.getDate() + GROWTH_TRIAL_DAYS)
+  return endDate.toISOString()
 }
 
 // Verificar si el plan permite cierta funcionalidad
