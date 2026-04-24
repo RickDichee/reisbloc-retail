@@ -17,6 +17,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles/globals.css'
+import './i18n'
 
 // Registrar Service Worker para PWA y soporte offline
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

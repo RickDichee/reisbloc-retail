@@ -1,0 +1,60 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "noResults": "No results"
+  },
+  "auth": {
+    "login": "Log In",
+    "register": "Sign Up",
+    "logout": "Log Out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "continueWithGoogle": "Continue with Google"
+  },
+  "plans": {
+    "free": "Free",
+    "starter": "Business",
+    "growth": "Professional",
+    "scale": "Business Plus",
+    "enterprise": "Enterprise",
+    "monthly": "monthly",
+    "selectPlan": "Select Your Plan",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade Plan",
+    "downgrade": "Change Plan"
+  },
+  "payment": {
+    "payNow": "Pay Now",
+    "paymentMethods": "Payment Methods",
+    "card": "Card",
+    "crypto": "Cryptocurrency",
+    "solana": "Solana",
+    "processing": "Processing payment...",
+    "success": "Payment successful!",
+    "failed": "Payment failed",
+    "pending": "Payment pending"
+  },
+  "nav": {
+    "home": "Home",
+    "pos": "Sales",
+    "inventory": "Inventory",
+    "reports": "Reports",
+    "clients": "Clients",
+    "settings": "Settings",
+    "admin": "Admin"
+  }
+}

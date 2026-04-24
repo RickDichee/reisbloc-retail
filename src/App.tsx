@@ -20,6 +20,7 @@ import Reports from '@/pages/Reports'
 import Purchases from '@/pages/Purchases'
 import NotFound from '@/pages/NotFound'
 import { AuthCallback } from '@/pages/AuthCallback'
+import Payment from '@/pages/Payment'
 import AcceptInvite from '@/pages/AcceptInvite'
 import StoreFront from '@/pages/StoreFront'
 import Ecommerce from '@/pages/Ecommerce'
@@ -78,6 +79,7 @@ function AppLayout() {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/payment" element={<Payment />} />
         <Route path="/upgrade" element={<Pricing />} />
         <Route path="/onboarding" element={<Onboarding />} />
 

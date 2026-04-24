@@ -30,7 +30,6 @@ export function AuthCallback() {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      // 1. Obtener sesión actual (Supabase ya procesó el código de Google en la URL)
       const { data: { session }, error } = await supabase.auth.getSession()
 
       if (error || !session?.user) {
@@ -39,25 +38,21 @@ export function AuthCallback() {
         return
       }
 
-      // 2. Verificar si el usuario ya tiene organización (Esperando al Webhook)
-
-      // Aquí usamos el "Backoff" que programamos
       const orgId = await pollForOrganization(session.user.id)
 
       if (orgId) {
-        // ✅ Éxito: Webhook completó la creación de la Org
-        setStatus('¡Verificación exitosa! Accediendo...')
-
-        // Ejecutar silenciosamente auditoría Enterprise (Login Georeferenciado)
+        setStatus('Verificacion exitosa! Accediendo...')
         logSuccessfulLogin().catch(console.error)
 
-        // Pequeña pausa para que el usuario lea el mensaje
-        setTimeout(() => navigate('/admin'), 800)
+        const userPlan = session.user.user_metadata?.plan
+        
+        if (userPlan && userPlan !== 'free') {
+          setTimeout(() => navigate(`/payment?plan=${userPlan}`), 800)
+        } else {
+          setTimeout(() => navigate('/admin'), 800)
+        }
       } else {
-        // ⚠️ Timeout: La Edge Function tardó demasiado o falló
         console.warn('Timeout esperando organization_id')
-        // Redirigir al login con error claro en lugar de dejarlo en el limbo
-        // Esto fuerza al usuario a intentar de nuevo, disparando el webhook otra vez si falló
         navigate('/login?error=setup_timeout')
       }
     }

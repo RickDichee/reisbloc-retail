@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/appStore'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useNotifications } from '@/hooks/useNotifications'
 import NotificationCenter from '@/components/common/NotificationCenter'
+import { changeLanguage } from '@/i18n'
 import {
   ShoppingCart,
   BarChart3,
@@ -41,6 +43,8 @@ export default function NavBar() {
     markAsRead,
     markAllAsRead
   } = useNotifications(currentUser?.id || null)
+
+  const { i18n } = useTranslation()
 
   useEffect(() => {
     setSupportsFullscreen(!!document.documentElement.requestFullscreen)
@@ -159,6 +163,14 @@ export default function NavBar() {
                 {isFullscreen ? <Minimize size={22} /> : <Maximize size={22} />}
               </button>
             )}
+
+            <button
+              onClick={() => changeLanguage(i18n.language === 'es' ? 'en' : 'es')}
+              className="px-3 py-1.5 text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all"
+              title="Cambiar idioma"
+            >
+              {i18n.language === 'es' ? 'EN' : 'ES'}
+            </button>
 
             <div className="relative">
               <NotificationCenter
