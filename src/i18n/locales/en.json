@@ -46,7 +46,21 @@
     "processing": "Processing payment...",
     "success": "Payment successful!",
     "failed": "Payment failed",
-    "pending": "Payment pending"
+    "pending": "Payment pending",
+    "card_method": "Card (MercadoPago)",
+    "crypto_method": "Cryptocurrency (Solana)",
+    "select_method": "Select a payment method",
+    "processing_alt": "Processing...",
+    "pay_with": "Pay with",
+    "solana_payment": "Solana Payment",
+    "send_to": "Send to the following address",
+    "wallet_address": "Wallet address",
+    "copy_address": "Copy address",
+    "amount_to_send": "Amount to send",
+    "dont_close": "Do not close this page until payment is confirmed",
+    "verify_manually": "Verify on Solana Explorer",
+    "checking": "Checking...",
+    "verify_payment": "Verify Payment"
   },
   "nav": {
     "home": "Home",
@@ -56,5 +70,19 @@
     "clients": "Clients",
     "settings": "Settings",
     "admin": "Admin"
+  },
+  "landing": {
+    "hero_title": "The POS system your business deserves",
+    "hero_subtitle": "Sales, inventory, and AI management. Start free, scale when you grow.",
+    "cta_start": "Start Free",
+    "cta_upgrade": "View Plans",
+    "features": {
+      "pos_title": "Point of Sale",
+      "pos_desc": "Charge in seconds, no complications",
+      "inventory_title": "Inventory",
+      "inventory_desc": "Full control of your stock",
+      "ai_title": "Smart AI",
+      "ai_desc": "Insights that sell more"
+    }
   }
 }

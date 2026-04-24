@@ -46,7 +46,21 @@
     "processing": "Procesando pago...",
     "success": "¡Pago exitoso!",
     "failed": "Pago fallido",
-    "pending": "Pago pendiente"
+    "pending": "Pago pendiente",
+    "card_method": "Tarjeta (MercadoPago)",
+    "crypto_method": "Criptomonedas (Solana)",
+    "select_method": "Selecciona un método de pago",
+    "processing_alt": "Procesando...",
+    "pay_with": "Pagar con",
+    "solana_payment": "Pago con Solana",
+    "send_to": "Envía a la siguiente dirección",
+    "wallet_address": "Dirección del wallet",
+    "copy_address": "Copiar dirección",
+    "amount_to_send": "Monto a enviar",
+    "dont_close": "No cierres esta página hasta que el pago sea confirmado",
+    "verify_manually": "Verificar en Solana Explorer",
+    "checking": "Verificando...",
+    "verify_payment": "Verificar Pago"
   },
   "nav": {
     "home": "Inicio",
@@ -56,5 +70,19 @@
     "clients": "Clientes",
     "settings": "Configuración",
     "admin": "Admin"
+  },
+  "landing": {
+    "hero_title": "El sistema POS que tu negocio merece",
+    "hero_subtitle": "Gestión de ventas, inventario e IA para tu negocio. Empieza gratis, escala cuando crezcas.",
+    "cta_start": "Empezar Gratis",
+    "cta_upgrade": "Ver Planes",
+    "features": {
+      "pos_title": "Punto de Venta",
+      "pos_desc": "Cobra en segundos, sin complicaciones",
+      "inventory_title": "Inventario",
+      "inventory_desc": "Control total de tu stock",
+      "ai_title": "IA Inteligente",
+      "ai_desc": "Insights que venden más"
+    }
   }
 }
