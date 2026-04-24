@@ -9,7 +9,7 @@
 
 ## 🚀 Demo
 
-🌐 **[reisbloc.store](https://reisbloc.store)** - Landing page de producto
+🌐 **[reisbloc.store](https://reisbloc.com)** - Landing page de producto
 
 ## ✨ Features
 
