@@ -42,8 +42,7 @@ import supabaseService from '@/services/supabaseService'
 import ClientsManagement from '@/components/admin/ClientsManagement'
 import MarketingAgent from '@/components/admin/MarketingAgent'
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard'
-import UpgradeModal from '@/components/common/UpgradeModal'
-import TokenPurchaseModal from '@/components/common/TokenPurchaseModal'
+
 import PromotionsManager from '@/components/admin/PromotionsManager'
 
 type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'marketing' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs' | 'analytics'
@@ -55,8 +54,7 @@ export default function Admin() {
   const { isPro, planName } = usePlanLimits()
   const { balance } = useTokens()
   const [activeTab, setActiveTab] = useState<AdminTab>('hub')
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [showTokenModal, setShowTokenModal] = useState(false)
+  
 
   // AI Insights Data (Free Tier)
   const [aiMetrics, setAiMetrics] = useState<any>(null)
@@ -184,14 +182,14 @@ export default function Admin() {
                     {!isPro && (
                       <>
                         <button
-                          onClick={() => setShowTokenModal(true)}
+                          onClick={() => navigate('/payment?plan=starter')}
                           className="flex items-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-colors border border-white/20"
                         >
                           <Coins size={18} />
                           Recargar Tokens
                         </button>
                         <button
-                          onClick={() => setShowUpgradeModal(true)}
+                          onClick={() => navigate('/payment?plan=starter')}
                           className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 rounded-xl font-bold text-sm transition-colors shadow-lg"
                         >
                           <Crown size={18} />
@@ -475,16 +473,7 @@ function EcommerceDashboard() {
         </div>
       </div>
 
-      {/* Modales de Plan y Tokens */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        reason="Accede a todos los features premium"
-      />
-      <TokenPurchaseModal
-        isOpen={showTokenModal}
-        onClose={() => setShowTokenModal(false)}
-      />
+      
     </div>
   )
 }

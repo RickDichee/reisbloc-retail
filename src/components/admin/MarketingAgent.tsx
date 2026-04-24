@@ -34,9 +34,17 @@ export default function MarketingAgent() {
       const token = await getAuthToken()
       if (token) forceAuthHeader(token)
       
+      const orgId = currentUser?.organizationId
+      if (!orgId) {
+        setPosts([])
+        setLoading(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('marketing_posts')
         .select('*')
+        .eq('organization_id', orgId)
         .order('created_at', { ascending: false })
         .limit(50)
 
