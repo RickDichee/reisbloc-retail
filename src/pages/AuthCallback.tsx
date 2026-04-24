@@ -1,77 +1,146 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
-import { pollForOrganization, logSuccessfulLogin } from '@/services/authService'
+import { logSuccessfulLogin } from '@/services/authService'
 import { ShieldCheck } from 'lucide-react'
 
 const LOADING_TIPS = [
-  "🔐 Encriptando conexión de grado militar...",
-  "👤 Verificando identidad con Google...",
-  "🏢 Preparando tu bóveda digital...",
-  "🚀 Afinando los motores del POS...",
-  "🛡️ Cargando módulos de seguridad...",
-  "📡 Estableciendo enlace seguro...",
-  "☁️ Sincronizando catálogos...",
-  "✅ Validando permisos de acceso..."
+  "Verificando identidad...",
+  "Preparando tu cuenta...",
+  "Casi listo...",
 ]
 
 export function AuthCallback() {
   const navigate = useNavigate()
   const [status, setStatus] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [tipIndex, setTipIndex] = useState(0)
 
-  // Efecto para rotar mensajes de carga
   useEffect(() => {
     const interval = setInterval(() => {
       setTipIndex((prev) => (prev + 1) % LOADING_TIPS.length)
-    }, 2000)
+    }, 1500)
     return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
+      try {
+        setStatus('Iniciando sesion...')
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      if (error || !session?.user) {
-        console.error('Error en callback:', error)
-        navigate('/login?error=auth_failed')
-        return
-      }
-
-      const orgId = await pollForOrganization(session.user.id)
-
-      if (orgId) {
-        setStatus('Verificacion exitosa! Accediendo...')
-        logSuccessfulLogin().catch(console.error)
-
-        const userPlan = session.user.user_metadata?.plan
-        
-        if (userPlan && userPlan !== 'free') {
-          setTimeout(() => navigate(`/payment?plan=${userPlan}`), 800)
-        } else {
-          setTimeout(() => navigate('/admin'), 800)
+        if (sessionError || !session?.user) {
+          console.error('Error en callback:', sessionError)
+          navigate('/login?error=auth_failed')
+          return
         }
-      } else {
-        console.warn('Timeout esperando organization_id')
-        navigate('/login?error=setup_timeout')
+
+        const user = session.user
+        setStatus('Verificando organizacion...')
+
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single()
+
+        if (existingUser?.organization_id) {
+          setStatus('Organizacion encontrada!')
+          await logSuccessfulLogin().catch(console.error)
+          setTimeout(() => navigate('/admin'), 500)
+          return
+        }
+
+        setStatus('Creando organizacion...')
+        
+        const orgName = user.user_metadata?.full_name 
+          ? `Negocio de ${user.user_metadata.full_name}` 
+          : 'Mi Negocio'
+
+        const { data: newOrg, error: orgError } = await supabase
+          .from('organizations')
+          .insert({
+            name: orgName,
+            plan: 'free',
+            active: true
+          })
+          .select('id')
+          .single()
+
+        if (orgError) {
+          console.error('Error creando org:', orgError)
+          const { data: existingOrg } = await supabase
+            .from('organizations')
+            .select('id')
+            .limit(1)
+            .single()
+          
+          if (existingOrg) {
+            await supabase.from('users').insert({
+              id: user.id,
+              name: user.user_metadata?.full_name || user.email,
+              role: 'admin',
+              active: true,
+              organization_id: existingOrg.id,
+              is_primary_admin: true,
+              is_primary_user: true
+            })
+            setTimeout(() => navigate('/admin'), 500)
+            return
+          }
+        }
+
+        if (newOrg) {
+          await supabase.from('users').insert({
+            id: user.id,
+            name: user.user_metadata?.full_name || user.email,
+            role: 'admin',
+            active: true,
+            organization_id: newOrg.id,
+            is_primary_admin: true,
+            is_primary_user: true
+          })
+        }
+
+        setStatus('Listo!')
+        await logSuccessfulLogin().catch(console.error)
+        setTimeout(() => navigate('/admin'), 500)
+
+      } catch (err: any) {
+        console.error('Auth callback error:', err)
+        setError(err.message || 'Error al iniciar sesion')
+        setTimeout(() => navigate('/login?error=auth_failed'), 2000)
       }
     }
 
     handleAuthCallback()
   }, [navigate])
 
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0B0B] text-white p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-bold text-red-400 mb-2">Error</h2>
+          <p className="text-gray-400">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0B0B] text-white p-4">
       <div className="flex flex-col items-center gap-6 max-w-md text-center">
         <div className="relative">
           <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
-          {/* Icono de Seguridad para reforzar la confianza */}
           <ShieldCheck className="w-16 h-16 text-emerald-400 animate-bounce relative z-10" />
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-2xl font-bold text-white">Verificación de Seguridad</h2>
-          <p className="text-slate-400 animate-pulse font-mono text-sm min-h-[20px]">
+          <h2 className="text-2xl font-bold text-white">Bienvenido!</h2>
+          <p className="text-gray-400 animate-pulse font-mono text-sm">
             {status || LOADING_TIPS[tipIndex]}
           </p>
         </div>
