@@ -1483,14 +1483,48 @@ class SupabaseService {
         minimumStock: p.minimum_stock,
         hasInventory: p.has_inventory,
         createdAt: new Date(p.created_at)
-      })) as Product[]
+})) as Product[]
     } catch (error) {
-      logger.error('supabase', 'Error getting public products', error as any)
+      logger.error('getPublicProducts', error)
       return []
     }
   }
 
-  // ==================== SUPPLIERS (PROVEEDORES) ====================
+  async getStoreInventoryBySlug(slug: string): Promise<{ store: any; inventory: any[] }> {
+    try {
+      const { data: store, error: storeError } = await supabase
+        .from('stores')
+        .select('id, name, slug, address, is_public')
+        .eq('slug', slug)
+        .single()
+
+      if (storeError || !store) {
+        throw new Error('Tienda no encontrada')
+      }
+
+      if (!store.is_public) {
+        throw new Error('Tienda no encontrada')
+      }
+
+      const { data: inventory, error: invError } = await supabase
+        .from('store_inventory')
+        .select('id, name, sale_price, stock_quantity, cost_price, wholesale_product_id, image_url, category')
+        .eq('store_id', store.id)
+        .gt('stock_quantity', 0)
+        .order('category', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (invError) {
+        logger.error('getStoreInventoryBySlug', invError)
+        return { store, inventory: [] }
+      }
+
+      return { store, inventory: inventory || [] }
+    } catch (error) {
+      logger.error('getStoreInventoryBySlug', error)
+      throw error
+    }
+  }
 
   async getSuppliers(): Promise<any[]> {
     try {

@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-    Package,
-    Search,
-    ChevronRight,
-    Phone,
-    Instagram,
-    MessageSquare,
-    ShoppingBag
-} from 'lucide-react'
+import { Package, Search, ChevronRight, Phone, Instagram, MessageSquare, ShoppingBag } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
 import { Product } from '@/types'
 import logger from '@/utils/logger'
@@ -17,17 +9,35 @@ export default function StoreFront() {
     const { slug } = useParams<{ slug: string }>()
     const navigate = useNavigate()
 
+    const [store, setStore] = useState<any>(null)
+    const [inventory, setInventory] = useState<any[]>([])
     const [organization, setOrganization] = useState<any>(null)
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedCategory, setSelectedCategory] = useState<string>('Todos')
     const [isScrolled, setIsScrolled] = useState(false)
+    const [isEcosystemStore, setIsEcosystemStore] = useState(false)
 
     const loadData = useCallback(async () => {
         if (!slug) return
         setLoading(true)
         try {
+            // First try to load as ecosystem store (new stores table)
+            try {
+                const { store: ecoStore, inventory: ecoInv } = await supabaseService.getStoreInventoryBySlug(slug)
+                if (ecoStore) {
+                    setStore(ecoStore)
+                    setInventory(ecoInv)
+                    setIsEcosystemStore(true)
+                    setLoading(false)
+                    return
+                }
+            } catch (e) {
+                logger.info('Not an ecosystem store, trying legacy', e)
+            }
+
+            // Fall back to legacy organization-based store
             const org = await supabaseService.getOrganizationBySlug(slug)
             if (!org) {
                 navigate('/404')
@@ -56,14 +66,26 @@ export default function StoreFront() {
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    const categories = ['Todos', ...Array.from(new Set(products.map(p => p.category || 'General')))]
+    const categoryList = isEcosystemStore 
+        ? ['Todos', ...Array.from(new Set(inventory.map((i: any) => i.category || 'General')))]
+        : ['Todos', ...Array.from(new Set(products.map(p => p.category || 'General')))]
 
-    const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
-        const matchesCategory = selectedCategory === 'Todos' || p.category === selectedCategory
-        return matchesSearch && matchesCategory
-    })
+    const filteredItems = isEcosystemStore 
+        ? inventory.filter((item: any) => {
+            const matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesCategory = selectedCategory === 'Todos' || item.category === selectedCategory
+            return matchesSearch && matchesCategory
+        })
+        : products.filter(p => {
+            const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+            const matchesCategory = selectedCategory === 'Todos' || p.category === selectedCategory
+            return matchesSearch && matchesCategory
+        })
+
+    const storeName = isEcosystemStore ? store?.name : organization?.name
+    const categories = categoryList
+    const filteredProducts = filteredItems
 
     if (loading) {
         return (
