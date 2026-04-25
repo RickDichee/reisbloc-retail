@@ -378,6 +378,22 @@ class EcosystemService {
       weeklyGrowth
     }
   }
+
+  async getAdoptionTrend(): Promise<{ date: string; imports: number }[]> {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase.rpc('get_wholesaler_adoption_trend', {
+      p_wholesaler_id: session.user.id
+    })
+
+    if (error) {
+      console.error('Error fetching adoption trend:', error)
+      return []
+    }
+
+    return data || []
+  }
 }
 
 export default new EcosystemService()
