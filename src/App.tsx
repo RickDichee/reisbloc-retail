@@ -39,6 +39,7 @@ import Schedules from '@/pages/Schedules'
 import Onboarding from '@/pages/Onboarding'
 import Invoicing from '@/pages/Invoicing'
 import Referral from '@/pages/Referral'
+import WholesaleCatalog from '@/pages/WholesaleCatalog'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 // 🎨 Contenedor Principal con Layout Condicional
@@ -104,6 +105,7 @@ function AppLayout() {
 
         {/* 🤖 IA & Marketing */}
         <Route path="/marketing" element={<Marketing />} />
+        <Route path="/wholesale" element={<WholesaleCatalog />} />
         <Route path="/agent" element={<Agent />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/invoicing" element={<Invoicing />} />
