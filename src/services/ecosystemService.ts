@@ -134,6 +134,75 @@ class EcosystemService {
 
     if (error) throw error
   }
+
+  async getEcosystemStats(storeId: string): Promise<{
+    totalItems: number
+    wholesaleItems: number
+    ecosystemPercentage: string
+    totalValue: number
+    potentialSavings: number
+  }> {
+    const { data, error } = await supabase
+      .from('store_inventory')
+      .select('cost_price, sale_price, stock_quantity, wholesale_product_id')
+      .eq('store_id', storeId)
+
+    if (error) throw error
+
+    const items = data || []
+    const totalItems = items.length
+    const wholesaleItems = items.filter(item => item.wholesale_product_id).length
+    const ecosystemPercentage = totalItems > 0 ? ((wholesaleItems / totalItems) * 100).toFixed(1) : '0'
+    
+    const totalValue = items.reduce((sum, item) => {
+      return sum + ((item.sale_price || item.cost_price || 0) * (item.stock_quantity || 0))
+    }, 0)
+
+    const potentialSavings = wholesaleItems * 15
+
+    return {
+      totalItems,
+      wholesaleItems,
+      ecosystemPercentage,
+      totalValue,
+      potentialSavings
+    }
+  }
+
+  async getWholesalerAnalytics(): Promise<{
+    totalProducts: number
+    activeStores: number
+    totalAdoptions: number
+    categoryBreakdown: { category: string; count: number }[]
+  }> {
+    const { data: products, error: productsError } = await supabase
+      .from('wholesale_catalog')
+      .select('id, category')
+
+    if (productsError) throw productsError
+
+    const { data: inventory, error: inventoryError } = await supabase
+      .from('store_inventory')
+      .select('store_id, wholesale_product_id, wholesale_catalog(category)')
+
+    if (inventoryError) throw inventoryError
+
+    const productIds = new Set(inventory?.map(i => i.wholesale_product_id).filter(Boolean))
+    const storeIds = new Set(inventory?.map(i => i.store_id).filter(Boolean))
+    
+    const categoryMap = new Map<string, number>()
+    inventory?.forEach((item: any) => {
+      const cat = item.wholesale_catalog?.category || 'Sin categoria'
+      categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1)
+    })
+
+    return {
+      totalProducts: products?.length || 0,
+      activeStores: storeIds.size,
+      totalAdoptions: productIds.size,
+      categoryBreakdown: Array.from(categoryMap.entries()).map(([category, count]) => ({ category, count }))
+    }
+  }
 }
 
 export default new EcosystemService()

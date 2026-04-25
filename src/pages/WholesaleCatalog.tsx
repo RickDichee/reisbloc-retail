@@ -129,6 +129,7 @@ export default function WholesaleCatalog() {
                 max="3"
                 value={margin}
                 onChange={(e) => setMargin(parseFloat(e.target.value) || 1.3)}
+                onFocus={(e) => e.target.select()}
                 className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center"
               />
               <span className="text-sm text-emerald-400">x</span>
