@@ -89,7 +89,7 @@ export default function NavBar() {
     { path: '/closing', label: 'Cierre', icon: DollarSign, roles: ['admin', 'manager'] },
     { path: '/marketing', label: 'Marketing', icon: Megaphone, roles: ['admin'] },
     { path: '/wholesale', label: 'Mayorista', icon: Package, roles: ['admin', 'manager'] },
-    { path: '/wholesale-dashboard', label: 'Mi Tienda', icon: Store, roles: ['wholesaler'] },
+    { path: '/wholesale-dashboard', label: 'Mayorista', icon: Store, roles: ['admin', 'manager', 'wholesaler'] },
     { path: '/agent', label: 'IA Agent', icon: Bot, roles: ['admin', 'manager', 'supervisor'] },
     { path: '/analytics', label: 'Analytics', icon: TrendingUp, roles: ['admin', 'manager'] },
     { path: '/invoicing', label: 'Facturas', icon: Receipt, roles: ['admin'] },

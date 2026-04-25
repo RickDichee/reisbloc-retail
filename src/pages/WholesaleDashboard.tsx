@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
-import { Package, Plus, Upload, DollarSign, TrendingUp, Users, Search, Edit, Trash2, Loader2, BarChart3, Store } from 'lucide-react'
+import ecosystemService from '@/services/ecosystemService'
+import WholesaleAnalytics from '@/components/wholesale/WholesaleAnalytics'
+import { Package, Upload, DollarSign, TrendingUp, Users, Search, Edit, Trash2, Loader2, BarChart3, Store, Flame } from 'lucide-react'
 
 interface WholesalerProduct {
   id: string
@@ -31,6 +33,7 @@ export default function WholesaleDashboard() {
   const [analytics, setAnalytics] = useState<StoreAnalytics[]>([])
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [activeTab, setActiveTab] = useState<'products' | 'analytics'>('products')
+  const [insights, setInsights] = useState<any>(null)
 
   useEffect(() => {
     loadProducts()
@@ -55,7 +58,12 @@ export default function WholesaleDashboard() {
   }
 
   const loadAnalytics = async () => {
+    if (!currentUser?.id) return
+    
     try {
+      const data = await ecosystemService.getWholesalerInsights(currentUser.id)
+      setInsights(data)
+      
       // Get stores that have added this wholesaler's products
       const { data: inventoryData, error } = await supabase
         .from('store_inventory')
@@ -182,22 +190,22 @@ export default function WholesaleDashboard() {
   const totalRevenue = products.reduce((sum, p) => sum + (p.wholesale_price * p.min_order_quantity), 0)
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] text-white p-6">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-black flex items-center gap-3">
-              <Store className="w-8 h-8 text-amber-400" />
+            <h1 className="text-3xl font-black flex items-center gap-3 text-[#035CAB]">
+              <Store className="w-8 h-8" />
               Panel Mayorista
             </h1>
-            <p className="text-gray-400 mt-2">Gestiona tu catalogo y能看到 quienes añaden tus productos</p>
+            <p className="text-slate-500 mt-2">Gestiona tu catalogo y mira quienes anaden tus productos</p>
           </div>
 
           <div className="flex gap-3">
             <button
               onClick={() => setShowAnalytics(!showAnalytics)}
               className={`px-4 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
-                showAnalytics ? 'bg-amber-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+                showAnalytics ? 'bg-[#035CAB] text-white' : 'bg-white text-slate-600 border border-slate-200 hover:text-[#035CAB]'
               }`}
             >
               <BarChart3 className="w-5 h-5" />
@@ -208,36 +216,36 @@ export default function WholesaleDashboard() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
-              <Package className="w-6 h-6 text-emerald-400" />
-              <span className="text-gray-400">Productos</span>
+              <Package className="w-6 h-6 text-emerald-500" />
+              <span className="text-slate-500">Productos</span>
             </div>
-            <p className="text-3xl font-black">{products.length}</p>
+            <p className="text-3xl font-black text-emerald-600">{products.length}</p>
           </div>
           
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
-              <DollarSign className="w-6 h-6 text-emerald-400" />
-              <span className="text-gray-400">Valor Total</span>
+              <DollarSign className="w-6 h-6 text-emerald-500" />
+              <span className="text-slate-500">Valor Total</span>
             </div>
-            <p className="text-3xl font-black">${totalRevenue.toLocaleString()}</p>
+            <p className="text-3xl font-black text-emerald-600">${totalRevenue.toLocaleString()}</p>
           </div>
           
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
-              <Store className="w-6 h-6 text-emerald-400" />
-              <span className="text-gray-400">Tiendas Activas</span>
+              <Store className="w-6 h-6 text-emerald-500" />
+              <span className="text-slate-500">Tiendas Activas</span>
             </div>
-            <p className="text-3xl font-black">{analytics.length}</p>
+            <p className="text-3xl font-black text-emerald-600">{analytics.length}</p>
           </div>
           
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
-              <TrendingUp className="w-6 h-6 text-emerald-400" />
-              <span className="text-gray-400">Visitas</span>
+              <TrendingUp className="w-6 h-6 text-emerald-500" />
+              <span className="text-slate-500">Visitas</span>
             </div>
-            <p className="text-3xl font-black">{analytics.reduce((s, a) => s + a.products_added, 0)}</p>
+            <p className="text-3xl font-black text-emerald-600">{analytics.reduce((s, a) => s + a.products_added, 0)}</p>
           </div>
         </div>
 
@@ -246,7 +254,7 @@ export default function WholesaleDashboard() {
           <button
             onClick={() => setActiveTab('products')}
             className={`px-6 py-3 rounded-xl font-bold transition-all ${
-              activeTab === 'products' ? 'bg-emerald-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+              activeTab === 'products' ? 'bg-[#035CAB] text-white' : 'bg-white text-slate-600 border border-slate-200'
             }`}
           >
             Mis Productos
@@ -254,7 +262,7 @@ export default function WholesaleDashboard() {
           <button
             onClick={() => setActiveTab('analytics')}
             className={`px-6 py-3 rounded-xl font-bold transition-all ${
-              activeTab === 'analytics' ? 'bg-amber-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+              activeTab === 'analytics' ? 'bg-[#035CAB] text-white' : 'bg-white text-slate-600 border border-slate-200'
             }`}
           >
             Analytics
@@ -266,17 +274,17 @@ export default function WholesaleDashboard() {
             {/* Search & Upload */}
             <div className="flex items-center gap-4 mb-6">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
                   type="text"
                   placeholder="Buscar productos..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white"
+                  className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-800"
                 />
               </div>
 
-              <label className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-bold cursor-pointer transition-all">
+              <label className="flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-bold cursor-pointer transition-all text-white">
                 {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                 <span>Importar CSV</span>
                 <input
@@ -292,12 +300,12 @@ export default function WholesaleDashboard() {
             {/* Products Grid */}
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.map(product => (
-                  <div key={product.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                  <div key={product.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                     {product.image_url && (
                       <img
                         src={product.image_url}
@@ -306,36 +314,36 @@ export default function WholesaleDashboard() {
                       />
                     )}
                     
-                    <h3 className="font-bold text-lg mb-1">{product.product_name}</h3>
-                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">{product.description || 'Sin descripcion'}</p>
+                    <h3 className="font-bold text-lg mb-1 text-slate-800">{product.product_name}</h3>
+                    <p className="text-slate-500 text-sm mb-3 line-clamp-2">{product.description || 'Sin descripcion'}</p>
                     
                     <div className="flex items-center justify-between text-sm mb-3">
-                      <span className="text-gray-400">Categoria:</span>
-                      <span className="bg-gray-800 px-2 py-1 rounded-lg">{product.category || 'N/A'}</span>
+                      <span className="text-slate-500">Categoria:</span>
+                      <span className="bg-slate-100 px-2 py-1 rounded-lg text-slate-600">{product.category || 'N/A'}</span>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-gray-800 rounded-lg p-3 text-center">
-                        <p className="text-xs text-gray-400">Precio</p>
-                        <p className="text-xl font-black text-emerald-400">${product.wholesale_price}</p>
+                      <div className="bg-slate-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-slate-500">Precio</p>
+                        <p className="text-xl font-black text-emerald-600">${product.wholesale_price}</p>
                       </div>
-                      <div className="bg-gray-800 rounded-lg p-3 text-center">
-                        <p className="text-xs text-gray-400">Min. Orden</p>
-                        <p className="text-xl font-black text-amber-400">{product.min_order_quantity}</p>
+                      <div className="bg-slate-50 rounded-lg p-3 text-center">
+                        <p className="text-xs text-slate-500">Min. Orden</p>
+                        <p className="text-xl font-black text-[#035CAB]">{product.min_order_quantity}</p>
                       </div>
                     </div>
 
                     <div className="flex gap-2">
                       <button
                         onClick={() => setEditingProduct(product)}
-                        className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg font-bold text-sm flex items-center justify-center gap-2"
+                        className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-bold text-sm flex items-center justify-center gap-2 text-slate-700"
                       >
                         <Edit className="w-4 h-4" />
                         Editar
                       </button>
                       <button
                         onClick={() => handleDeleteProduct(product.id)}
-                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg"
+                        className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -347,107 +355,210 @@ export default function WholesaleDashboard() {
 
             {!loading && filtered.length === 0 && (
               <div className="text-center py-20">
-                <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">No tienes productos aun</p>
-                <p className="text-gray-500 text-sm">Importa un CSV para empezar</p>
+                <Package className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">No tienes productos aun</p>
+                <p className="text-slate-400 text-sm">Importa un CSV para empezar</p>
               </div>
             )}
           </>
         )}
 
         {activeTab === 'analytics' && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-3">
-              <Users className="w-6 h-6 text-amber-400" />
-              Tiendas que han anadido tus productos
-            </h2>
-
-            {analytics.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">
-                <Store className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                <p>Aun ninguna tienda ha anadido tus productos</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {analytics.map(store => (
-                  <div key={store.store_id} className="flex items-center justify-between p-4 bg-gray-800 rounded-xl">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                        <Store className="w-6 h-6 text-emerald-400" />
-                      </div>
-                      <div>
-                        <p className="font-bold">{store.store_name}</p>
-                        <p className="text-sm text-gray-400">ID: {store.store_id.slice(0, 8)}...</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-emerald-400">{store.products_added}</p>
-                      <p className="text-sm text-gray-400">productos anadidos</p>
+          <div className="space-y-6">
+            {/* New Analytics Component */}
+            <WholesaleAnalytics data={insights || {
+              adoptionTrend: [],
+              totalMarketPenetration: 0,
+              weeklyGrowth: 0,
+              topProducts: [],
+              categoryVelocity: [],
+              totalStoresWithProducts: 0,
+              totalStockDistributed: 0
+            }} />
+            {/* Insights Stats */}
+            {insights && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Reach Heatmap */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#035CAB]">
+                      <Flame className="w-5 h-5" />
+                      Alcance por Zona
+                    </h3>
+                    <div className="space-y-3">
+                      {insights.marketPenetration?.slice(0, 8).map((store: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${
+                              idx === 0 ? 'bg-[#E31836] text-white' :
+                              idx === 1 ? 'bg-[#76A5BA] text-white' :
+                              idx === 2 ? 'bg-slate-400 text-white' :
+                              'bg-slate-200 text-slate-600'
+                            }`}>
+                              {idx + 1}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-800">{store.store_name}</p>
+                              <p className="text-xs text-slate-500">{store.address || 'Sin direccion'}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-black text-[#E31836]">{store.product_count}</p>
+                            <p className="text-xs text-slate-500">productos</p>
+                          </div>
+                        </div>
+                      ))}
+                      {(!insights.marketPenetration || insights.marketPenetration.length === 0) && (
+                        <p className="text-slate-400 text-center py-4">No hay datos de penetracion</p>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  {/* Top Products */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#035CAB]">
+                      <TrendingUp className="w-5 h-5" />
+                      Productos mas Distribuidos
+                    </h3>
+                    <div className="space-y-3">
+                      {insights.topProducts?.slice(0, 8).map((product: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                          <div className="flex-1">
+                            <p className="font-bold text-sm truncate text-slate-800">{product.product_name}</p>
+                            <p className="text-xs text-slate-500">{product.store_count} tiendas</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-black text-emerald-600">{product.total_stock}</p>
+                            <p className="text-xs text-slate-500">unidades</p>
+                          </div>
+                        </div>
+                      ))}
+                      {(!insights.topProducts || insights.topProducts.length === 0) && (
+                        <p className="text-slate-400 text-center py-4">No hay productos distribuidos</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Category Velocity */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#035CAB]">
+                    <BarChart3 className="w-5 h-5" />
+                    Velocidad por Categoria
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {insights.categoryVelocity?.map((cat: any, idx: number) => (
+                      <div key={idx} className="bg-slate-50 rounded-xl p-4 text-center">
+                        <p className="text-xs text-slate-500 mb-1">{cat.category}</p>
+                        <p className="text-2xl font-black text-emerald-600">{cat.stores_count}</p>
+                        <p className="text-xs text-slate-400">tiendas</p>
+                        <div className="mt-2 h-1 bg-slate-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-emerald-500"
+                            style={{ width: `${Math.min(100, (cat.stores_count / (insights.totalStoresWithProducts || 1)) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
+
+            {/* Stores List */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-3 text-[#035CAB]">
+                <Users className="w-6 h-6" />
+                Tiendas que han anadido tus productos
+              </h2>
+
+              {analytics.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <Store className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                  <p>Aun ninguna tienda ha anadido tus productos</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {analytics.map(store => (
+                    <div key={store.store_id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                          <Store className="w-6 h-6 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800">{store.store_name}</p>
+                          <p className="text-sm text-slate-500">ID: {store.store_id.slice(0, 8)}...</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black text-emerald-600">{store.products_added}</p>
+                        <p className="text-sm text-slate-500">productos anadidos</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
       {/* Edit Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-6">Editar Producto</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-lg shadow-xl">
+            <h2 className="text-xl font-bold mb-6 text-slate-800">Editar Producto</h2>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Nombre del producto</label>
+                <label className="block text-sm text-slate-500 mb-2">Nombre del producto</label>
                 <input
                   type="text"
                   value={editingProduct.product_name}
                   onChange={(e) => setEditingProduct({...editingProduct, product_name: e.target.value})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 text-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-800"
                 />
               </div>
               
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Descripcion</label>
+                <label className="block text-sm text-slate-500 mb-2">Descripcion</label>
                 <textarea
                   value={editingProduct.description || ''}
                   onChange={(e) => setEditingProduct({...editingProduct, description: e.target.value})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 text-white h-24"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-800 h-24"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">Precio mayorista ($)</label>
+                  <label className="block text-sm text-slate-500 mb-2">Precio mayorista ($)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={editingProduct.wholesale_price}
                     onChange={(e) => setEditingProduct({...editingProduct, wholesale_price: parseFloat(e.target.value)})}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-800"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">Minimo orden</label>
+                  <label className="block text-sm text-slate-500 mb-2">Minimo orden</label>
                   <input
                     type="number"
                     value={editingProduct.min_order_quantity}
                     onChange={(e) => setEditingProduct({...editingProduct, min_order_quantity: parseInt(e.target.value)})}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 text-white"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-800"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Categoria</label>
+                <label className="block text-sm text-slate-500 mb-2">Categoria</label>
                 <input
                   type="text"
                   value={editingProduct.category || ''}
                   onChange={(e) => setEditingProduct({...editingProduct, category: e.target.value})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl py-3 px-4 text-white"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-800"
                 />
               </div>
             </div>
@@ -455,13 +566,13 @@ export default function WholesaleDashboard() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setEditingProduct(null)}
-                className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-bold"
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleUpdateProduct}
-                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-bold"
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-bold text-white"
               >
                 Guardar Cambios
               </button>

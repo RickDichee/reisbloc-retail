@@ -203,6 +203,181 @@ class EcosystemService {
       categoryBreakdown: Array.from(categoryMap.entries()).map(([category, count]) => ({ category, count }))
     }
   }
+
+  async getWholesalerInsights(wholesalerId: string): Promise<{
+    totalStoresWithProducts: number
+    totalStockDistributed: number
+    topProducts: { product_name: string; store_count: number; total_stock: number }[]
+    categoryVelocity: { category: string; stores_count: number; stock_total: number }[]
+    marketPenetration: { store_name: string; product_count: number; address: string | null }[]
+    adoptionTrend: { date: string; imports: number; stores: number }[]
+    totalMarketPenetration: number
+    weeklyGrowth: number
+  }> {
+    const { data: products, error } = await supabase
+      .from('wholesale_catalog')
+      .select('id, product_name, category')
+      .eq('wholesaler_id', wholesalerId)
+
+    if (error) throw error
+
+    const myProductIds = new Set(products?.map(p => p.id) || [])
+    const allProductIds = Array.from(myProductIds)
+
+    if (allProductIds.length === 0) {
+      return {
+        totalStoresWithProducts: 0,
+        totalStockDistributed: 0,
+        topProducts: [],
+        categoryVelocity: [],
+        marketPenetration: [],
+        adoptionTrend: [],
+        totalMarketPenetration: 0,
+        weeklyGrowth: 0
+      }
+    }
+
+    const { data: inventory, error: invError } = await supabase
+      .from('store_inventory')
+      .select('store_id, stock_quantity, wholesale_product_id, stores(name, address)')
+      .in('wholesale_product_id', allProductIds)
+
+    if (invError) throw invError
+
+    // Time-series: get weekly adoption trend for this wholesaler's products
+    const { data: events, error: eventsError } = await supabase
+      .from('ecosystem_events')
+      .select('created_at, store_id, event_type')
+      .eq('wholesaler_id', wholesalerId)
+      .order('created_at', { ascending: true })
+
+    if (eventsError) throw eventsError
+
+    // Get total market for penetration calculation
+    const { data: allInventory, error: allInvError } = await supabase
+      .from('store_inventory')
+      .select('wholesale_product_id')
+
+    if (allInvError) throw allInvError
+    const totalMarketItems = allInventory?.filter(i => i.wholesale_product_id).length || 0
+    const myMarketItems = inventory?.length || 0
+    const totalMarketPenetration = totalMarketItems > 0 ? (myMarketItems / totalMarketItems) * 100 : 0
+
+    // Calculate weekly growth (last 7 days vs previous 7 days)
+    const now = new Date()
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+    
+    const lastWeekImports = events?.filter(e => 
+      e.event_type === 'import' && new Date(e.created_at) >= sevenDaysAgo
+    ).length || 0
+    const prevWeekImports = events?.filter(e => 
+      e.event_type === 'import' && new Date(e.created_at) >= fourteenDaysAgo && new Date(e.created_at) < sevenDaysAgo
+    ).length || 0
+    const weeklyGrowth = prevWeekImports > 0 ? ((lastWeekImports - prevWeekImports) / prevWeekImports) * 100 : (lastWeekImports > 0 ? 100 : 0)
+
+    // Weekly adoption trend (last 4 weeks)
+    const weeklyAdoption: { [week: string]: { imports: number; stores: Set<string> } } = {}
+    for (let i = 0; i < 4; i++) {
+      const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000)
+      const weekKey = weekStart.toISOString().split('T')[0]
+      weeklyAdoption[weekKey] = { imports: 0, stores: new Set() }
+    }
+
+    events?.forEach((e: any) => {
+      const eventDate = new Date(e.created_at)
+      const daysAgo = Math.floor((now.getTime() - eventDate.getTime()) / (24 * 60 * 60 * 1000))
+      if (daysAgo < 28 && e.event_type === 'import') {
+        const weekNum = Math.floor(daysAgo / 7)
+        const weekStart = new Date(now.getTime() - (weekNum + 1) * 7 * 24 * 60 * 60 * 1000)
+        const weekKey = weekStart.toISOString().split('T')[0]
+        if (weeklyAdoption[weekKey]) {
+          weeklyAdoption[weekKey].imports++
+          weeklyAdoption[weekKey].stores.add(e.store_id)
+        }
+      }
+    })
+
+    const adoptionTrend = Object.entries(weeklyAdoption)
+      .map(([date, data]) => ({
+        date,
+        imports: data.imports,
+        stores: data.stores.size
+      }))
+      .reverse()
+
+    const productMap = new Map<string, { name: string; category: string; stores: Set<string>; stock: number }>()
+    const storeMap = new Map<string, { name: string; address: string | null; count: number }>()
+
+    inventory?.forEach((item: any) => {
+      const productId = item.wholesale_product_id
+      const storeId = item.store_id
+      
+      if (!productMap.has(productId)) {
+        const product = products?.find(p => p.id === productId)
+        productMap.set(productId, {
+          name: product?.product_name || 'Unknown',
+          category: product?.category || 'Sin categoria',
+          stores: new Set(),
+          stock: 0
+        })
+      }
+      
+      const productData = productMap.get(productId)!
+      productData.stores.add(storeId)
+      productData.stock += item.stock_quantity || 0
+
+      if (!storeMap.has(storeId)) {
+        storeMap.set(storeId, {
+          name: item.stores?.name || 'Unknown',
+          address: item.stores?.address || null,
+          count: 0
+        })
+      }
+      storeMap.get(storeId)!.count++
+    })
+
+    const topProducts = Array.from(productMap.values())
+      .sort((a, b) => b.stores.size - a.stores.size)
+      .slice(0, 10)
+      .map(p => ({
+        product_name: p.name,
+        store_count: p.stores.size,
+        total_stock: p.stock
+      }))
+
+    const categoryVelocity = Array.from(productMap.values()).reduce((acc, p) => {
+      const existing = acc.find(c => c.category === p.category)
+      if (existing) {
+        existing.stores_count += p.stores.size
+        existing.stock_total += p.stock
+      } else {
+        acc.push({ category: p.category, stores_count: p.stores.size, stock_total: p.stock })
+      }
+      return acc
+    }, [] as { category: string; stores_count: number; stock_total: number }[])
+      .sort((a, b) => b.stores_count - a.stores_count)
+
+    const marketPenetration = Array.from(storeMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20)
+      .map(s => ({
+        store_name: s.name,
+        product_count: s.count,
+        address: s.address
+      }))
+
+    return {
+      totalStoresWithProducts: storeMap.size,
+      totalStockDistributed: inventory?.reduce((sum, i) => sum + (i.stock_quantity || 0), 0) || 0,
+      topProducts,
+      categoryVelocity,
+      marketPenetration,
+      adoptionTrend,
+      totalMarketPenetration,
+      weeklyGrowth
+    }
+  }
 }
 
 export default new EcosystemService()
