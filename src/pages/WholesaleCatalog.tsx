@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
 import ecosystemService, { type WholesaleProduct } from '@/services/ecosystemService'
-import { Package, Plus, Search, Loader2 } from 'lucide-react'
+import { Package, Plus, Search, Loader2, Check, CheckSquare, Square } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 
 export default function WholesaleCatalog() {
   const [products, setProducts] = useState<WholesaleProduct[]>([])
   const [loading, setLoading] = useState(true)
-  const [adding, setAdding] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedStore, setSelectedStore] = useState('')
   const [stores, setStores] = useState<{ id: string; name: string }[]>([])
   const [category, setCategory] = useState('all')
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [margin, setMargin] = useState(1.3)
 
   useEffect(() => {
     loadCatalog()
@@ -37,21 +39,65 @@ export default function WholesaleCatalog() {
     }
   }
 
-  const handleAddToStore = async (productId: string) => {
+  const toggleProduct = (productId: string) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    )
+  }
+
+  const toggleAll = () => {
+    if (selectedProducts.length === filtered.length) {
+      setSelectedProducts([])
+    } else {
+      setSelectedProducts(filtered.map(p => p.id))
+    }
+  }
+
+  const handleAddSingle = async (productId: string) => {
     if (!selectedStore) {
       alert('Selecciona una tienda primero')
       return
     }
     
-    setAdding(productId)
+    setAdding(true)
     try {
       await ecosystemService.addProductToStore(selectedStore, productId)
       alert('Producto anadido a tu tienda!')
+      setSelectedProducts(prev => prev.filter(id => id !== productId))
     } catch (err: any) {
       alert(err.message)
     } finally {
-      setAdding(null)
+      setAdding(false)
     }
+  }
+
+  const handleBulkAdd = async () => {
+    if (!selectedStore) {
+      alert('Selecciona una tienda primero')
+      return
+    }
+    
+    if (selectedProducts.length === 0) {
+      alert('Selecciona productos primero')
+      return
+    }
+
+    setAdding(true)
+    try {
+      const result = await ecosystemService.bulkAddProductsToStore(selectedStore, selectedProducts)
+      alert(`Se anadieron ${result.length} productos a tu tienda!`)
+      setSelectedProducts([])
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const suggestedPrice = (wholesalePrice: number) => {
+    return (wholesalePrice * margin).toFixed(2)
   }
 
   const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))]
@@ -63,7 +109,7 @@ export default function WholesaleCatalog() {
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] text-white p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-black flex items-center gap-3">
@@ -74,6 +120,20 @@ export default function WholesaleCatalog() {
           </div>
           
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Margen:</span>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                max="3"
+                value={margin}
+                onChange={(e) => setMargin(parseFloat(e.target.value) || 1.3)}
+                className="w-20 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-center"
+              />
+              <span className="text-sm text-emerald-400">x</span>
+            </div>
+            
             <select
               value={selectedStore}
               onChange={(e) => setSelectedStore(e.target.value)}
@@ -86,6 +146,31 @@ export default function WholesaleCatalog() {
             </select>
           </div>
         </div>
+
+        {/* Bulk Actions Bar */}
+        {selectedProducts.length > 0 && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-emerald-400 font-bold">
+                {selectedProducts.length} producto(s) seleccionado(s)
+              </span>
+              <button
+                onClick={toggleAll}
+                className="text-sm text-gray-400 hover:text-white"
+              >
+                {selectedProducts.length === filtered.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+              </button>
+            </div>
+            <button
+              onClick={handleBulkAdd}
+              disabled={adding || !selectedStore}
+              className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-700 text-white font-bold px-6 py-2 rounded-xl flex items-center gap-2"
+            >
+              {adding ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+              Anadir {selectedProducts.length} productos
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
@@ -122,62 +207,68 @@ export default function WholesaleCatalog() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(product => (
-              <div
-                key={product.id}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-4 hover:border-emerald-500/50 transition-all"
-              >
-                {product.image_url && (
-                  <img 
-                    src={product.image_url} 
-                    alt={product.product_name}
-                    className="w-full h-40 object-cover rounded-xl mb-4"
-                  />
-                )}
-                
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-lg">{product.product_name}</h3>
-                  <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-lg">
-                    {product.category || 'Sin categoria'}
-                  </span>
-                </div>
-                
-                {product.description && (
-                  <p className="text-gray-400 text-sm mb-4 line-clamp-2">{product.description}</p>
-                )}
-                
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-800">
-                  <div>
-                    <p className="text-xs text-gray-500">Precio mayorista</p>
-                    <p className="text-xl font-black text-emerald-400">${product.wholesale_price}</p>
-                  </div>
-                  
-                  {product.min_order_quantity > 1 && (
-                    <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-1 rounded-lg">
-                      Min: {product.min_order_quantity}
-                    </span>
-                  )}
-                </div>
-                
-                <button
-                  onClick={() => handleAddToStore(product.id)}
-                  disabled={adding === product.id || !selectedStore}
-                  className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all"
+            {filtered.map(product => {
+              const isSelected = selectedProducts.includes(product.id)
+              return (
+                <div
+                  key={product.id}
+                  className={`bg-gray-900 border rounded-2xl p-4 transition-all ${
+                    isSelected ? 'border-emerald-500 bg-emerald-500/5' : 'border-gray-800 hover:border-emerald-500/50'
+                  }`}
                 >
-                  {adding === product.id ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Anadiendo...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-5 h-5" />
-                      Anadir a mi tienda
-                    </>
-                  )}
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => toggleProduct(product.id)}
+                      className="mt-1 text-gray-400 hover:text-emerald-400"
+                    >
+                      {isSelected ? <CheckSquare className="w-6 h-6 text-emerald-400" /> : <Square className="w-6 h-6" />}
+                    </button>
+                    
+                    <div className="flex-1">
+                      {product.image_url && (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.product_name}
+                          className="w-full h-32 object-cover rounded-xl mb-3"
+                        />
+                      )}
+                      
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-bold text-lg">{product.product_name}</h3>
+                        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-lg">
+                          {product.category || 'Sin categoria'}
+                        </span>
+                      </div>
+                      
+                      {product.description && (
+                        <p className="text-gray-400 text-sm mb-3 line-clamp-2">{product.description}</p>
+                      )}
+                      
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
+                        <div>
+                          <p className="text-xs text-gray-500">Precio mayorista</p>
+                          <p className="text-xl font-black text-emerald-400">${product.wholesale_price}</p>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Sugerido (x{margin})</p>
+                          <p className="text-sm font-bold text-amber-400">${suggestedPrice(product.wholesale_price)}</p>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleAddSingle(product.id)}
+                        disabled={adding || !selectedStore}
+                        className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-bold py-2 rounded-xl flex items-center justify-center gap-2 transition-all"
+                      >
+                        {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                        Anadir
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
         

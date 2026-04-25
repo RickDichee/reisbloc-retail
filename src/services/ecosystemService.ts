@@ -71,6 +71,31 @@ class EcosystemService {
     return data.item
   }
 
+  async bulkAddProductsToStore(storeId: string, wholesaleProductIds: string[]): Promise<StoreInventoryItem[]> {
+    const token = await getAuthToken()
+    if (!token) throw new Error('No autenticado')
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/add-product-to-store`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        store_id: storeId,
+        wholesale_product_ids: wholesaleProductIds,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error || 'Error al añadir productos')
+    }
+
+    return data.items || []
+  }
+
   async createStore(name: string, slug: string, address?: string): Promise<{ id: string; slug: string }> {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.user) throw new Error('No autenticado')
