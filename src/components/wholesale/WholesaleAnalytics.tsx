@@ -1,4 +1,8 @@
+import { useRef, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
+import { Download, Loader2 } from 'lucide-react'
 
 interface WholesaleAnalyticsProps {
   data: {
@@ -13,6 +17,38 @@ interface WholesaleAnalyticsProps {
 }
 
 export default function WholesaleAnalytics({ data }: WholesaleAnalyticsProps) {
+  const chartRef = useRef<HTMLDivElement>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const exportToPDF = async () => {
+    if (!chartRef.current || exporting) return
+    
+    setExporting(true)
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        scale: 2,
+        backgroundColor: '#F8FAFC',
+        logging: false
+      })
+      
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      })
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      
+      pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight - 20)
+      pdf.save('wholesale-analytics-report.pdf')
+    } catch (err) {
+      console.error('Export failed:', err)
+    } finally {
+      setExporting(false)
+    }
+  }
   const {
     adoptionTrend = [],
     totalMarketPenetration = 0,
@@ -37,12 +73,26 @@ export default function WholesaleAnalytics({ data }: WholesaleAnalyticsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wider">Tiendas Activas</p>
-          <p className="text-3xl font-black text-[#035CAB] mt-1">{totalStoresWithProducts}</p>
-        </div>
+      {/* Header with Export */}
+      <div className="flex justify-end">
+        <button
+          onClick={exportToPDF}
+          disabled={exporting}
+          className="flex items-center gap-2 px-4 py-2 bg-[#035CAB] hover:bg-[#02488a] text-white rounded-xl font-bold transition-all disabled:opacity-50"
+        >
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          Exportar PDF
+        </button>
+      </div>
+
+{/* Charts Container */}
+      <div ref={chartRef} className="space-y-6 p-4 bg-[#F8FAFC] rounded-2xl">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Tiendas Activas</p>
+            <p className="text-3xl font-black text-[#035CAB] mt-1">{totalStoresWithProducts}</p>
+          </div>
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
           <p className="text-xs text-slate-500 uppercase tracking-wider">Unidades Distribuidas</p>
           <p className="text-3xl font-black text-emerald-600 mt-1">{totalStockDistributed.toLocaleString()}</p>
@@ -155,6 +205,7 @@ export default function WholesaleAnalytics({ data }: WholesaleAnalyticsProps) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
