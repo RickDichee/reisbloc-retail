@@ -51,7 +51,7 @@
     "zustand": "^4.4.5"
   },
   "devDependencies": {
-    "@capacitor/assets": "^1.0.0",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
     "@types/bcryptjs": "^2.4.6",
