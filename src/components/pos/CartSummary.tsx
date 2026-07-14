@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import printService from '@/services/printService'
 import { OrderItem, Product } from '@/types'
 import { ShoppingCart, Send, Trash2, AlertTriangle } from 'lucide-react'
+import { useAppStore } from '@/store/appStore'
 
 interface CartSummaryProps {
   tableNumber: number
@@ -19,6 +20,15 @@ const currency = new Intl.NumberFormat('es-MX', {
 })
 
 export function CartSummary({ tableNumber, items, onSend, onClear, sending, products = [], stockError }: CartSummaryProps) {
+  const { organizationSettings } = useAppStore()
+  const registerName = useMemo(() => {
+    const customNames = organizationSettings?.cashRegisters
+    if (customNames && typeof customNames === 'object') {
+      return customNames[tableNumber.toString()] || `Caja ${tableNumber}`
+    }
+    return `Caja ${tableNumber}`
+  }, [organizationSettings, tableNumber])
+
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
     const tax = subtotal * 0.16
@@ -97,7 +107,7 @@ export function CartSummary({ tableNumber, items, onSend, onClear, sending, prod
             <ShoppingCart className="text-indigo-600" size={24} />
             Resumen
           </h2>
-          <p className="text-sm font-medium text-gray-500 mt-1">Caja {tableNumber}</p>
+          <p className="text-sm font-medium text-gray-500 mt-1">{registerName}</p>
         </div>
         <button
           onClick={onClear}

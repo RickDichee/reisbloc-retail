@@ -9,6 +9,7 @@ import printService from '@/services/printService'
 import ProductModal from '@/components/admin/ProductModal'
 import ImportProductsModal from '@/components/admin/ImportProductsModal'
 import DashboardLayout from '@/components/layout/DashboardLayout'
+import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
@@ -19,6 +20,17 @@ export default function Inventory() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [scannedBarcode, setScannedBarcode] = useState('')
+
+  useBarcodeScanner((code) => {
+    const product = products.find(p => p.barcode === code || p.sku === code)
+    if (product) {
+      setEditingProduct(product)
+    } else {
+      setScannedBarcode(code)
+      setShowCreateModal(true)
+    }
+  })
 
   const loadInventory = useCallback(async () => {
     setLoading(true)
@@ -300,13 +312,16 @@ export default function Inventory() {
         {(showCreateModal || editingProduct) && (
           <ProductModal
             product={editingProduct || undefined}
+            initialBarcode={scannedBarcode || undefined}
             onClose={() => {
               setShowCreateModal(false)
               setEditingProduct(null)
+              setScannedBarcode('')
             }}
             onSuccess={() => {
               setShowCreateModal(false)
               setEditingProduct(null)
+              setScannedBarcode('')
               loadInventory()
             }}
           />

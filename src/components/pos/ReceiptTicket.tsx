@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Order, Product } from '@/types/index'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { useAppStore } from '@/store/appStore'
 
 interface ReceiptTicketProps {
   order: Order
@@ -25,6 +26,14 @@ export default function ReceiptTicket({
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { showBranding } = usePlanLimits()
+  const { organizationSettings } = useAppStore()
+  const registerName = (() => {
+    const customNames = organizationSettings?.cashRegisters
+    if (customNames && typeof customNames === 'object') {
+      return customNames[tableNumber.toString()] || `Caja ${tableNumber}`
+    }
+    return `Caja ${tableNumber}`
+  })()
 
   // Agrupar items por categoría
   const itemsByCategory = order.items.reduce((acc, item) => {
@@ -76,7 +85,7 @@ export default function ReceiptTicket({
       {/* Ticket Info */}
       <div style={{ marginBottom: '6px', fontSize: '9px' }}>
         <div>Ticket: {order.id?.slice(0, 8) || 'N/A'}</div>
-        <div>Caja: {tableNumber}</div>
+        <div>Caja: {registerName}</div>
         <div>Fecha: {new Date().toLocaleString('es-MX')}</div>
       </div>
 

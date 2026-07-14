@@ -9,12 +9,14 @@ import PlanGate from '@/components/common/PlanGate'
 
 interface ProductModalProps {
     product?: Product
+    initialBarcode?: string
     onClose: () => void
     onSuccess: () => void
 }
 
 export default function ProductModal({
     product,
+    initialBarcode,
     onClose,
     onSuccess
 }: ProductModalProps) {
@@ -24,7 +26,7 @@ export default function ProductModal({
         price: product?.price || 0,
         category: product?.category || 'General',
         sku: product?.sku || '',
-        barcode: product?.barcode || '',
+        barcode: product?.barcode || initialBarcode || '',
         description: product?.description || '',
         hasInventory: product?.hasInventory || false,
         currentStock: product?.currentStock || 0,

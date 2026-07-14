@@ -16,7 +16,7 @@ import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2 } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 export default function POS() {
@@ -33,6 +33,8 @@ export default function POS() {
     decrementDraftItem,
     removeDraftItem,
     clearDraftForTable,
+    organizationSettings,
+    setOrganizationSettings,
   } = useAppStore()
 
   const [loading, setLoading] = useState(true)
@@ -66,14 +68,87 @@ export default function POS() {
   const [stockWarning, setStockWarning] = useState<{ isOpen: boolean, items: any[] }>({ isOpen: false, items: [] })
   const [showShareModal, setShowShareModal] = useState(false)
 
+  const [editingRegisterId, setEditingRegisterId] = useState<number | null>(null)
+  const [editingRegisterName, setEditingRegisterName] = useState<string>('')
+
+  // 1. Obtener cajas desde settings
+  const registers = useMemo(() => {
+    const stored = organizationSettings?.cashRegisters
+    if (stored && typeof stored === 'object') {
+      return stored as Record<string, string>
+    }
+    return {
+      "1": "Caja 1",
+      "2": "Caja 2",
+      "3": "Caja 3"
+    }
+  }, [organizationSettings])
+
+  const tableButtons = useMemo(() => {
+    return Object.keys(registers).map(Number).sort((a, b) => a - b)
+  }, [registers])
+
+  const handleAddRegister = async () => {
+    const nextNum = tableButtons.length > 0 ? Math.max(...tableButtons) + 1 : 1
+    const newRegisters = {
+      ...registers,
+      [nextNum.toString()]: `Caja ${nextNum}`
+    }
+
+    const updatedSettings = {
+      ...(organizationSettings || {}),
+      cashRegisters: newRegisters
+    }
+
+    setOrganizationSettings(updatedSettings)
+    setCurrentTicket(nextNum)
+
+    if (currentUser?.organizationId) {
+      try {
+        const { supabase } = await import('@/config/supabase')
+        await supabase
+          .from('organizations')
+          .update({ settings: updatedSettings })
+          .eq('id', currentUser.organizationId)
+      } catch (e) {
+        console.error('Error saving register to Supabase:', e)
+      }
+    }
+  }
+
+  const handleSaveRegisterName = async (num: number) => {
+    setEditingRegisterId(null)
+    const trimmed = editingRegisterName.trim()
+    if (!trimmed) return
+
+    const newRegisters = {
+      ...registers,
+      [num.toString()]: trimmed
+    }
+
+    const updatedSettings = {
+      ...(organizationSettings || {}),
+      cashRegisters: newRegisters
+    }
+
+    setOrganizationSettings(updatedSettings)
+
+    if (currentUser?.organizationId) {
+      try {
+        const { supabase } = await import('@/config/supabase')
+        await supabase
+          .from('organizations')
+          .update({ settings: updatedSettings })
+          .eq('id', currentUser.organizationId)
+      } catch (e) {
+        console.error('Error saving register name to Supabase:', e)
+      }
+    }
+  }
+
   const tableNumber = currentTicketNumber || 1
   const items = draftOrders[tableNumber] || []
   const isReadOnly = currentUser?.role === 'supervisor'
-
-  const tableButtons = useMemo(() => {
-    const baseTables = (tickets || []).length ? tickets : Array.from({ length: 3 }, (_, i) => i + 1)
-    return baseTables.slice(0, 3)
-  }, [tickets])
 
   const filteredProducts = useMemo(() => {
     const result = products
@@ -85,6 +160,61 @@ export default function POS() {
       p.barcode?.includes(lower)
     )
   }, [products, searchTerm])
+
+  // PUSH local sync
+  useEffect(() => {
+    const localIp = organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip')
+    if (!navigator.onLine && localIp && tableNumber) {
+      const currentItems = draftOrders[tableNumber] || []
+      const url = `${localIp.replace(/\/$/, '')}/api/drafts`
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketNumber: tableNumber, items: currentItems })
+      }).catch(err => console.warn('⚠️ Falló sincronización local:', err))
+    }
+  }, [draftOrders, tableNumber, organizationSettings?.localSyncServerIp])
+
+  // PULL local sync
+  useEffect(() => {
+    let interval: any
+    const syncOfflineLocalDrafts = async () => {
+      const localIp = organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip')
+      if (!navigator.onLine && localIp) {
+        try {
+          const url = `${localIp.replace(/\/$/, '')}/api/drafts`
+          const res = await fetch(url)
+          if (res.ok) {
+            const data = await res.json()
+            const currentDrafts = useAppStore.getState().draftOrders
+            let hasChanges = false
+            const nextDrafts = { ...currentDrafts }
+
+            Object.entries(data).forEach(([key, items]: [string, any]) => {
+              const num = Number(key)
+              if (JSON.stringify(currentDrafts[num]) !== JSON.stringify(items)) {
+                nextDrafts[num] = items
+                hasChanges = true
+              }
+            })
+
+            if (hasChanges) {
+              useAppStore.setState({ draftOrders: nextDrafts })
+            }
+          }
+        } catch (e) {
+          console.warn('Error fetching from local sync server:', e)
+        }
+      }
+    }
+
+    if (!navigator.onLine) {
+      syncOfflineLocalDrafts()
+      interval = setInterval(syncOfflineLocalDrafts, 5000)
+    }
+
+    return () => clearInterval(interval)
+  }, [organizationSettings?.localSyncServerIp])
 
   useEffect(() => {
     cashRegisterAudioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU7/3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/w==')
@@ -335,18 +465,87 @@ export default function POS() {
       <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
         {/* Unified Header with Search and Accounts */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center shrink-0">
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0">
+          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0 flex-wrap">
             <LayoutGrid size={18} className="text-slate-400 ml-2" />
-            {tableButtons.map(num => (
-              <button
-                key={num}
-                onClick={() => setCurrentTicket(num)}
-                className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all ${tableNumber === num ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Caja {num}
-              </button>
-            ))}
+            {tableButtons.map(num => {
+              const isEditing = editingRegisterId === num
+              const isSelected = tableNumber === num
+              const registerName = registers[num.toString()] || `Caja ${num}`
+
+              return (
+                <div key={num} className="flex items-center">
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editingRegisterName}
+                      onChange={(e) => setEditingRegisterName(e.target.value)}
+                      onBlur={() => handleSaveRegisterName(num)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveRegisterName(num)
+                        else if (e.key === 'Escape') setEditingRegisterId(null)
+                      }}
+                      className="px-2 py-1 text-xs font-bold bg-white rounded border border-slate-300 outline-none text-slate-900 w-24"
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setCurrentTicket(num)}
+                      onDoubleClick={() => {
+                        if (currentUser?.role === 'admin') {
+                          setEditingRegisterId(num)
+                          setEditingRegisterName(registerName)
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center gap-1 ${isSelected ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                      title={currentUser?.role === 'admin' ? "Doble clic para renombrar" : undefined}
+                    >
+                      <span>{registerName}</span>
+                      {isSelected && currentUser?.role === 'admin' && (
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingRegisterId(num)
+                            setEditingRegisterName(registerName)
+                          }}
+                          className="opacity-50 hover:opacity-100 cursor-pointer ml-1"
+                        >
+                          <Edit2 size={12} />
+                        </span>
+                      )}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+            <button
+              onClick={handleAddRegister}
+              className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-all flex items-center justify-center border border-dashed border-slate-400"
+              title="Agregar Nueva Caja"
+            >
+              <Plus size={14} />
+            </button>
           </div>
+
+          {!navigator.onLine && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl text-amber-800 text-xs font-bold">
+              <AlertTriangle size={16} className="text-amber-600 animate-pulse shrink-0" />
+              <span className="whitespace-nowrap">Local WiFi Mode:</span>
+              <input
+                type="text"
+                placeholder="IP Servidor (ej: http://192.168.1.100:3001)"
+                value={organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip') || ''}
+                onChange={(e) => {
+                  const val = e.target.value
+                  localStorage.setItem('local_sync_server_ip', val)
+                  setOrganizationSettings({
+                    ...(organizationSettings || {}),
+                    localSyncServerIp: val
+                  })
+                }}
+                className="px-2 py-1 bg-white border border-amber-300 rounded outline-none text-slate-900 w-44 font-normal"
+              />
+            </div>
+          )}
 
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
