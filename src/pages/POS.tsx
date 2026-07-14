@@ -35,6 +35,8 @@ export default function POS() {
     clearDraftForTable,
     organizationSettings,
     setOrganizationSettings,
+    users,
+    setUsers,
   } = useAppStore()
 
   const [loading, setLoading] = useState(true)
@@ -80,8 +82,13 @@ export default function POS() {
     return {
       "1": "Caja 1",
       "2": "Caja 2",
-      "3": "Caja 3"
+      "3": "Caja 3",
+      "4": "Caja 4"
     }
+  }, [organizationSettings])
+
+  const registerAssignments = useMemo(() => {
+    return (organizationSettings?.registerAssignments || {}) as Record<string, string>
   }, [organizationSettings])
 
   const tableButtons = useMemo(() => {
@@ -232,6 +239,14 @@ export default function POS() {
     })
     return () => unsubscribe?.()
   }, [currentTicketNumber])
+
+  useEffect(() => {
+    if (users.length === 0) {
+      supabaseService.getAllUsers()
+        .then(setUsers)
+        .catch(e => console.error('Error loading users in POS:', e))
+    }
+  }, [users.length, setUsers])
 
   useBarcodeScanner((code) => {
     if (isReadOnly || !currentUser) return
@@ -471,22 +486,65 @@ export default function POS() {
               const isEditing = editingRegisterId === num
               const isSelected = tableNumber === num
               const registerName = registers[num.toString()] || `Caja ${num}`
+              const assignedUserId = registerAssignments[num.toString()]
+              const assignedUser = users.find(u => u.id === assignedUserId)
+              const assignedName = assignedUser ? (assignedUser.username || assignedUser.email?.split('@')[0]) : ''
 
               return (
                 <div key={num} className="flex items-center">
                   {isEditing ? (
-                    <input
-                      type="text"
-                      value={editingRegisterName}
-                      onChange={(e) => setEditingRegisterName(e.target.value)}
-                      onBlur={() => handleSaveRegisterName(num)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveRegisterName(num)
-                        else if (e.key === 'Escape') setEditingRegisterId(null)
-                      }}
-                      className="px-2 py-1 text-xs font-bold bg-white rounded border border-slate-300 outline-none text-slate-900 w-24"
-                      autoFocus
-                    />
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-300">
+                      <input
+                        type="text"
+                        value={editingRegisterName}
+                        onChange={(e) => setEditingRegisterName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveRegisterName(num)
+                          else if (e.key === 'Escape') setEditingRegisterId(null)
+                        }}
+                        className="px-1.5 py-0.5 text-xs font-bold outline-none text-slate-900 w-24 border-r border-slate-200"
+                        placeholder="Nombre caja"
+                        autoFocus
+                      />
+                      <select
+                        value={assignedUserId || ''}
+                        onChange={async (e) => {
+                          const val = e.target.value
+                          const newAssignments = {
+                            ...registerAssignments,
+                            [num.toString()]: val
+                          }
+                          const updatedSettings = {
+                            ...(organizationSettings || {}),
+                            registerAssignments: newAssignments
+                          }
+                          setOrganizationSettings(updatedSettings)
+                          if (currentUser?.organizationId) {
+                            try {
+                              const { supabase } = await import('@/config/supabase')
+                              await supabase
+                                .from('organizations')
+                                .update({ settings: updatedSettings })
+                                .eq('id', currentUser.organizationId)
+                            } catch (err) {
+                              console.error('Error saving assignments:', err)
+                            }
+                          }
+                        }}
+                        className="text-[10px] font-bold bg-transparent outline-none text-slate-700 max-w-24 cursor-pointer"
+                      >
+                        <option value="">-- Sin asignar --</option>
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.username || u.email?.split('@')[0]}</option>
+                        ))}
+                      </select>
+                      <button 
+                        onClick={() => handleSaveRegisterName(num)}
+                        className="text-[10px] bg-slate-900 text-white px-1.5 py-0.5 rounded font-bold hover:bg-slate-800 shrink-0"
+                      >
+                        OK
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => setCurrentTicket(num)}
@@ -497,9 +555,9 @@ export default function POS() {
                         }
                       }}
                       className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center gap-1 ${isSelected ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                      title={currentUser?.role === 'admin' ? "Doble clic para renombrar" : undefined}
+                      title={currentUser?.role === 'admin' ? "Doble clic para editar caja/cajero" : undefined}
                     >
-                      <span>{registerName}</span>
+                      <span>{registerName}{assignedName ? ` (${assignedName})` : ` (${assignedUserId ? 'Cargando...' : 'Libre'})`}</span>
                       {isSelected && currentUser?.role === 'admin' && (
                         <span 
                           onClick={(e) => {
