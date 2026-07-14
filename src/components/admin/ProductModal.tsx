@@ -4,7 +4,7 @@ import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { storageService } from '@/services/storageService'
 import { compressImage } from '@/utils/imageCompression'
-import { X, Save, Loader2, Image as ImageIcon, Camera } from 'lucide-react'
+import { X, Save, Loader2, Image as ImageIcon, Camera, Plus, Printer } from 'lucide-react'
 import PlanGate from '@/components/common/PlanGate'
 
 interface ProductModalProps {
@@ -20,7 +20,7 @@ export default function ProductModal({
     onClose,
     onSuccess
 }: ProductModalProps) {
-    const { currentUser, products } = useAppStore()
+    const { currentUser, products, organizationSettings } = useAppStore()
     const [formData, setFormData] = useState({
         name: product?.name || '',
         price: product?.price || 0,
@@ -38,8 +38,43 @@ export default function ProductModal({
     })
     const [loading, setLoading] = useState(false)
     const [isBulk, setIsBulk] = useState(false)
-    const [bulkSizes, setBulkSizes] = useState('')
+    const [packagesCount, setPackagesCount] = useState(1)
+    const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({
+        'CH': 0,
+        'M': 0,
+        'G': 0,
+        'XG': 0,
+    })
+    const [customSize, setCustomSize] = useState('')
+    const [shouldPrint, setShouldPrint] = useState(true)
+    const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
     const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
+
+    const handleQtyChange = (sz: string, val: number) => {
+        setSizeQuantities(prev => ({
+            ...prev,
+            [sz]: Math.max(0, val)
+        }))
+    }
+
+    const handleAddCustomSize = () => {
+        const trimmed = customSize.trim().toUpperCase()
+        if (trimmed && !(trimmed in sizeQuantities)) {
+            setSizeQuantities(prev => ({
+                ...prev,
+                [trimmed]: 0
+            }))
+            setCustomSize('')
+        }
+    }
+
+    const handleRemoveSize = (sz: string) => {
+        setSizeQuantities(prev => {
+            const next = { ...prev }
+            delete next[sz]
+            return next
+        })
+    }
 
     // Image Upload states
     const [imageFile, setImageFile] = useState<File | null>(null)
@@ -108,28 +143,130 @@ export default function ProductModal({
                     newValue: payload
                 })
             } else {
-                if (isBulk && bulkSizes.trim() !== '') {
-                    // Split sizes by comma
-                    const sizes = bulkSizes.split(',').map(s => s.trim()).filter(s => s)
+                if (isBulk) {
+                    const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
+                    const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
-                    for (const size of sizes) {
-                        const variantName = `${formData.name} (${size})`
-                        const variantBarcode = `750${Math.floor(100000000 + Math.random() * 900000000)}`
+                    if (totalPiecesReceived <= 0) {
+                        alert('Debes agregar al menos 1 pieza en el desglose de tallas')
+                        setLoading(false)
+                        return
+                    }
 
-                        const newId = await supabaseService.createRetailProduct({
-                            ...payload,
-                            name: variantName,
-                            barcode: variantBarcode,
-                            createdAt: new Date(),
+                    const resultsToPrint: { name: string; barcode: string; price: number; size: string; count: number }[] = []
+
+                    for (const [size, qtyPerPack] of Object.entries(sizeQuantities)) {
+                        if (qtyPerPack <= 0) continue
+
+                        const totalQtyForSize = qtyPerPack * packagesCount
+                        const variantName = `${formData.name.trim()} (${size})`
+                        
+                        // Buscar si la variante ya existe
+                        const existing = products.find(p => p.name.toLowerCase() === variantName.toLowerCase())
+
+                        let barcode = ''
+                        if (existing) {
+                            barcode = existing.barcode || ''
+                            const newStock = (existing.currentStock || 0) + totalQtyForSize
+                            await supabaseService.updateRetailProduct(existing.id, {
+                                ...payload,
+                                currentStock: newStock,
+                                hasInventory: true
+                            })
+                            await supabaseService.createAuditLog({
+                                userId: currentUser?.id || 'unknown',
+                                action: 'PRODUCT_UPDATED',
+                                entityType: 'PRODUCT',
+                                entityId: existing.id,
+                                newValue: { name: variantName, currentStock: newStock, stockAdded: totalQtyForSize }
+                            })
+                        } else {
+                            barcode = `750${Math.floor(1000000000 + Math.random() * 9000000000)}`
+                            
+                            const newId = await supabaseService.createRetailProduct({
+                                ...payload,
+                                name: variantName,
+                                barcode: barcode,
+                                hasInventory: true,
+                                currentStock: totalQtyForSize,
+                                active: true,
+                                createdAt: new Date(),
+                            })
+                            await supabaseService.createAuditLog({
+                                userId: currentUser?.id || 'unknown',
+                                action: 'PRODUCT_CREATED',
+                                entityType: 'PRODUCT',
+                                entityId: newId,
+                                newValue: { ...payload, name: variantName, barcode: barcode, currentStock: totalQtyForSize }
+                            })
+                        }
+
+                        resultsToPrint.push({
+                            name: formData.name.trim(),
+                            barcode,
+                            price: formData.price,
+                            size,
+                            count: totalQtyForSize
                         })
+                    }
 
-                        await supabaseService.createAuditLog({
-                            userId: currentUser?.id || 'unknown',
-                            action: 'PRODUCT_CREATED',
-                            entityType: 'PRODUCT',
-                            entityId: newId,
-                            newValue: { ...payload, name: variantName, barcode: variantBarcode }
-                        })
+                    // Impresión de etiquetas automatizada
+                    if (shouldPrint && resultsToPrint.length > 0) {
+                        const labelWidth = organizationSettings?.labelPrinterWidth || 50
+                        let printHTML = `<div style="display: flex; flex-direction: column; gap: 20px; font-family: monospace; text-align: center; width: ${labelWidth}mm; margin: 0 auto;">`
+
+                        if (printMode === 'bulto') {
+                            const sizeBreakdownText = Object.entries(sizeQuantities)
+                                .filter(([_, qty]) => qty > 0)
+                                .map(([sz, qty]) => `${qty} ${sz}`)
+                                .join(', ')
+
+                            const bulkBarcode = `750B${Math.floor(100000000 + Math.random() * 900000000)}`
+
+                            for (let i = 0; i < packagesCount; i++) {
+                                printHTML += `
+                                  <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
+                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">REISBLOC MAYOREO</div>
+                                    <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase;">${formData.name.trim()}</div>
+                                    <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
+                                    <div style="font-size: 10px; margin: 4px 0; padding: 4px; border: 1px solid #ddd; width: 100%; border-radius: 4px; text-align: left;">
+                                      <strong>Desglose:</strong> ${sizeBreakdownText}
+                                    </div>
+                                    <div style="font-size: 16px; font-weight: 900; margin: 6px 0;">$${(formData.price * totalPiecesPerPackage).toFixed(2)}</div>
+                                    
+                                    <!-- Código de Barras Bulto -->
+                                    <div style="font-size: 20px; font-family: 'Libre Barcode 39', 'Courier New', monospace; letter-spacing: 2px; margin: 6px 0;">
+                                      *${bulkBarcode}*
+                                    </div>
+                                    <div style="font-size: 9px; color: #555;">${bulkBarcode}</div>
+                                  </div>
+                                `
+                            }
+                        } else {
+                            resultsToPrint.forEach(item => {
+                                const quantityToPrint = printMode === 'talla' ? 1 : item.count
+                                for (let i = 0; i < quantityToPrint; i++) {
+                                    printHTML += `
+                                      <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
+                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Reisbloc Retail</div>
+                                        <div style="font-size: 12px; font-weight: bold; margin: 4px 0;">${item.name}</div>
+                                        <div style="font-size: 14px; font-weight: 900;">TALLA: ${item.size}</div>
+                                        <div style="font-size: 16px; font-weight: bold; margin: 4px 0;">$${item.price.toFixed(2)}</div>
+                                        
+                                        <!-- Código de Barras Renderizado -->
+                                        <div style="font-size: 20px; font-family: 'Libre Barcode 39', 'Courier New', monospace; letter-spacing: 2px; margin: 6px 0;">
+                                          *${item.barcode}*
+                                        </div>
+                                        <div style="font-size: 9px; color: #555;">${item.barcode}</div>
+                                      </div>
+                                    `
+                                }
+                            })
+                        }
+
+                        printHTML += '</div>'
+                        const printService = (await import('@/services/printService')).default
+                        await printService.printHTML(printHTML, { title: 'Etiquetas de Códigos', width: labelWidth })
                     }
                 } else {
                     const newId = await supabaseService.createRetailProduct({
@@ -238,7 +375,7 @@ export default function ProductModal({
                         </div>
 
                         {!product && (
-                            <div className="md:col-span-2 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex flex-col gap-3">
+                            <div className="md:col-span-2 bg-indigo-50 border border-indigo-100 p-5 rounded-3xl flex flex-col gap-4">
                                 <div className="flex items-center gap-3">
                                     <input
                                         type="checkbox"
@@ -247,25 +384,138 @@ export default function ProductModal({
                                         onChange={(e) => setIsBulk(e.target.checked)}
                                         className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
                                     />
-                                    <label htmlFor="isBulk" className="text-sm font-black text-indigo-900 cursor-pointer uppercase tracking-tight">
-                                        Generar Múltiples Variantes (Ej. Tallas S, M, L)
+                                    <label htmlFor="isBulk" className="text-sm font-black text-indigo-950 cursor-pointer uppercase tracking-tight flex items-center gap-1">
+                                        📦 INGRESAR EN BULTO / LOTE (Tallas y cantidades)
                                     </label>
                                 </div>
                                 {isBulk && (
-                                    <div className="animate-scaleIn">
-                                        <label className="block text-xs font-bold text-indigo-700 mb-2">
-                                            Escribe las variaciones separadas por coma:
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={bulkSizes}
-                                            onChange={(e) => setBulkSizes(e.target.value)}
-                                            className="w-full px-4 py-3 bg-white border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-600/10 outline-none font-bold text-indigo-900"
-                                            placeholder="S, M, L, XL, Paquete 10 pz..."
-                                        />
-                                        <p className="text-[10px] text-indigo-500 mt-2">
-                                            Se crearán {bulkSizes.split(',').filter(s => s.trim()).length} productos individuales automáticamente.
-                                        </p>
+                                    <div className="animate-scaleIn space-y-4">
+                                        <div className="bg-white p-4 rounded-2xl border border-indigo-100 flex items-center justify-between gap-4">
+                                            <div>
+                                                <span className="block text-xs font-black text-indigo-950 uppercase tracking-tight">Cantidad de Bultos / Paquetes</span>
+                                                <span className="text-[10px] text-slate-400 font-bold">Multiplica la cantidad de cada prenda</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPackagesCount(prev => Math.max(1, prev - 1))}
+                                                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all active:scale-95"
+                                                >
+                                                    -
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    value={packagesCount}
+                                                    onChange={(e) => setPackagesCount(Math.max(1, parseInt(e.target.value) || 1))}
+                                                    className="w-16 text-center font-black text-sm outline-none text-slate-900 border border-slate-200 py-1.5 rounded-xl bg-slate-50"
+                                                    min="1"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPackagesCount(prev => prev + 1)}
+                                                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all active:scale-95"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <span className="block text-xs font-black text-indigo-950 uppercase tracking-tight">Cantidad por Bulto / Paquete</span>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                {Object.entries(sizeQuantities).map(([sz, qty]) => (
+                                                    <div key={sz} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-2">
+                                                        <span className="text-xs font-black text-slate-800">{sz}</span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleQtyChange(sz, qty - 1)}
+                                                                className="w-6 h-6 flex items-center justify-center bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 font-black text-xs"
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <input
+                                                                type="number"
+                                                                value={qty || ''}
+                                                                onChange={(e) => handleQtyChange(sz, parseInt(e.target.value) || 0)}
+                                                                className="w-8 text-center font-bold text-xs bg-transparent outline-none border-b border-slate-200 focus:border-slate-800"
+                                                                min="0"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleQtyChange(sz, qty + 1)}
+                                                                className="w-6 h-6 flex items-center justify-center bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 font-black text-xs"
+                                                            >
+                                                                +
+                                                            </button>
+                                                            {['CH', 'M', 'G', 'XG'].indexOf(sz) === -1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveSize(sz)}
+                                                                    className="text-[10px] text-red-500 font-black ml-1 hover:text-red-700 uppercase"
+                                                                >
+                                                                    x
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Ej: XXL, 38..."
+                                                    value={customSize}
+                                                    onChange={(e) => setCustomSize(e.target.value)}
+                                                    className="flex-1 px-4 py-2 border border-indigo-200 rounded-xl outline-none font-bold text-xs bg-white text-indigo-900"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleAddCustomSize}
+                                                    className="px-4 py-2 bg-indigo-900 text-white font-bold text-xs rounded-xl hover:bg-indigo-850 transition-all shrink-0"
+                                                >
+                                                    + Agregar Talla
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t border-indigo-100/50 pt-3 space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="shouldPrint"
+                                                    checked={shouldPrint}
+                                                    onChange={(e) => setShouldPrint(e.target.checked)}
+                                                    className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                                                />
+                                                <label htmlFor="shouldPrint" className="text-xs font-black text-slate-700 cursor-pointer uppercase tracking-tight flex items-center gap-1">
+                                                    Imprimir etiquetas de código de barras
+                                                </label>
+                                            </div>
+
+                                            {shouldPrint && (
+                                                <div className="ml-6 flex flex-col gap-1.5 animate-scaleIn">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modo de Impresión</label>
+                                                    <select
+                                                        value={printMode}
+                                                        onChange={(e) => setPrintMode(e.target.value as any)}
+                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white outline-none font-bold text-[11px] text-slate-800"
+                                                    >
+                                                        <option value="bulto">📦 Impresora Nimbot: 1 Etiqueta por Bulto Completo (Con Desglose)</option>
+                                                        <option value="talla">🏷️ Impresora Nimbot: 1 Etiqueta por Talla</option>
+                                                        <option value="prenda">👕 Impresora Nimbot: 1 Etiqueta por cada Prenda individual</option>
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-indigo-100/50 p-3 rounded-2xl flex justify-between items-center text-xs">
+                                            <span className="font-bold text-indigo-950">TOTAL A INGRESAR:</span>
+                                            <span className="font-black text-indigo-900">
+                                                {Object.values(sizeQuantities).reduce((a, b) => a + b, 0) * packagesCount} prendas
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -101,7 +101,7 @@ export default function ReceiptTicket({
                 <div>
                   {item.productName} ({item.quantity} pz)
                 </div>
-                <div>${(item.price * item.quantity).toFixed(2)}</div>
+                <div>${((item.unitPrice || item.price || 0) * item.quantity).toFixed(2)}</div>
               </div>
             ))}
           </div>
