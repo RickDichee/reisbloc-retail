@@ -72,6 +72,7 @@ export default function POS() {
 
   const [editingRegisterId, setEditingRegisterId] = useState<number | null>(null)
   const [editingRegisterName, setEditingRegisterName] = useState<string>('')
+  const [showHardwareConfig, setShowHardwareConfig] = useState(false)
 
   // 1. Obtener cajas desde settings
   const registers = useMemo(() => {
@@ -740,7 +741,85 @@ export default function POS() {
           >
             <PlusCircle size={24} />
           </button>
+
+          <button
+            onClick={() => setShowHardwareConfig(!showHardwareConfig)}
+            className={`hidden md:flex p-3 rounded-xl border transition-all ${showHardwareConfig ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
+            title="Configurar Impresoras y Red Local"
+          >
+            <Printer size={24} />
+          </button>
         </div>
+
+        {showHardwareConfig && (
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap gap-6 items-center animate-scaleIn text-xs font-bold text-slate-700 shrink-0">
+            <div className="flex items-center gap-2">
+              <span>🎟️ Ancho Ticket (SUM187443):</span>
+              <input
+                type="number"
+                value={organizationSettings?.ticketPrinterWidth || 58}
+                onChange={async (e) => {
+                  const val = parseInt(e.target.value) || 58
+                  const updatedSettings = { ...(organizationSettings || {}), ticketPrinterWidth: val }
+                  setOrganizationSettings(updatedSettings)
+                  if (currentUser?.organizationId && currentUser?.role === 'admin') {
+                    const { supabase } = await import('@/config/supabase')
+                    await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
+                    useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
+                  }
+                }}
+                className="w-16 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center outline-none text-slate-900 font-bold"
+                min="10"
+              />
+              <span>mm</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span>🏷️ Ancho Etiqueta (NIMBOT B1):</span>
+              <input
+                type="number"
+                value={organizationSettings?.labelPrinterWidth || 50}
+                onChange={async (e) => {
+                  const val = parseInt(e.target.value) || 50
+                  const updatedSettings = { ...(organizationSettings || {}), labelPrinterWidth: val }
+                  setOrganizationSettings(updatedSettings)
+                  if (currentUser?.organizationId && currentUser?.role === 'admin') {
+                    const { supabase } = await import('@/config/supabase')
+                    await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
+                    useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
+                  }
+                }}
+                className="w-16 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center outline-none text-slate-900 font-bold"
+                min="10"
+              />
+              <span>mm</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span>📶 Servidor Sincronización Local:</span>
+              <input
+                type="text"
+                placeholder="http://192.168.1.100:3001"
+                value={organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip') || ''}
+                onChange={async (e) => {
+                  const val = e.target.value
+                  localStorage.setItem('local_sync_server_ip', val)
+                  const updatedSettings = { ...(organizationSettings || {}), localSyncServerIp: val }
+                  setOrganizationSettings(updatedSettings)
+                  if (currentUser?.organizationId && currentUser?.role === 'admin') {
+                    const { supabase } = await import('@/config/supabase')
+                    await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
+                    useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
+                  }
+                }}
+                className="w-48 px-2 py-1 bg-slate-50 border border-slate-200 rounded outline-none text-slate-900 font-normal"
+              />
+            </div>
+            <div className="text-[10px] text-slate-400 font-normal ml-auto">
+              * Cambios guardados automáticamente en la nube (Admin).
+            </div>
+          </div>
+        )}
 
         {/* Main Workspace: Combined Grid and Cart */}
         <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">

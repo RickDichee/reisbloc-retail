@@ -10,7 +10,7 @@ interface BulkDeconstructModalProps {
 }
 
 export default function BulkDeconstructModal({ onClose, onSuccess }: BulkDeconstructModalProps) {
-  const { currentUser, products } = useAppStore()
+  const { currentUser, products, organizationSettings } = useAppStore()
   const [loading, setLoading] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -30,7 +30,7 @@ export default function BulkDeconstructModal({ onClose, onSuccess }: BulkDeconst
 
   const [customSize, setCustomSize] = useState('')
   const [shouldPrint, setShouldPrint] = useState(true)
-  const [printOnePerSize, setPrintOnePerSize] = useState(false)
+  const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
 
   const handleAddCustomSize = () => {
     const trimmed = customSize.trim().toUpperCase()
@@ -134,30 +134,63 @@ export default function BulkDeconstructModal({ onClose, onSuccess }: BulkDeconst
 
       // Impresión de etiquetas automatizada
       if (shouldPrint && resultsToPrint.length > 0) {
-        let printHTML = '<div style="display: flex; flex-direction: column; gap: 20px; font-family: monospace; text-align: center;">'
-        
-        resultsToPrint.forEach(item => {
-          const quantityToPrint = printOnePerSize ? 1 : item.count
-          for (let i = 0; i < quantityToPrint; i++) {
+        const labelWidth = organizationSettings?.labelPrinterWidth || 50
+        let printHTML = `<div style="display: flex; flex-direction: column; gap: 20px; font-family: monospace; text-align: center; width: ${labelWidth}mm; margin: 0 auto;">`
+
+        if (printMode === 'bulto') {
+          // Imprimir 1 etiqueta por bulto completo con desglose
+          const sizeBreakdownText = Object.entries(sizeQuantities)
+            .filter(([_, qty]) => qty > 0)
+            .map(([sz, qty]) => `${qty} ${sz}`)
+            .join(', ')
+
+          // Generar código de barra para el bulto
+          const bulkBarcode = `750B${Math.floor(100000000 + Math.random() * 900000000)}`
+
+          for (let i = 0; i < formData.packagesCount; i++) {
             printHTML += `
-              <div style="border: 1px dashed #000; padding: 10px; width: 50mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Reisbloc Retail</div>
-                <div style="font-size: 12px; font-weight: bold; margin: 4px 0;">${item.name}</div>
-                <div style="font-size: 14px; font-weight: 900;">TALLA: ${item.size}</div>
-                <div style="font-size: 16px; font-weight: bold; margin: 4px 0;">$${item.price.toFixed(2)}</div>
-                
-                <!-- Código de Barras Renderizado -->
-                <div style="font-size: 20px; font-family: 'Libre Barcode 39', 'Courier New', monospace; letter-spacing: 2px; margin: 6px 0;">
-                  *${item.barcode}*
+              <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
+                <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">REISBLOC MAYOREO</div>
+                <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase;">${formData.name.trim()}</div>
+                <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
+                <div style="font-size: 10px; margin: 4px 0; padding: 4px; border: 1px solid #ddd; width: 100%; border-radius: 4px; text-align: left;">
+                  <strong>Desglose:</strong> ${sizeBreakdownText}
                 </div>
-                <div style="font-size: 9px; color: #555;">${item.barcode}</div>
+                <div style="font-size: 16px; font-weight: 900; margin: 6px 0;">$${(formData.price * totalPiecesPerPackage).toFixed(2)}</div>
+                
+                <!-- Código de Barras Bulto -->
+                <div style="font-size: 20px; font-family: 'Libre Barcode 39', 'Courier New', monospace; letter-spacing: 2px; margin: 6px 0;">
+                  *${bulkBarcode}*
+                </div>
+                <div style="font-size: 9px; color: #555;">${bulkBarcode}</div>
               </div>
             `
           }
-        })
-        
+        } else {
+          // Imprimir por talla o prenda individual
+          resultsToPrint.forEach(item => {
+            const quantityToPrint = printMode === 'talla' ? 1 : item.count
+            for (let i = 0; i < quantityToPrint; i++) {
+              printHTML += `
+                <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
+                  <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Reisbloc Retail</div>
+                  <div style="font-size: 12px; font-weight: bold; margin: 4px 0;">${item.name}</div>
+                  <div style="font-size: 14px; font-weight: 900;">TALLA: ${item.size}</div>
+                  <div style="font-size: 16px; font-weight: bold; margin: 4px 0;">$${item.price.toFixed(2)}</div>
+                  
+                  <!-- Código de Barras Renderizado -->
+                  <div style="font-size: 20px; font-family: 'Libre Barcode 39', 'Courier New', monospace; letter-spacing: 2px; margin: 6px 0;">
+                    *${item.barcode}*
+                  </div>
+                  <div style="font-size: 9px; color: #555;">${item.barcode}</div>
+                </div>
+              `
+            }
+          })
+        }
+
         printHTML += '</div>'
-        await printService.printHTML(printHTML, { title: 'Etiquetas de Códigos', width: 50 })
+        await printService.printHTML(printHTML, { title: 'Etiquetas de Códigos', width: labelWidth })
       }
 
       onSuccess()
@@ -345,17 +378,17 @@ export default function BulkDeconstructModal({ onClose, onSuccess }: BulkDeconst
             </div>
 
             {shouldPrint && (
-              <div className="ml-8 flex items-center gap-3 animate-scaleIn">
-                <input
-                  type="checkbox"
-                  id="printOnePerSize"
-                  checked={printOnePerSize}
-                  onChange={(e) => setPrintOnePerSize(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                />
-                <label htmlFor="printOnePerSize" className="text-[11px] font-bold text-slate-500 cursor-pointer uppercase tracking-tight">
-                  Imprimir solo 1 etiqueta por Talla (en vez del total de prendas: {totalPiecesReceived})
-                </label>
+              <div className="ml-8 flex flex-col gap-2 animate-scaleIn">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modo de Impresión</label>
+                <select
+                  value={printMode}
+                  onChange={(e) => setPrintMode(e.target.value as any)}
+                  className="px-4 py-2 border border-slate-200 rounded-xl bg-white outline-none font-bold text-xs text-slate-800"
+                >
+                  <option value="bulto">📦 Impresora Nimbot: 1 Etiqueta por Bulto Completo (Con Desglose)</option>
+                  <option value="talla">🏷️ Impresora Nimbot: 1 Etiqueta por Talla</option>
+                  <option value="prenda">👕 Impresora Nimbot: 1 Etiqueta por cada Prenda individual ({totalPiecesReceived})</option>
+                </select>
               </div>
             )}
           </div>

@@ -65,7 +65,7 @@ export default function ReceiptTicket({
       ref={receiptRef}
       className="receipt-ticket"
       style={{
-        width: '58mm',
+        width: `${organizationSettings?.ticketPrinterWidth || 58}mm`,
         padding: '8px',
         fontFamily: '"Courier New", monospace',
         fontSize: '11px',
