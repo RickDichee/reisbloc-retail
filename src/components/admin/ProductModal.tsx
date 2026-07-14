@@ -6,6 +6,7 @@ import { storageService } from '@/services/storageService'
 import { compressImage } from '@/utils/imageCompression'
 import { X, Save, Loader2, Image as ImageIcon, Camera, Plus, Printer } from 'lucide-react'
 import PlanGate from '@/components/common/PlanGate'
+import printService from '@/services/printService'
 
 interface ProductModalProps {
     product?: Product
@@ -265,7 +266,6 @@ export default function ProductModal({
                         }
 
                         printHTML += '</div>'
-                        const printService = (await import('@/services/printService')).default
                         await printService.printHTML(printHTML, { title: 'Etiquetas de Códigos', width: labelWidth })
                     }
                 } else {
