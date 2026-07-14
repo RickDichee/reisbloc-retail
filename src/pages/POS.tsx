@@ -32,6 +32,7 @@ export default function POS() {
     incrementDraftItem,
     decrementDraftItem,
     removeDraftItem,
+    updateDraftItemPrice,
     clearDraftForTable,
     organizationSettings,
     setOrganizationSettings,
@@ -842,6 +843,7 @@ export default function POS() {
                 onRemove={(id) => removeDraftItem(tableNumber, id)}
                 onClear={() => clearDraftForTable(tableNumber)}
                 onEditNote={(item) => setEditingItem(item)}
+                onUpdatePrice={(id, price) => updateDraftItemPrice(tableNumber, id, price)}
               />
             </div>
 

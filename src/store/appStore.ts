@@ -57,6 +57,7 @@ interface AppActions {
   incrementDraftItem: (ticketNumber: number, itemId: string) => void
   decrementDraftItem: (ticketNumber: number, itemId: string) => void
   removeDraftItem: (ticketNumber: number, itemId: string) => void
+  updateDraftItemPrice: (ticketNumber: number, itemId: string, newPrice: number) => void
   clearDraftForTicket: (ticketNumber: number) => void  // (antes clearDraftForTable)
   setOrganizationSettings: (settings: any) => void
   setOrgPlan: (plan: string, note?: string | null) => void
@@ -219,6 +220,20 @@ export const useAppStore = create<AppStore>()(
             draftOrders: {
               ...state.draftOrders,
               [ticketKey]: currentItems.filter(item => item.id !== itemId),
+            },
+          }
+        }),
+
+      updateDraftItemPrice: (ticketNumber: number, itemId: string, newPrice: number) =>
+        set(state => {
+          const ticketKey = ticketNumber || 1
+          const currentItems = state.draftOrders[ticketKey] || []
+          return {
+            draftOrders: {
+              ...state.draftOrders,
+              [ticketKey]: currentItems.map(item =>
+                item.id === itemId ? { ...item, unitPrice: newPrice } : item
+              ),
             },
           }
         }),

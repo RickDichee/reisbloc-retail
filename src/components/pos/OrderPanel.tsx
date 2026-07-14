@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { OrderItem, Order } from '@/types'
 import { LucideIcon, ShoppingBag, Plus, Minus, Trash2, Clock, Pencil } from 'lucide-react'
 
@@ -10,6 +11,7 @@ interface OrderPanelProps {
   onRemove: (itemId: string) => void
   onClear: () => void
   onEditNote: (item: OrderItem) => void
+  onUpdatePrice: (itemId: string, newPrice: number) => void
   onPrintAccount?: () => void
   onPay?: (total: number) => void
   icon?: LucideIcon
@@ -29,10 +31,14 @@ export function OrderPanel({
   onRemove,
   onClear,
   onEditNote,
+  onUpdatePrice,
   onPrintAccount,
   onPay,
   icon: Icon = ShoppingBag
 }: OrderPanelProps) {
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
+  const [editingPriceVal, setEditingPriceVal] = useState<string>('')
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
@@ -100,7 +106,52 @@ export function OrderPanel({
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 pr-4">
                   <p className="text-sm font-bold text-gray-900 mb-0.5">{item.productName}</p>
-                  <p className="text-xs text-gray-500 font-medium">{currency.format(item.unitPrice)} c/u</p>
+                  {editingPriceId === item.id ? (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] font-bold text-gray-400">$</span>
+                      <input
+                        type="number"
+                        value={editingPriceVal}
+                        onChange={(e) => setEditingPriceVal(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const num = parseFloat(editingPriceVal)
+                            if (!isNaN(num) && num >= 0) {
+                              onUpdatePrice(item.id, num)
+                            }
+                            setEditingPriceId(null)
+                          } else if (e.key === 'Escape') {
+                            setEditingPriceId(null)
+                          }
+                        }}
+                        className="w-16 px-1.5 py-0.5 border border-indigo-200 rounded font-black text-xs text-slate-900 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          const num = parseFloat(editingPriceVal)
+                          if (!isNaN(num) && num >= 0) {
+                            onUpdatePrice(item.id, num)
+                          }
+                          setEditingPriceId(null)
+                        }}
+                        className="text-[9px] bg-slate-950 text-white px-1.5 py-0.5 rounded font-black uppercase hover:bg-slate-800 shrink-0"
+                      >
+                        ok
+                      </button>
+                    </div>
+                  ) : (
+                    <p 
+                      onClick={() => {
+                        setEditingPriceId(item.id)
+                        setEditingPriceVal(item.unitPrice.toString())
+                      }}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-black cursor-pointer underline decoration-dotted mt-0.5 flex items-center gap-1"
+                      title="Haz clic para modificar el precio de este artículo"
+                    >
+                      {currency.format(item.unitPrice)} c/u ✏️
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-black text-gray-900">
