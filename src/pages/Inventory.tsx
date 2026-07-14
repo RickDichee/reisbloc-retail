@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Package, Plus, Search, AlertTriangle, Share2, Edit2, Printer } from 'lucide-react'
+import { Package, Plus, Search, AlertTriangle, Share2, Edit2, Printer, Archive } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import logger from '@/utils/logger'
@@ -8,6 +8,7 @@ import supabaseService from '@/services/supabaseService'
 import printService from '@/services/printService'
 import ProductModal from '@/components/admin/ProductModal'
 import ImportProductsModal from '@/components/admin/ImportProductsModal'
+import BulkDeconstructModal from '@/components/admin/BulkDeconstructModal'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 
@@ -19,6 +20,7 @@ export default function Inventory() {
   const [filterLowStock, setFilterLowStock] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
   const [scannedBarcode, setScannedBarcode] = useState('')
 
@@ -138,19 +140,28 @@ export default function Inventory() {
                 <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Gestión profesional de suministros y productos</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-4 rounded-2xl font-black flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] group"
-            >
-              <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-              NUEVO PRODUCTO
-            </button>
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95"
-            >
-              IMPORTAR
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-6 py-4 rounded-2xl font-black flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] group"
+              >
+                <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                NUEVO PRODUCTO
+              </button>
+              <button
+                onClick={() => setShowBulkModal(true)}
+                className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95 shadow-[0_10px_20px_rgba(217,119,6,0.3)]"
+              >
+                <Archive size={20} />
+                INGRESAR BULTO / LOTE
+              </button>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95"
+              >
+                IMPORTAR
+              </button>
+            </div>
           </div>
         </div>
 
@@ -335,6 +346,16 @@ export default function Inventory() {
               loadInventory()
             }}
             currentProductsCount={products.length}
+          />
+        )}
+
+        {showBulkModal && (
+          <BulkDeconstructModal
+            onClose={() => setShowBulkModal(false)}
+            onSuccess={() => {
+              setShowBulkModal(false)
+              loadInventory()
+            }}
           />
         )}
       </div>
