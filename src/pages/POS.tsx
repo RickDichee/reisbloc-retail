@@ -16,7 +16,7 @@ import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2 } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 export default function POS() {
@@ -96,6 +96,7 @@ export default function POS() {
   }, [registers])
 
   const handleAddRegister = async () => {
+    if (currentUser?.role !== 'admin') return alert('Solo el administrador puede agregar cajas.')
     const nextNum = tableButtons.length > 0 ? Math.max(...tableButtons) + 1 : 1
     const newRegisters = {
       ...registers,
@@ -110,13 +111,21 @@ export default function POS() {
     setOrganizationSettings(updatedSettings)
     setCurrentTicket(nextNum)
 
-    if (currentUser?.organizationId) {
+    if (currentUser?.organizationId && currentUser?.role === 'admin') {
       try {
         const { supabase } = await import('@/config/supabase')
         await supabase
           .from('organizations')
           .update({ settings: updatedSettings })
           .eq('id', currentUser.organizationId)
+
+        // Actualizar currentUser.organizationSettings
+        useAppStore.setState({
+          currentUser: {
+            ...currentUser,
+            organizationSettings: updatedSettings
+          }
+        })
       } catch (e) {
         console.error('Error saving register to Supabase:', e)
       }
@@ -124,6 +133,7 @@ export default function POS() {
   }
 
   const handleSaveRegisterName = async (num: number) => {
+    if (currentUser?.role !== 'admin') return alert('Solo el administrador puede renombrar cajas.')
     setEditingRegisterId(null)
     const trimmed = editingRegisterName.trim()
     if (!trimmed) return
@@ -140,15 +150,75 @@ export default function POS() {
 
     setOrganizationSettings(updatedSettings)
 
-    if (currentUser?.organizationId) {
+    if (currentUser?.organizationId && currentUser?.role === 'admin') {
       try {
         const { supabase } = await import('@/config/supabase')
         await supabase
           .from('organizations')
           .update({ settings: updatedSettings })
           .eq('id', currentUser.organizationId)
+
+        // Actualizar currentUser.organizationSettings
+        useAppStore.setState({
+          currentUser: {
+            ...currentUser,
+            organizationSettings: updatedSettings
+          }
+        })
       } catch (e) {
         console.error('Error saving register name to Supabase:', e)
+      }
+    }
+  }
+
+  const handleDeleteRegister = async (num: number) => {
+    if (currentUser?.role !== 'admin') return alert('Solo el administrador puede eliminar cajas.')
+    if (tableButtons.length <= 1) {
+      alert('Debe haber al menos 1 caja activa.')
+      return
+    }
+
+    const nextRegisters = { ...registers }
+    delete nextRegisters[num.toString()]
+
+    const nextAssignments = { ...registerAssignments }
+    delete nextAssignments[num.toString()]
+
+    const updatedSettings = {
+      ...(organizationSettings || {}),
+      cashRegisters: nextRegisters,
+      registerAssignments: nextAssignments
+    }
+
+    setOrganizationSettings(updatedSettings)
+
+    const remainingButtons = Object.keys(nextRegisters).map(Number).sort((a, b) => a - b)
+    if (tableNumber === num) {
+      setCurrentTicket(remainingButtons[0])
+    }
+
+    // Limpiar borrador local
+    const nextDrafts = { ...draftOrders }
+    delete nextDrafts[num]
+    useAppStore.setState({ draftOrders: nextDrafts })
+
+    if (currentUser?.organizationId && currentUser?.role === 'admin') {
+      try {
+        const { supabase } = await import('@/config/supabase')
+        await supabase
+          .from('organizations')
+          .update({ settings: updatedSettings })
+          .eq('id', currentUser.organizationId)
+
+        // Actualizar currentUser.organizationSettings
+        useAppStore.setState({
+          currentUser: {
+            ...currentUser,
+            organizationSettings: updatedSettings
+          }
+        })
+      } catch (e) {
+        console.error('Error deleting register from Supabase:', e)
       }
     }
   }
@@ -248,10 +318,34 @@ export default function POS() {
     }
   }, [users.length, setUsers])
 
-  useBarcodeScanner((code) => {
+  useBarcodeScanner((code, scannerNum) => {
     if (isReadOnly || !currentUser) return
-    const product = products.find(p => p.barcode === code || p.sku === code)
-    if (product) handleAddProduct(product)
+    
+    // Si viene prefijo de escáner (1, 2, 3, 4) y la caja existe, redirigir a esa caja
+    if (scannerNum && tableButtons.includes(scannerNum)) {
+      setCurrentTicket(scannerNum)
+      // Agregar el producto a los borradores de esa caja específica
+      const product = products.find(p => p.barcode === code || p.sku === code)
+      if (product) {
+        addItemToDraft(scannerNum, product, currentUser.username || currentUser.email || '')
+        
+        // PUSH local sync para esa caja específica
+        const localIp = organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip')
+        if (!navigator.onLine && localIp) {
+          const nextItems = [...(draftOrders[scannerNum] || []), { productId: product.id, quantity: 1, unitPrice: product.price }]
+          const url = `${localIp.replace(/\/$/, '')}/api/drafts`
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticketNumber: scannerNum, items: nextItems })
+          }).catch(err => console.warn('⚠️ Falló sincronización local:', err))
+        }
+      }
+    } else {
+      // Flujo normal para el escáner del usuario actual en la caja activa
+      const product = products.find(p => p.barcode === code || p.sku === code)
+      if (product) handleAddProduct(product)
+    }
   })
 
   if (!currentUser && !loading) {
@@ -526,6 +620,14 @@ export default function POS() {
                                 .from('organizations')
                                 .update({ settings: updatedSettings })
                                 .eq('id', currentUser.organizationId)
+
+                              // Actualizar currentUser.organizationSettings
+                              useAppStore.setState({
+                                currentUser: {
+                                  ...currentUser,
+                                  organizationSettings: updatedSettings
+                                }
+                              })
                             } catch (err) {
                               console.error('Error saving assignments:', err)
                             }
@@ -559,16 +661,31 @@ export default function POS() {
                     >
                       <span>{registerName}{assignedName ? ` (${assignedName})` : ` (${assignedUserId ? 'Cargando...' : 'Libre'})`}</span>
                       {isSelected && currentUser?.role === 'admin' && (
-                        <span 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setEditingRegisterId(num)
-                            setEditingRegisterName(registerName)
-                          }}
-                          className="opacity-50 hover:opacity-100 cursor-pointer ml-1"
-                        >
-                          <Edit2 size={12} />
-                        </span>
+                        <div className="flex items-center gap-1 ml-1 shrink-0">
+                          <span 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditingRegisterId(num)
+                              setEditingRegisterName(registerName)
+                            }}
+                            className="opacity-50 hover:opacity-100 cursor-pointer"
+                            title="Editar Caja"
+                          >
+                            <Edit2 size={12} />
+                          </span>
+                          <span 
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              if (confirm(`¿Estás seguro de que deseas eliminar la ${registerName}? Se perderán los borradores de esta caja.`)) {
+                                await handleDeleteRegister(num)
+                              }
+                            }}
+                            className="opacity-50 hover:opacity-100 text-red-500 cursor-pointer font-bold"
+                            title="Eliminar Caja"
+                          >
+                            <X size={12} />
+                          </span>
+                        </div>
                       )}
                     </button>
                   )}
