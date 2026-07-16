@@ -552,7 +552,7 @@ export default function ProductModal({
                                                         onChange={(e) => setPrintMode(e.target.value as any)}
                                                         className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white outline-none font-bold text-[11px] text-slate-800"
                                                     >
-                                                        <option value="bulto">📦 Impresora Nimbot: 1 Etiqueta por Bulto Completo (Con Desglose)</option>
+                                                        <option value="bulto">📦 Impresora Nimbot: 1 Etiqueta por Paquete Completo (Con Desglose)</option>
                                                         <option value="talla">🏷️ Impresora Nimbot: 1 Etiqueta por Talla</option>
                                                         <option value="prenda">👕 Impresora Nimbot: 1 Etiqueta por cada Prenda individual</option>
                                                     </select>
@@ -595,84 +595,92 @@ export default function ProductModal({
                             {isBulk && <p className="text-[10px] text-gray-400 mt-1">Los códigos se autogenerarán para cada variante.</p>}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                Precio de Venta (Pieza)
-                            </label>
-                            <div className="relative">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">$</span>
-                                <input
-                                    type="number"
-                                    value={formData.price || ''}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
-                                    className="w-full pl-10 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-xl"
-                                    step="0.01"
-                                    min="0"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                Precio Mayoreo
-                            </label>
-                            <div className="relative">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">$</span>
-                                <input
-                                    type="number"
-                                    value={formData.wholesalePrice || ''}
-                                    onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                    className="w-full pl-10 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-xl"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="Dejar vacío para auto"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="md:col-span-2 bg-indigo-50/40 p-5 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-4 border border-indigo-100/50">
-                            <div className="md:col-span-2 text-xs font-black text-indigo-950 uppercase tracking-tight">⚙️ Configuración de Paquete y Bulto</div>
+                        <div className="md:col-span-2 bg-indigo-50/40 p-5 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-4 border border-indigo-100/50 animate-scaleIn">
+                            <div className="md:col-span-2 text-xs font-black text-indigo-950 uppercase tracking-tight">⚙️ Configuración de Precios y Lotes</div>
                             
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PRECIO PAQUETE</label>
-                                <input
-                                    type="number"
-                                    value={formData.packPrice || ''}
-                                    onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                    placeholder="Dejar vacío para auto (75%)"
-                                />
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Precio de Venta (Pieza) *</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                    <input
+                                        type="number"
+                                        value={formData.price || ''}
+                                        onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                        step="0.01"
+                                        min="0"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Precio Mayoreo *</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                    <input
+                                        type="number"
+                                        value={formData.wholesalePrice || ''}
+                                        onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                        step="0.01"
+                                        min="0"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO PAQUETE *</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                    <input
+                                        type="number"
+                                        value={formData.packPrice || ''}
+                                        onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                        step="0.01"
+                                        min="0"
+                                        required
+                                    />
+                                </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PIEZAS POR PAQUETE</label>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PIEZAS POR PAQUETE *</label>
                                 <input
                                     type="number"
                                     value={formData.packQty || ''}
                                     onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 6 })}
-                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                    placeholder="6"
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                    min="1"
+                                    required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PRECIO BULTO</label>
-                                <input
-                                    type="number"
-                                    value={formData.bulkPrice || ''}
-                                    onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                    placeholder="Dejar vacío para auto (65%)"
-                                />
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO BULTO *</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                    <input
+                                        type="number"
+                                        value={formData.bulkPrice || ''}
+                                        onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                        step="0.01"
+                                        min="0"
+                                        required
+                                    />
+                                </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PIEZAS POR BULTO</label>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PIEZAS POR BULTO *</label>
                                 <input
                                     type="number"
                                     value={formData.bulkQty || ''}
                                     onChange={(e) => setFormData({ ...formData, bulkQty: parseInt(e.target.value) || 12 })}
-                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                    placeholder="12"
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                    min="1"
+                                    required
                                 />
                             </div>
                         </div>
