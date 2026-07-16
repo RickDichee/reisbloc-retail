@@ -219,6 +219,7 @@ export default function ProductModal({
                             const newStock = (existing.currentStock || 0) + totalQtyForSize
                             await supabaseService.updateRetailProduct(existing.id, {
                                 ...payload,
+                                sku: formData.sku ? `${formData.sku.trim()}-${size}` : undefined,
                                 currentStock: newStock,
                                 hasInventory: true
                             })
@@ -236,6 +237,7 @@ export default function ProductModal({
                                 ...payload,
                                 name: variantName,
                                 barcode: barcode,
+                                sku: formData.sku ? `${formData.sku.trim()}-${size}` : undefined,
                                 hasInventory: true,
                                 currentStock: totalQtyForSize,
                                 active: true,
@@ -246,7 +248,7 @@ export default function ProductModal({
                                 action: 'PRODUCT_CREATED',
                                 entityType: 'PRODUCT',
                                 entityId: newId,
-                                newValue: { ...payload, name: variantName, barcode: barcode, currentStock: totalQtyForSize }
+                                newValue: { ...payload, name: variantName, barcode: barcode, sku: formData.sku ? `${formData.sku.trim()}-${size}` : undefined, currentStock: totalQtyForSize }
                             })
                         }
 
@@ -433,14 +435,14 @@ export default function ProductModal({
                                         className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
                                     />
                                     <label htmlFor="isBulk" className="text-sm font-black text-indigo-950 cursor-pointer uppercase tracking-tight flex items-center gap-1">
-                                        📦 INGRESAR EN BULTO / LOTE (Tallas y cantidades)
+                                        📦 INGRESAR EN LOTE (Tallas y cantidades)
                                     </label>
                                 </div>
                                 {isBulk && (
                                     <div className="animate-scaleIn space-y-4">
                                         <div className="bg-white p-4 rounded-2xl border border-indigo-100 flex items-center justify-between gap-4">
                                             <div>
-                                                <span className="block text-xs font-black text-indigo-950 uppercase tracking-tight">Cantidad de Bultos / Paquetes</span>
+                                                <span className="block text-xs font-black text-indigo-950 uppercase tracking-tight">Cantidad de Lotes / Paquetes</span>
                                                 <span className="text-[10px] text-slate-400 font-bold">Multiplica la cantidad de cada prenda</span>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -469,7 +471,7 @@ export default function ProductModal({
                                         </div>
 
                                         <div className="space-y-3">
-                                            <span className="block text-xs font-black text-indigo-950 uppercase tracking-tight">Cantidad por Bulto / Paquete</span>
+                                            <span className="block text-xs font-black text-indigo-950 uppercase tracking-tight">Cantidad por Lote / Paquete</span>
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                                 {Object.entries(sizeQuantities).map(([sz, qty]) => (
                                                     <div key={sz} className="bg-white p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-2">
@@ -704,7 +706,7 @@ export default function ProductModal({
                                 className="w-5 h-5 rounded border-amber-300 text-amber-600 focus:ring-amber-600 cursor-pointer"
                             />
                             <label htmlFor="isWholesale" className="text-sm font-black text-amber-900 cursor-pointer uppercase tracking-tight">
-                                Producto Mayorista (Ej. Bulto que descuenta cajas)
+                                Producto Mayorista
                             </label>
                         </div>
                         {isWholesale && (

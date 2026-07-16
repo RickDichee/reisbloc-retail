@@ -1797,35 +1797,36 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
   async updateRetailProduct(productId: string, updates: Partial<Product>): Promise<void> {
     try {
-      const payload: any = { ...updates }
-      // Map camelCase to snake_case
-      if ('currentStock' in updates) {
-        payload.current_stock = updates.currentStock
-        delete payload.currentStock
-      }
-      if ('minimumStock' in updates) {
-        payload.minimum_stock = updates.minimumStock
-        delete payload.minimumStock
-      }
-      if ('hasInventory' in updates) {
-        payload.has_inventory = updates.hasInventory
-        delete payload.hasInventory
-      }
-      if ('parentId' in updates) {
-        payload.parent_id = updates.parentId
-        delete payload.parentId
-      }
-      if ('packQuantity' in updates) {
-        payload.pack_quantity = updates.packQuantity
-        delete payload.packQuantity
-      }
-      if ('wholesalePrice' in updates) {
-        payload.wholesale_price = updates.wholesalePrice
-        delete payload.wholesalePrice
-      }
+      const payload: any = {}
+      
+      // Copy explicit text and basic fields
+      if ('name' in updates) payload.name = updates.name
+      if ('description' in updates) payload.description = updates.description
+      if ('price' in updates) payload.price = updates.price
+      if ('barcode' in updates) payload.barcode = updates.barcode
+      if ('sku' in updates) payload.sku = updates.sku
+      if ('category' in updates) payload.category = updates.category
+      if ('image' in updates) payload.image = updates.image
+      if ('active' in updates) payload.active = updates.active
 
-      delete payload.id
-      delete payload.createdAt
+      // Map camelCase/alternative formats safely
+      if ('currentStock' in updates) payload.current_stock = updates.currentStock
+      if ('current_stock' in updates) payload.current_stock = (updates as any).current_stock
+
+      if ('minimumStock' in updates) payload.minimum_stock = updates.minimumStock
+      if ('minimum_stock' in updates) payload.minimum_stock = (updates as any).minimum_stock
+
+      if ('hasInventory' in updates) payload.has_inventory = updates.hasInventory
+      if ('has_inventory' in updates) payload.has_inventory = (updates as any).has_inventory
+
+      if ('parentId' in updates) payload.parent_id = updates.parentId
+      if ('parent_id' in updates) payload.parent_id = (updates as any).parent_id
+
+      if ('packQuantity' in updates) payload.pack_quantity = updates.packQuantity
+      if ('pack_quantity' in updates) payload.pack_quantity = (updates as any).pack_quantity
+
+      if ('wholesalePrice' in updates) payload.wholesale_price = updates.wholesalePrice
+      if ('wholesale_price' in updates) payload.wholesale_price = (updates as any).wholesale_price
 
       const { error } = await supabase
         .from('retail_products')
