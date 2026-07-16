@@ -25,8 +25,14 @@ export default function ReceiptTicket({
   phone = '',
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
-  const { showBranding } = usePlanLimits()
   const { organizationSettings } = useAppStore()
+  
+  const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
+  const ticketBusinessName = organizationSettings?.ticketBusinessName || businessName
+  const ticketAddress = organizationSettings?.ticketAddress || address
+  const ticketPhone = organizationSettings?.ticketPhone || phone
+  const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
+
   const registerName = (() => {
     const customNames = organizationSettings?.cashRegisters
     if (customNames && typeof customNames === 'object') {
@@ -49,7 +55,46 @@ export default function ReceiptTicket({
       if (receiptRef.current) {
         const printWindow = window.open('', '', 'height=800,width=400')
         if (printWindow) {
-          printWindow.document.write(receiptRef.current.innerHTML)
+          const printerWidth = organizationSettings?.ticketPrinterWidth || 58
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+                  color: #000 !important;
+                  -webkit-font-smoothing: none !important;
+                  -moz-osx-font-smoothing: none !important;
+                  font-smooth: never !important;
+                }
+                body {
+                  width: ${printerWidth}mm;
+                  padding: 4px;
+                  background: white;
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-weight: 900;
+                  font-size: 12px;
+                  line-height: 1.3;
+                }
+                .dashed-divider {
+                  border-bottom: 2px dashed #000 !important;
+                  margin: 6px 0;
+                }
+                .solid-divider {
+                  border-bottom: 3px solid #000 !important;
+                  margin: 8px 0;
+                }
+              </style>
+            </head>
+            <body>
+              ${receiptRef.current.innerHTML}
+            </body>
+            </html>
+          `)
           printWindow.document.close()
           printWindow.print()
           printWindow.close()
@@ -58,7 +103,7 @@ export default function ReceiptTicket({
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [])
+  }, [organizationSettings])
 
   return (
     <div
@@ -66,42 +111,49 @@ export default function ReceiptTicket({
       className="receipt-ticket"
       style={{
         width: `${organizationSettings?.ticketPrinterWidth || 58}mm`,
-        padding: '8px',
-        fontFamily: '"Courier New", monospace',
-        fontSize: '11px',
-        lineHeight: '1.2',
+        padding: '6px',
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        fontWeight: 900,
+        fontSize: '12px',
+        lineHeight: '1.3',
         backgroundColor: '#fff',
         color: '#000',
+        WebkitFontSmoothing: 'none',
+        fontSmooth: 'never'
       }}
     >
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '8px', borderBottom: '1px solid #000', paddingBottom: '8px' }}>
-        <img src="/icon.svg" alt="Logo" style={{ width: '40px', height: '40px', marginBottom: '4px', filter: 'grayscale(100%) contrast(1000%)' }} />
-        <div style={{ fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>{businessName}</div>
-        <div style={{ fontSize: '10px' }}>{address}</div>
-        {phone && <div style={{ fontSize: '10px' }}>{phone}</div>}
+      <div style={{ textAlign: 'center', marginBottom: '6px', borderBottom: '3px solid #000', paddingBottom: '6px' }}>
+        {ticketShowLogo && (
+          <img src="/icon.svg" alt="Logo" style={{ width: '40px', height: '40px', marginBottom: '4px', filter: 'grayscale(100%) contrast(1000%)' }} />
+        )}
+        <div style={{ fontWeight: 'bold', fontSize: '15px', textTransform: 'uppercase' }}>{ticketBusinessName}</div>
+        <div style={{ fontSize: '11px', marginTop: '2px' }}>{ticketAddress}</div>
+        {ticketPhone && <div style={{ fontSize: '11px', marginTop: '1px' }}>Tel: {ticketPhone}</div>}
       </div>
 
       {/* Ticket Info */}
-      <div style={{ marginBottom: '6px', fontSize: '9px' }}>
+      <div style={{ marginBottom: '6px', fontSize: '10px' }}>
         <div>Ticket: {order.id?.slice(0, 8) || 'N/A'}</div>
         <div>Caja: {registerName}</div>
         <div>Fecha: {new Date().toLocaleString('es-MX')}</div>
       </div>
 
       {/* Items */}
-      <div style={{ marginBottom: '8px', borderBottom: '1px solid #000', paddingBottom: '8px' }}>
+      <div style={{ marginBottom: '6px', borderBottom: '2px dashed #000', paddingBottom: '6px' }}>
         {Object.entries(itemsByCategory).map(([category, items]) => (
           <div key={category} style={{ marginBottom: '6px' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '10px', borderBottom: '1px dashed #ccc' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '11px', borderBottom: '2px dashed #000', paddingBottom: '2px', textTransform: 'uppercase' }}>
               {category}
             </div>
             {items.map((item: any, idx: number) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
-                <div>
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}>
+                <div style={{ paddingRight: '4px' }}>
                   {item.productName} ({item.quantity} pz)
                 </div>
-                <div>${((item.unitPrice || item.price || 0) * item.quantity).toFixed(2)}</div>
+                <div style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                  ${((item.unitPrice || item.price || 0) * item.quantity).toFixed(2)}
+                </div>
               </div>
             ))}
           </div>
@@ -109,51 +161,50 @@ export default function ReceiptTicket({
       </div>
 
       {/* Totales */}
-      <div style={{ marginBottom: '8px', borderBottom: '1px solid #000', paddingBottom: '8px' }}>
-        <div style={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+      <div style={{ marginBottom: '6px', borderBottom: '3px solid #000', paddingBottom: '6px' }}>
+        <div style={{ fontWeight: 'black', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
           <span>TOTAL:</span>
           <span>${saleTotal.toFixed(2)}</span>
         </div>
       </div>
 
       {/* Método de pago */}
-      <div style={{ marginBottom: '8px', fontSize: '10px', textAlign: 'center' }}>
-        <div>Pagado: {paymentMethod.toUpperCase()}</div>
+      <div style={{ marginBottom: '6px', fontSize: '11px', textAlign: 'center', fontWeight: 'bold' }}>
+        <div>PAGO: {paymentMethod.toUpperCase()}</div>
       </div>
 
       {/* Footer */}
       <div
         style={{
           textAlign: 'center',
-          fontSize: '10px',
-          borderTop: '1px solid #000',
+          fontSize: '11px',
+          borderTop: '2px dashed #000',
           paddingTop: '6px',
-          marginTop: '8px',
+          marginTop: '6px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '4px'
+          gap: '2px'
         }}
       >
-        <div style={{ fontWeight: 'bold' }}>¡Gracias por su compra!</div>
-        <div style={{ fontSize: '9px', fontStyle: 'italic', margin: '4px 0' }}>
+        <div style={{ fontWeight: 'bold' }}>{ticketFooterMsg}</div>
+        <div style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '2px' }}>
           "Tu negocio, sin límites"
         </div>
 
-        {/* Publicidad Reisbloc (Solo en plan Free) */}
-        {showBranding && (
-          <div style={{
-            marginTop: '6px',
-            borderTop: '1px dashed #000',
-            paddingTop: '6px',
-            width: '100%',
-            fontSize: '9px',
-            fontWeight: 'bold'
-          }}>
-            <div>⚡ Powered by REISBLOC</div>
-            <div style={{ fontSize: '8px', fontWeight: 'normal', marginTop: '2px' }}>reisbloc.store</div>
-          </div>
-        )}
+        {/* Publicidad Reisbloc (Siempre Visible al Bottom por Requerimiento Fijo) */}
+        <div style={{
+          marginTop: '8px',
+          borderTop: '2px dashed #000',
+          paddingTop: '6px',
+          width: '100%',
+          fontSize: '10px',
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}>
+          <div>⚡ Powered by REISBLOC</div>
+          <div style={{ fontSize: '9px', fontWeight: 'normal', marginTop: '1px' }}>reisbloc.com</div>
+        </div>
       </div>
 
       {/* Hidden styles para impresión */}
@@ -167,14 +218,18 @@ export default function ReceiptTicket({
             padding: 0;
             box-sizing: border-box;
             color: #000 !important;
+            -webkit-font-smoothing: none !important;
+            -moz-osx-font-smoothing: none !important;
+            font-smooth: never !important;
           }
           body {
-            width: 58mm;
-            font-family: "Courier New", monospace;
+            width: ${organizationSettings?.ticketPrinterWidth || 58}mm;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 900;
           }
           .receipt-ticket {
-            width: 58mm;
-            padding: 2mm !important;
+            width: ${organizationSettings?.ticketPrinterWidth || 58}mm;
+            padding: 1mm !important;
           }
           img {
             -webkit-print-color-adjust: exact;
