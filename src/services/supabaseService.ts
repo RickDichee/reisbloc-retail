@@ -1722,7 +1722,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if (error) throw error
       return (data || []).map((p: any) => {
-        let parsedDesc = { description: p.description || '', packPrice: undefined, bulkPrice: undefined, packQty: undefined, bulkQty: undefined }
+        let parsedDesc = { description: p.description || '', packPrice: undefined, bulkPrice: undefined, packQty: undefined, bulkQty: undefined, packagesPerBulk: undefined }
         if (p.description && p.description.startsWith('{') && p.description.endsWith('}')) {
           try {
             const parsed = JSON.parse(p.description)
@@ -1731,7 +1731,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
               packPrice: parsed.packPrice,
               bulkPrice: parsed.bulkPrice,
               packQty: parsed.packQty,
-              bulkQty: parsed.bulkQty
+              bulkQty: parsed.bulkQty,
+              packagesPerBulk: parsed.packagesPerBulk
             }
           } catch (e) {
             // Ignore parse errors
@@ -1749,10 +1750,12 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           parentId: p.parent_id,
           packQuantity: p.pack_quantity,
           wholesalePrice: p.wholesale_price || undefined,
+          wholesaleMinQty: p.wholesale_min_qty || undefined,
           packPrice: parsedDesc.packPrice,
           packQty: parsedDesc.packQty,
           bulkPrice: parsedDesc.bulkPrice,
-          bulkQty: parsedDesc.bulkQty
+          bulkQty: parsedDesc.bulkQty,
+          packagesPerBulk: parsedDesc.packagesPerBulk
         }
       }) as Product[]
     }).catch(error => {
@@ -1778,7 +1781,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         active: product.active ?? true,
         parent_id: product.parentId || null,
         pack_quantity: product.packQuantity || 1,
-        wholesale_price: product.wholesalePrice || null
+        wholesale_price: product.wholesalePrice || null,
+        wholesale_min_qty: (product as any).wholesaleMinQty || null
       }
 
       const { data, error } = await supabase
@@ -1827,6 +1831,9 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if ('wholesalePrice' in updates) payload.wholesale_price = updates.wholesalePrice
       if ('wholesale_price' in updates) payload.wholesale_price = (updates as any).wholesale_price
+
+      if ('wholesaleMinQty' in updates) payload.wholesale_min_qty = (updates as any).wholesaleMinQty
+      if ('wholesale_min_qty' in updates) payload.wholesale_min_qty = (updates as any).wholesale_min_qty
 
       const { error } = await supabase
         .from('retail_products')
