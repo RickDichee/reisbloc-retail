@@ -8,6 +8,38 @@ import { X, Save, Loader2, Image as ImageIcon, Camera, Plus, Printer } from 'luc
 import PlanGate from '@/components/common/PlanGate'
 import printService from '@/services/printService'
 
+function parseProductDescription(descriptionText: string | null) {
+  if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 6, bulkQty: 12 }
+  try {
+    if (descriptionText.startsWith('{') && descriptionText.endsWith('}')) {
+      const parsed = JSON.parse(descriptionText)
+      return {
+        description: parsed.description || '',
+        packPrice: parsed.packPrice,
+        bulkPrice: parsed.bulkPrice,
+        packQty: parsed.packQty || 6,
+        bulkQty: parsed.bulkQty || 12
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return { description: descriptionText, packPrice: undefined, bulkPrice: undefined, packQty: 6, bulkQty: 12 }
+}
+
+function serializeProductDescription(description: string, packPrice?: number, bulkPrice?: number, packQty?: number, bulkQty?: number) {
+  if (packPrice !== undefined || bulkPrice !== undefined || packQty !== undefined || bulkQty !== undefined) {
+    return JSON.stringify({
+      description,
+      packPrice,
+      bulkPrice,
+      packQty,
+      bulkQty
+    })
+  }
+  return description
+}
+
 interface ProductModalProps {
     product?: Product
     initialBarcode?: string
@@ -22,13 +54,14 @@ export default function ProductModal({
     onSuccess
 }: ProductModalProps) {
     const { currentUser, products, organizationSettings } = useAppStore()
+    const parsedDesc = parseProductDescription(product?.description || '')
     const [formData, setFormData] = useState({
         name: product?.name || '',
         price: product?.price || 0,
         category: product?.category || 'General',
         sku: product?.sku || '',
         barcode: product?.barcode || initialBarcode || '',
-        description: product?.description || '',
+        description: parsedDesc.description,
         hasInventory: product?.hasInventory || false,
         currentStock: product?.currentStock || 0,
         minimumStock: product?.minimumStock || 10,
@@ -36,6 +69,11 @@ export default function ProductModal({
         image: product?.image || '',
         parentId: product?.parentId || '',
         packQuantity: product?.packQuantity || 1,
+        wholesalePrice: product?.wholesalePrice ?? (product as any)?.wholesale_price ?? undefined,
+        packPrice: parsedDesc.packPrice,
+        packQty: parsedDesc.packQty || 6,
+        bulkPrice: parsedDesc.bulkPrice,
+        bulkQty: parsedDesc.bulkQty || 12
     })
     const [loading, setLoading] = useState(false)
     const [isBulk, setIsBulk] = useState(false)
@@ -127,9 +165,19 @@ export default function ProductModal({
                 finalImageUrl = await storageService.uploadProductImage(storageId, compressedBlob)
             }
 
+            const finalDescription = serializeProductDescription(
+                formData.description || '',
+                formData.packPrice,
+                formData.bulkPrice,
+                formData.packQty,
+                formData.bulkQty
+            )
+
             const payload = { 
                 ...formData, 
                 image: finalImageUrl,
+                description: finalDescription,
+                wholesalePrice: formData.wholesalePrice,
                 parentId: isWholesale && formData.parentId ? formData.parentId : undefined,
                 packQuantity: isWholesale ? Number(formData.packQuantity) : 1
             }
@@ -547,7 +595,7 @@ export default function ProductModal({
 
                         <div>
                             <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                Precio de Venta
+                                Precio de Venta (Pieza)
                             </label>
                             <div className="relative">
                                 <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">$</span>
@@ -559,6 +607,70 @@ export default function ProductModal({
                                     step="0.01"
                                     min="0"
                                     required
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
+                                Precio Mayoreo
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-400">$</span>
+                                <input
+                                    type="number"
+                                    value={formData.wholesalePrice || ''}
+                                    onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                    className="w-full pl-10 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-xl"
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="Dejar vacío para auto"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 bg-indigo-50/40 p-5 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-4 border border-indigo-100/50">
+                            <div className="md:col-span-2 text-xs font-black text-indigo-950 uppercase tracking-tight">⚙️ Configuración de Paquete y Bulto</div>
+                            
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PRECIO PAQUETE</label>
+                                <input
+                                    type="number"
+                                    value={formData.packPrice || ''}
+                                    onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                    placeholder="Dejar vacío para auto (75%)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PIEZAS POR PAQUETE</label>
+                                <input
+                                    type="number"
+                                    value={formData.packQty || ''}
+                                    onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 6 })}
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                    placeholder="6"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PRECIO BULTO</label>
+                                <input
+                                    type="number"
+                                    value={formData.bulkPrice || ''}
+                                    onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                    placeholder="Dejar vacío para auto (65%)"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 mb-1">PIEZAS POR BULTO</label>
+                                <input
+                                    type="number"
+                                    value={formData.bulkQty || ''}
+                                    onChange={(e) => setFormData({ ...formData, bulkQty: parseInt(e.target.value) || 12 })}
+                                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                    placeholder="12"
                                 />
                             </div>
                         </div>

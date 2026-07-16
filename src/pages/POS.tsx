@@ -19,6 +19,25 @@ import { sanitizeHTML } from '@/utils/sanitize'
 import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
+function parseProductDescription(descriptionText: string | null) {
+  if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 6, bulkQty: 12 }
+  try {
+    if (descriptionText.startsWith('{') && descriptionText.endsWith('}')) {
+      const parsed = JSON.parse(descriptionText)
+      return {
+        description: parsed.description || '',
+        packPrice: parsed.packPrice,
+        bulkPrice: parsed.bulkPrice,
+        packQty: parsed.packQty || 6,
+        bulkQty: parsed.bulkQty || 12
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+  return { description: descriptionText, packPrice: undefined, bulkPrice: undefined, packQty: 6, bulkQty: 12 }
+}
+
 export default function POS() {
   const {
     currentUser,
@@ -229,6 +248,45 @@ export default function POS() {
   const items = draftOrders[tableNumber] || []
   const isReadOnly = currentUser?.role === 'supervisor'
 
+  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('pieza')
+
+  const handleChangePriceMode = (newMode: 'pieza' | 'mayoreo' | 'paquete' | 'bulto') => {
+    setPriceMode(newMode)
+    
+    const nextItems = items.map(item => {
+      const product = products.find(p => p.id === item.productId)
+      if (!product) return item
+
+      const parsedDesc = parseProductDescription(product.description || '')
+      let activePrice = product.price
+      let activePackQty = 1
+
+      if (newMode === 'mayoreo') {
+        activePrice = product.wholesalePrice || (product as any).wholesale_price || product.price
+        activePackQty = 1
+      } else if (newMode === 'paquete') {
+        activePrice = parsedDesc.packPrice || (product.price * 0.75)
+        activePackQty = parsedDesc.packQty || 6
+      } else if (newMode === 'bulto') {
+        activePrice = parsedDesc.bulkPrice || (product.price * 0.65)
+        activePackQty = parsedDesc.bulkQty || 12
+      }
+
+      return {
+        ...item,
+        unitPrice: activePrice,
+        packQuantity: activePackQty
+      }
+    })
+
+    useAppStore.setState(state => ({
+      draftOrders: {
+        ...state.draftOrders,
+        [tableNumber]: nextItems
+      }
+    }))
+  }
+
   const filteredProducts = useMemo(() => {
     const result = products
     if (!searchTerm) return result
@@ -329,12 +387,33 @@ export default function POS() {
       // Agregar el producto a los borradores de esa caja específica
       const product = products.find(p => p.barcode === code || p.sku === code)
       if (product) {
-        addItemToDraft(scannerNum, product, currentUser.username || currentUser.email || '')
+        const parsedDesc = parseProductDescription(product.description || '')
+        let activePrice = product.price
+        let activePackQty = 1
+
+        if (priceMode === 'mayoreo') {
+          activePrice = product.wholesalePrice || (product as any).wholesale_price || product.price
+          activePackQty = 1
+        } else if (priceMode === 'paquete') {
+          activePrice = parsedDesc.packPrice || (product.price * 0.75)
+          activePackQty = parsedDesc.packQty || 6
+        } else if (priceMode === 'bulto') {
+          activePrice = parsedDesc.bulkPrice || (product.price * 0.65)
+          activePackQty = parsedDesc.bulkQty || 12
+        }
+
+        const computedProduct = {
+          ...product,
+          price: activePrice,
+          packQuantity: activePackQty
+        }
+
+        addItemToDraft(scannerNum, computedProduct, currentUser.username || currentUser.email || '')
         
         // PUSH local sync para esa caja específica
         const localIp = organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip')
         if (!navigator.onLine && localIp) {
-          const nextItems = [...(draftOrders[scannerNum] || []), { productId: product.id, quantity: 1, unitPrice: product.price }]
+          const nextItems = [...(draftOrders[scannerNum] || []), { productId: product.id, quantity: 1, unitPrice: activePrice, packQuantity: activePackQty }]
           const url = `${localIp.replace(/\/$/, '')}/api/drafts`
           fetch(url, {
             method: 'POST',
@@ -405,7 +484,29 @@ export default function POS() {
 
   const handleAddProduct = (product: Product) => {
     if (!currentUser || isReadOnly) return
-    addItemToDraft(tableNumber, product, currentUser.id)
+    
+    const parsedDesc = parseProductDescription(product.description || '')
+    let activePrice = product.price
+    let activePackQty = 1
+
+    if (priceMode === 'mayoreo') {
+      activePrice = product.wholesalePrice || (product as any).wholesale_price || product.price
+      activePackQty = 1
+    } else if (priceMode === 'paquete') {
+      activePrice = parsedDesc.packPrice || (product.price * 0.75)
+      activePackQty = parsedDesc.packQty || 6
+    } else if (priceMode === 'bulto') {
+      activePrice = parsedDesc.bulkPrice || (product.price * 0.65)
+      activePackQty = parsedDesc.bulkQty || 12
+    }
+
+    const computedProduct = {
+      ...product,
+      price: activePrice,
+      packQuantity: activePackQty
+    }
+
+    addItemToDraft(tableNumber, computedProduct, currentUser.id)
   }
 
   const handleAddManualItem = (description: string, price: number) => {
@@ -734,6 +835,23 @@ export default function POS() {
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchKeyDown}
             />
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+            <span className="text-[9px] font-black text-slate-400 uppercase px-2 whitespace-nowrap">Tarifa:</span>
+            {(['pieza', 'mayoreo', 'paquete', 'bulto'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => handleChangePriceMode(mode)}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${
+                  priceMode === mode
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
           </div>
 
           <button
