@@ -9,7 +9,7 @@ import PlanGate from '@/components/common/PlanGate'
 import printService from '@/services/printService'
 
 function parseProductDescription(descriptionText: string | null) {
-  if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10 }
+  if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10, wholesaleMinQty: 3 }
   try {
     if (descriptionText.startsWith('{') && descriptionText.endsWith('}')) {
       const parsed = JSON.parse(descriptionText)
@@ -18,17 +18,18 @@ function parseProductDescription(descriptionText: string | null) {
         packPrice: parsed.packPrice,
         bulkPrice: parsed.bulkPrice,
         packQty: parsed.packQty || 10,
-        packagesPerBulk: parsed.packagesPerBulk || 10
+        packagesPerBulk: parsed.packagesPerBulk || 10,
+        wholesaleMinQty: parsed.wholesaleMinQty || 3
       }
     }
   } catch (e) {
     // ignore
   }
-  return { description: descriptionText, packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10 }
+  return { description: descriptionText, packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10, wholesaleMinQty: 3 }
 }
 
-function serializeProductDescription(description: string, packPrice?: number, bulkPrice?: number, packQty?: number, packagesPerBulk?: number) {
-  if (packPrice !== undefined || bulkPrice !== undefined || packQty !== undefined || packagesPerBulk !== undefined) {
+function serializeProductDescription(description: string, packPrice?: number, bulkPrice?: number, packQty?: number, packagesPerBulk?: number, wholesaleMinQty?: number) {
+  if (packPrice !== undefined || bulkPrice !== undefined || packQty !== undefined || packagesPerBulk !== undefined || wholesaleMinQty !== undefined) {
     const finalPackQty = packQty || 10
     const finalPackagesPerBulk = packagesPerBulk || 10
     const calculatedBulkQty = finalPackQty * finalPackagesPerBulk
@@ -39,7 +40,8 @@ function serializeProductDescription(description: string, packPrice?: number, bu
       bulkPrice,
       packQty: finalPackQty,
       packagesPerBulk: finalPackagesPerBulk,
-      bulkQty: calculatedBulkQty
+      bulkQty: calculatedBulkQty,
+      wholesaleMinQty: wholesaleMinQty || 3
     })
   }
   return description
@@ -75,7 +77,7 @@ export default function ProductModal({
         parentId: product?.parentId || '',
         packQuantity: product?.packQuantity || 1,
         wholesalePrice: product?.wholesalePrice ?? (product as any)?.wholesale_price ?? undefined,
-        wholesaleMinQty: product?.wholesaleMinQty ?? (product as any)?.wholesale_min_qty ?? 3,
+        wholesaleMinQty: product?.wholesaleMinQty ?? (product as any)?.wholesale_min_qty ?? parsedDesc.wholesaleMinQty ?? 3,
         packPrice: parsedDesc.packPrice,
         packQty: parsedDesc.packQty || 10,
         bulkPrice: parsedDesc.bulkPrice,
@@ -176,7 +178,8 @@ export default function ProductModal({
                 formData.packPrice,
                 formData.bulkPrice,
                 formData.packQty,
-                formData.packagesPerBulk
+                formData.packagesPerBulk,
+                formData.wholesaleMinQty
             )
 
             const payload = { 
@@ -184,7 +187,6 @@ export default function ProductModal({
                 image: finalImageUrl,
                 description: finalDescription,
                 wholesalePrice: formData.wholesalePrice,
-                wholesaleMinQty: formData.wholesaleMinQty,
                 parentId: isWholesale && formData.parentId ? formData.parentId : undefined,
                 packQuantity: isWholesale ? Number(formData.packQuantity) : 1
             }

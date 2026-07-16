@@ -1781,8 +1781,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         active: product.active ?? true,
         parent_id: product.parentId || null,
         pack_quantity: product.packQuantity || 1,
-        wholesale_price: product.wholesalePrice || null,
-        wholesale_min_qty: (product as any).wholesaleMinQty || null
+        wholesale_price: product.wholesalePrice || null
       }
 
       const { data, error } = await supabase
@@ -1831,9 +1830,6 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if ('wholesalePrice' in updates) payload.wholesale_price = updates.wholesalePrice
       if ('wholesale_price' in updates) payload.wholesale_price = (updates as any).wholesale_price
-
-      if ('wholesaleMinQty' in updates) payload.wholesale_min_qty = (updates as any).wholesaleMinQty
-      if ('wholesale_min_qty' in updates) payload.wholesale_min_qty = (updates as any).wholesale_min_qty
 
       const { error } = await supabase
         .from('retail_products')
