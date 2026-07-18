@@ -1927,7 +1927,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       // 3. Update stock for items that have inventory
       const aggregatedStock: Record<string, number> = {}
       items.forEach(item => {
-        if (!item.productId || item.id.toLowerCase().startsWith('manual-')) return
+        if (!item.productId || item.productId.toLowerCase().startsWith('manual-') || item.id.toLowerCase().startsWith('manual-')) return
         const targetId = item.parentId || item.productId
         const qtyToDeduct = item.quantity * (item.packQuantity || 1)
         aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct

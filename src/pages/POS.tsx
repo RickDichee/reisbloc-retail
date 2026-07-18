@@ -249,6 +249,7 @@ export default function POS() {
   const isReadOnly = currentUser?.role === 'supervisor'
 
   const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('pieza')
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
 
   const handleChangePriceMode = (newMode: 'pieza' | 'mayoreo' | 'paquete' | 'bulto') => {
     setPriceMode(newMode)
@@ -675,8 +676,36 @@ export default function POS() {
   return (
     <DashboardLayout>
       <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
+        {/* Mobile Sticky Header Bar */}
+        <div className="flex md:hidden items-center justify-between bg-white p-3 rounded-xl border border-gray-200 shadow-sm shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-black text-slate-800 uppercase tracking-tight">
+              {registers[tableNumber.toString()] || `Caja ${tableNumber}`}
+            </span>
+            <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-black uppercase">
+              {priceMode}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowManualItemModal(true)}
+              className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800"
+              title="Agregar item manual"
+            >
+              <Plus size={14} />
+            </button>
+            <button
+              onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 transition-all border border-slate-200"
+            >
+              {isHeaderExpanded ? 'Ocultar 🔼' : '🔍 Buscar / Cajas 🔽'}
+            </button>
+          </div>
+        </div>
+
         {/* Unified Header with Search and Accounts */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center shrink-0">
+        <div className={`bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center shrink-0 ${isHeaderExpanded ? 'flex animate-scaleIn' : 'hidden md:flex'}`}>
           <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0 flex-wrap">
             <LayoutGrid size={18} className="text-slate-400 ml-2" />
             {tableButtons.map(num => {

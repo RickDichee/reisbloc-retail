@@ -46,31 +46,66 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         localStorage.setItem('sidebar_mini', String(newState));
     };
 
-    const menuItems: { label: string; icon?: LucideIcon; path?: string; isHeader?: boolean }[] = [
-        { label: 'Sistema', isHeader: true },
-        { label: 'Administración', icon: Shield, path: '/admin' },
+    const userRole = currentUser?.role || 'employee';
 
-        { label: 'IA & Marketing', isHeader: true },
-        { label: 'Marketing AI', icon: Megaphone, path: '/marketing' },
-        { label: 'IA Agent', icon: Bot, path: '/agent' },
-        { label: 'Analytics', icon: TrendingUp, path: '/analytics' },
-
-        { label: 'Operación', isHeader: true },
-        { label: 'Punto de Venta', icon: Banknote, path: '/pos' },
-        { label: 'E-commerce', icon: Store, path: '/ecommerce' },
-
-        { label: 'Gestión', isHeader: true },
-        { label: 'Inventario', icon: Package, path: '/inventory' },
-        { label: 'Clientes', icon: Users, path: '/clients' },
-        { label: 'Reportes', icon: BarChart3, path: '/reports' },
-        { label: 'Compras', icon: Coins, path: '/purchases' },
-        { label: 'Cierre de Caja', icon: DollarSign, path: '/closing' },
-
-        { label: 'Configuración', isHeader: true },
-        { label: 'Accesibilidad y Diseño', icon: Settings, path: '/settings' },
+    const sections = [
+        {
+            title: 'Sistema',
+            roles: ['admin'],
+            items: [
+                { label: 'Administración', icon: Shield, path: '/admin', roles: ['admin'] }
+            ]
+        },
+        {
+            title: 'IA & Marketing',
+            roles: ['admin', 'manager'],
+            items: [
+                { label: 'Marketing AI', icon: Megaphone, path: '/marketing', roles: ['admin', 'manager'] },
+                { label: 'IA Agent', icon: Bot, path: '/agent', roles: ['admin', 'manager'] },
+                { label: 'Analytics', icon: TrendingUp, path: '/analytics', roles: ['admin', 'manager'] }
+            ]
+        },
+        {
+            title: 'Operación',
+            roles: ['admin', 'manager', 'cashier', 'employee', 'supervisor'],
+            items: [
+                { label: 'Punto de Venta', icon: Banknote, path: '/pos', roles: ['admin', 'manager', 'cashier', 'employee', 'supervisor'] },
+                { label: 'E-commerce', icon: Store, path: '/ecommerce', roles: ['admin', 'manager'] }
+            ]
+        },
+        {
+            title: 'Gestión',
+            roles: ['admin', 'manager', 'supervisor', 'cashier'],
+            items: [
+                { label: 'Inventario', icon: Package, path: '/inventory', roles: ['admin', 'manager', 'supervisor'] },
+                { label: 'Clientes', icon: Users, path: '/clients', roles: ['admin', 'manager', 'supervisor'] },
+                { label: 'Reportes', icon: BarChart3, path: '/reports', roles: ['admin', 'manager', 'supervisor'] },
+                { label: 'Compras', icon: Coins, path: '/purchases', roles: ['admin', 'manager'] },
+                { label: 'Cierre de Caja', icon: DollarSign, path: '/closing', roles: ['admin', 'manager', 'cashier', 'supervisor'] }
+            ]
+        },
+        {
+            title: 'Configuración',
+            roles: ['admin', 'manager'],
+            items: [
+                { label: 'Accesibilidad y Diseño', icon: Settings, path: '/settings', roles: ['admin', 'manager'] }
+            ]
+        }
     ];
 
-    const DEFAULT_SIDEBAR_ITEMS = ['/pos', '/tables', '/inventory', '/clients', '/reports', '/purchases', '/marketing', '/agent', '/analytics'];
+    const visibleSections = sections.filter(sec => sec.roles.includes(userRole));
+    const finalMenuItems = visibleSections.flatMap(sec => {
+        const visibleItems = sec.items.filter(item => {
+            if (item.path === '/admin' || item.path === '/settings') return true;
+            const visibleItems = organizationSettings?.favorites?.sidebar || ['/pos', '/tables', '/inventory', '/clients', '/reports', '/purchases', '/marketing', '/agent', '/analytics', '/closing', '/ecommerce'];
+            return visibleItems.includes(item.path) || location.pathname === item.path;
+        });
+        if (visibleItems.length === 0) return [];
+        return [
+            { label: sec.title, isHeader: true },
+            ...visibleItems
+        ];
+    });
 
     const handleLogout = async () => {
         await logout();
@@ -105,14 +140,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
                 <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
                     <nav className="space-y-1.5">
-                        {menuItems.filter(item => {
-                            if (item.isHeader) return true;
-                            if (item.path === '/admin' || item.path === '/settings') return true;
-
-                            // 🛡️ Fallback: Si no hay configuración, mostrar los básicos
-                            const visibleItems = organizationSettings?.favorites?.sidebar || DEFAULT_SIDEBAR_ITEMS;
-                            return visibleItems.includes(item.path) || location.pathname === item.path;
-                        }).map((item, idx) => {
+                        {finalMenuItems.map((item, idx) => {
                             if (item.isHeader) {
                                 return (
                                     <div key={idx} className={`px-4 pt-6 pb-2 ${isMini ? 'flex justify-center' : ''}`}>
@@ -196,7 +224,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
                 {/* Mobile Bottom Navigation */}
                 <div className="lg:hidden bg-white border-t border-slate-200 flex items-center justify-around py-1 safe-bottom w-full overflow-hidden">
-                    {menuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Cuentas', 'Cierre de Caja'].includes(item.label)).map((item) => {
+                    {finalMenuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Cierre de Caja'].includes(item.label)).map((item) => {
                         const Icon = item.icon!;
                         const isActive = location.pathname === item.path;
                         return (

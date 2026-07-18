@@ -96,6 +96,7 @@ export default function ProductModal({
     const [shouldPrint, setShouldPrint] = useState(true)
     const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
     const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
+    const [showPricingOptions, setShowPricingOptions] = useState(() => !!formData.wholesalePrice || !!formData.packPrice || !!formData.bulkPrice)
 
     const handleQtyChange = (sz: string, val: number) => {
         setSizeQuantities(prev => ({
@@ -201,15 +202,10 @@ export default function ProductModal({
                     newValue: payload
                 })
             } else {
-                if (isBulk) {
-                    const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
-                    const totalPiecesReceived = totalPiecesPerPackage * packagesCount
+                const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
+                const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
-                    if (totalPiecesReceived <= 0) {
-                        alert('Debes agregar al menos 1 pieza en el desglose de tallas')
-                        setLoading(false)
-                        return
-                    }
+                if (isBulk && totalPiecesReceived > 0) {
 
                     const resultsToPrint: { name: string; barcode: string; price: number; size: string; count: number }[] = []
 
@@ -604,6 +600,20 @@ export default function ProductModal({
                             {isBulk && <p className="text-[10px] text-gray-400 mt-1">Los códigos se autogenerarán para cada variante.</p>}
                         </div>
 
+                        {/* Checkbox for differentiated prices */}
+                        <div className="md:col-span-2 flex items-center gap-3 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100/30">
+                            <input
+                                type="checkbox"
+                                id="showPricingOptions"
+                                checked={showPricingOptions}
+                                onChange={(e) => setShowPricingOptions(e.target.checked)}
+                                className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                            />
+                            <label htmlFor="showPricingOptions" className="text-sm font-black text-indigo-950 cursor-pointer uppercase tracking-tight">
+                                Habilitar Precios Diferenciados (Mayoreo, Paquete, Bulto)
+                            </label>
+                        </div>
+
                         <div className="md:col-span-2 bg-indigo-50/40 p-5 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-4 border border-indigo-100/50 animate-scaleIn">
                             <div className="md:col-span-2 text-xs font-black text-indigo-950 uppercase tracking-tight">⚙️ Configuración de Precios y Lotes</div>
                             
@@ -634,87 +644,88 @@ export default function ProductModal({
                                 />
                             </div>
                             
-                            {/* Fila 2: Precio Mayoreo + Piezas por Mayoreo */}
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Precio Mayoreo *</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                    <input
-                                        type="number"
-                                        value={formData.wholesalePrice || ''}
-                                        onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
-                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                        step="0.01"
-                                        min="0"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Piezas por Mayoreo *</label>
-                                <input
-                                    type="number"
-                                    value={formData.wholesaleMinQty}
-                                    onChange={(e) => setFormData({ ...formData, wholesaleMinQty: parseInt(e.target.value) || 3 })}
-                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                    min="1"
-                                    required
-                                />
-                            </div>
+                            {showPricingOptions && (
+                                <>
+                                    {/* Fila 2: Precio Mayoreo + Piezas por Mayoreo */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Precio Mayoreo</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.wholesalePrice || ''}
+                                                onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                                step="0.01"
+                                                min="0"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Piezas por Mayoreo</label>
+                                        <input
+                                            type="number"
+                                            value={formData.wholesaleMinQty}
+                                            onChange={(e) => setFormData({ ...formData, wholesaleMinQty: parseInt(e.target.value) || 3 })}
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                            min="1"
+                                        />
+                                    </div>
 
-                            {/* Fila 3: Precio Paquete + Piezas por Paquete */}
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO PAQUETE *</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                    <input
-                                        type="number"
-                                        value={formData.packPrice || ''}
-                                        onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
-                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                        step="0.01"
-                                        min="0"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PIEZAS POR PAQUETE *</label>
-                                <input
-                                    type="number"
-                                    value={formData.packQty}
-                                    onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 10 })}
-                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                    min="1"
-                                    required
-                                />
-                            </div>
+                                    {/* Fila 3: Precio Paquete + Piezas por Paquete */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO PAQUETE</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.packPrice || ''}
+                                                onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                                step="0.01"
+                                                min="0"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PIEZAS POR PAQUETE</label>
+                                        <input
+                                            type="number"
+                                            value={formData.packQty}
+                                            onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 10 })}
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                            min="1"
+                                        />
+                                    </div>
 
-                            {/* Fila 4: Precio Bulto + Paquetes por Bulto */}
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO BULTO *</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                    <input
-                                        type="number"
-                                        value={formData.bulkPrice || ''}
-                                        onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
-                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                        step="0.01"
-                                        min="0"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PAQUETES POR BULTO *</label>
-                                <input
-                                    type="number"
-                                    value={formData.packagesPerBulk}
-                                    onChange={(e) => setFormData({ ...formData, packagesPerBulk: parseInt(e.target.value) || 10 })}
-                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
-                                    min="1"
-                                    required
+                                    {/* Fila 4: Precio Bulto + Paquetes por Bulto */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO BULTO</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.bulkPrice || ''}
+                                                onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                                step="0.01"
+                                                min="0"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PAQUETES POR BULTO</label>
+                                        <input
+                                            type="number"
+                                            value={formData.packagesPerBulk}
+                                            onChange={(e) => setFormData({ ...formData, packagesPerBulk: parseInt(e.target.value) || 10 })}
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                            min="1"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
                                 />
                             </div>
                         </div>
@@ -763,8 +774,9 @@ export default function ProductModal({
                                         type="number"
                                         value={formData.currentStock || ''}
                                         onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center"
+                                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                         min="0"
+                                        disabled={currentUser?.role !== 'admin'}
                                         required />
                                 </div>
 
