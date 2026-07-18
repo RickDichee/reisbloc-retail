@@ -628,6 +628,7 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
                         />
                     </div>
                 </div>
+            </div>
 
             {/* Error Message */}
             {error && (

@@ -157,7 +157,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             return (
                                 <button
                                     key={item.path || idx}
-                                    onClick={() => item.path && navigate(item.path)}
+                                    onClick={() => {
+                                        if (item.path) {
+                                            navigate(item.path);
+                                            setIsSidebarOpen(false);
+                                        }
+                                    }}
                                     title={isMini ? item.label : ''}
                                     className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 font-medium text-sm group ${isActive
                                         ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200'

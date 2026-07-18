@@ -14,6 +14,7 @@ import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
   const { hasAnyRole } = usePermissions()
+  const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLowStock, setFilterLowStock] = useState(false)
@@ -138,19 +139,23 @@ export default function Inventory() {
                 <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Gestión profesional de suministros y productos</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-4 rounded-2xl font-black flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] group"
-            >
-              <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-              NUEVO PRODUCTO
-            </button>
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95"
-            >
-              IMPORTAR
-            </button>
+            {isAdminOrManager && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-4 rounded-2xl font-black flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] group"
+                >
+                  <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                  NUEVO PRODUCTO
+                </button>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95"
+                >
+                  IMPORTAR
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
