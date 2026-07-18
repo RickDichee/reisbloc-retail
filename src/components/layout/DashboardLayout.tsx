@@ -113,7 +113,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     };
 
     return (
-        <div className="flex h-dvh bg-[var(--bg-canvas)] overflow-hidden transition-colors duration-200">
+        <div className="flex h-dvh bg-[var(--bg-canvas)] overflow-hidden transition-colors duration-200 pt-12 lg:pt-16">
             {/* Sidebar Overlay for Mobile */}
             <div
                 className={`fixed inset-0 z-20 bg-gray-900/50 lg:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}

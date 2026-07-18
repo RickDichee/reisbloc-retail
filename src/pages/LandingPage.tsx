@@ -115,6 +115,8 @@ const LandingPage = () => {
     <div className="min-h-screen bg-[#F8FAFC] text-[#1F2937] font-['Outfit',sans-serif]">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+        html { scroll-behavior: smooth; }
+        #features, #pricing { scroll-margin-top: 6rem; }
         body { font-family: 'Outfit', sans-serif; }
         .hero-gradient { background: linear-gradient(135deg, #1F293B 0%, #2d3f55 50%, #1F293B 100%); }
         .card-hover { transition: transform 0.25s ease, box-shadow 0.25s ease; }

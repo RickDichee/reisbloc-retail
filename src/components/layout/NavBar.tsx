@@ -106,7 +106,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="text-white shadow-md sticky top-0 z-50 border-b transition-all duration-500"
+      className="text-white shadow-md fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500"
       style={{
         background: '#1E293B',
         borderBottomColor: 'var(--brand-primary, #10B981)',
@@ -128,7 +128,7 @@ export default function NavBar() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-1 flex-wrap py-1 flex-1 justify-center sm:justify-start">
+          <div className="hidden lg:flex items-center gap-1 flex-wrap py-1 flex-1 justify-start">
             {visibleItems.map(item => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
