@@ -291,7 +291,8 @@ export default function ProductModal({
                                     <div style="font-size: 10px; margin: 4px 0; padding: 4px; border: 1px solid #ddd; width: 100%; border-radius: 4px; text-align: left;">
                                       <strong>Desglose:</strong> ${sizeBreakdownText}
                                     </div>
-                                    <div style="font-size: 16px; font-weight: 900; margin: 6px 0;">$${(formData.price * totalPiecesPerPackage).toFixed(2)}</div>
+                                    <div style="font-size: 16px; font-weight: 900; margin: 4px 0;">$${formData.price.toFixed(2)} <span style="font-size: 11px; font-weight: bold; color: #555;">PZA</span></div>
+                                    <div style="font-size: 9px; color: #666; font-weight: bold; margin-bottom: 2px;">TOTAL PAQUETE (${totalPiecesPerPackage} PZS): $${(formData.price * totalPiecesPerPackage).toFixed(2)}</div>
                                     
                                     <!-- Código de Barras Bulto -->
                                     <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto; margin: 6px 0;" alt="barcode">
