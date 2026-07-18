@@ -9,7 +9,7 @@ import PlanGate from '@/components/common/PlanGate'
 import printService from '@/services/printService'
 
 function parseProductDescription(descriptionText: string | null) {
-  if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10, wholesaleMinQty: 3 }
+  if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10, wholesaleMinQty: 3, sizes: undefined }
   try {
     if (descriptionText.startsWith('{') && descriptionText.endsWith('}')) {
       const parsed = JSON.parse(descriptionText)
@@ -19,17 +19,18 @@ function parseProductDescription(descriptionText: string | null) {
         bulkPrice: parsed.bulkPrice,
         packQty: parsed.packQty || 10,
         packagesPerBulk: parsed.packagesPerBulk || 10,
-        wholesaleMinQty: parsed.wholesaleMinQty || 3
+        wholesaleMinQty: parsed.wholesaleMinQty || 3,
+        sizes: parsed.sizes
       }
     }
   } catch (e) {
     // ignore
   }
-  return { description: descriptionText, packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10, wholesaleMinQty: 3 }
+  return { description: descriptionText, packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10, wholesaleMinQty: 3, sizes: undefined }
 }
 
-function serializeProductDescription(description: string, packPrice?: number, bulkPrice?: number, packQty?: number, packagesPerBulk?: number, wholesaleMinQty?: number) {
-  if (packPrice !== undefined || bulkPrice !== undefined || packQty !== undefined || packagesPerBulk !== undefined || wholesaleMinQty !== undefined) {
+function serializeProductDescription(description: string, packPrice?: number, bulkPrice?: number, packQty?: number, packagesPerBulk?: number, wholesaleMinQty?: number, sizes?: Record<string, number>) {
+  if (packPrice !== undefined || bulkPrice !== undefined || packQty !== undefined || packagesPerBulk !== undefined || wholesaleMinQty !== undefined || sizes !== undefined) {
     const finalPackQty = packQty || 10
     const finalPackagesPerBulk = packagesPerBulk || 10
     const calculatedBulkQty = finalPackQty * finalPackagesPerBulk
@@ -41,7 +42,8 @@ function serializeProductDescription(description: string, packPrice?: number, bu
       packQty: finalPackQty,
       packagesPerBulk: finalPackagesPerBulk,
       bulkQty: calculatedBulkQty,
-      wholesaleMinQty: wholesaleMinQty || 3
+      wholesaleMinQty: wholesaleMinQty || 3,
+      sizes: sizes || {}
     })
   }
   return description
@@ -85,13 +87,14 @@ export default function ProductModal({
         packagesPerBulk: parsedDesc.packagesPerBulk || 10
     })
     const [loading, setLoading] = useState(false)
-    const [isBulk, setIsBulk] = useState(false)
+    const [isBulk, setIsBulk] = useState(() => !!parsedDesc.sizes)
     const [packagesCount, setPackagesCount] = useState(1)
-    const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({
-        'CH': 0,
-        'M': 0,
-        'G': 0,
-        'XG': 0,
+    const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>(() => {
+        const base = { 'CH': 0, 'M': 0, 'G': 0, 'XG': 0 }
+        if (parsedDesc.sizes && typeof parsedDesc.sizes === 'object') {
+            return { ...base, ...parsedDesc.sizes }
+        }
+        return base
     })
     const [customSize, setCustomSize] = useState('')
     const [shouldPrint, setShouldPrint] = useState(true)
@@ -192,83 +195,39 @@ export default function ProductModal({
                 wholesalePrice: formData.wholesalePrice,
                 parentId: isWholesale && formData.parentId ? formData.parentId : undefined,
                 packQuantity: isWholesale ? Number(formData.packQuantity) : 1
-            }
+                      if (product) {
+                const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
+                const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
-            if (product) {
-                await supabaseService.updateRetailProduct(product.id, payload)
+                const updatedPayload = {
+                    ...payload,
+                    currentStock: isBulk ? totalPiecesReceived : formData.currentStock,
+                    hasInventory: isBulk ? true : formData.hasInventory
+                }
+
+                await supabaseService.updateRetailProduct(product.id, updatedPayload)
                 await supabaseService.createAuditLog({
                     userId: currentUser?.id || 'unknown',
                     action: 'PRODUCT_UPDATED',
                     entityType: 'PRODUCT',
                     entityId: product.id,
-                    newValue: payload
+                    newValue: updatedPayload
                 })
-            } else {
-                const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
-                const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
-                if (isBulk && totalPiecesReceived > 0) {
-
-                    const resultsToPrint: { name: string; barcode: string; price: number; size: string; count: number }[] = []
-
-                    for (const [size, qtyPerPack] of Object.entries(sizeQuantities)) {
-                        if (qtyPerPack <= 0) continue
-
-                        const totalQtyForSize = qtyPerPack * packagesCount
-                        const variantName = `${formData.name.trim()} (${size})`
-                        
-                        // Buscar si la variante ya existe
-                        const existing = products.find(p => p.name.toLowerCase() === variantName.toLowerCase())
-
-                        let barcode = ''
-                        if (existing) {
-                            barcode = existing.barcode || ''
-                            const newStock = (existing.currentStock || 0) + totalQtyForSize
-                            await supabaseService.updateRetailProduct(existing.id, {
-                                ...payload,
-                                sku: formData.sku ? `${formData.sku.trim()}-${size}` : undefined,
-                                currentStock: newStock,
-                                hasInventory: true
-                            })
-                            await supabaseService.createAuditLog({
-                                userId: currentUser?.id || 'unknown',
-                                action: 'PRODUCT_UPDATED',
-                                entityType: 'PRODUCT',
-                                entityId: existing.id,
-                                newValue: { name: variantName, currentStock: newStock, stockAdded: totalQtyForSize }
-                            })
-                        } else {
-                            barcode = `750${Math.floor(1000000000 + Math.random() * 9000000000)}`
-                            
-                            const newId = await supabaseService.createRetailProduct({
-                                ...payload,
-                                name: variantName,
-                                barcode: barcode,
-                                sku: formData.sku ? `${formData.sku.trim()}-${size}` : undefined,
-                                hasInventory: true,
-                                currentStock: totalQtyForSize,
-                                active: true,
-                                createdAt: new Date(),
-                            })
-                            await supabaseService.createAuditLog({
-                                userId: currentUser?.id || 'unknown',
-                                action: 'PRODUCT_CREATED',
-                                entityType: 'PRODUCT',
-                                entityId: newId,
-                                newValue: { ...payload, name: variantName, barcode: barcode, sku: formData.sku ? `${formData.sku.trim()}-${size}` : undefined, currentStock: totalQtyForSize }
-                            })
-                                              resultsToPrint.push({
+                // Impresión de etiquetas automatizada
+                if (shouldPrint && isBulk && totalPiecesReceived > 0) {
+                    const resultsToPrint = Object.entries(sizeQuantities)
+                        .filter(([_, qty]) => qty > 0)
+                        .map(([size, qty]) => ({
                             name: formData.name.trim(),
-                            barcode,
+                            barcode: product.barcode,
                             price: formData.price,
                             size,
-                            count: totalQtyForSize,
+                            count: qty * packagesCount,
                             sku: formData.sku ? `${formData.sku.trim()}-${size}` : 'N/A'
-                        })
-                    }
+                        }))
 
-                    // Impresión de etiquetas automatizada
-                    if (shouldPrint && resultsToPrint.length > 0) {
+                    if (resultsToPrint.length > 0) {
                         const labelWidth = organizationSettings?.labelPrinterWidth || 50
                         let printHTML = `<div style="display: flex; flex-direction: column; gap: 20px; font-family: monospace; text-align: center; width: ${labelWidth}mm; margin: 0 auto;">`
 
@@ -278,7 +237,7 @@ export default function ProductModal({
                                 .map(([sz, qty]) => `${qty} ${sz}`)
                                 .join(', ')
 
-                            const bulkBarcode = `750B${Math.floor(100000000 + Math.random() * 900000000)}`
+                            const bulkBarcode = product.barcode || `750B${Math.floor(100000000 + Math.random() * 900000000)}`
 
                             for (let i = 0; i < packagesCount; i++) {
                                 const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(bulkBarcode)}&scale=3&height=12&includetext=false`
@@ -321,24 +280,99 @@ export default function ProductModal({
                                 }
                             })
                         }
-
                         printHTML += '</div>'
                         await printService.printHTML(printHTML, { title: 'Etiquetas de Códigos', width: labelWidth })
                     }
-                } else {
-                    const newId = await supabaseService.createRetailProduct({
-                        ...payload,
-                        createdAt: new Date(),
-                    })
-
-                    await supabaseService.createAuditLog({
-                        userId: currentUser?.id || 'unknown',
-                        action: 'PRODUCT_CREATED',
-                        entityType: 'PRODUCT',
-                        entityId: newId,
-                        newValue: payload
-                    })
                 }
+            } else {
+                const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
+                const totalPiecesReceived = totalPiecesPerPackage * packagesCount
+                const masterBarcode = formData.barcode || `750${Math.floor(1000000000 + Math.random() * 9000000000)}`
+
+                const createdPayload = {
+                    ...payload,
+                    barcode: masterBarcode,
+                    currentStock: isBulk ? totalPiecesReceived : formData.currentStock,
+                    hasInventory: isBulk ? true : formData.hasInventory,
+                    createdAt: new Date()
+                }
+
+                const newId = await supabaseService.createRetailProduct(createdPayload)
+                await supabaseService.createAuditLog({
+                    userId: currentUser?.id || 'unknown',
+                    action: 'PRODUCT_CREATED',
+                    entityType: 'PRODUCT',
+                    entityId: newId,
+                    newValue: createdPayload
+                })
+
+                // Impresión de etiquetas automatizada
+                if (shouldPrint && isBulk && totalPiecesReceived > 0) {
+                    const resultsToPrint = Object.entries(sizeQuantities)
+                        .filter(([_, qty]) => qty > 0)
+                        .map(([size, qty]) => ({
+                            name: formData.name.trim(),
+                            barcode: masterBarcode,
+                            price: formData.price,
+                            size,
+                            count: qty * packagesCount,
+                            sku: formData.sku ? `${formData.sku.trim()}-${size}` : 'N/A'
+                        }))
+
+                    if (resultsToPrint.length > 0) {
+                        const labelWidth = organizationSettings?.labelPrinterWidth || 50
+                        let printHTML = `<div style="display: flex; flex-direction: column; gap: 20px; font-family: monospace; text-align: center; width: ${labelWidth}mm; margin: 0 auto;">`
+
+                        if (printMode === 'bulto') {
+                            const sizeBreakdownText = Object.entries(sizeQuantities)
+                                .filter(([_, qty]) => qty > 0)
+                                .map(([sz, qty]) => `${qty} ${sz}`)
+                                .join(', ')
+
+                            for (let i = 0; i < packagesCount; i++) {
+                                const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(masterBarcode)}&scale=3&height=12&includetext=false`
+                                printHTML += `
+                                  <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
+                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">REISBLOC MAYOREO</div>
+                                    <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase; line-height: 1.2;">${formData.name.trim()}</div>
+                                    <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 4px;">SKU: ${formData.sku || 'N/A'}</div>
+                                    <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
+                                    <div style="font-size: 10px; margin: 4px 0; padding: 4px; border: 1px solid #ddd; width: 100%; border-radius: 4px; text-align: left;">
+                                      <strong>Desglose:</strong> ${sizeBreakdownText}
+                                    </div>
+                                    <div style="font-size: 16px; font-weight: 900; margin: 4px 0;">$${formData.price.toFixed(2)} <span style="font-size: 11px; font-weight: bold; color: #555;">PZA</span></div>
+                                    <div style="font-size: 9px; color: #666; font-weight: bold; margin-bottom: 2px;">TOTAL PAQUETE (${totalPiecesPerPackage} PZS): $${(formData.price * totalPiecesPerPackage).toFixed(2)}</div>
+                                    
+                                    <!-- Código de Barras Bulto -->
+                                    <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto; margin: 6px 0;" alt="barcode">
+                                    <div style="font-size: 9px; color: #555; font-weight: bold;">${masterBarcode}</div>
+                                  </div>
+                                `
+                            }
+                        } else {
+                            resultsToPrint.forEach(item => {
+                                const quantityToPrint = printMode === 'talla' ? 1 : item.count
+                                for (let i = 0; i < quantityToPrint; i++) {
+                                    const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(item.barcode)}&scale=3&height=12&includetext=false`
+                                    printHTML += `
+                                      <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
+                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Reisbloc Retail</div>
+                                        <div style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">${item.name}</div>
+                                        <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px;">SKU: ${item.sku}</div>
+                                        <div style="font-size: 13px; font-weight: 900; margin-top: 2px;">TALLA: ${item.size}</div>
+                                        <div style="font-size: 16px; font-weight: bold; margin: 4px 0;">$${item.price.toFixed(2)}</div>
+                                        
+                                        <!-- Código de Barras Renderizado -->
+                                        <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto; margin: 6px 0;" alt="barcode">
+                                        <div style="font-size: 9px; color: #555; font-weight: bold;">${item.barcode}</div>
+                                      </div>
+                                    `
+                                }
+                            })
+                        }
+                        printHTML += '</div>'
+                        await printService.printHTML(printHTML, { title: 'Etiquetas de Códigos', width: labelWidth })
+                    }
             }
             onSuccess()
             onClose()
