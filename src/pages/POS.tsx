@@ -1312,9 +1312,9 @@ export default function POS() {
                     Forzar Venta
                   </button>
                 </div>
-              </div>
             </div>
           </div>
+        )}
         {/* Client Selector Modal */}
         {showClientSelector && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
