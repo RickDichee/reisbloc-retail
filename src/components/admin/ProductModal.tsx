@@ -61,6 +61,7 @@ export default function ProductModal({
     onSuccess
 }: ProductModalProps) {
     const { currentUser, products, organizationSettings } = useAppStore()
+    const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
     const parsedDesc = parseProductDescription(product?.description || '')
     const [formData, setFormData] = useState({
         name: product?.name || '',
@@ -380,10 +381,12 @@ export default function ProductModal({
                                         </div>
                                     )}
                                 </div>
-                                <label className="absolute -bottom-3 -right-3 p-3 bg-slate-900 text-white rounded-2xl shadow-xl cursor-pointer hover:bg-slate-800 transition-all hover:scale-110">
-                                    <Camera size={20} />
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                                </label>
+                                {isAdminOrManager && (
+                                    <label className="absolute -bottom-3 -right-3 p-3 bg-slate-900 text-white rounded-2xl shadow-xl cursor-pointer hover:bg-slate-800 transition-all hover:scale-110">
+                                        <Camera size={20} />
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                    </label>
+                                )}
                             </div>
                         </PlanGate>
                     </div>
@@ -397,8 +400,9 @@ export default function ProductModal({
                                 type="text"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold text-lg"
+                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold text-lg disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                 placeholder="Ej. Smart TV 55', Tacos de Pastor, etc."
+                                disabled={!isAdminOrManager}
                                 required
                             />
                         </div>
@@ -410,8 +414,9 @@ export default function ProductModal({
                             <textarea
                                 value={formData.description || ''}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold"
+                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                 placeholder="Detalles adicionales, especificaciones, etc."
+                                disabled={!isAdminOrManager}
                                 rows={2}
                             />
                         </div>
@@ -424,8 +429,9 @@ export default function ProductModal({
                                 type="text"
                                 value={formData.sku}
                                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold"
+                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                 placeholder="ID Interno"
+                                disabled={!isAdminOrManager}
                             />
                         </div>
 
@@ -437,7 +443,8 @@ export default function ProductModal({
                                         id="isBulk"
                                         checked={isBulk}
                                         onChange={(e) => setIsBulk(e.target.checked)}
-                                        className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                                        className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={!isAdminOrManager}
                                     />
                                     <label htmlFor="isBulk" className="text-sm font-black text-indigo-950 cursor-pointer uppercase tracking-tight flex items-center gap-1">
                                         📦 INGRESAR EN LOTE (Tallas y cantidades)
@@ -581,21 +588,23 @@ export default function ProductModal({
                                 <label className="block text-sm font-black text-slate-400 uppercase tracking-widest text-[10px]">
                                     Código de Barras / QR
                                 </label>
-                                <button
-                                    type="button"
-                                    onClick={generateBarcode}
-                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded-md transition-colors"
-                                >
-                                    Auto-Generar EAN
-                                </button>
+                                {isAdminOrManager && (
+                                    <button
+                                        type="button"
+                                        onClick={generateBarcode}
+                                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded-md transition-colors"
+                                    >
+                                        Auto-Generar EAN
+                                    </button>
+                                )}
                             </div>
                             <input
                                 type="text"
                                 value={formData.barcode}
                                 onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold"
+                                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                 placeholder="Escanear o Escribir"
-                                disabled={isBulk}
+                                disabled={isBulk || !isAdminOrManager}
                             />
                             {isBulk && <p className="text-[10px] text-gray-400 mt-1">Los códigos se autogenerarán para cada variante.</p>}
                         </div>
@@ -607,7 +616,8 @@ export default function ProductModal({
                                 id="showPricingOptions"
                                 checked={showPricingOptions}
                                 onChange={(e) => setShowPricingOptions(e.target.checked)}
-                                className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                                className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!isAdminOrManager}
                             />
                             <label htmlFor="showPricingOptions" className="text-sm font-black text-indigo-950 cursor-pointer uppercase tracking-tight">
                                 Habilitar Precios Diferenciados (Mayoreo, Paquete, Bulto)
@@ -626,9 +636,10 @@ export default function ProductModal({
                                         type="number"
                                         value={formData.price || ''}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
-                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                         step="0.01"
                                         min="0"
+                                        disabled={!isAdminOrManager}
                                         required
                                     />
                                 </div>
@@ -655,9 +666,10 @@ export default function ProductModal({
                                                 type="number"
                                                 value={formData.wholesalePrice || ''}
                                                 onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                                 step="0.01"
                                                 min="0"
+                                                disabled={!isAdminOrManager}
                                             />
                                         </div>
                                     </div>
@@ -667,8 +679,9 @@ export default function ProductModal({
                                             type="number"
                                             value={formData.wholesaleMinQty}
                                             onChange={(e) => setFormData({ ...formData, wholesaleMinQty: parseInt(e.target.value) || 3 })}
-                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                             min="1"
+                                            disabled={!isAdminOrManager}
                                         />
                                     </div>
 
@@ -681,9 +694,10 @@ export default function ProductModal({
                                                 type="number"
                                                 value={formData.packPrice || ''}
                                                 onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                                 step="0.01"
                                                 min="0"
+                                                disabled={!isAdminOrManager}
                                             />
                                         </div>
                                     </div>
@@ -693,8 +707,9 @@ export default function ProductModal({
                                             type="number"
                                             value={formData.packQty}
                                             onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 10 })}
-                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                             min="1"
+                                            disabled={!isAdminOrManager}
                                         />
                                     </div>
 
@@ -707,9 +722,10 @@ export default function ProductModal({
                                                 type="number"
                                                 value={formData.bulkPrice || ''}
                                                 onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                                 step="0.01"
                                                 min="0"
+                                                disabled={!isAdminOrManager}
                                             />
                                         </div>
                                     </div>
@@ -719,15 +735,13 @@ export default function ProductModal({
                                             type="number"
                                             value={formData.packagesPerBulk}
                                             onChange={(e) => setFormData({ ...formData, packagesPerBulk: parseInt(e.target.value) || 10 })}
-                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs"
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                             min="1"
+                                            disabled={!isAdminOrManager}
                                         />
                                     </div>
                                 </>
                             )}
-                        </div>
-                                />
-                            </div>
                         </div>
 
                         <div>
@@ -740,8 +754,9 @@ export default function ProductModal({
                                     list="category-list"
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                     placeholder="Selecciona o escribe..."
+                                    disabled={!isAdminOrManager}
                                 />
                                 <datalist id="category-list">
                                     {categories.map(cat => <option key={cat} value={cat} />)}
@@ -757,7 +772,8 @@ export default function ProductModal({
                                 id="hasInventory"
                                 checked={formData.hasInventory}
                                 onChange={(e) => setFormData({ ...formData, hasInventory: e.target.checked })}
-                                className="w-6 h-6 rounded-lg border-slate-300 text-slate-900 focus:ring-slate-900 transition-all cursor-pointer"
+                                className="w-6 h-6 rounded-lg border-slate-300 text-slate-900 focus:ring-slate-900 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!isAdminOrManager}
                             />
                             <label htmlFor="hasInventory" className="text-sm font-black text-slate-700 cursor-pointer uppercase tracking-tight">
                                 Controlar Inventario (Existencias)
@@ -774,9 +790,8 @@ export default function ProductModal({
                                         type="number"
                                         value={formData.currentStock || ''}
                                         onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center"
                                         min="0"
-                                        disabled={currentUser?.role !== 'admin'}
                                         required />
                                 </div>
 

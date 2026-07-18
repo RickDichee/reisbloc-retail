@@ -520,6 +520,32 @@ export default function POS() {
       image: '',
     }
     addItemToDraft(tableNumber, virtualProduct, currentUser.id)
+    
+    // Audit Log: Manual item added
+    supabaseService.createAuditLog({
+      userId: currentUser.id,
+      action: 'POS_MANUAL_ITEM_ADDED',
+      entityType: 'POS',
+      entityId: `caja-${tableNumber}`,
+      newValue: { description, price }
+    }).catch(err => console.error('Error logging manual item:', err))
+  }
+
+  const handleUpdatePrice = (itemId: string, newPrice: number) => {
+    if (!currentUser || isReadOnly) return
+    const item = items.find(i => i.id === itemId)
+    if (item) {
+      updateDraftItemPrice(tableNumber, itemId, newPrice)
+      
+      // Audit Log: Price manually adjusted in cart
+      supabaseService.createAuditLog({
+        userId: currentUser.id,
+        action: 'POS_PRICE_ADJUSTED',
+        entityType: 'POS',
+        entityId: `caja-${tableNumber}`,
+        newValue: { itemId, oldPrice: item.unitPrice, newPrice, productName: item.name || 'Producto' }
+      }).catch(err => console.error('Error logging price adjustment:', err))
+    }
   }
 
   const handlePrintAccount = async (tableNum: number) => {
@@ -963,114 +989,6 @@ export default function POS() {
                 className="w-48 px-2 py-1 bg-slate-50 border border-slate-200 rounded outline-none text-slate-900 font-normal"
               />
             </div>
-
-            <div className="w-full border-t border-slate-100 pt-3 mt-1 flex flex-wrap gap-4 items-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block w-full">⚙️ Configuración del Ticket de Venta</span>
-              
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  id="ticketShowLogo"
-                  checked={organizationSettings?.ticketShowLogo ?? true}
-                  onChange={async (e) => {
-                    const val = e.target.checked
-                    const updatedSettings = { ...(organizationSettings || {}), ticketShowLogo: val }
-                    setOrganizationSettings(updatedSettings)
-                    if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                      const { supabase } = await import('@/config/supabase')
-                      await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
-                      useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
-                    }
-                  }}
-                  className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                />
-                <label htmlFor="ticketShowLogo" className="text-xs font-bold text-slate-700 cursor-pointer">Mostrar Logo Reisbloc</label>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <span>Negocio:</span>
-                <input
-                  type="text"
-                  placeholder="REISBLOC RETAIL"
-                  value={organizationSettings?.ticketBusinessName || ''}
-                  onChange={async (e) => {
-                    const val = e.target.value
-                    const updatedSettings = { ...(organizationSettings || {}), ticketBusinessName: val }
-                    setOrganizationSettings(updatedSettings)
-                    if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                      const { supabase } = await import('@/config/supabase')
-                      await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
-                      useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
-                    }
-                  }}
-                  className="px-2 py-1 bg-slate-50 border border-slate-200 rounded outline-none text-slate-900 w-36 font-normal"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <span>Dirección:</span>
-                <input
-                  type="text"
-                  placeholder="Calle 123 Col. Centro"
-                  value={organizationSettings?.ticketAddress || ''}
-                  onChange={async (e) => {
-                    const val = e.target.value
-                    const updatedSettings = { ...(organizationSettings || {}), ticketAddress: val }
-                    setOrganizationSettings(updatedSettings)
-                    if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                      const { supabase } = await import('@/config/supabase')
-                      await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
-                      useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
-                    }
-                  }}
-                  className="px-2 py-1 bg-slate-50 border border-slate-200 rounded outline-none text-slate-900 w-44 font-normal"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <span>Teléfono:</span>
-                <input
-                  type="text"
-                  placeholder="55-1234-5678"
-                  value={organizationSettings?.ticketPhone || ''}
-                  onChange={async (e) => {
-                    const val = e.target.value
-                    const updatedSettings = { ...(organizationSettings || {}), ticketPhone: val }
-                    setOrganizationSettings(updatedSettings)
-                    if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                      const { supabase } = await import('@/config/supabase')
-                      await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
-                      useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
-                    }
-                  }}
-                  className="px-2 py-1 bg-slate-50 border border-slate-200 rounded outline-none text-slate-900 w-28 font-normal"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <span>Mensaje Pie:</span>
-                <input
-                  type="text"
-                  placeholder="¡Gracias por su compra!"
-                  value={organizationSettings?.ticketFooterMsg || ''}
-                  onChange={async (e) => {
-                    const val = e.target.value
-                    const updatedSettings = { ...(organizationSettings || {}), ticketFooterMsg: val }
-                    setOrganizationSettings(updatedSettings)
-                    if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                      const { supabase } = await import('@/config/supabase')
-                      await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
-                      useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
-                    }
-                  }}
-                  className="px-2 py-1 bg-slate-50 border border-slate-200 rounded outline-none text-slate-900 w-44 font-normal"
-                />
-              </div>
-            </div>
-
-            <div className="text-[10px] text-slate-400 font-normal ml-auto">
-              * Cambios guardados automáticamente en la nube (Admin).
-            </div>
           </div>
         )}
 
@@ -1095,7 +1013,7 @@ export default function POS() {
                 onRemove={(id) => removeDraftItem(tableNumber, id)}
                 onClear={() => clearDraftForTable(tableNumber)}
                 onEditNote={(item) => setEditingItem(item)}
-                onUpdatePrice={(id, price) => updateDraftItemPrice(tableNumber, id, price)}
+                onUpdatePrice={(id, price) => handleUpdatePrice(id, price)}
               />
             </div>
 

@@ -359,6 +359,13 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
     const [error, setError] = useState('')
     const [checkingSlug, setCheckingSlug] = useState(false)
 
+    // Ticket Settings States
+    const [ticketShowLogo, setTicketShowLogo] = useState(true)
+    const [ticketBusinessName, setTicketBusinessName] = useState('')
+    const [ticketAddress, setTicketAddress] = useState('')
+    const [ticketPhone, setTicketPhone] = useState('')
+    const [ticketFooterMsg, setTicketFooterMsg] = useState('¡Gracias por su compra!')
+
     useEffect(() => {
         const loadOrg = async () => {
             if (!currentUser?.organizationId) return
@@ -367,6 +374,13 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
                 setOrg(data)
                 setSlug(data.slug || '')
                 setLogoUrl(data.logo_url || '')
+                
+                const s = data.settings || {}
+                setTicketShowLogo(s.ticketShowLogo ?? true)
+                setTicketBusinessName(s.ticketBusinessName || '')
+                setTicketAddress(s.ticketAddress || '')
+                setTicketPhone(s.ticketPhone || '')
+                setTicketFooterMsg(s.ticketFooterMsg || '¡Gracias por su compra!')
             }
         }
         loadOrg()
@@ -409,13 +423,30 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
         setSaving(true)
         setError('')
         try {
+            const updatedSettings = {
+                ...(org?.settings || {}),
+                ticketShowLogo,
+                ticketBusinessName,
+                ticketAddress,
+                ticketPhone,
+                ticketFooterMsg
+            }
+
             await supabase
                 .from('organizations')
                 .update({ 
                     slug: slug.trim(),
-                    logo_url: logoUrl.trim()
+                    logo_url: logoUrl.trim(),
+                    settings: updatedSettings
                 })
                 .eq('id', currentUser.organizationId)
+
+            useAppStore.setState({
+                currentUser: {
+                    ...currentUser,
+                    organizationSettings: updatedSettings
+                }
+            })
             
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
@@ -518,6 +549,85 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
                     </div>
                 </div>
             )}
+
+            {/* Ticket Customization Section */}
+            <div className="space-y-6 pt-6 border-t border-slate-100">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <FileText size={20} />
+                    </div>
+                    <div>
+                        <h3 className="text-md font-black text-slate-800 uppercase tracking-tight">Diseño de Ticket Impreso</h3>
+                        <p className="text-xs text-slate-500 font-medium">Configura la información visible en tus tickets de venta</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-200/50">
+                    <div className="flex items-center gap-3 md:col-span-2 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                        <input
+                            type="checkbox"
+                            id="ticketShowLogoBranding"
+                            checked={ticketShowLogo}
+                            onChange={(e) => setTicketShowLogo(e.target.checked)}
+                            className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                        />
+                        <label htmlFor="ticketShowLogoBranding" className="text-sm font-black text-slate-700 cursor-pointer uppercase tracking-tight">
+                            Mostrar Logotipo Reisbloc en el Ticket
+                        </label>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-[9px]">
+                            Nombre del Negocio (Ticket)
+                        </label>
+                        <input
+                            type="text"
+                            value={ticketBusinessName}
+                            onChange={(e) => setTicketBusinessName(e.target.value)}
+                            placeholder="Ej. REISBLOC BOUTIQUE"
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none font-bold text-sm"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-[9px]">
+                            Teléfono de contacto (Ticket)
+                        </label>
+                        <input
+                            type="text"
+                            value={ticketPhone}
+                            onChange={(e) => setTicketPhone(e.target.value)}
+                            placeholder="Ej. 55-1234-5678"
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none font-bold text-sm"
+                        />
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-[9px]">
+                            Dirección comercial (Ticket)
+                        </label>
+                        <input
+                            type="text"
+                            value={ticketAddress}
+                            onChange={(e) => setTicketAddress(e.target.value)}
+                            placeholder="Ej. Av. Principal 123, Col. Centro"
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none font-bold text-sm"
+                        />
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest text-[9px]">
+                            Mensaje de Pie de Página (Ticket)
+                        </label>
+                        <input
+                            type="text"
+                            value={ticketFooterMsg}
+                            onChange={(e) => setTicketFooterMsg(e.target.value)}
+                            placeholder="Ej. ¡Gracias por su compra! Con su ticket tiene 15 días para cambios."
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none font-bold text-sm"
+                        />
+                    </div>
+                </div>
 
             {/* Error Message */}
             {error && (

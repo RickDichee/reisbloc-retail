@@ -77,7 +77,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             title: 'Gestión',
             roles: ['admin', 'manager', 'supervisor', 'cashier'],
             items: [
-                { label: 'Inventario', icon: Package, path: '/inventory', roles: ['admin', 'manager', 'supervisor'] },
+                { label: 'Inventario', icon: Package, path: '/inventory', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
                 { label: 'Clientes', icon: Users, path: '/clients', roles: ['admin', 'manager', 'supervisor'] },
                 { label: 'Reportes', icon: BarChart3, path: '/reports', roles: ['admin', 'manager', 'supervisor'] },
                 { label: 'Compras', icon: Coins, path: '/purchases', roles: ['admin', 'manager'] },
