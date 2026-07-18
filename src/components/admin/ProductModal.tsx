@@ -387,6 +387,7 @@ export default function ProductModal({
                         printHTML += '</div>'
                         await printService.printHTML(printHTML, { title: 'Etiquetas de Códigos', width: labelWidth })
                     }
+                }
             }
             onSuccess()
             onClose()
