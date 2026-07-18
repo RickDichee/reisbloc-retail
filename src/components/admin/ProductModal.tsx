@@ -195,7 +195,9 @@ export default function ProductModal({
                 wholesalePrice: formData.wholesalePrice,
                 parentId: isWholesale && formData.parentId ? formData.parentId : undefined,
                 packQuantity: isWholesale ? Number(formData.packQuantity) : 1
-                      if (product) {
+            }
+
+            if (product) {
                 const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
                 const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
