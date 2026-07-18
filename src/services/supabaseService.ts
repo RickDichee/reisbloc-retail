@@ -1722,7 +1722,16 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if (error) throw error
       return (data || []).map((p: any) => {
-        let parsedDesc = { description: p.description || '', packPrice: undefined, bulkPrice: undefined, packQty: undefined, bulkQty: undefined, packagesPerBulk: undefined }
+        let parsedDesc = {
+          description: p.description || '',
+          packPrice: undefined,
+          bulkPrice: undefined,
+          packQty: undefined,
+          bulkQty: undefined,
+          packagesPerBulk: undefined,
+          wholesalePrice: undefined,
+          wholesaleMinQty: undefined
+        }
         if (p.description && p.description.startsWith('{') && p.description.endsWith('}')) {
           try {
             const parsed = JSON.parse(p.description)
@@ -1732,7 +1741,9 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
               bulkPrice: parsed.bulkPrice,
               packQty: parsed.packQty,
               bulkQty: parsed.bulkQty,
-              packagesPerBulk: parsed.packagesPerBulk
+              packagesPerBulk: parsed.packagesPerBulk,
+              wholesalePrice: parsed.wholesalePrice,
+              wholesaleMinQty: parsed.wholesaleMinQty
             }
           } catch (e) {
             // Ignore parse errors
@@ -1749,8 +1760,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           createdAt: new Date(p.created_at),
           parentId: p.parent_id,
           packQuantity: p.pack_quantity,
-          wholesalePrice: p.wholesale_price || undefined,
-          wholesaleMinQty: p.wholesale_min_qty || undefined,
+          wholesalePrice: parsedDesc.wholesalePrice !== undefined ? parsedDesc.wholesalePrice : (p.wholesale_price || undefined),
+          wholesaleMinQty: parsedDesc.wholesaleMinQty !== undefined ? parsedDesc.wholesaleMinQty : (p.wholesale_min_qty || undefined),
           packPrice: parsedDesc.packPrice,
           packQty: parsedDesc.packQty,
           bulkPrice: parsedDesc.bulkPrice,
@@ -1766,10 +1777,21 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
   async createRetailProduct(product: Omit<Product, 'id'>): Promise<string> {
     try {
+      const descPayload = JSON.stringify({
+        description: product.description || '',
+        packPrice: product.packPrice,
+        bulkPrice: product.bulkPrice,
+        packQty: product.packQty,
+        bulkQty: product.bulkQty,
+        packagesPerBulk: product.packagesPerBulk,
+        wholesalePrice: product.wholesalePrice,
+        wholesaleMinQty: product.wholesaleMinQty
+      })
+
       const payload: any = {
         organization_id: this.getCurrentOrgId(),
         name: product.name,
-        description: product.description,
+        description: descPayload,
         price: product.price,
         barcode: product.barcode,
         sku: product.sku,
@@ -1780,8 +1802,21 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         has_inventory: product.hasInventory ?? true,
         active: product.active ?? true,
         parent_id: product.parentId || null,
-        pack_quantity: product.packQuantity || 1,
-        wholesale_price: product.wholesalePrice || null
+        pack_quantity: product.packQuantity || 1
+      }
+
+      // Detect dynamically if wholesale_price exists in retail_products table on database
+      let hasWholesalePriceColumn = false
+      try {
+        const { error } = await supabase.from('retail_products').select('wholesale_price').limit(1)
+        if (!error) {
+          hasWholesalePriceColumn = true
+        }
+      } catch (err) {}
+
+      if (hasWholesalePriceColumn) {
+        payload.wholesale_price = product.wholesalePrice || null
+        payload.wholesale_min_qty = product.wholesaleMinQty || null
       }
 
       const { data, error } = await supabase
@@ -1804,7 +1839,6 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       
       // Copy explicit text and basic fields
       if ('name' in updates) payload.name = updates.name
-      if ('description' in updates) payload.description = updates.description
       if ('price' in updates) payload.price = updates.price
       if ('barcode' in updates) payload.barcode = updates.barcode
       if ('sku' in updates) payload.sku = updates.sku
@@ -1828,8 +1862,57 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       if ('packQuantity' in updates) payload.pack_quantity = updates.packQuantity
       if ('pack_quantity' in updates) payload.pack_quantity = (updates as any).pack_quantity
 
-      if ('wholesalePrice' in updates) payload.wholesale_price = updates.wholesalePrice
-      if ('wholesale_price' in updates) payload.wholesale_price = (updates as any).wholesale_price
+      // Handle extra pricing fields packaging in description
+      if ('description' in updates || 'packPrice' in updates || 'bulkPrice' in updates || 'packQty' in updates || 'bulkQty' in updates || 'packagesPerBulk' in updates || 'wholesalePrice' in updates || 'wholesaleMinQty' in updates) {
+        // Fetch current product to merge description payload
+        const { data: currentProd } = await supabase
+          .from('retail_products')
+          .select('description')
+          .eq('id', productId)
+          .single()
+        
+        let currentDesc = ''
+        let currentParsed: any = {}
+        
+        if (currentProd && currentProd.description) {
+          currentDesc = currentProd.description
+          if (currentDesc.startsWith('{') && currentDesc.endsWith('}')) {
+            try {
+              currentParsed = JSON.parse(currentDesc)
+            } catch (e) {}
+          } else {
+            currentParsed.description = currentDesc
+          }
+        }
+
+        const mergedParsed = {
+          description: 'description' in updates ? updates.description : (currentParsed.description || ''),
+          packPrice: 'packPrice' in updates ? updates.packPrice : currentParsed.packPrice,
+          bulkPrice: 'bulkPrice' in updates ? updates.bulkPrice : currentParsed.bulkPrice,
+          packQty: 'packQty' in updates ? updates.packQty : currentParsed.packQty,
+          bulkQty: 'bulkQty' in updates ? updates.bulkQty : currentParsed.bulkQty,
+          packagesPerBulk: 'packagesPerBulk' in updates ? updates.packagesPerBulk : currentParsed.packagesPerBulk,
+          wholesalePrice: 'wholesalePrice' in updates ? updates.wholesalePrice : currentParsed.wholesalePrice,
+          wholesaleMinQty: 'wholesaleMinQty' in updates ? updates.wholesaleMinQty : currentParsed.wholesaleMinQty
+        }
+
+        payload.description = JSON.stringify(mergedParsed)
+
+        // Dynamic column check
+        let hasWholesalePriceColumn = false
+        try {
+          const { error } = await supabase.from('retail_products').select('wholesale_price').limit(1)
+          if (!error) {
+            hasWholesalePriceColumn = true
+          }
+        } catch (err) {}
+
+        if (hasWholesalePriceColumn) {
+          if ('wholesalePrice' in updates) payload.wholesale_price = updates.wholesalePrice
+          if ('wholesale_min_qty' in updates) payload.wholesale_min_qty = (updates as any).wholesale_min_qty
+          if ('wholesaleMinQty' in updates) payload.wholesale_min_qty = updates.wholesaleMinQty
+        }
+      }
 
       const { error } = await supabase
         .from('retail_products')
