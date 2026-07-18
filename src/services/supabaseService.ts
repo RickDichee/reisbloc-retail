@@ -1890,22 +1890,42 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
   async createRetailSale(sale: any, items: any[]): Promise<string> {
     try {
       const orgId = this.getCurrentOrgId()
+      
+      // Dynamic column check for client_id
+      let hasClientIdColumn = false
+      try {
+        const { error } = await supabase.from('retail_sales').select('client_id').limit(1)
+        if (!error) {
+          hasClientIdColumn = true
+        }
+      } catch (err) {}
+
+      const saleNotes = sale.clientName
+        ? `${sale.notes || ''}\n[Cliente: ${sale.clientName} ${sale.clientPhone ? `(Tel: ${sale.clientPhone})` : ''}]`.trim()
+        : sale.notes
+
+      const insertPayload: any = {
+        organization_id: orgId,
+        table_number: sale.tableNumber,
+        subtotal: sale.subtotal,
+        discounts: sale.discounts || 0,
+        tax: sale.tax || 0,
+        total: sale.total,
+        payment_method: sale.paymentMethod,
+        tip: sale.tip || 0,
+        tip_source: sale.tipSource || 'none',
+        sale_by: sale.saleBy,
+        notes: saleNotes
+      }
+
+      if (hasClientIdColumn && sale.clientId) {
+        insertPayload.client_id = sale.clientId
+      }
+
       // 1. Create sale header
       const { data: saleData, error: saleError } = await supabase
         .from('retail_sales')
-        .insert([{
-          organization_id: orgId,
-          table_number: sale.tableNumber,
-          subtotal: sale.subtotal,
-          discounts: sale.discounts || 0,
-          tax: sale.tax || 0,
-          total: sale.total,
-          payment_method: sale.paymentMethod,
-          tip: sale.tip || 0,
-          tip_source: sale.tipSource || 'none',
-          sale_by: sale.saleBy,
-          notes: sale.notes
-        }])
+        .insert([insertPayload])
         .select('id')
         .single()
 
@@ -1924,7 +1944,29 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       const { error: itemsError } = await supabase.from('retail_sale_items').insert(itemsPayload)
       if (itemsError) throw itemsError
 
-      // 3. Update stock for items that have inventory
+      // 3. Update client total spent if associated
+      if (sale.clientId) {
+        try {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('total_spent')
+            .eq('id', sale.clientId)
+            .single()
+          
+          if (clientData) {
+            const currentSpent = parseFloat(clientData.total_spent || 0)
+            const newSpent = currentSpent + parseFloat(sale.total)
+            await supabase
+              .from('clients')
+              .update({ total_spent: newSpent })
+              .eq('id', sale.clientId)
+          }
+        } catch (clientErr) {
+          logger.warn('supabase', 'Error updating client spent', clientErr)
+        }
+      }
+
+      // 4. Update stock for items that have inventory
       const aggregatedStock: Record<string, number> = {}
       items.forEach(item => {
         if (!item.productId || item.productId.toLowerCase().startsWith('manual-') || item.id.toLowerCase().startsWith('manual-')) return
@@ -1952,20 +1994,39 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
   async createPendingRetailSale(sale: any, items: any[]): Promise<string> {
     try {
       const orgId = this.getCurrentOrgId()
+
+      let hasClientIdColumn = false
+      try {
+        const { error } = await supabase.from('retail_sales').select('client_id').limit(1)
+        if (!error) {
+          hasClientIdColumn = true
+        }
+      } catch (err) {}
+
+      const saleNotes = sale.clientName
+        ? `${sale.notes || ''}\n[Cliente: ${sale.clientName} ${sale.clientPhone ? `(Tel: ${sale.clientPhone})` : ''}]`.trim()
+        : sale.notes
+
+      const insertPayload: any = {
+        organization_id: orgId,
+        table_number: sale.tableNumber,
+        subtotal: sale.subtotal,
+        discounts: sale.discounts || 0,
+        tax: sale.tax || 0,
+        total: sale.total,
+        payment_method: 'pending',
+        status: 'pending',
+        sale_by: sale.saleBy,
+        notes: saleNotes
+      }
+
+      if (hasClientIdColumn && sale.clientId) {
+        insertPayload.client_id = sale.clientId
+      }
+
       const { data: saleData, error: saleError } = await supabase
         .from('retail_sales')
-        .insert([{
-          organization_id: orgId,
-          table_number: sale.tableNumber,
-          subtotal: sale.subtotal,
-          discounts: sale.discounts || 0,
-          tax: sale.tax || 0,
-          total: sale.total,
-          payment_method: 'pending',
-          status: 'pending',
-          sale_by: sale.saleBy,
-          notes: sale.notes
-        }])
+        .insert([insertPayload])
         .select('id')
         .single()
 

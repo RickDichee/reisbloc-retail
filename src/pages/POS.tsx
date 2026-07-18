@@ -16,7 +16,7 @@ import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2 } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 function parseProductDescription(descriptionText: string | null) {
@@ -93,6 +93,74 @@ export default function POS() {
   const [editingRegisterId, setEditingRegisterId] = useState<number | null>(null)
   const [editingRegisterName, setEditingRegisterName] = useState<string>('')
   const [showHardwareConfig, setShowHardwareConfig] = useState(false)
+
+  // CRM Clients state & loading
+  const [clients, setClients] = useState<any[]>([])
+  const [selectedClient, setSelectedClient] = useState<any>(null)
+  const [showClientSelector, setShowClientSelector] = useState(false)
+  const [clientSearchTerm, setClientSearchTerm] = useState('')
+  const [showNewClientModal, setShowNewClientModal] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientPhone, setNewClientPhone] = useState('')
+  const [newClientEmail, setNewClientEmail] = useState('')
+  const [isSavingClient, setIsSavingClient] = useState(false)
+
+  const loadClients = async () => {
+    if (!currentUser?.organizationId) return
+    try {
+      const { supabase } = await import('@/config/supabase')
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('organization_id', currentUser.organizationId)
+        .is('deleted_at', null)
+        .order('name', { ascending: true })
+      if (!error && data) {
+        setClients(data)
+      }
+    } catch (e) {
+      console.error('Error fetching clients in POS:', e)
+    }
+  }
+
+  useEffect(() => {
+    loadClients()
+  }, [currentUser?.organizationId])
+
+  const handleCreateQuickClient = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newClientName.trim() || !currentUser?.organizationId) return
+    setIsSavingClient(true)
+    try {
+      const { supabase } = await import('@/config/supabase')
+      const payload = {
+        name: newClientName.trim(),
+        phone: newClientPhone.trim() || null,
+        email: newClientEmail.trim() || null,
+        organization_id: currentUser.organizationId,
+        updated_at: new Date().toISOString()
+      }
+      const { data, error } = await supabase
+        .from('clients')
+        .insert([payload])
+        .select()
+        .single()
+      
+      if (error) throw error
+      if (data) {
+        await loadClients()
+        setSelectedClient(data)
+        setShowNewClientModal(false)
+        setNewClientName('')
+        setNewClientPhone('')
+        setNewClientEmail('')
+      }
+    } catch (err: any) {
+      alert(`Error al registrar cliente: ${err.message}`)
+    } finally {
+      setIsSavingClient(false)
+    }
+  }
 
   // 1. Obtener cajas desde settings
   const registers = useMemo(() => {
@@ -566,6 +634,8 @@ export default function POS() {
           saleTotal={total}
           paymentMethod="Pendiente"
           tableNumber={tableNum}
+          clientName={selectedClient?.name}
+          clientPhone={selectedClient?.phone}
         />
       )
       await printService.printReceipt(ticketHTML, { title: 'Pre-cuenta', width: 58 })
@@ -655,7 +725,10 @@ export default function POS() {
         total: result.total,
         paymentMethod: mappedMethod,
         saleBy: currentUser.id,
-        notes: 'Venta Directa Retail'
+        notes: 'Venta Directa Retail',
+        clientId: selectedClient?.id,
+        clientName: selectedClient?.name,
+        clientPhone: selectedClient?.phone
       }, allItems)
 
       // Generar ticket y mostrar modal
@@ -667,6 +740,8 @@ export default function POS() {
             saleTotal={result.total}
             paymentMethod={mappedMethod}
             tableNumber={tableNumber}
+            clientName={selectedClient?.name}
+            clientPhone={selectedClient?.phone}
           />
         )
         // Abrir modal ANTES de limpiar el borrador
@@ -683,6 +758,7 @@ export default function POS() {
         logger.warn('pos', 'No se pudo generar ticket', printErr as any)
       }
 
+      setSelectedClient(null)
       clearDraftForTable(tableNumber)
       setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })
       cashRegisterAudioRef.current?.play().catch(() => { })
@@ -1019,6 +1095,44 @@ export default function POS() {
 
             {/* Checkout Region */}
             <div className="p-4 bg-white border-t border-slate-200 space-y-4 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
+              {/* CRM Client Association */}
+              <div className="animate-fadeIn">
+                {selectedClient ? (
+                  <div className="w-full flex items-center justify-between px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 bg-emerald-500 text-slate-950 font-black rounded-lg flex items-center justify-center text-xs shrink-0">
+                        {selectedClient.name[0].toUpperCase()}
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-0.5">Cliente CRM</p>
+                        <p className="text-xs font-black text-slate-800 leading-none truncate">{selectedClient.name}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedClient(null)}
+                      className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors shrink-0"
+                      title="Quitar cliente"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setClientSearchTerm('')
+                      setShowClientSelector(true)
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl transition-all group"
+                  >
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <User size={16} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Asociar Cliente CRM</span>
+                    </div>
+                    <Plus size={14} className="text-slate-400" />
+                  </button>
+                )}
+              </div>
+
               <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
                 <span className="font-black text-slate-500 text-sm">TOTAL</span>
                 <span className="font-black text-3xl text-slate-900 tracking-tight">
@@ -1199,6 +1313,166 @@ export default function POS() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        {/* Client Selector Modal */}
+        {showClientSelector && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scaleIn border border-slate-200 flex flex-col max-h-[85vh]">
+              <div className="bg-slate-900 p-5 text-white flex justify-between items-center shrink-0">
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-tighter">Asociar Cliente CRM</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Reisbloc Loyalty & CRM</p>
+                </div>
+                <button
+                  onClick={() => setShowClientSelector(false)}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 flex flex-col gap-4 overflow-hidden flex-1">
+                {/* Search Bar */}
+                <div className="relative shrink-0">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por Nombre o Teléfono..."
+                    value={clientSearchTerm}
+                    onChange={(e) => setClientSearchTerm(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-sm"
+                  />
+                </div>
+
+                {/* Clients List */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                  {clients.filter(c =>
+                    c.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                    c.phone?.includes(clientSearchTerm)
+                  ).length === 0 ? (
+                    <div className="text-center py-12 flex flex-col items-center">
+                      <Users className="text-slate-200 mb-2" size={40} />
+                      <p className="text-xs text-slate-400 font-bold">No se encontraron clientes</p>
+                    </div>
+                  ) : (
+                    clients
+                      .filter(c =>
+                        c.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                        c.phone?.includes(clientSearchTerm)
+                      )
+                      .map(client => (
+                        <button
+                          key={client.id}
+                          onClick={() => {
+                            setSelectedClient(client)
+                            setShowClientSelector(false)
+                            setClientSearchTerm('')
+                          }}
+                          className="w-full text-left p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/50 transition-all flex items-center justify-between group active:scale-[0.98]"
+                        >
+                          <div>
+                            <p className="text-sm font-black text-slate-800">{client.name}</p>
+                            {client.phone && <p className="text-[10px] text-slate-400 font-bold">{client.phone}</p>}
+                          </div>
+                          <span className="text-[10px] bg-slate-200/60 group-hover:bg-slate-900 group-hover:text-white px-2.5 py-1 rounded-md font-black uppercase tracking-wider transition-all">
+                            Seleccionar
+                          </span>
+                        </button>
+                      ))
+                  )}
+                </div>
+
+                {/* Quick Register Trigger */}
+                <button
+                  onClick={() => {
+                    setShowClientSelector(false)
+                    setShowNewClientModal(true)
+                  }}
+                  className="w-full py-3.5 bg-slate-900 text-white hover:bg-slate-850 rounded-xl font-black text-xs uppercase tracking-tight flex items-center justify-center gap-2 shrink-0 transition-all active:scale-95 shadow-lg shadow-slate-900/10"
+                >
+                  <Plus size={16} />
+                  Registrar Nuevo Cliente
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick New Client Modal */}
+        {showNewClientModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scaleIn border border-slate-200">
+              <div className="bg-slate-900 p-5 text-white flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-tighter">Registrar Cliente</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Alta rápida desde Caja</p>
+                </div>
+                <button
+                  onClick={() => setShowNewClientModal(false)}
+                  className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateQuickClient} className="p-6 space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre Completo *</label>
+                  <input
+                    required
+                    type="text"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="Ej. Juan Pérez"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-slate-700 text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono móvil</label>
+                    <input
+                      type="tel"
+                      value={newClientPhone}
+                      onChange={(e) => setNewClientPhone(e.target.value)}
+                      placeholder="9981234567"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-slate-700 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correo Electrónico</label>
+                    <input
+                      type="email"
+                      value={newClientEmail}
+                      onChange={(e) => setNewClientEmail(e.target.value)}
+                      placeholder="juan@gmail.com"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-slate-700 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewClientModal(false)
+                      setShowClientSelector(true)
+                    }}
+                    className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-xl font-black text-xs hover:bg-slate-200 transition-all uppercase tracking-tight"
+                  >
+                    Volver
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingClient}
+                    className="flex-1 py-3.5 bg-slate-900 text-white rounded-xl font-black text-xs shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 disabled:opacity-50 uppercase tracking-tight"
+                  >
+                    {isSavingClient ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                    REGISTRAR
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

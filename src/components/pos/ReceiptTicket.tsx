@@ -12,6 +12,8 @@ interface ReceiptTicketProps {
   businessName?: string
   address?: string
   phone?: string
+  clientName?: string
+  clientPhone?: string
 }
 
 export default function ReceiptTicket({
@@ -23,6 +25,8 @@ export default function ReceiptTicket({
   businessName = 'REISBLOC RETAIL',
   address = 'Sistema Punto de Venta',
   phone = '',
+  clientName = '',
+  clientPhone = '',
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { organizationSettings } = useAppStore()
@@ -137,6 +141,7 @@ export default function ReceiptTicket({
         <div>Ticket: {order.id?.slice(0, 8) || 'N/A'}</div>
         <div>Caja: {registerName}</div>
         <div>Fecha: {new Date().toLocaleString('es-MX')}</div>
+        {clientName && <div>Cliente: {clientName} {clientPhone ? `(${clientPhone})` : ''}</div>}
       </div>
 
       {/* Items */}
