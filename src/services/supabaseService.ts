@@ -1805,20 +1805,6 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         pack_quantity: product.packQuantity || 1
       }
 
-      // Detect dynamically if wholesale_price exists in retail_products table on database
-      let hasWholesalePriceColumn = false
-      try {
-        const { error } = await supabase.from('retail_products').select('wholesale_price').limit(1)
-        if (!error) {
-          hasWholesalePriceColumn = true
-        }
-      } catch (err) {}
-
-      if (hasWholesalePriceColumn) {
-        payload.wholesale_price = product.wholesalePrice || null
-        payload.wholesale_min_qty = product.wholesaleMinQty || null
-      }
-
       const { data, error } = await supabase
         .from('retail_products')
         .insert([payload])
@@ -1898,20 +1884,6 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
         payload.description = JSON.stringify(mergedParsed)
 
-        // Dynamic column check
-        let hasWholesalePriceColumn = false
-        try {
-          const { error } = await supabase.from('retail_products').select('wholesale_price').limit(1)
-          if (!error) {
-            hasWholesalePriceColumn = true
-          }
-        } catch (err) {}
-
-        if (hasWholesalePriceColumn) {
-          if ('wholesalePrice' in updates) payload.wholesale_price = updates.wholesalePrice
-          if ('wholesale_min_qty' in updates) payload.wholesale_min_qty = (updates as any).wholesale_min_qty
-          if ('wholesaleMinQty' in updates) payload.wholesale_min_qty = updates.wholesaleMinQty
-        }
       }
 
       const { error } = await supabase

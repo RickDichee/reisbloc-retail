@@ -257,14 +257,13 @@ export default function ProductModal({
                                 entityId: newId,
                                 newValue: { ...payload, name: variantName, barcode: barcode, sku: formData.sku ? `${formData.sku.trim()}-${size}` : undefined, currentStock: totalQtyForSize }
                             })
-                        }
-
-                        resultsToPrint.push({
+                                              resultsToPrint.push({
                             name: formData.name.trim(),
                             barcode,
                             price: formData.price,
                             size,
-                            count: totalQtyForSize
+                            count: totalQtyForSize,
+                            sku: formData.sku ? `${formData.sku.trim()}-${size}` : 'N/A'
                         })
                     }
 
@@ -282,10 +281,12 @@ export default function ProductModal({
                             const bulkBarcode = `750B${Math.floor(100000000 + Math.random() * 900000000)}`
 
                             for (let i = 0; i < packagesCount; i++) {
+                                const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(bulkBarcode)}&scale=3&height=12&includetext=false`
                                 printHTML += `
                                   <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
                                     <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">REISBLOC MAYOREO</div>
-                                    <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase;">${formData.name.trim()}</div>
+                                    <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase; line-height: 1.2;">${formData.name.trim()}</div>
+                                    <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 4px;">SKU: ${formData.sku || 'N/A'}</div>
                                     <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
                                     <div style="font-size: 10px; margin: 4px 0; padding: 4px; border: 1px solid #ddd; width: 100%; border-radius: 4px; text-align: left;">
                                       <strong>Desglose:</strong> ${sizeBreakdownText}
@@ -293,10 +294,8 @@ export default function ProductModal({
                                     <div style="font-size: 16px; font-weight: 900; margin: 6px 0;">$${(formData.price * totalPiecesPerPackage).toFixed(2)}</div>
                                     
                                     <!-- Código de Barras Bulto -->
-                                    <div style="font-size: 20px; font-family: 'Libre Barcode 39', 'Courier New', monospace; letter-spacing: 2px; margin: 6px 0;">
-                                      *${bulkBarcode}*
-                                    </div>
-                                    <div style="font-size: 9px; color: #555;">${bulkBarcode}</div>
+                                    <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto; margin: 6px 0;" alt="barcode">
+                                    <div style="font-size: 9px; color: #555; font-weight: bold;">${bulkBarcode}</div>
                                   </div>
                                 `
                             }
@@ -304,18 +303,18 @@ export default function ProductModal({
                             resultsToPrint.forEach(item => {
                                 const quantityToPrint = printMode === 'talla' ? 1 : item.count
                                 for (let i = 0; i < quantityToPrint; i++) {
+                                    const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(item.barcode)}&scale=3&height=12&includetext=false`
                                     printHTML += `
                                       <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
                                         <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Reisbloc Retail</div>
-                                        <div style="font-size: 12px; font-weight: bold; margin: 4px 0;">${item.name}</div>
-                                        <div style="font-size: 14px; font-weight: 900;">TALLA: ${item.size}</div>
+                                        <div style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">${item.name}</div>
+                                        <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px;">SKU: ${item.sku}</div>
+                                        <div style="font-size: 13px; font-weight: 900; margin-top: 2px;">TALLA: ${item.size}</div>
                                         <div style="font-size: 16px; font-weight: bold; margin: 4px 0;">$${item.price.toFixed(2)}</div>
                                         
                                         <!-- Código de Barras Renderizado -->
-                                        <div style="font-size: 20px; font-family: 'Libre Barcode 39', 'Courier New', monospace; letter-spacing: 2px; margin: 6px 0;">
-                                          *${item.barcode}*
-                                        </div>
-                                        <div style="font-size: 9px; color: #555;">${item.barcode}</div>
+                                        <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto; margin: 6px 0;" alt="barcode">
+                                        <div style="font-size: 9px; color: #555; font-weight: bold;">${item.barcode}</div>
                                       </div>
                                     `
                                 }
