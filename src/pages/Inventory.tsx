@@ -36,6 +36,7 @@ export default function Inventory() {
   const loadInventory = useCallback(async () => {
     setLoading(true)
     try {
+      await supabaseService.consolidateLegacyVariants()
       const data = await supabaseService.getAllRetailProducts()
       setProducts(data)
     } catch (e) {
@@ -247,6 +248,28 @@ export default function Inventory() {
                       </div>
                     )}
                   </div>
+                  {(() => {
+                    if (!product.description) return null
+                    if (product.description.startsWith('{') && product.description.endsWith('}')) {
+                      try {
+                        const parsed = JSON.parse(product.description)
+                        if (parsed.sizes && Object.keys(parsed.sizes).length > 0) {
+                          const sizesText = Object.entries(parsed.sizes)
+                            .filter(([_, qty]) => (qty as number) > 0)
+                            .map(([sz, qty]) => `${sz}: ${qty}`)
+                            .join(' | ')
+                          if (!sizesText) return null
+                          return (
+                            <div className="text-[9px] font-black text-indigo-950/80 bg-indigo-50 border border-indigo-100/50 px-2 py-1 rounded-xl flex items-center gap-1 mt-2">
+                              <span className="uppercase text-[8px] text-indigo-400 font-extrabold tracking-wider">Tallas:</span>
+                              <span className="font-mono">{sizesText}</span>
+                            </div>
+                          )
+                        }
+                      } catch (e) {}
+                    }
+                    return null
+                  })()}
                 </div>
 
                 <div className="flex items-end justify-between pt-2 border-t border-slate-50 mt-2">

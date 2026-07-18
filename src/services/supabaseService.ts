@@ -2297,6 +2297,75 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       return null
     }
   }
+
+  async consolidateLegacyVariants(): Promise<void> {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const { data: products, error } = await supabase
+        .from('retail_products')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('active', true)
+
+      if (error || !products || products.length === 0) return
+
+      const getBaseName = (name: string) => name.replace(/\s*\([^)]+\)$/, '').trim()
+      const getSize = (name: string) => {
+        const m = name.match(/\s*\(([^)]+)\)$/)
+        return m ? m[1].trim() : null
+      }
+
+      const groups: Record<string, typeof products> = {}
+      products.forEach(p => {
+        const base = getBaseName(p.name)
+        if (!groups[base]) groups[base] = []
+        groups[base].push(p)
+      })
+
+      for (const [baseName, items] of Object.entries(groups)) {
+        if (items.length <= 1) continue
+
+        const hasSizes = items.some(item => getSize(item.name) !== null)
+        if (!hasSizes) continue
+
+        const master = items[0]
+        const otherItems = items.slice(1)
+
+        const totalStock = items.reduce((sum, item) => sum + (item.current_stock || 0), 0)
+
+        const sizes: Record<string, number> = {}
+        items.forEach(item => {
+          const sz = getSize(item.name) || 'Única'
+          sizes[sz] = (sizes[sz] || 0) + (item.current_stock || 0)
+        })
+
+        let descObj: any = {}
+        if (master.description && master.description.startsWith('{') && master.description.endsWith('}')) {
+          try {
+            descObj = JSON.parse(master.description)
+          } catch (e) {}
+        } else {
+          descObj.description = master.description || ''
+        }
+        descObj.sizes = { ...(descObj.sizes || {}), ...sizes }
+
+        await supabase.from('retail_products').update({
+          name: baseName,
+          current_stock: totalStock,
+          description: JSON.stringify(descObj)
+        }).eq('id', master.id)
+
+        const otherIds = otherItems.map(item => item.id)
+        await supabase.from('retail_products').update({
+          active: false
+        }).in('id', otherIds)
+
+        logger.info('supabase', `Consolidated legacy sizes for ${baseName} under master ID ${master.id}`)
+      }
+    } catch (err) {
+      logger.error('supabase', 'Error during database consolidation of variants', err as any)
+    }
+  }
 }
 
 // Singleton export

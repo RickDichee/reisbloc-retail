@@ -227,6 +227,12 @@ export default function ProductModal({
                             sku: formData.sku ? `${formData.sku.trim()}-${size}` : 'N/A'
                         }))
 
+                    const totalLabelsToPrint = printMode === 'bulto' ? packagesCount : resultsToPrint.reduce((acc, curr) => acc + (printMode === 'talla' ? 1 : curr.count), 0)
+                    if (totalLabelsToPrint > 100) {
+                        const confirmPrint = window.confirm(`Vas a imprimir ${totalLabelsToPrint} etiquetas. Esto puede tardar unos momentos o congelar tu navegador brevemente. ¿Deseas continuar?`)
+                        if (!confirmPrint) return
+                    }
+
                     if (resultsToPrint.length > 0) {
                         const labelWidth = organizationSettings?.labelPrinterWidth || 50
                         let printHTML = `<div style="display: flex; flex-direction: column; gap: 20px; font-family: monospace; text-align: center; width: ${labelWidth}mm; margin: 0 auto;">`
@@ -318,6 +324,12 @@ export default function ProductModal({
                             count: qty * packagesCount,
                             sku: formData.sku ? `${formData.sku.trim()}-${size}` : 'N/A'
                         }))
+
+                    const totalLabelsToPrint = printMode === 'bulto' ? packagesCount : resultsToPrint.reduce((acc, curr) => acc + (printMode === 'talla' ? 1 : curr.count), 0)
+                    if (totalLabelsToPrint > 100) {
+                        const confirmPrint = window.confirm(`Vas a imprimir ${totalLabelsToPrint} etiquetas. Esto puede tardar unos momentos o congelar tu navegador brevemente. ¿Deseas continuar?`)
+                        if (!confirmPrint) return
+                    }
 
                     if (resultsToPrint.length > 0) {
                         const labelWidth = organizationSettings?.labelPrinterWidth || 50
