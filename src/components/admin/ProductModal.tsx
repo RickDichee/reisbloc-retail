@@ -98,6 +98,7 @@ export default function ProductModal({
     const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
     const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
     const [showPricingOptions, setShowPricingOptions] = useState(() => !!formData.wholesalePrice || !!formData.packPrice || !!formData.bulkPrice)
+    const [showStockAdvanced, setShowStockAdvanced] = useState(product?.hasInventory || false)
 
     const handleQtyChange = (sz: string, val: number) => {
         setSizeQuantities(prev => ({
@@ -168,8 +169,8 @@ export default function ProductModal({
 
             // Si hay un archivo nuevo, lo comprimimos y lo subimos
             if (imageFile) {
-                // Comprimir a max 800x800, calidad 0.7
-                const compressedBlob = await compressImage(imageFile, 800, 800, 0.7)
+                // Comprimir a max 500x500, calidad 0.6 para reducir tamaño
+                const compressedBlob = await compressImage(imageFile, 500, 500, 0.6)
                 // Usamos un ID temporal o el real si ya existe al subir a storage
                 const storageId = product ? product.id : `draft_${Date.now()}`
                 finalImageUrl = await storageService.uploadProductImage(storageId, compressedBlob)
@@ -373,7 +374,7 @@ export default function ProductModal({
                             <div className="relative group">
                                 <div className="w-40 h-40 rounded-3xl overflow-hidden bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center relative shadow-inner">
                                     {imagePreview ? (
-                                        <img src={imagePreview} alt="Product Preview" className="w-full h-full object-cover" />
+                                        <img src={imagePreview} alt="Product Preview" className="w-full h-full object-contain p-1.5" />
                                     ) : (
                                         <div className="flex flex-col items-center text-slate-400">
                                             <ImageIcon size={48} className="mb-2 opacity-50" />
@@ -765,52 +766,65 @@ export default function ProductModal({
                         </div>
                 </div>
 
-                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
-                        <div className="flex items-center gap-4">
-                            <input
-                                type="checkbox"
-                                id="hasInventory"
-                                checked={formData.hasInventory}
-                                onChange={(e) => setFormData({ ...formData, hasInventory: e.target.checked })}
-                                className="w-6 h-6 rounded-lg border-slate-300 text-slate-900 focus:ring-slate-900 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!isAdminOrManager}
-                            />
-                            <label htmlFor="hasInventory" className="text-sm font-black text-slate-700 cursor-pointer uppercase tracking-tight">
-                                Controlar Inventario (Existencias)
-                            </label>
-                        </div>
+                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                    <button
+                        type="button"
+                        onClick={() => setShowStockAdvanced(!showStockAdvanced)}
+                        className="w-full flex items-center justify-between text-slate-500 hover:text-slate-800 transition-colors text-xs font-black uppercase tracking-widest py-1"
+                    >
+                        <span className="flex items-center gap-2">📦 Control de Inventario y Existencias</span>
+                        <span>{showStockAdvanced ? 'Ocultar ▲' : 'Mostrar ▼'}</span>
+                    </button>
 
-                        {formData.hasInventory && (
-                            <div className="grid grid-cols-2 gap-4 animate-scaleIn pt-2">
-                                <div>
-                                    <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                        Stock Actual
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.currentStock || ''}
-                                        onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center"
-                                        min="0"
-                                        required />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                        Stock Mínimo
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={formData.minimumStock || ''}
-                                        onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                                        className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center"
-                                        min="0"
-                                        required
-                                    />
-                                </div>
+                    {showStockAdvanced && (
+                        <div className="space-y-4 pt-4 border-t border-slate-200/60 mt-3 animate-fadeIn">
+                            <div className="flex items-center gap-4">
+                                <input
+                                    type="checkbox"
+                                    id="hasInventory"
+                                    checked={formData.hasInventory}
+                                    onChange={(e) => setFormData({ ...formData, hasInventory: e.target.checked })}
+                                    className="w-6 h-6 rounded-lg border-slate-300 text-slate-900 focus:ring-slate-900 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={!isAdminOrManager}
+                                />
+                                <label htmlFor="hasInventory" className="text-sm font-black text-slate-700 cursor-pointer uppercase tracking-tight">
+                                    Controlar Inventario (Existencias)
+                                </label>
                             </div>
-                        )}
-                    </div>
+
+                            {formData.hasInventory && (
+                                <div className="grid grid-cols-2 gap-4 animate-scaleIn pt-2">
+                                    <div>
+                                        <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
+                                            Stock Actual
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={formData.currentStock || ''}
+                                            onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
+                                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center text-sm"
+                                            min="0"
+                                            required />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
+                                            Stock Mínimo
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={formData.minimumStock || ''}
+                                            onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
+                                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center text-sm"
+                                            min="0"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                     <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
                         <input
