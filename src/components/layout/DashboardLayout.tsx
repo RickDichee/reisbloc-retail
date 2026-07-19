@@ -122,7 +122,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
             {/* Sidebar */}
             <aside
-                className={`fixed lg:static z-30 inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'
+                className={`fixed lg:static z-30 inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col pt-12 lg:pt-16 ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'
                     } ${isMini ? 'lg:w-20' : 'lg:w-72'}`}
             >
                 {/* Logo Area */}
@@ -229,7 +229,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
                 {/* Mobile Bottom Navigation */}
                 <div className="lg:hidden bg-white border-t border-slate-200 flex items-center justify-around py-1 safe-bottom w-full overflow-hidden">
-                    {finalMenuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Cierre de Caja'].includes(item.label)).map((item) => {
+                    {finalMenuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Inventario'].includes(item.label)).map((item) => {
                         const Icon = item.icon!;
                         const isActive = location.pathname === item.path;
                         return (
