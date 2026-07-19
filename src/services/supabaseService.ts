@@ -20,6 +20,7 @@ import { withOrg } from '@/utils/queryHelpers'
 import { getStoredToken } from './jwtService'
 import { offlineStorage } from './offlineStorage'
 import { syncService } from './syncService'
+import { useAppStore } from '@/store/appStore'
 import {
   User,
   Device,
@@ -44,11 +45,20 @@ class SupabaseService {
 
   // Helper para obtener el ID de organización actual
   private getCurrentOrgId(): string {
+    // 1. Intentar obtener del store global en memoria (siempre fresco)
+    try {
+      const storeState = useAppStore.getState()
+      if (storeState?.currentUser?.organizationId) {
+        return storeState.currentUser.organizationId
+      }
+    } catch (e) {}
+
+    // 2. Intentar obtener de los datos del token en localStorage
     const token = getStoredToken()
     if (token && token.organizationId) {
       return token.organizationId
     }
-    logger.warn('supabase', '⚠️ No organization ID found in token')
+    logger.warn('supabase', '⚠️ No organization ID found in token or store')
     // Fallback: Si no hay token (raro en operaciones autenticadas), intentar obtener de sesión
     // Por ahora retornamos string vacío que causará error SQL si es obligatorio, 
     // lo cual es correcto para seguridad.
@@ -159,15 +169,26 @@ class SupabaseService {
 
   async inviteUser(email: string, role: string): Promise<{ success: boolean; message?: string; devLink?: string }> {
     try {
-      const token = getStoredToken()
-      if (!token || !token.accessToken) {
+      // 1. Intentar obtener el token de acceso fresco directamente del cliente Supabase
+      const { data: { session } } = await supabase.auth.getSession()
+      let accessToken = session?.access_token
+
+      // 2. Si no hay sesión activa en Supabase, hacer fallback al localStorage
+      if (!accessToken) {
+        const token = getStoredToken()
+        if (token && token.accessToken) {
+          accessToken = token.accessToken
+        }
+      }
+
+      if (!accessToken) {
         throw new Error('No estás autenticado para realizar esta acción.')
       }
 
       const { data, error } = await supabase.functions.invoke('send-invitation', {
         body: { email, role },
         headers: {
-          Authorization: `Bearer ${token.accessToken}`
+          Authorization: `Bearer ${accessToken}`
         }
       })
 
