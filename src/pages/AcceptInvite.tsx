@@ -17,21 +17,52 @@ export default function AcceptInvite() {
     const token = searchParams.get('token')
 
     useEffect(() => {
-        if (!token) {
-            setStatus('error')
-            setErrorMessage('Token de invitación no encontrado.')
-            return
+        if (token) {
+            verifyToken()
+        } else {
+            checkNativeSession()
         }
-
-        verifyToken()
     }, [token])
+
+    const checkNativeSession = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session && session.user) {
+                const user = session.user
+                const orgId = user.user_metadata?.organization_id || user.user_metadata?.organizationId
+                const role = user.user_metadata?.role
+
+                if (orgId) {
+                    const { data: orgData } = await supabase
+                        .from('organizations')
+                        .select('name')
+                        .eq('id', orgId)
+                        .maybeSingle()
+
+                    setInviteData({
+                        email: user.email,
+                        organization_id: orgId,
+                        role: role || 'employee',
+                        organization: {
+                            name: orgData?.name || 'Reisbloc POS'
+                        },
+                        isNative: true
+                    })
+                    setStatus('form')
+                    return
+                }
+            }
+            setStatus('error')
+            setErrorMessage('Token de invitación no encontrado o sesión no válida.')
+        } catch (err: any) {
+            logger.error('invite', 'Error checking native invite session', err)
+            setStatus('error')
+            setErrorMessage(err.message)
+        }
+    }
 
     const verifyToken = async () => {
         try {
-            // En una implementación real, esto consultaría una tabla de invitaciones
-            // Por ahora, como es un MVP evolution, vamos a simular la verificación 
-            // o usar el token directamente si el backend ya procesó la invitación.
-
             // Consultamos la tabla de invitaciones (asumiendo que existe)
             // Generamos el hash del token para comparar (SHA-256)
             const tokenHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token!))
@@ -70,37 +101,62 @@ export default function AcceptInvite() {
 
         setLoading(true)
         try {
-            // 1. Crear usuario en Auth (con el email invitado)
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: inviteData.email,
-                password: password,
-            })
+            if (inviteData.isNative) {
+                // Flujo A: Invitación Nativa de Supabase
+                // El usuario ya está logueado por el token en el fragmento hash, actualizamos su contraseña
+                const { error: authError } = await supabase.auth.updateUser({
+                    password: password
+                })
+                if (authError) throw authError
 
-            if (authError) throw authError
+                // Vincular el perfil de la base de datos
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                    const { error: profileError } = await supabase
+                        .from('users')
+                        .update({
+                            organization_id: inviteData.organization_id,
+                            role: inviteData.role,
+                            active: true
+                        })
+                        .eq('id', user.id)
 
-            // 2. Vincular el perfil público insertado por el trigger con la organización y rol correctos
-            if (authData.user) {
-                const { error: profileError } = await supabase
-                    .from('users')
-                    .update({
-                        organization_id: inviteData.organization_id,
-                        role: inviteData.role,
-                        active: true
-                    })
-                    .eq('id', authData.user.id)
-
-                if (profileError) {
-                    logger.error('invite', 'Error linking public profile to organization', profileError)
+                    if (profileError) {
+                        logger.error('invite', 'Error linking native public profile to organization', profileError)
+                    }
                 }
+            } else {
+                // Flujo B: Invitación por Link/Token Personalizado
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: inviteData.email,
+                    password: password,
+                })
+                if (authError) throw authError
+
+                // Vincular el perfil público insertado por el trigger con la organización y rol correctos
+                if (authData.user) {
+                    const { error: profileError } = await supabase
+                        .from('users')
+                        .update({
+                            organization_id: inviteData.organization_id,
+                            role: inviteData.role,
+                            active: true
+                        })
+                        .eq('id', authData.user.id)
+
+                    if (profileError) {
+                        logger.error('invite', 'Error linking public profile to organization', profileError)
+                    }
+                }
+
+                // Notificar al backend que la invitación fue aceptada
+                const { error: inviteUpdateError } = await supabase
+                    .from('organization_invites')
+                    .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+                    .eq('id', inviteData.id)
+
+                if (inviteUpdateError) logger.warn('invite', 'No se pudo marcar invitación como aceptada', inviteUpdateError)
             }
-
-            // 3. Notificar al backend que la invitación fue aceptada (RPC o update)
-            const { error: inviteUpdateError } = await supabase
-                .from('organization_invites')
-                .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-                .eq('id', inviteData.id)
-
-            if (inviteUpdateError) logger.warn('invite', 'No se pudo marcar invitación como aceptada', inviteUpdateError)
 
             setStatus('success')
             setTimeout(() => navigate('/login'), 3000)

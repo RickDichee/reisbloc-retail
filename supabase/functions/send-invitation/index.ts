@@ -186,8 +186,26 @@ Deno.serve(async (req) => {
                 emailError = err.message;
             }
         } else {
-            console.warn('⚠️ SMTP Configuration variables missing in environment');
-            emailError = 'SMTP configuration missing';
+            console.log('⚠️ SMTP config missing, falling back to native Supabase invite');
+            try {
+                const { data: nativeInvite, error: nativeError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+                    email,
+                    {
+                        redirectTo: `${origin}/accept-invite`,
+                        data: {
+                            role: role,
+                            organization_id: userData.organization_id
+                        }
+                    }
+                );
+
+                if (nativeError) throw nativeError;
+                emailSent = true;
+                console.log(`✉️ Native Supabase Invite successfully sent to ${email}`);
+            } catch (err: any) {
+                console.error('Native invite error:', err);
+                emailError = err.message;
+            }
         }
 
         return new Response(JSON.stringify({
