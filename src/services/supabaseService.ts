@@ -208,17 +208,39 @@ class SupabaseService {
 
   async createAuditLog(log: Omit<AuditLog, 'id' | 'timestamp'>): Promise<void> {
     try {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+      // Validar user_id
+      let finalUserId = log.userId
+      if (!uuidRegex.test(finalUserId)) {
+        const storeUser = useAppStore.getState().currentUser?.id
+        if (storeUser && uuidRegex.test(storeUser)) {
+          finalUserId = storeUser
+        } else {
+          finalUserId = '00000000-0000-0000-0000-000000000000'
+        }
+      }
+
+      // Validar entity_id
+      let finalEntityId = log.entityId
+      let finalDetails = log.details || ''
+      if (finalEntityId && !uuidRegex.test(finalEntityId)) {
+        finalDetails = `${finalDetails ? finalDetails + ' | ' : ''}Original Entity ID: ${finalEntityId}`
+        finalEntityId = undefined as any
+      }
+
       const { error } = await supabase
         .from('audit_logs')
         .insert({
-          user_id: log.userId,
+          user_id: finalUserId,
           action: log.action,
           entity_type: log.entityType,
-          entity_id: log.entityId,
+          entity_id: finalEntityId || null,
           old_value: log.oldValue,
           new_value: log.newValue,
           ip_address: log.ipAddress,
           device_id: log.deviceId,
+          details: finalDetails || null,
           location: log.location,
           session_type: log.sessionType,
           organization_id: this.getCurrentOrgId()
