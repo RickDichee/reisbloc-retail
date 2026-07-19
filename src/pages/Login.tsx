@@ -18,16 +18,6 @@ export default function Login() {
         navigate('/admin')
         return
       }
-
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (session && !isAuthenticated) {
-        if (window.location.search.includes('zombie=cleared')) {
-          return
-        }
-        await supabase.auth.signOut()
-        window.location.replace('/login?zombie=cleared')
-      }
     }
     checkSession()
   }, [navigate, isAuthenticated, isInitializing])
