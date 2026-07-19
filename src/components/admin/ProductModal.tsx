@@ -72,7 +72,7 @@ export default function ProductModal({
         sku: product?.sku || '',
         barcode: product?.barcode || initialBarcode || '',
         description: parsedDesc.description,
-        hasInventory: product?.hasInventory || false,
+        hasInventory: product ? product.hasInventory : true,
         currentStock: product?.currentStock || 0,
         minimumStock: product?.minimumStock || 10,
         active: product?.active ?? true,
@@ -101,7 +101,7 @@ export default function ProductModal({
     const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
     const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
     const [showPricingOptions, setShowPricingOptions] = useState(() => !!formData.wholesalePrice || !!formData.packPrice || !!formData.bulkPrice)
-    const [showStockAdvanced, setShowStockAdvanced] = useState(product?.hasInventory || false)
+    const [showStockAdvanced, setShowStockAdvanced] = useState(product ? product.hasInventory : true)
 
     const handleQtyChange = (sz: string, val: number) => {
         setSizeQuantities(prev => ({
