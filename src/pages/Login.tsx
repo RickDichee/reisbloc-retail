@@ -7,11 +7,13 @@ import { useAppStore } from '@/store/appStore'
 export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated } = useAppStore()
+  const { isAuthenticated, isInitializing } = useAppStore()
   const navigate = useNavigate()
 
   useEffect(() => {
     const checkSession = async () => {
+      if (isInitializing) return
+
       if (isAuthenticated) {
         navigate('/admin')
         return
@@ -28,7 +30,7 @@ export default function Login() {
       }
     }
     checkSession()
-  }, [navigate, isAuthenticated])
+  }, [navigate, isAuthenticated, isInitializing])
 
   const handleGoogleLogin = async () => {
     try {

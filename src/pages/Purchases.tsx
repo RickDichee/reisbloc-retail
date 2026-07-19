@@ -9,7 +9,7 @@ export default function Purchases() {
     const { hasAnyRole } = usePermissions()
 
     if (!currentUser) return <Navigate to="/login" replace />
-    if (!hasAnyRole(['admin', 'supervisor'])) return <Navigate to="/pos" replace />
+     if (!hasAnyRole(['admin', 'manager'])) return <Navigate to="/pos" replace />
 
     return (
         <DashboardLayout>

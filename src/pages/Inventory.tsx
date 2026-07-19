@@ -51,7 +51,7 @@ export default function Inventory() {
   }, [loadInventory])
 
   if (!currentUser) return <Navigate to="/login" replace />
-  if (!hasAnyRole(['admin', 'supervisor'])) return <Navigate to="/pos" replace />
+  if (!hasAnyRole(['admin', 'manager', 'supervisor'])) return <Navigate to="/pos" replace />
 
   const handleShareProduct = async (product: any) => {
     const text = `

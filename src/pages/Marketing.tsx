@@ -20,7 +20,7 @@ export default function Marketing() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   if (!currentUser) return <Navigate to="/login" replace />
-  if (!isAdmin) return <Navigate to="/pos" replace />
+  if (!hasAnyRole(['admin', 'manager'])) return <Navigate to="/pos" replace />
 
   return (
     <DashboardLayout>

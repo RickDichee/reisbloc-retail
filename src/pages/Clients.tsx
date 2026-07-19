@@ -9,7 +9,7 @@ export default function Clients() {
   const { hasAnyRole } = usePermissions()
 
   if (!currentUser) return <Navigate to="/login" replace />
-  if (!hasAnyRole(['admin', 'supervisor'])) return <Navigate to="/pos" replace />
+  if (!hasAnyRole(['admin', 'manager', 'supervisor'])) return <Navigate to="/pos" replace />
 
   return (
     <DashboardLayout>

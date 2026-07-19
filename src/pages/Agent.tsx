@@ -20,7 +20,7 @@ export default function Agent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   if (!currentUser) return <Navigate to="/login" replace />
-  if (!hasAnyRole(['admin', 'supervisor'])) return <Navigate to="/pos" replace />
+  if (!hasAnyRole(['admin', 'manager'])) return <Navigate to="/pos" replace />
 
   return (
     <DashboardLayout>
