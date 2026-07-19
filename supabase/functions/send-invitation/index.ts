@@ -122,14 +122,79 @@ Deno.serve(async (req) => {
         const origin = req.headers.get('origin') || 'https://reisbloc.io';
         const inviteLink = `${origin}/accept-invite?token=${rawToken}`;
 
-        // 8. TODO: Send Email
-        console.log(`📩 Secret Invite Link for ${email}: ${inviteLink}`);
+        // 8. Send Email via SMTP
+        const smtpHost = Deno.env.get('SMTP_HOST');
+        const smtpPort = Deno.env.get('SMTP_PORT');
+        const smtpUser = Deno.env.get('SMTP_USER');
+        const smtpPassword = Deno.env.get('SMTP_PASSWORD');
+        const smtpFrom = Deno.env.get('SMTP_FROM') || smtpUser;
+
+        let emailSent = false;
+        let emailError = null;
+
+        if (smtpHost && smtpPort && smtpUser && smtpPassword) {
+            try {
+                // Dynamic import of SMTP client to avoid loading issues in local development
+                const { SMTPClient } = await import("https://deno.land/x/smtp@v0.7.0/mod.ts");
+
+                const client = new SMTPClient({
+                    connection: {
+                        hostname: smtpHost,
+                        port: parseInt(smtpPort),
+                        tls: true,
+                        auth: {
+                            username: smtpUser,
+                            password: smtpPassword,
+                        },
+                    },
+                });
+
+                // Get organization name
+                const { data: orgData } = await supabaseAdmin
+                    .from('organizations')
+                    .select('name')
+                    .eq('id', userData.organization_id)
+                    .single();
+
+                const orgName = orgData?.name || 'Reisbloc POS';
+
+                await client.send({
+                    from: smtpFrom || 'noreply@reisbloc.io',
+                    to: email,
+                    subject: `Invitación de ${orgName} para unirte a su Staff`,
+                    content: `Hola,\n\nHas sido invitado a unirte al staff de ${orgName}.\n\nPara activar tu cuenta, haz clic en el siguiente enlace:\n${inviteLink}\n\nEste enlace expira en 48 horas.`,
+                    html: `
+                        <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px;">
+                            <h2 style="color: #4f46e5; text-align: center; text-transform: uppercase;">Invitación de Staff</h2>
+                            <p>Hola,</p>
+                            <p>Has sido invitado a unirte al staff de la organización <strong>${orgName}</strong> con el rol de <strong>${role === 'employee' ? 'Empleado' : role}</strong>.</p>
+                            <p>Para activar tu cuenta y comenzar a trabajar, haz clic en el siguiente botón:</p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="${inviteLink}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Activar Mi Cuenta</a>
+                            </div>
+                            <p style="font-size: 12px; color: #666; text-align: center;">Este enlace es único y expirará en 48 horas.</p>
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p style="font-size: 10px; color: #999; text-align: center;">Reisbloc POS - Plataforma de Ventas e Inventarios.</p>
+                        </div>
+                    `
+                });
+
+                emailSent = true;
+                console.log(`✉️ Email successfully sent to ${email}`);
+            } catch (err: any) {
+                console.error('SMTP Error:', err);
+                emailError = err.message;
+            }
+        } else {
+            console.warn('⚠️ SMTP Configuration variables missing in environment');
+            emailError = 'SMTP configuration missing';
+        }
 
         return new Response(JSON.stringify({
             success: true,
-            message: 'Invitation sent successfully',
+            message: emailSent ? 'Invitación enviada por correo exitosamente' : 'Invitación registrada en el sistema',
             invite_id: invite.id,
-            dev_invite_link: inviteLink
+            dev_invite_link: emailSent ? null : inviteLink
         }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     } catch (err: any) {

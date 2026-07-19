@@ -71,16 +71,30 @@ export default function AcceptInvite() {
         setLoading(true)
         try {
             // 1. Crear usuario en Auth (con el email invitado)
-            const { error: authError } = await supabase.auth.signUp({
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: inviteData.email,
                 password: password,
             })
 
             if (authError) throw authError
 
-            // 2. Notificar al backend que la invitación fue aceptada (RPC o update)
-            // En una implementación completa esto se haría vía trigger, 
-            // pero aquí lo forzamos para asegurar consistencia.
+            // 2. Vincular el perfil público insertado por el trigger con la organización y rol correctos
+            if (authData.user) {
+                const { error: profileError } = await supabase
+                    .from('users')
+                    .update({
+                        organization_id: inviteData.organization_id,
+                        role: inviteData.role,
+                        active: true
+                    })
+                    .eq('id', authData.user.id)
+
+                if (profileError) {
+                    logger.error('invite', 'Error linking public profile to organization', profileError)
+                }
+            }
+
+            // 3. Notificar al backend que la invitación fue aceptada (RPC o update)
             const { error: inviteUpdateError } = await supabase
                 .from('organization_invites')
                 .update({ status: 'accepted', accepted_at: new Date().toISOString() })
