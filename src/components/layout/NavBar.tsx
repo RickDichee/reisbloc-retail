@@ -99,9 +99,13 @@ export default function NavBar() {
   ]
 
   const visibleItems = navItems.filter(item => {
-    // Always show all items that the user's role allows
+    // 1. Verificar acceso del rol
     const hasRole = item.roles.includes(currentUser?.role || '')
-    return hasRole
+    if (!hasRole) return false
+
+    // 2. Solo mostrar los favoritos de la barra superior configurados para evitar saturar el diseño
+    const favNavbar = organizationSettings?.favorites?.navbar || ['/pos', '/inventory', '/reports']
+    return favNavbar.includes(item.path)
   })
 
   return (
