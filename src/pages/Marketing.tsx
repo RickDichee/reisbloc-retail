@@ -13,7 +13,7 @@ import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 export default function Marketing() {
   const { currentUser } = useAppStore()
-  const { isAdmin } = usePermissions()
+  const { hasAnyRole } = usePermissions()
   const { balance } = useTokens()
   const { isPro, planName } = usePlanLimits()
   const [showTokenModal, setShowTokenModal] = useState(false)
