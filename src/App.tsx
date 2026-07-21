@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
 import { supabase } from '@/config/supabase'
+import { BRANDING } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { getStoredToken } from '@/services/jwtService'
@@ -123,6 +124,22 @@ function AppLayout() {
 
 export default function App() {
   const { setCurrentUser, setAuthenticated, isInitializing, setInitializing } = useAppStore()
+
+  useEffect(() => {
+    // Actualizar título y favicon de forma dinámica según la marca/dominio activo
+    document.title = BRANDING.appWithBrand
+
+    const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
+    if (favicon) {
+      favicon.href = BRANDING.logoUrl
+      favicon.type = BRANDING.logoUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/jpeg'
+    }
+
+    const appleIcon = document.querySelector("link[rel*='apple-touch-icon']") as HTMLLinkElement
+    if (appleIcon) {
+      appleIcon.href = BRANDING.logoUrl
+    }
+  }, [])
 
   useEffect(() => {
     const restoreSession = async () => {

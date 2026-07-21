@@ -169,11 +169,13 @@ const LandingPage = () => {
             <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
               Haz crecer tu negocio<br/>
               <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                con Moda Miel MX
+                con {BRANDING.whiteLabelName}
               </span>
             </h1>
             <p className="text-lg text-slate-300 mb-10 max-w-md leading-relaxed">
-              El POS personalizado para moda que funciona sin internet, maneja inventario y acelera tus ventas por paquete.
+              {BRANDING.whiteLabelName === 'Moda Miel MX'
+                ? 'El POS personalizado para moda que funciona sin internet, maneja inventario y acelera tus ventas por paquete.'
+                : 'El POS que funciona sin internet, maneja tu inventario, cierra ventas 24/7 con IA y genera facturas CFDI 4.0.'}
             </p>
             <div className="flex flex-wrap gap-4">
               <a

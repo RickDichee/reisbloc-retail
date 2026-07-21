@@ -18,6 +18,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
+const isModaMiel = process.env.VITE_APP_BRAND === 'modamiel'
+
 export default defineConfig({
   plugins: [
     react(),
@@ -64,23 +66,25 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
       },
       manifest: {
-        short_name: 'Reisbloc',
-        name: 'Reisbloc Retail Lab',
-        description: 'Sistema de Punto de Venta Profesional',
+        short_name: isModaMiel ? 'Moda Miel MX' : 'Reisbloc',
+        name: isModaMiel ? 'Reisbloc Store · Moda Miel MX' : 'Reisbloc Retail Lab',
+        description: isModaMiel 
+          ? 'POS personalizado para Moda Miel MX, powered by Reisbloc.' 
+          : 'Sistema de Punto de Venta Profesional',
         theme_color: '#0B0B0B',
         background_color: '#0B0B0B',
         display: 'standalone',
         start_url: '.',
         icons: [
           {
-            src: 'icon.svg',
-            type: 'image/svg+xml',
+            src: isModaMiel ? 'images/moda-miel-mx-logo.jpeg' : 'icon.svg',
+            type: isModaMiel ? 'image/jpeg' : 'image/svg+xml',
             sizes: '512x512',
             purpose: 'any maskable'
           },
           {
-            src: 'icon.svg',
-            type: 'image/svg+xml',
+            src: isModaMiel ? 'images/moda-miel-mx-logo.jpeg' : 'icon.svg',
+            type: isModaMiel ? 'image/jpeg' : 'image/svg+xml',
             sizes: '192x192',
             purpose: 'any maskable'
           }
