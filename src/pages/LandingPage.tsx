@@ -136,7 +136,9 @@ const LandingPage = () => {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-10 h-10 rounded-xl object-cover border border-pink-200" />
-            <span className="font-bold text-xl tracking-tight text-[#1F2937]">{BRANDING.appName} <span className="font-light text-pink-500">{BRANDING.whiteLabelName}</span></span>
+            <span className="font-bold text-xl tracking-tight text-[#1F2937]">
+              {BRANDING.whiteLabelName === 'Moda Miel MX' ? 'Moda Miel MX' : BRANDING.appName}
+            </span>
           </div>
           <div className="flex items-center gap-3">
             <a href="#features" className="text-sm font-medium text-[#64748B] hover:text-[#1F293B] transition">Características</a>
@@ -174,7 +176,7 @@ const LandingPage = () => {
             </h1>
             <p className="text-lg text-slate-300 mb-10 max-w-md leading-relaxed">
               {BRANDING.whiteLabelName === 'Moda Miel MX'
-                ? 'El POS personalizado para moda que funciona sin internet, maneja inventario y acelera tus ventas por paquete.'
+                ? 'Moda Miel MX es una aplicación de Punto de Venta (POS) diseñada para la gestión de ventas, facturación y control de inventario de nuestra tienda de ropa y moda.'
                 : 'El POS que funciona sin internet, maneja tu inventario, cierra ventas 24/7 con IA y genera facturas CFDI 4.0.'}
             </p>
             <div className="flex flex-wrap gap-4">
