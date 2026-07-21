@@ -384,8 +384,8 @@ const LandingPage = () => {
             <a href="#features" className="hover:text-white transition">Características</a>
             <a href="#pricing" className="hover:text-white transition">Precios</a>
             <a href="https://wa.me/5215665848231" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Contacto</a>
-            <a href="/privacy" className="hover:text-white transition">Privacidad</a>
-            <a href="/terms" className="hover:text-white transition">Términos</a>
+            <a href={BRANDING.whiteLabelName === 'Moda Miel MX' ? '/modamielmx' : '/privacy'} className="hover:text-white transition">Privacidad</a>
+            <a href={BRANDING.whiteLabelName === 'Moda Miel MX' ? '/modamielmx' : '/terms'} className="hover:text-white transition">Términos</a>
           </div>
         </div>
       </footer>
