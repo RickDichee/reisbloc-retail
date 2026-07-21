@@ -426,7 +426,7 @@ export default function Closing() {
           ` : ''}
 
           <div class="footer">
-            <p>Documento generado automáticamente por {BRANDING.appWithBrand}</p>
+            <p>Documento generado automáticamente por ${BRANDING.appWithBrand}</p>
             <p>${new Date().toLocaleTimeString('es-MX')}</p>
           </div>
         </div>
