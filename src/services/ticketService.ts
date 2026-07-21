@@ -1,6 +1,7 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { supabase } from '@/config/supabase';
+import { BRANDING } from '@/config/branding';
 
 export interface TicketData {
   orderId: string;
@@ -167,7 +168,8 @@ export const ticketService = {
     text += `Caja: ${data.tableNumber}\n`;
     text += `─────────────────\n`;
     text += `¡Gracias por su compra!\n`;
-    text += `⚡ Reisbloc Store`;
+    text += `⚡ ${BRANDING.whiteLabelName}\n`;
+    text += `${BRANDING.poweredBy}`;
 
     return text;
   },

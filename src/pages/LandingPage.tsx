@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Zap, Check, Bot, Users, Package, BarChart3, ArrowRight } from 'lucide-react';
 import { useAppStore } from '@/store/appStore';
+import { BRANDING } from '@/config/branding';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ const LandingPage = () => {
       buttonText: 'Empezar Gratis',
       planKey: 'free',
       highlight: false,
-      link: 'https://wa.me/5215665848231?text=Hola%2C%20quiero%20empezar%20con%20el%20plan%20Libre%20de%20Reisbloc%20Store'
+      link: `https://wa.me/5215665848231?text=Hola%2C%20quiero%20empezar%20con%20el%20plan%20Libre%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`
     },
     {
       name: 'Negocio',
@@ -48,7 +49,7 @@ const LandingPage = () => {
       buttonText: 'Elegir Negocio',
       planKey: 'starter',
       highlight: true,
-      link: 'https://wa.me/5215665848231?text=Hola%2C%20quiero%20el%20plan%20Negocio%20de%20Reisbloc%20Store'
+      link: `https://wa.me/5215665848231?text=Hola%2C%20quiero%20el%20plan%20Negocio%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`
     },
     {
       name: 'Empresarial',
@@ -67,7 +68,7 @@ const LandingPage = () => {
       buttonText: 'Elegir Empresarial',
       planKey: 'growth',
       highlight: false,
-      link: 'https://wa.me/5215665848231?text=Hola%2C%20quiero%20el%20plan%20Empresarial%20de%20Reisbloc%20Store'
+      link: `https://wa.me/5215665848231?text=Hola%2C%20quiero%20el%20plan%20Empresarial%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`
     }
   ];
 
@@ -118,7 +119,7 @@ const LandingPage = () => {
         html { scroll-behavior: smooth; }
         #features, #pricing { scroll-margin-top: 6rem; }
         body { font-family: 'Outfit', sans-serif; }
-        .hero-gradient { background: linear-gradient(135deg, #1F293B 0%, #2d3f55 50%, #1F293B 100%); }
+        .hero-gradient { background: linear-gradient(135deg, #1f2937 0%, #3f1d2e 55%, #111827 100%); }
         .card-hover { transition: transform 0.25s ease, box-shadow 0.25s ease; }
         .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(31,41,59,0.12); }
         .btn-wa { background: linear-gradient(135deg, #25D366, #128C7E); transition: filter 0.2s ease, transform 0.2s ease; }
@@ -134,14 +135,8 @@ const LandingPage = () => {
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <svg width="36" height="36" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="512" height="512" rx="100" fill="#1F2937"/>
-              <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#1F2937"/>
-              <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" strokeWidth="12" strokeLinejoin="round"/>
-              <path d="M256 110V402" stroke="#00F5FF" strokeWidth="6" strokeDasharray="8 8"/>
-              <circle cx="256" cy="256" r="20" fill="#00F5FF" opacity="0.15"/>
-            </svg>
-            <span className="font-bold text-xl tracking-tight text-[#1F2937]">Reisbloc <span className="font-light text-[#64748B]">Store</span></span>
+            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-10 h-10 rounded-xl object-cover border border-pink-200" />
+            <span className="font-bold text-xl tracking-tight text-[#1F2937]">{BRANDING.appName} <span className="font-light text-pink-500">{BRANDING.whiteLabelName}</span></span>
           </div>
           <div className="flex items-center gap-3">
             <a href="#features" className="text-sm font-medium text-[#64748B] hover:text-[#1F293B] transition">Características</a>
@@ -153,7 +148,7 @@ const LandingPage = () => {
               Ingresar
             </a>
             <a
-              href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20Reisbloc%20Store"
+              href={`https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-wa text-white text-sm font-semibold px-5 py-2.5 rounded-full flex items-center gap-2"
@@ -174,15 +169,15 @@ const LandingPage = () => {
             <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
               Haz crecer tu negocio<br/>
               <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                con inteligencia artificial
+                con Moda Miel MX
               </span>
             </h1>
             <p className="text-lg text-slate-300 mb-10 max-w-md leading-relaxed">
-              El POS que funciona sin internet, maneja tu inventario, cierra ventas 24/7 con IA y genera facturas CFDI 4.0.
+              El POS personalizado para moda que funciona sin internet, maneja inventario y acelera tus ventas por paquete.
             </p>
             <div className="flex flex-wrap gap-4">
               <a
-                href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20Reisbloc%20Store"
+                href={`https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-wa text-white font-bold px-7 py-4 rounded-full shadow-lg flex items-center gap-2"
@@ -201,22 +196,15 @@ const LandingPage = () => {
 
           <div className="flex justify-center">
             <div className="float relative">
-              <div className="w-72 h-72 rounded-3xl bg-white/10 border border-white/20 backdrop-blur flex flex-col items-center justify-center gap-4 shadow-2xl p-8">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-                <p className="text-center text-white/80 text-sm font-medium">POS con IA<br/><span className="text-blue-300 font-bold">Agente de Ventas 24/7</span></p>
-                <div className="flex gap-2">
-                  <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">● Sin internet</span>
-                  <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">CFDI 4.0</span>
-                </div>
-              </div>
-              <div className="absolute -top-4 -right-4 bg-white text-[#1F2937] text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
-                ⚡ Funciona offline
-              </div>
-              <div className="absolute -bottom-4 -left-4 bg-[#1F2937] text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
-                📋 Fácil de usar
-              </div>
+            <div className="w-[22rem] h-[22rem] rounded-3xl bg-white/10 border border-white/20 backdrop-blur shadow-2xl overflow-hidden">
+              <img src={BRANDING.bannerUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
+            </div>
+            <div className="absolute -top-4 -right-4 bg-pink-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
+              Moda Miel MX
+            </div>
+            <div className="absolute -bottom-4 -left-4 bg-[#1F2937] text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
+              Powered by Reisbloc
+            </div>
             </div>
           </div>
         </div>
@@ -364,10 +352,10 @@ const LandingPage = () => {
             <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">tu negocio?</span>
           </h2>
           <p className="text-slate-300 text-lg mb-10 max-w-xl mx-auto">
-            Agenda una demo personalizada para ver cómo Reisbloc Store puede ayudarte a vender más y mejor.
+            Agenda una demo personalizada para ver cómo {BRANDING.appWithBrand} puede ayudarte a vender más y mejor.
           </p>
           <a 
-            href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20Reisbloc%20Store"
+            href={`https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-wa text-white font-bold px-10 py-5 rounded-full shadow-2xl text-xl inline-flex items-center gap-3 transition-all hover:scale-105"
@@ -387,15 +375,9 @@ const LandingPage = () => {
       <footer className="bg-[#1F2937] text-slate-400 py-10">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <svg width="28" height="28" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="512" height="512" rx="100" fill="#1F2937"/>
-              <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#1F2937"/>
-              <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" strokeWidth="12" strokeLinejoin="round"/>
-              <path d="M256 110V402" stroke="#00F5FF" strokeWidth="6" strokeDasharray="8 8"/>
-              <circle cx="256" cy="256" r="20" fill="#00F5FF" opacity="0.15"/>
-            </svg>
+            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-7 h-7 rounded object-cover" />
           </div>
-          <p className="text-xs text-center">© 2026 Reisbloc Store. Hecho con ❤️ en México 🇲🇽</p>
+          <p className="text-xs text-center">© 2026 {BRANDING.whiteLabelName}. {BRANDING.poweredBy}.</p>
           <div className="flex gap-4 text-xs">
             <a href="#features" className="hover:text-white transition">Características</a>
             <a href="#pricing" className="hover:text-white transition">Precios</a>

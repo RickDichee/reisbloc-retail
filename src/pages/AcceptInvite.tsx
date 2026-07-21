@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
+import { BRANDING } from '@/config/branding'
 import logger from '@/utils/logger'
 import { Shield, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
@@ -44,7 +45,7 @@ export default function AcceptInvite() {
                         organization_id: orgId,
                         role: role || 'employee',
                         organization: {
-                            name: orgData?.name || 'Reisbloc POS'
+                            name: orgData?.name || BRANDING.appWithBrand
                         },
                         isNative: true
                     })

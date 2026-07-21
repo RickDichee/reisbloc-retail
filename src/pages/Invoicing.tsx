@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import { facturapiService, InvoiceData, InvoiceResponse } from '../services/facturapiService';
 import { useAuth } from '../hooks/useAuth';
+import { BRANDING } from '../config/branding';
 import { 
   Receipt, 
   FileText, 
@@ -152,7 +153,7 @@ export default function Invoicing() {
         },
         use: use,
         paymentForm: paymentForm,
-        observations: `Venta desde Reisbloc Store - ${new Date().toISOString().split('T')[0]}`,
+        observations: `Venta desde ${BRANDING.appWithBrand} - ${new Date().toISOString().split('T')[0]}`,
       };
       
       const result = await facturapiService.createInvoice(invoiceData);

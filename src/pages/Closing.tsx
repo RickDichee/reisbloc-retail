@@ -28,6 +28,7 @@ import {
   Pie,
   Cell,
 } from 'recharts'
+import { BRANDING } from '@/config/branding'
 
 export default function Closing() {
   const { currentUser } = useAppStore()
@@ -200,7 +201,7 @@ export default function Closing() {
 - Tarjeta: $${closingData.totalClip?.toFixed(2)}
 - Digital: $${closingData.totalDigital?.toFixed(2)}
 
-🚀 _Generado con Reisbloc POS_
+🚀 _Generado con ${BRANDING.appWithBrand}_
     `.trim()
 
     if (navigator.share) {
@@ -425,7 +426,7 @@ export default function Closing() {
           ` : ''}
 
           <div class="footer">
-            <p>Documento generado automáticamente por Reisbloc POS</p>
+            <p>Documento generado automáticamente por {BRANDING.appWithBrand}</p>
             <p>${new Date().toLocaleTimeString('es-MX')}</p>
           </div>
         </div>

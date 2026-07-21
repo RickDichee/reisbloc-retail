@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Order, Product } from '@/types/index'
-import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { useAppStore } from '@/store/appStore'
+import { BRANDING } from '@/config/branding'
 
 interface ReceiptTicketProps {
   order: Order
@@ -22,7 +22,7 @@ export default function ReceiptTicket({
   saleTotal,
   paymentMethod,
   tableNumber,
-  businessName = 'REISBLOC RETAIL',
+  businessName = BRANDING.appWithBrand.toUpperCase(),
   address = 'Sistema Punto de Venta',
   phone = '',
   clientName = '',
@@ -129,7 +129,7 @@ export default function ReceiptTicket({
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '6px', borderBottom: '3px solid #000', paddingBottom: '6px' }}>
         {ticketShowLogo && (
-          <img src="/icon.svg" alt="Logo" style={{ width: '40px', height: '40px', marginBottom: '4px', filter: 'grayscale(100%) contrast(1000%)' }} />
+          <img src={BRANDING.logoUrl} alt="Logo" style={{ width: '46px', height: '46px', marginBottom: '4px', borderRadius: '8px', objectFit: 'cover' }} />
         )}
         <div style={{ fontWeight: 'bold', fontSize: '15px', textTransform: 'uppercase' }}>{ticketBusinessName}</div>
         <div style={{ fontSize: '11px', marginTop: '2px' }}>{ticketAddress}</div>
@@ -194,7 +194,7 @@ export default function ReceiptTicket({
       >
         <div style={{ fontWeight: 'bold' }}>{ticketFooterMsg}</div>
         <div style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '2px' }}>
-          "Tu negocio, sin límites"
+          {BRANDING.receiptTagline}
         </div>
 
         {/* Publicidad Reisbloc (Siempre Visible al Bottom por Requerimiento Fijo) */}
@@ -207,8 +207,8 @@ export default function ReceiptTicket({
           fontWeight: 'bold',
           textAlign: 'center'
         }}>
-          <div>⚡ Powered by REISBLOC</div>
-          <div style={{ fontSize: '9px', fontWeight: 'normal', marginTop: '1px' }}>reisbloc.com</div>
+          <div>⚡ {BRANDING.poweredBy}</div>
+          <div style={{ fontSize: '9px', fontWeight: 'normal', marginTop: '1px' }}>{BRANDING.poweredByUrl}</div>
         </div>
       </div>
 
@@ -238,7 +238,7 @@ export default function ReceiptTicket({
           }
           img {
             -webkit-print-color-adjust: exact;
-            filter: grayscale(100%) contrast(1000%) !important;
+            object-fit: cover;
           }
         }
       `}</style>

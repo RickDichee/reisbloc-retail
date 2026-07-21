@@ -99,7 +99,7 @@ export default function Inventory() {
           <div style="display: flex; justify-content: center; width: 100%;">
             <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto;" alt="barcode">
           </div>
-          <p style="font-size: 9px; margin-top: 5px; color: #555;">REISBLOC RETAIL</p>
+          <p style="font-size: 9px; margin-top: 5px; color: #555;">MODA MIEL MX · Powered by REISBLOC</p>
         </div>
       `;
 

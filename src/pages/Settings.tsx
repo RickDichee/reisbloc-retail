@@ -154,7 +154,7 @@ export default function Settings() {
     const tabs = [
         { id: 'interface' as SettingsTab, label: 'Accesibilidad e Interfaz', icon: LayoutDashboard },
         { id: 'devices' as SettingsTab, label: 'Dispositivos', icon: Smartphone, enabled: canManageDevices },
-        { id: 'branding' as SettingsTab, label: 'Marca Blanca', icon: Globe },
+        { id: 'branding' as SettingsTab, label: 'Marca y Catálogo', icon: Globe },
         { id: 'logs' as SettingsTab, label: 'Seguridad', icon: FileText, enabled: canViewLogs },
     ]
 
@@ -572,7 +572,7 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
                             className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
                         />
                         <label htmlFor="ticketShowLogoBranding" className="text-sm font-black text-slate-700 cursor-pointer uppercase tracking-tight">
-                            Mostrar Logotipo Reisbloc en el Ticket
+                            Mostrar logotipo de tu marca en el ticket
                         </label>
                     </div>
 
@@ -584,7 +584,7 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
                             type="text"
                             value={ticketBusinessName}
                             onChange={(e) => setTicketBusinessName(e.target.value)}
-                            placeholder="Ej. REISBLOC BOUTIQUE"
+                            placeholder="Ej. MODA MIEL MX"
                             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-600 outline-none font-bold text-sm"
                         />
                     </div>
@@ -665,4 +665,3 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
         </div>
     )
 }
-

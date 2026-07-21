@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import logger from '@/utils/logger'
 import { useAppStore } from '@/store/appStore'
+import { BRANDING } from '@/config/branding'
 import supabaseService from '@/services/supabaseService'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import ProductGrid from '@/components/pos/ProductGrid'
@@ -1221,7 +1222,7 @@ export default function POS() {
               total: receiptModal.total,
               paymentMethod: receiptModal.paymentMethod,
               ticketNumber: tableNumber,  // Legacy: tableNumber → ticketNumber
-              businessName: currentUser?.businessName || 'REISBLOC STORE',
+              businessName: currentUser?.businessName || BRANDING.appWithBrand.toUpperCase(),
               cashier: currentUser?.username
             }}
           />

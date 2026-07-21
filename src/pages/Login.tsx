@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
-import { ShieldCheck, ArrowRight } from 'lucide-react'
+import { BRANDING } from '@/config/branding'
+import { ArrowRight } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 
 export default function Login() {
@@ -47,11 +48,12 @@ export default function Login() {
     <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500/20 mb-4">
-            <ShieldCheck className="w-8 h-8 text-emerald-400" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-pink-500/15 mb-4 overflow-hidden border border-pink-400/30">
+            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-4xl font-black text-white mb-2">Reisbloc</h1>
-          <p className="text-gray-400 text-lg">Accede a tu sistema POS</p>
+          <h1 className="text-4xl font-black text-white mb-2">{BRANDING.appName}</h1>
+          <p className="text-gray-400 text-lg">{BRANDING.loginSubtitle}</p>
+          <div className="text-xs text-pink-400 mt-2 uppercase tracking-widest font-bold">{BRANDING.whiteLabelName}</div>
         </div>
 
         {error && (

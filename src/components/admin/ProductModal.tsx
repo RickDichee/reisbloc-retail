@@ -251,7 +251,7 @@ export default function ProductModal({
                                 const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(bulkBarcode)}&scale=3&height=12&includetext=false`
                                 printHTML += `
                                   <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">REISBLOC MAYOREO</div>
+                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">MODA MIEL MX</div>
                                     <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase; line-height: 1.2;">${formData.name.trim()}</div>
                                     <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 4px;">SKU: ${formData.sku || 'N/A'}</div>
                                     <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
@@ -274,7 +274,7 @@ export default function ProductModal({
                                     const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(item.barcode)}&scale=3&height=12&includetext=false`
                                     printHTML += `
                                       <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Reisbloc Retail</div>
+                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Moda Miel MX · Powered by Reisbloc</div>
                                         <div style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">${item.name}</div>
                                         <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px;">SKU: ${item.sku}</div>
                                         <div style="font-size: 13px; font-weight: 900; margin-top: 2px;">TALLA: ${item.size}</div>
@@ -347,7 +347,7 @@ export default function ProductModal({
                                 const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(masterBarcode)}&scale=3&height=12&includetext=false`
                                 printHTML += `
                                   <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">REISBLOC MAYOREO</div>
+                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">MODA MIEL MX</div>
                                     <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase; line-height: 1.2;">${formData.name.trim()}</div>
                                     <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 4px;">SKU: ${formData.sku || 'N/A'}</div>
                                     <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
@@ -370,7 +370,7 @@ export default function ProductModal({
                                     const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(item.barcode)}&scale=3&height=12&includetext=false`
                                     printHTML += `
                                       <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Reisbloc Retail</div>
+                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Moda Miel MX · Powered by Reisbloc</div>
                                         <div style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">${item.name}</div>
                                         <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px;">SKU: ${item.sku}</div>
                                         <div style="font-size: 13px; font-weight: 900; margin-top: 2px;">TALLA: ${item.size}</div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/config/supabase'
+import { BRANDING } from '@/config/branding'
 import {
   Gift,
   Users,
@@ -86,15 +87,15 @@ export default function ReferralProgram() {
 
   const handleShareWhatsApp = () => {
     const text = encodeURIComponent(
-      `¡Hey! 👋\n\nEstoy usando Reisbloc Store para mi negocio y me está encantado. Es un sistema de punto de venta que funciona sin internet y tiene IA integrada.\n\nSi lo pruebas con mi código "${referralCode}", ambos obtenemos crédito gratis.\n\nRegistro aquí: ${referralLink}\n\n¡Salud!`
+      `¡Hey! 👋\n\nEstoy usando ${BRANDING.appWithBrand} para mi negocio y me está encantado. Es un sistema de punto de venta que funciona sin internet y tiene IA integrada.\n\nSi lo pruebas con mi código "${referralCode}", ambos obtenemos crédito gratis.\n\nRegistro aquí: ${referralLink}\n\n¡Salud!`
     )
     window.open(`https://wa.me/?text=${text}`, '_blank')
   }
 
   const handleShareEmail = () => {
-    const subject = encodeURIComponent('¡Prueba Reisbloc Store - Sistema de POS inteligente!')
+    const subject = encodeURIComponent(`¡Prueba ${BRANDING.appWithBrand} - Sistema de POS inteligente!`)
     const body = encodeURIComponent(
-      `¡Hola!\n\nEstoy usando Reisbloc Store para mi negocio y me está funcionando muy bien. Es un sistema de punto de venta que funciona sin internet y tiene IA integrada.\n\nSi te registras con mi código "${referralCode}", ambos obtenemos crédito gratis para usar la plataforma.\n\nRegistro aquí: ${referralLink}\n\n¡Salud!`
+      `¡Hola!\n\nEstoy usando ${BRANDING.appWithBrand} para mi negocio y me está funcionando muy bien. Es un sistema de punto de venta que funciona sin internet y tiene IA integrada.\n\nSi te registras con mi código "${referralCode}", ambos obtenemos crédito gratis para usar la plataforma.\n\nRegistro aquí: ${referralLink}\n\n¡Salud!`
     )
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank')
   }

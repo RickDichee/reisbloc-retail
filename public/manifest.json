@@ -1,16 +1,16 @@
 {
-  "short_name": "Reisbloc",
-  "name": "Reisbloc Retail Lab",
+  "short_name": "Moda Miel MX",
+  "name": "Reisbloc Store · Moda Miel MX",
   "icons": [
     {
-      "src": "icon.svg",
-      "type": "image/svg+xml",
+      "src": "images/moda-miel-mx-logo.jpeg",
+      "type": "image/jpeg",
       "sizes": "512x512",
       "purpose": "any maskable"
     },
     {
-      "src": "icon.svg",
-      "type": "image/svg+xml",
+      "src": "images/moda-miel-mx-logo.jpeg",
+      "type": "image/jpeg",
       "sizes": "192x192",
       "purpose": "any maskable"
     }
