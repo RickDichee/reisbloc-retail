@@ -34,6 +34,7 @@ import Bar from '@/pages/Bar'
 import OfflineIndicator from '@/components/common/OfflineIndicator'
 import PrivacyPolicy from '@/pages/PrivacyPolicy'
 import TermsOfService from '@/pages/TermsOfService'
+import ModaMielBrandPage from '@/pages/ModaMielBrandPage'
 import Pricing from '@/pages/Pricing'
 import Branches from '@/pages/Branches'
 import Schedules from '@/pages/Schedules'
@@ -50,7 +51,7 @@ function AppLayout() {
   const { accessibility } = useAppStore()
 
   // Ocultar NavBar solo en: público, invitaciones, legales
-  const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms'
+  const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms' || pathname === '/modamielmx' || pathname === '/modamielmxn'
   const hideNavBar = isPublicPage
 
   // Aplicar clases de accesibilidad al body
@@ -81,6 +82,8 @@ function AppLayout() {
         <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/modamielmx" element={<ModaMielBrandPage />} />
+        <Route path="/modamielmxn" element={<ModaMielBrandPage />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/upgrade" element={<Pricing />} />
