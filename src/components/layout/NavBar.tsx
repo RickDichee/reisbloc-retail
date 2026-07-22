@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/appStore'
+import { BRANDING } from '@/config/branding'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useNotifications } from '@/hooks/useNotifications'
@@ -99,11 +100,8 @@ export default function NavBar() {
   ]
 
   const visibleItems = navItems.filter(item => {
-    // 1. Verificar acceso del rol
     const hasRole = item.roles.includes(currentUser?.role || '')
     if (!hasRole) return false
-
-    // 2. Solo mostrar los favoritos de la barra superior configurados para evitar saturar el diseño
     const favNavbar = organizationSettings?.favorites?.navbar || ['/pos', '/inventory', '/reports']
     return favNavbar.includes(item.path)
   })
@@ -112,8 +110,8 @@ export default function NavBar() {
     <nav
       className="text-white shadow-md fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500"
       style={{
-        background: 'var(--primary, #1E293B)',
-        borderBottomColor: 'var(--secondary, #10B981)',
+        background: 'var(--primary, #1A1A1A)',
+        borderBottomColor: 'var(--secondary, #E62E6B)',
         borderBottomWidth: '3px'
       }}
     >
@@ -123,12 +121,12 @@ export default function NavBar() {
             {currentUser?.avatar_url ? (
               <img src={currentUser.avatar_url} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-lg ring-1 ring-white/20" />
             ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-rb-action rounded-xl flex items-center justify-center font-black text-lg sm:text-xl shadow-lg shadow-emerald-500/20 ring-1 ring-white/20 text-white">
-                {currentUser?.businessName?.[0] || 'R'}
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[var(--secondary,#E62E6B)] rounded-xl flex items-center justify-center font-black text-lg sm:text-xl shadow-lg ring-1 ring-white/20 text-white">
+                {currentUser?.businessName?.[0] || BRANDING.appName?.[0] || 'M'}
               </div>
             )}
-            <h1 className="font-black text-sm sm:text-lg tracking-tighter hidden xs:block bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-gray-400">
-              {currentUser?.businessName || 'CEVICHERIA MEXA'}
+            <h1 className="font-black text-sm sm:text-lg tracking-tighter hidden xs:block bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-pink-200">
+              {currentUser?.businessName || BRANDING.appName}
             </h1>
           </div>
 
@@ -140,9 +138,9 @@ export default function NavBar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg font-semibold transition-all whitespace-nowrap ${isActive
-                    ? 'bg-white text-slate-900 shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${isActive
+                    ? 'bg-[var(--secondary,#E62E6B)] text-white shadow-md scale-105'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
                 >
                   <Icon size={18} className="sm:w-5 sm:h-5" />
@@ -155,7 +153,7 @@ export default function NavBar() {
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <Link
               to="/help"
-              className="p-2.5 text-gray-400 hover:text-emerald-400 hover:bg-white/10 rounded-full transition-all duration-300 border border-transparent hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              className="p-2.5 text-gray-300 hover:text-[var(--secondary,#E62E6B)] hover:bg-white/10 rounded-full transition-all duration-300 border border-transparent hover:border-[var(--secondary,#E62E6B)]/30"
               title="Centro de Ayuda"
             >
               <LifeBuoy size={22} />
@@ -192,13 +190,13 @@ export default function NavBar() {
             <div className="relative group">
               <button
                 onClick={() => navigate('/settings')}
-                className="flex items-center gap-2 p-1 pr-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 backdrop-blur-sm transition-all duration-300 group-hover:border-emerald-500/30"
+                className="flex items-center gap-2 p-1 pr-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 backdrop-blur-sm transition-all duration-300 group-hover:border-[var(--secondary,#E62E6B)]/40"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <div className="w-8 h-8 rounded-full bg-[var(--secondary,#E62E6B)] flex items-center justify-center shadow-md text-white font-bold">
                   <User size={16} className="text-white" />
                 </div>
                 <div className="text-left hidden sm:block">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400 leading-none mb-0.5">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-[var(--accent,#FF7597)] leading-none mb-0.5">
                     {currentRole}
                   </div>
                   <div className="text-xs font-bold text-gray-100 leading-none truncate max-w-[80px]">

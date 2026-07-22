@@ -31,10 +31,10 @@
 
 /* 🎨 Moda Miel MX Custom Theme Overrides */
 .theme-modamiel {
-  --primary: #E62E6B;
-  --primary-hover: #C41E53;
-  --secondary: #FF7597;
-  --accent: #1A1A1A;
+  --primary: #1A1A1A;
+  --primary-hover: #262626;
+  --secondary: #E62E6B;
+  --accent: #FF7597;
   --bg-canvas: #FFF5F7;
   --bg-surface: #FFFFFF;
   --text-main: #1A1A1A;
