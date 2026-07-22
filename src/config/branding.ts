@@ -34,6 +34,8 @@ export interface TenantThemeConfig {
   badgeText: string
   tagline: string
   locationBadge?: string
+  mascotEmoji?: string
+  mascotName?: string
 }
 
 export const MODA_MIEL_THEME: TenantThemeConfig = {
@@ -53,7 +55,9 @@ export const MODA_MIEL_THEME: TenantThemeConfig = {
   fontSans: "'Outfit', sans-serif",
   badgeText: 'TODO POR PAQUETE',
   tagline: 'Moda y estilo para tu negocio',
-  locationBadge: 'PASILLO 3 · LOCAL 230'
+  locationBadge: 'PASILLO 3 · LOCAL 230',
+  mascotEmoji: '🐞',
+  mascotName: 'Catarina'
 }
 
 export const DEFAULT_THEME: TenantThemeConfig = {

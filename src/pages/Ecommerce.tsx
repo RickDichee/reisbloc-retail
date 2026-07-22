@@ -151,20 +151,23 @@ export default function Ecommerce() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-purple-100/50">
                   <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">✓</div>
-                  <span className="font-bold text-purple-900 text-sm">Crear cuenta</span>
+                  <span className="font-bold text-purple-900 text-sm">Cuenta SaaS & POS Activa</span>
                 </div>
                 <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-purple-100/50">
                   <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">✓</div>
-                  <span className="font-bold text-purple-900 text-sm">Catálogo activo</span>
+                  <span className="font-bold text-purple-900 text-sm">Sincronización de Inventarios en Vivo</span>
                 </div>
-                <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-purple-100/50">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">✓</div>
-                  <span className="font-bold text-purple-900 text-sm">Tienda pública</span>
+                <div className="flex items-center gap-3 bg-white p-[#E62E6B]/10 p-3 rounded-xl border border-pink-200">
+                  <div className="w-6 h-6 rounded-full bg-[#E62E6B] text-white flex items-center justify-center font-bold text-xs">⭐</div>
+                  <div>
+                    <span className="font-black text-slate-900 text-sm block">Subdominio VIP Personalizado</span>
+                    <span className="text-[10px] text-[#E62E6B] font-bold uppercase">{orgSlug || 'tienda'}.reisbloc.com</span>
+                  </div>
                 </div>
               </div>
 
               <div className="mt-8 pt-6 border-t border-purple-200/50 text-center">
-                <p className="text-xs font-black text-purple-600 uppercase">✅ E-commerce activo</p>
+                <p className="text-xs font-black text-purple-600 uppercase">⭐ E-commerce VIP Activo</p>
               </div>
             </div>
 

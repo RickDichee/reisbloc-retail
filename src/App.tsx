@@ -50,10 +50,10 @@ import { useTenantTheme } from '@/hooks/useTenantTheme'
 function AppLayout() {
   const { pathname } = useLocation()
   const { accessibility } = useAppStore()
-  useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
+  const { isModaMiel } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
 
-  // Ocultar NavBar solo en: público, invitaciones, legales
-  const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms' || pathname === '/modamielmx' || pathname === '/modamielmxn'
+  // Ocultar NavBar solo en: público, invitaciones, legales y portada de tienda de cliente
+  const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms' || pathname === '/modamielmx' || (isModaMiel && pathname === '/')
   const hideNavBar = isPublicPage
 
   // Aplicar clases de accesibilidad al body
@@ -76,7 +76,7 @@ function AppLayout() {
       {!hideNavBar && <NavBar />}
       <Routes>
         {/* 🌐 Rutas Públicas */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={isModaMiel ? <ModaMielBrandPage /> : <LandingPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
