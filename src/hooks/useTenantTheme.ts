@@ -41,10 +41,12 @@ export function useTenantTheme(): {
       document.head.appendChild(link)
     }
 
-    // 2. Inyectar variables CSS en el :root
+    // 2. Inyectar variables CSS en el :root y body
     const root = document.documentElement
+    const body = document.body
     if (isMM) {
       root.classList.add('theme-modamiel')
+      body.classList.add('theme-modamiel')
       root.style.setProperty('--primary', selectedTheme.primaryColor)
       root.style.setProperty('--primary-hover', selectedTheme.primaryHoverColor)
       root.style.setProperty('--secondary', selectedTheme.secondaryColor)
@@ -66,6 +68,7 @@ export function useTenantTheme(): {
       }
     } else {
       root.classList.remove('theme-modamiel')
+      body.classList.remove('theme-modamiel')
       root.style.setProperty('--primary', DEFAULT_THEME.primaryColor)
       root.style.setProperty('--primary-hover', DEFAULT_THEME.primaryHoverColor)
       root.style.setProperty('--secondary', DEFAULT_THEME.secondaryColor)

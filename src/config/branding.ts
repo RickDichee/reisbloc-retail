@@ -1,16 +1,16 @@
 export const checkIsModaMiel = (hostname?: string, search?: string, hash?: string, orgSlug?: string): boolean => {
-  if (typeof window === 'undefined' && !hostname) return false
-  const host = hostname || (typeof window !== 'undefined' ? window.location.hostname : '')
-  const query = search || (typeof window !== 'undefined' ? window.location.search : '')
-  const fragment = hash || (typeof window !== 'undefined' ? window.location.hash : '')
+  const host = (hostname || (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
+  const query = (search || (typeof window !== 'undefined' ? window.location.search : '')).toLowerCase()
+  const fragment = (hash || (typeof window !== 'undefined' ? window.location.hash : '')).toLowerCase()
+  const slug = (orgSlug || '').toLowerCase()
   
   return (
     host.includes('modamiel') ||
     host.includes('moda-miel') ||
     query.includes('brand=modamiel') ||
     fragment.includes('brand=modamiel') ||
-    orgSlug === 'modamiel' ||
-    orgSlug === 'moda-miel-mx'
+    slug.includes('modamiel') ||
+    slug.includes('moda-miel')
   )
 }
 
