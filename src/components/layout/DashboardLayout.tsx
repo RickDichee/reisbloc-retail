@@ -117,14 +117,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         <div className="flex h-dvh bg-[var(--bg-canvas)] overflow-hidden transition-colors duration-200 pt-12 lg:pt-16">
             {/* Sidebar Overlay for Mobile */}
             <div
-                className={`fixed inset-0 z-20 bg-gray-900/50 lg:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
+                className={`fixed inset-0 z-20 bg-gray-900/50 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
                 onClick={() => setIsSidebarOpen(false)}
             />
 
             {/* Sidebar */}
             <aside
-                className={`fixed lg:static z-30 inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col pt-12 lg:pt-0 ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full lg:translate-x-0'
-                    } ${isMini ? 'lg:w-20' : 'lg:w-72'}`}
+                className={`fixed md:static z-30 inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col pt-12 md:pt-0 ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
+                    } ${isMini ? 'md:w-20' : 'md:w-72'}`}
             >
                 {/* Logo Area */}
                 <div className={`p-6 border-b border-slate-100 flex items-center gap-3 ${isMini ? 'justify-center overflow-hidden' : ''}`}>
@@ -229,7 +229,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 </div>
 
                 {/* Mobile Bottom Navigation */}
-                <div className="lg:hidden bg-white border-t border-slate-200 flex items-center justify-around py-1 safe-bottom w-full overflow-hidden">
+                <div className="md:hidden bg-white border-t border-slate-200 flex items-center justify-around py-1 safe-bottom w-full overflow-hidden">
                     {finalMenuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Inventario'].includes(item.label)).map((item) => {
                         const Icon = item.icon!;
                         const isActive = location.pathname === item.path;

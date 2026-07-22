@@ -108,29 +108,29 @@ export default function NavBar() {
 
   return (
     <nav
-      className="text-white shadow-md fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500"
+      className="text-white shadow-lg fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500"
       style={{
-        background: 'var(--primary, #1A1A1A)',
-        borderBottomColor: 'var(--secondary, #E62E6B)',
-        borderBottomWidth: '3px'
+        background: 'var(--primary, #E62E6B)',
+        borderBottomColor: 'var(--secondary, #FF7597)',
+        borderBottomWidth: '2px'
       }}
     >
       <div className="max-w-7xl mx-auto px-2 sm:px-4">
-        <div className="flex items-center justify-between min-h-[3rem] sm:min-h-[4rem] py-1 sm:py-0 gap-2">
+        <div className="flex items-center justify-between min-h-[3.25rem] sm:min-h-[4rem] py-1 sm:py-0 gap-2">
           <div className="flex items-center gap-2 shrink-0">
             {currentUser?.avatar_url ? (
-              <img src={currentUser.avatar_url} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-lg ring-1 ring-white/20" />
+              <img src={currentUser.avatar_url} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-md ring-2 ring-white/40" />
             ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-tr from-[#E62E6B] to-[#FF7597] rounded-xl flex items-center justify-center font-black text-lg sm:text-xl shadow-md ring-1 ring-white/30 text-white">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-[#E62E6B] rounded-xl flex items-center justify-center font-black text-lg sm:text-xl shadow-md ring-2 ring-white/40">
                 {currentUser?.businessName?.[0] || BRANDING.appName?.[0] || 'M'}
               </div>
             )}
-            <h1 className="font-black text-sm sm:text-lg tracking-tighter hidden xs:block bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-pink-200">
+            <h1 className="font-black text-sm sm:text-lg tracking-tight hidden xs:block text-white drop-shadow-xs font-['Playfair_Display',serif]">
               {currentUser?.businessName || BRANDING.appName}
             </h1>
           </div>
 
-          <div className="hidden lg:flex items-center gap-1 flex-wrap py-1 flex-1 justify-start">
+          <div className="hidden lg:flex items-center gap-1.5 flex-wrap py-1 flex-1 justify-start">
             {visibleItems.map(item => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
@@ -138,13 +138,13 @@ export default function NavBar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${isActive
-                    ? 'bg-[#E62E6B] text-white shadow-lg shadow-pink-500/30 scale-105 border border-pink-400/40'
-                    : 'text-white/90 hover:bg-white/15 hover:text-white'
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-extrabold transition-all whitespace-nowrap text-sm ${isActive
+                    ? 'bg-white text-[#E62E6B] shadow-md scale-105 border border-white'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                     }`}
                 >
-                  <Icon size={18} className="sm:w-5 sm:h-5 text-white" />
-                  <span className="hidden lg:inline text-sm">{item.label}</span>
+                  <Icon size={18} className={`sm:w-5 sm:h-5 ${isActive ? 'text-[#E62E6B]' : 'text-white'}`} />
+                  <span className="hidden lg:inline">{item.label}</span>
                 </Link>
               )
             })}
@@ -153,25 +153,25 @@ export default function NavBar() {
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <Link
               to="/help"
-              className="p-2.5 text-white/90 hover:text-white hover:bg-white/15 rounded-full transition-all duration-300 border border-transparent hover:border-pink-300/30"
+              className="p-2.5 text-white/90 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 border border-transparent hover:border-white/30"
               title="Centro de Ayuda"
             >
-              <LifeBuoy size={22} />
+              <LifeBuoy size={20} />
             </Link>
 
             {supportsFullscreen && (
               <button
                 onClick={toggleFullScreen}
-                className="p-2.5 text-white/90 hover:text-white hover:bg-white/15 rounded-full transition-all duration-300 border border-transparent hover:border-white/20"
+                className="p-2.5 text-white/90 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 border border-transparent hover:border-white/30"
                 title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
               >
-                {isFullscreen ? <Minimize size={22} /> : <Maximize size={22} />}
+                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
               </button>
             )}
 
             <button
               onClick={() => changeLanguage(i18n.language === 'es' ? 'en' : 'es')}
-              className="px-3 py-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/20 rounded-full transition-all text-white"
+              className="px-3 py-1.5 text-xs font-black bg-white/20 hover:bg-white/30 border border-white/30 rounded-full transition-all text-white"
               title="Cambiar idioma"
             >
               {i18n.language === 'es' ? 'EN' : 'ES'}
@@ -190,13 +190,13 @@ export default function NavBar() {
             <div className="relative group">
               <button
                 onClick={() => navigate('/settings')}
-                className="flex items-center gap-2 p-1 pr-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 backdrop-blur-sm transition-all duration-300 group-hover:border-pink-400/50"
+                className="flex items-center gap-2 p-1 pr-3 bg-white/20 hover:bg-white/30 rounded-full border border-white/30 backdrop-blur-sm transition-all duration-300 group-hover:border-white/60"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#E62E6B] to-[#FF7597] flex items-center justify-center shadow-md text-white font-bold">
-                  <User size={16} className="text-white" />
+                <div className="w-8 h-8 rounded-full bg-white text-[#E62E6B] flex items-center justify-center shadow-sm font-black">
+                  <User size={16} className="text-[#E62E6B]" />
                 </div>
                 <div className="text-left hidden sm:block">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-[#FF7597] bg-pink-950/60 px-1.5 py-0.5 rounded border border-pink-500/30 leading-none mb-0.5 inline-block">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-white bg-black/20 px-1.5 py-0.5 rounded border border-white/20 leading-none mb-0.5 inline-block">
                     {currentRole}
                   </div>
                   <div className="text-xs font-bold text-white leading-none truncate max-w-[80px]">

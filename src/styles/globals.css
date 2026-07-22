@@ -87,14 +87,23 @@ body.theme-modamiel,
 .theme-modamiel .text-indigo-600,
 .theme-modamiel .text-indigo-500,
 .theme-modamiel .text-indigo-400,
-.theme-modamiel .text-indigo-700 {
+.theme-modamiel .text-indigo-700,
+.theme-modamiel .text-amber-400,
+.theme-modamiel .text-amber-500,
+.theme-modamiel .text-amber-600,
+.theme-modamiel .text-yellow-500,
+.theme-modamiel .text-yellow-600,
+.theme-modamiel .text-orange-500 {
   color: #E62E6B !important;
 }
 
-/* 🌸 Soft Pink Light Badges (Indigo-50 / Emerald-50 -> Blush #FCE7F3) */
+/* 🌸 Soft Pink Light Badges (Indigo-50 / Emerald-50 / Amber-50 -> Blush #FCE7F3) */
 .theme-modamiel .bg-indigo-50,
 .theme-modamiel .bg-emerald-50,
-.theme-modamiel .bg-pink-50 {
+.theme-modamiel .bg-pink-50,
+.theme-modamiel .bg-amber-50,
+.theme-modamiel .bg-amber-100,
+.theme-modamiel .bg-yellow-50 {
   background-color: #FCE7F3 !important;
   color: #E62E6B !important;
 }
