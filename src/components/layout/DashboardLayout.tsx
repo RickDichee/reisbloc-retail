@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
+import { BRANDING } from '@/config/branding';
 import {
     Shield,
     Users,
@@ -127,13 +128,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             >
                 {/* Logo Area */}
                 <div className={`p-6 border-b border-slate-100 flex items-center gap-3 ${isMini ? 'justify-center overflow-hidden' : ''}`}>
-                    <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200 shrink-0">
+                    <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shrink-0" style={{ backgroundColor: 'var(--primary, #4F46E5)' }}>
                         <Store size={24} />
                     </div>
                     {!isMini && (
                         <div className="animate-fadeIn">
-                            <h1 className="text-xl font-black text-slate-900 tracking-tight">Reisbloc</h1>
-                            <p className="text-xs text-slate-500 font-medium">Retail & POS System</p>
+                            <h1 className="text-xl font-black text-slate-900 tracking-tight">{organizationSettings?.businessName || BRANDING.appName}</h1>
+                            <p className="text-xs text-slate-500 font-medium">{BRANDING.receiptTagline}</p>
                         </div>
                     )}
                 </div>

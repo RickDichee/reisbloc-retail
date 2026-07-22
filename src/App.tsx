@@ -43,12 +43,14 @@ import Invoicing from '@/pages/Invoicing'
 import Referral from '@/pages/Referral'
 import WholesaleCatalog from '@/pages/WholesaleCatalog'
 import WholesaleDashboard from '@/pages/WholesaleDashboard'
+import { useTenantTheme } from '@/hooks/useTenantTheme'
 // import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
 
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
   const { accessibility } = useAppStore()
+  useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
 
   // Ocultar NavBar solo en: público, invitaciones, legales
   const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms' || pathname === '/modamielmx' || pathname === '/modamielmxn'

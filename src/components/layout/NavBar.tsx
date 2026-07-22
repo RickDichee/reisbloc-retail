@@ -112,8 +112,8 @@ export default function NavBar() {
     <nav
       className="text-white shadow-md fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500"
       style={{
-        background: '#1E293B',
-        borderBottomColor: 'var(--brand-primary, #10B981)',
+        background: 'var(--primary, #1E293B)',
+        borderBottomColor: 'var(--secondary, #10B981)',
         borderBottomWidth: '3px'
       }}
     >
