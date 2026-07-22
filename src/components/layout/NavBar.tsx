@@ -121,7 +121,7 @@ export default function NavBar() {
             {currentUser?.avatar_url ? (
               <img src={currentUser.avatar_url} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-lg ring-1 ring-white/20" />
             ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[var(--secondary,#E62E6B)] rounded-xl flex items-center justify-center font-black text-lg sm:text-xl shadow-lg ring-1 ring-white/20 text-white">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-tr from-[#E62E6B] to-[#FF7597] rounded-xl flex items-center justify-center font-black text-lg sm:text-xl shadow-md ring-1 ring-white/30 text-white">
                 {currentUser?.businessName?.[0] || BRANDING.appName?.[0] || 'M'}
               </div>
             )}
@@ -138,12 +138,12 @@ export default function NavBar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${isActive
-                    ? 'bg-[var(--secondary,#E62E6B)] text-white shadow-md scale-105'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap ${isActive
+                    ? 'bg-[#E62E6B] text-white shadow-lg shadow-pink-500/30 scale-105 border border-pink-400/40'
+                    : 'text-white/90 hover:bg-white/15 hover:text-white'
                     }`}
                 >
-                  <Icon size={18} className="sm:w-5 sm:h-5" />
+                  <Icon size={18} className="sm:w-5 sm:h-5 text-white" />
                   <span className="hidden lg:inline text-sm">{item.label}</span>
                 </Link>
               )
@@ -153,7 +153,7 @@ export default function NavBar() {
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <Link
               to="/help"
-              className="p-2.5 text-gray-300 hover:text-[var(--secondary,#E62E6B)] hover:bg-white/10 rounded-full transition-all duration-300 border border-transparent hover:border-[var(--secondary,#E62E6B)]/30"
+              className="p-2.5 text-white/90 hover:text-white hover:bg-white/15 rounded-full transition-all duration-300 border border-transparent hover:border-pink-300/30"
               title="Centro de Ayuda"
             >
               <LifeBuoy size={22} />
@@ -162,7 +162,7 @@ export default function NavBar() {
             {supportsFullscreen && (
               <button
                 onClick={toggleFullScreen}
-                className="p-2.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-300 border border-transparent hover:border-white/10"
+                className="p-2.5 text-white/90 hover:text-white hover:bg-white/15 rounded-full transition-all duration-300 border border-transparent hover:border-white/20"
                 title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
               >
                 {isFullscreen ? <Minimize size={22} /> : <Maximize size={22} />}
@@ -171,7 +171,7 @@ export default function NavBar() {
 
             <button
               onClick={() => changeLanguage(i18n.language === 'es' ? 'en' : 'es')}
-              className="px-3 py-1.5 text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-all"
+              className="px-3 py-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/20 rounded-full transition-all text-white"
               title="Cambiar idioma"
             >
               {i18n.language === 'es' ? 'EN' : 'ES'}
@@ -190,16 +190,16 @@ export default function NavBar() {
             <div className="relative group">
               <button
                 onClick={() => navigate('/settings')}
-                className="flex items-center gap-2 p-1 pr-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 backdrop-blur-sm transition-all duration-300 group-hover:border-[var(--secondary,#E62E6B)]/40"
+                className="flex items-center gap-2 p-1 pr-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/20 backdrop-blur-sm transition-all duration-300 group-hover:border-pink-400/50"
               >
-                <div className="w-8 h-8 rounded-full bg-[var(--secondary,#E62E6B)] flex items-center justify-center shadow-md text-white font-bold">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#E62E6B] to-[#FF7597] flex items-center justify-center shadow-md text-white font-bold">
                   <User size={16} className="text-white" />
                 </div>
                 <div className="text-left hidden sm:block">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-[var(--accent,#FF7597)] leading-none mb-0.5">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-[#FF7597] bg-pink-950/60 px-1.5 py-0.5 rounded border border-pink-500/30 leading-none mb-0.5 inline-block">
                     {currentRole}
                   </div>
-                  <div className="text-xs font-bold text-gray-100 leading-none truncate max-w-[80px]">
+                  <div className="text-xs font-bold text-white leading-none truncate max-w-[80px]">
                     {currentUser?.username}
                   </div>
                 </div>
