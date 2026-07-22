@@ -49,9 +49,7 @@ body.theme-modamiel,
 .theme-modamiel #root,
 .theme-modamiel main,
 .theme-modamiel .bg-slate-50,
-.theme-modamiel .bg-slate-100\/50,
 .theme-modamiel .bg-slate-100,
-.theme-modamiel .bg-[#f8fafc],
 .theme-modamiel .bg-gray-50 {
   background-color: #FFF5F7 !important;
 }
@@ -59,8 +57,6 @@ body.theme-modamiel,
 /* 🌸 Dark Banners / Cards / Headers (e.g. Admin Header, POS topbar, Dark Widgets) */
 .theme-modamiel .bg-slate-900,
 .theme-modamiel .bg-slate-950,
-.theme-modamiel .bg-[#0B0B0B],
-.theme-modamiel .bg-[#1E293B],
 .theme-modamiel .bg-slate-800,
 .theme-modamiel .bg-rb-nav {
   background-color: #1A1A1A !important;
@@ -74,18 +70,12 @@ body.theme-modamiel,
 .theme-modamiel .bg-emerald-600,
 .theme-modamiel .bg-emerald-500,
 .theme-modamiel .bg-emerald-700,
-.theme-modamiel .bg-rb-action,
-.theme-modamiel button.bg-indigo-600,
-.theme-modamiel button.bg-emerald-600 {
+.theme-modamiel .bg-rb-action {
   background-color: #E62E6B !important;
   color: #FFFFFF !important;
   border-color: #E62E6B !important;
 }
 
-.theme-modamiel .hover\:bg-indigo-700:hover,
-.theme-modamiel .hover\:bg-indigo-600:hover,
-.theme-modamiel .hover\:bg-emerald-700:hover,
-.theme-modamiel .hover\:bg-emerald-600:hover,
 .theme-modamiel .btn-primary:hover {
   background-color: #C41E53 !important;
 }
