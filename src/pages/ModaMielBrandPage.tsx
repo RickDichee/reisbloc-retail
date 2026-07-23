@@ -98,12 +98,36 @@ export default function ModaMielBrandPage() {
   useEffect(() => {
     const loadStoreProducts = async () => {
       setLoading(true)
+
+      // 🛡️ Client-side Cache Protection (5 minutos de caché para proteger cuota de Supabase y Bots/DDoS)
+      const CACHE_KEY = 'modamiel_public_products_cache'
+      const CACHE_TIME_KEY = 'modamiel_public_products_time'
+      const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutos
+
+      const cachedData = sessionStorage.getItem(CACHE_KEY)
+      const cachedTime = sessionStorage.getItem(CACHE_TIME_KEY)
+
+      if (cachedData && cachedTime && (Date.now() - Number(cachedTime) < CACHE_TTL_MS)) {
+        try {
+          const parsed = JSON.parse(cachedData)
+          if (parsed && parsed.length > 0) {
+            setProducts(parsed)
+            setLoading(false)
+            return
+          }
+        } catch (e) {
+          // ignore cache parse error
+        }
+      }
+
       try {
         const org = await supabaseService.getOrganizationBySlug('modamiel')
         if (org?.id) {
           const fetchedProducts = await supabaseService.getPublicProducts(org.id)
           if (fetchedProducts && fetchedProducts.length > 0) {
             setProducts(fetchedProducts)
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(fetchedProducts))
+            sessionStorage.setItem(CACHE_TIME_KEY, String(Date.now()))
             setLoading(false)
             return
           }
@@ -112,6 +136,8 @@ export default function ModaMielBrandPage() {
         console.info('Cargando catálogo oficial de Moda Miel MX', e)
       }
       setProducts(fallbackPackages)
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(fallbackPackages))
+      sessionStorage.setItem(CACHE_TIME_KEY, String(Date.now()))
       setLoading(false)
     }
     loadStoreProducts()
