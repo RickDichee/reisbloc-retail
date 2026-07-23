@@ -182,8 +182,35 @@ export default function ModaMielBrandPage() {
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0)
   const totalCartPrice = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0)
 
-  const sendWhatsAppOrder = () => {
+  const sendWhatsAppOrder = async () => {
     if (cart.length === 0) return
+
+    // 📦 1. Registrar pedido digital en Supabase para notificación en tiempo real a cajas del POS
+    try {
+      const org = await supabaseService.getOrganizationBySlug('modamiel')
+      if (org?.id) {
+        await supabaseService.createEcommerceOrder({
+          organization_id: org.id,
+          customer_name: 'Cliente Web WhatsApp',
+          customer_phone: 'Pendiente WhatsApp',
+          items: cart.map(i => ({
+            id: i.product.id,
+            name: i.product.name,
+            quantity: i.quantity,
+            price: i.product.price,
+            packQuantity: i.product.packQuantity || 6
+          })),
+          total: totalCartPrice,
+          status: 'pending',
+          channel: 'whatsapp_web',
+          created_at: new Date().toISOString()
+        })
+      }
+    } catch (e) {
+      console.info('Registrando pedido WhatsApp en canal directo', e)
+    }
+
+    // 💬 2. Enviar texto estructurado por WhatsApp Business
     const orderLines = cart.map(
       item => `• *${item.product.name}* (x${item.quantity} paquetes) - $${(item.product.price * item.quantity).toLocaleString()} MXN`
     )
@@ -191,6 +218,8 @@ export default function ModaMielBrandPage() {
 
     const encodedText = encodeURIComponent(text)
     window.open(`https://wa.me/5215555555555?text=${encodedText}`, '_blank')
+    setCart([])
+    setShowCartModal(false)
   }
 
   return (
