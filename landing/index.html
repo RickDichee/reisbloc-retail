@@ -9,7 +9,7 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Reisbloc Retail — POS VIP & Enterprise para Negocios de Alto Rendimiento" />
+  <meta property="og:title" content="Reisbloc Retail — POS VIP & Enterprise con Inteligencia Artificial" />
   <meta property="og:description" content="Plataforma POS Inteligente con IA, Offline-First, Multitenant e Infraestructura Criptográfica Certificada PCI-DSS v4.0." />
   <meta property="og:image" content="/icon.svg" />
 
@@ -23,22 +23,6 @@
         extend: {
           fontFamily: {
             outfit: ['Outfit', 'sans-serif'],
-          },
-          colors: {
-            dark: {
-              900: '#07090E',
-              800: '#0B0F17',
-              700: '#111827',
-              card: '#161F30',
-              border: '#1F293D',
-            },
-            accent: {
-              cyan: '#00F5FF',
-              blue: '#3B82F6',
-              indigo: '#6366F1',
-              emerald: '#10B981',
-              pink: '#E62E6B'
-            }
           }
         }
       }
@@ -53,138 +37,115 @@
   <style>
     body {
       font-family: 'Outfit', sans-serif;
-      background-color: #07090E;
-      color: #F3F4F6;
+      background-color: #0F172A;
+      color: #F8FAFC;
     }
-    .glow-bg {
-      background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15) 0%, rgba(0, 245, 255, 0.05) 40%, rgba(7, 9, 14, 0) 70%);
+    .hero-glow {
+      background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.12) 0%, rgba(0, 245, 255, 0.04) 40%, rgba(15, 23, 42, 0) 70%);
     }
     .glass-card {
-      background: rgba(22, 31, 48, 0.7);
-      backdrop-filter: blur(16px);
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.25s ease;
     }
-    .glass-card-hover {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .glass-card-hover:hover {
-      transform: translateY(-6px);
-      background: rgba(30, 41, 59, 0.85);
+    .glass-card:hover {
+      transform: translateY(-4px);
+      background: rgba(30, 41, 59, 0.9);
       border-color: rgba(0, 245, 255, 0.3);
-      box-shadow: 0 20px 40px -15px rgba(0, 245, 255, 0.15);
+      box-shadow: 0 12px 30px -10px rgba(0, 245, 255, 0.15);
     }
     .btn-wa-vip {
       background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-      box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.5);
-      transition: all 0.25s ease;
+      box-shadow: 0 8px 20px -6px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s ease;
     }
     .btn-wa-vip:hover {
-      transform: scale(1.04);
-      box-shadow: 0 15px 35px -5px rgba(16, 185, 129, 0.7);
-      filter: brightness(1.1);
-    }
-    .btn-glow-cyan {
-      background: linear-gradient(135deg, #3B82F6 0%, #00F5FF 100%);
-      box-shadow: 0 10px 30px -10px rgba(0, 245, 255, 0.4);
-      transition: all 0.25s ease;
-    }
-    .btn-glow-cyan:hover {
-      transform: scale(1.04);
-      box-shadow: 0 15px 35px -5px rgba(0, 245, 255, 0.6);
-    }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 0.8; }
-    }
-    .pulse-glow {
-      animation: pulseGlow 4s ease-in-out infinite;
+      transform: scale(1.03);
+      box-shadow: 0 12px 25px -4px rgba(16, 185, 129, 0.6);
+      filter: brightness(1.08);
     }
   </style>
 </head>
 <body class="selection:bg-cyan-500 selection:text-black">
 
   <!-- NAVBAR -->
-  <nav class="sticky top-0 z-50 bg-[#07090E]/80 backdrop-blur-xl border-b border-white/10">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+  <nav class="sticky top-0 z-50 bg-[#0F172A]/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
       <!-- Logo -->
-      <a href="./" class="flex items-center gap-3 group">
-        <div class="relative">
-          <svg width="40" height="40" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform duration-300 group-hover:scale-105">
-            <rect width="512" height="512" rx="120" fill="#0B0F17"/>
-            <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#111827"/>
-            <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" stroke-width="14" stroke-linejoin="round"/>
-            <path d="M256 110V402" stroke="#3B82F6" stroke-width="8" stroke-dasharray="10 10"/>
-            <circle cx="256" cy="256" r="24" fill="#00F5FF" class="animate-ping" style="animation-duration: 3s;"/>
-            <circle cx="256" cy="256" r="16" fill="#00F5FF"/>
-          </svg>
-        </div>
+      <a href="./index.html" class="flex items-center gap-3 group">
+        <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform duration-300 group-hover:scale-105">
+          <rect width="512" height="512" rx="120" fill="#1E293B"/>
+          <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#0F172A"/>
+          <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" stroke-width="14" stroke-linejoin="round"/>
+          <path d="M256 110V402" stroke="#3B82F6" stroke-width="8" stroke-dasharray="10 10"/>
+          <circle cx="256" cy="256" r="20" fill="#00F5FF"/>
+        </svg>
         <div>
-          <span class="font-extrabold text-2xl tracking-tight text-white">Reisbloc <span class="font-light text-cyan-400">Retail</span></span>
-          <span class="block text-[10px] text-emerald-400 font-bold uppercase tracking-widest">VIP & Enterprise Edition</span>
+          <span class="font-extrabold text-xl tracking-tight text-white">Reisbloc <span class="font-light text-cyan-400">Retail</span></span>
+          <span class="block text-[9px] text-emerald-400 font-bold uppercase tracking-widest">VIP & Enterprise Edition</span>
         </div>
       </a>
 
       <!-- Navigation Links -->
-      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+      <div class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-300">
         <a href="#features" class="hover:text-cyan-400 transition">Capacidades</a>
         <a href="#security" class="hover:text-cyan-400 transition flex items-center gap-1.5">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           Seguridad & PCI
         </a>
         <a href="#custom-brands" class="hover:text-cyan-400 transition">Casos de Éxito</a>
-        <a href="#vip" class="text-amber-400 hover:text-amber-300 font-bold transition flex items-center gap-1">
+        <a href="#vip" class="text-amber-400 hover:text-amber-300 transition flex items-center gap-1">
           ✨ Edición VIP
         </a>
       </div>
 
       <!-- CTA Action -->
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <a
           href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20cotizar%20la%20versi%C3%B3n%20VIP%20%2F%20Enterprise%20de%20Reisbloc%20Retail"
           target="_blank"
           rel="noopener noreferrer"
-          class="btn-wa-vip text-white text-xs sm:text-sm font-bold px-6 py-2.5 rounded-full flex items-center gap-2"
+          class="btn-wa-vip text-white text-xs font-bold px-5 py-2 rounded-full flex items-center gap-2"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
-          <span>Cotizar VIP por WhatsApp</span>
+          <span>Cotizar por WhatsApp</span>
         </a>
       </div>
     </div>
   </nav>
 
   <!-- HERO SECTION -->
-  <header class="relative glow-bg overflow-hidden py-24 md:py-36 border-b border-white/5">
-    <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 items-center">
+  <header class="relative hero-glow overflow-hidden py-16 md:py-24 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 grid lg:grid-cols-12 gap-10 items-center">
       
       <!-- Text Content -->
-      <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
+      <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
         
         <!-- Trust Tag Badge -->
-        <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full glass-card border border-cyan-500/30 text-xs font-semibold text-cyan-300">
-          <span class="flex h-2 w-2 relative">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
-          </span>
-          <span>INFRAESTRUCTURA SEGURA PCI-DSS v4.0 & OWASP ASVS LEVEL 2</span>
-        </div>
+        <a href="./security.html" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-card text-xs font-semibold text-cyan-300 hover:border-cyan-400/50 transition">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span>PCI-DSS v4.0 SAQ A & OWASP ASVS LEVEL 2 CERTIFIED</span>
+          <span class="text-slate-400">→</span>
+        </a>
 
-        <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight tracking-tight">
-          El POS Inteligente que<br/>
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight">
+          El POS Inteligente para<br/>
           <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            Revoluciona tu Retail
+            Retail de Alto Rendimiento
           </span>
         </h1>
 
-        <p class="text-lg sm:text-xl text-slate-300 max-w-2xl font-light leading-relaxed">
-          Diseñado para negocios de alto rendimiento, boutiques y cadenas multi-sucursal. Control de inventario en tiempo real, Inteligencia Artificial integrada, modo offline-first y cobros seguros.
+        <p class="text-sm sm:text-base text-slate-300 max-w-xl font-normal leading-relaxed">
+          Optimiza tus ventas en mostrador y en línea con Agentes de IA, control de inventario multi-sucursal, facturación CFDI 4.0 y cobros seguros sin comisiones ocultas.
         </p>
 
         <!-- Bullet Highlights -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2 text-left text-xs font-semibold text-slate-300">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1 text-left text-xs font-medium text-slate-300">
           <div class="flex items-center gap-2">
-            <span class="text-emerald-400">✓</span> Modo Offline Continuo
+            <span class="text-emerald-400">✓</span> Modo Offline-First
           </div>
           <div class="flex items-center gap-2">
             <span class="text-emerald-400">✓</span> Agentes IA de Ventas
@@ -204,167 +165,217 @@
         </div>
 
         <!-- Primary CTA Buttons -->
-        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-3">
           <a
             href="https://wa.me/5215665848231?text=Hola%2C%20deseo%20agendar%20una%20Demostraci%C3%B3n%20VIP%20Personalizada%20de%20Reisbloc%20Retail"
             target="_blank"
             rel="noopener noreferrer"
-            class="btn-wa-vip w-full sm:w-auto text-white font-black text-base px-8 py-4 rounded-full flex items-center justify-center gap-3"
+            class="btn-wa-vip w-full sm:w-auto text-white font-bold text-sm px-7 py-3.5 rounded-full flex items-center justify-center gap-2.5"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
             </svg>
-            <span>Agendar Demo VIP en WhatsApp</span>
+            <span>Agendar Demo en WhatsApp</span>
           </a>
 
           <a
-            href="#security"
-            class="glass-card text-slate-200 hover:text-white font-bold text-sm px-6 py-4 rounded-full flex items-center gap-2 border border-white/10"
+            href="./security.html"
+            class="glass-card text-slate-200 hover:text-white font-semibold text-xs px-5 py-3.5 rounded-full flex items-center gap-1.5"
           >
-            <span>🛡️ Ver Certificaciones</span>
+            <span>🛡️ Ver Certificaciones y PCI</span>
           </a>
         </div>
 
       </div>
 
       <!-- Hero Visual Card -->
-      <div class="lg:col-span-5 relative">
-        <div class="glass-card rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative z-10 space-y-6">
-          <div class="flex items-center justify-between border-b border-white/10 pb-4">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-red-500"></div>
-              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+      <div class="lg:col-span-5">
+        <div class="glass-card rounded-2xl p-6 border border-slate-700 shadow-xl space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
             </div>
-            <span class="text-xs font-mono text-cyan-400">REISBLOC-POS-STATION #01</span>
+            <span class="text-[11px] font-mono text-cyan-400">REISBLOC-STATION-ONLINE</span>
           </div>
 
           <!-- Mock Dashboard Analytics -->
-          <div class="space-y-4">
-            <div class="bg-[#0B0F17] rounded-2xl p-4 border border-white/5 flex items-center justify-between">
+          <div class="space-y-3">
+            <div class="bg-slate-900 rounded-xl p-3.5 border border-slate-800 flex items-center justify-between">
               <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ventas de hoy (Live)</span>
-                <div class="text-2xl font-black text-white">$48,920.00 <span class="text-xs text-emerald-400 font-normal">+18% vs ayer</span></div>
+                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ventas acumuladas</span>
+                <div class="text-xl font-black text-white">$48,920.00 <span class="text-xs text-emerald-400 font-normal">+18%</span></div>
               </div>
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm font-bold">
                 📈
               </div>
             </div>
 
-            <div class="bg-[#0B0F17] rounded-2xl p-4 border border-white/5 flex items-center justify-between">
+            <div class="bg-slate-900 rounded-xl p-3.5 border border-slate-800 flex items-center justify-between">
               <div>
                 <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Estado de Red & Sync</span>
-                <div class="text-sm font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
                   <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Offline-First (Modo Local Seguro)
+                  Offline-First Activo (Local)
                 </div>
               </div>
-              <span class="text-xs text-slate-400 font-mono">Synced</span>
+              <span class="text-[10px] text-slate-400 font-mono">Synced</span>
             </div>
 
             <!-- AI Insight Widget -->
-            <div class="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/30 rounded-2xl p-4">
+            <div class="bg-slate-900/90 border border-cyan-500/20 rounded-xl p-3.5">
               <div class="flex items-center gap-2 text-xs font-bold text-cyan-300 mb-1">
                 <span>🤖 Agente IA Reisbloc:</span>
               </div>
-              <p class="text-xs text-slate-300 leading-relaxed">
-                "Detectado pico de ventas en categoría Vestidos de Temporada. Sugerencia: Incrementar stock en sucursal Pasillo 3."
+              <p class="text-xs text-slate-300 leading-normal">
+                "Pico de ventas detectado en categoría Blusas. Sugerencia: Notificar reposición a almacén."
               </p>
             </div>
           </div>
 
           <!-- Security Badge Inside Card -->
-          <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-            <span class="flex items-center gap-1">🔒 Encriptación TLS 1.3</span>
-            <span class="text-cyan-400 font-bold">PCI-DSS SAQ-A Certified</span>
-          </div>
+          <a href="./security.html" class="pt-2 border-t border-slate-700 flex items-center justify-between text-[11px] text-slate-400 hover:text-cyan-300 transition">
+            <span class="flex items-center gap-1">🔒 TLS 1.3 / HSTS</span>
+            <span class="text-cyan-400 font-bold">PCI-DSS SAQ A Certified →</span>
+          </a>
         </div>
       </div>
 
     </div>
   </header>
 
+  <!-- 💡 FEATURES CAPABILITIES SECTION -->
+  <section id="features" class="py-20 bg-slate-900 border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 space-y-12">
+      <div class="text-center max-w-2xl mx-auto space-y-3">
+        <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-bold uppercase tracking-widest">
+          Capacidades de la Plataforma
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-white">
+          Todo lo que tu Comercio Necesita para Vender Más
+        </h2>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <a href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20el%20Punto%20de%20Venta%20POS" target="_blank" class="glass-card rounded-2xl p-6 space-y-3 block">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-xl font-bold">
+            🛒
+          </div>
+          <h3 class="text-lg font-bold text-white">Punto de Venta POS Rápido</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Cobro rápido en mostrador con soporte para lectores de código de barras, impresoras térmicas Bluetooth/USB y cálculo automático.
+          </p>
+          <span class="text-xs font-bold text-cyan-400 block pt-1">Consultar detalles por WhatsApp →</span>
+        </a>
+
+        <!-- Feature 2 -->
+        <a href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20los%20Agentes%20de%20IA" target="_blank" class="glass-card rounded-2xl p-6 space-y-3 block">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center text-xl font-bold">
+            🤖
+          </div>
+          <h3 class="text-lg font-bold text-white">Agentes IA de Ventas</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Asistentes virtuales Gemini integrados que analizan tu negocio, generan sugerencias de marketing y atienden prospectos por WhatsApp.
+          </p>
+          <span class="text-xs font-bold text-purple-400 block pt-1">Probar Inteligencia Artificial →</span>
+        </a>
+
+        <!-- Feature 3 -->
+        <a href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20m%C3%A1s%20informaci%C3%B3n%20sobre%20Facturaci%C3%B3n%20CFDI%204.0" target="_blank" class="glass-card rounded-2xl p-6 space-y-3 block">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl font-bold">
+            📄
+          </div>
+          <h3 class="text-lg font-bold text-white">Facturación CFDI 4.0 SAT</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Emisión instantánea de facturas electrónicas timbradas ante el SAT. Descarga directa de archivos PDF y XML.
+          </p>
+          <span class="text-xs font-bold text-emerald-400 block pt-1">Ver Módulo de Facturación →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- 🛡️ SECURITY & COMPLIANCE TRUST SECTION -->
-  <section id="security" class="py-24 bg-[#0B0F17] border-b border-white/5 relative">
-    <div class="max-w-7xl mx-auto px-6 space-y-16">
+  <section id="security" class="py-20 bg-[#0F172A] border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 space-y-12">
       
       <!-- Section Header -->
-      <div class="text-center max-w-3xl mx-auto space-y-4">
-        <span class="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-extrabold uppercase tracking-widest">
-          Infraestructura Criptográfica & Blindaje
+      <div class="text-center max-w-2xl mx-auto space-y-3">
+        <span class="inline-block px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold uppercase tracking-widest">
+          Infraestructura & Certificaciones
         </span>
-        <h2 class="text-3xl sm:text-5xl font-extrabold text-white">
-          Seguridad de Grado Bancario para tu Negocio
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-white">
+          Seguridad de Grado Bancario
         </h2>
-        <p class="text-slate-400 text-base sm:text-lg">
-          Tus datos, tus ventas y las transacciones de tus clientes respaldados por los estándares internacionales más rigurosos de la industria.
+        <p class="text-slate-400 text-xs sm:text-sm">
+          Tus datos, tus ventas y las transacciones de tus clientes respaldados por los estándares internacionales más rigurosos. Haz clic en cualquier tarjeta para ver el reporte completo.
         </p>
       </div>
 
-      <!-- Trust Badges Grid (4 Pillars) -->
+      <!-- Trust Badges Grid (Interactive & Clickable) -->
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         <!-- Card 1: PCI-DSS v4.0 -->
-        <div class="glass-card glass-card-hover rounded-3xl p-8 space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-2xl font-black">
+        <a href="./security.html#pci-dss" class="glass-card rounded-2xl p-6 space-y-3 block">
+          <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-2xl font-bold">
             💳
           </div>
-          <h3 class="text-xl font-bold text-white">PCI-DSS v4.0 SAQ A</h3>
+          <h3 class="text-lg font-bold text-white">PCI-DSS v4.0 SAQ A</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Arquitectura de tokenización fuera de alcance (Out-of-Scope). Cobros seguros mediante MercadoPago y Conekta sin almacenamiento de tarjetas (PAN/CVV).
+            Arquitectura de tokenización fuera de alcance. Cobros seguros mediante MercadoPago y Conekta sin almacenamiento de tarjetas (PAN/CVV).
           </p>
-          <div class="pt-2">
-            <a href="/docs/PCI_DSS_COMPLIANCE_SAQ_A.md" target="_blank" class="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1">
-              Ver Declaración SAQ A →
-            </a>
+          <div class="pt-2 text-xs font-bold text-cyan-400 flex items-center gap-1">
+            <span>Ver Declaración SAQ A</span>
+            <span>→</span>
           </div>
-        </div>
+        </a>
 
         <!-- Card 2: OWASP ASVS Level 2 -->
-        <div class="glass-card glass-card-hover rounded-3xl p-8 space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-black">
+        <a href="./security.html#owasp-asvs" class="glass-card rounded-2xl p-6 space-y-3 block">
+          <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-bold">
             🛡️
           </div>
-          <h3 class="text-xl font-bold text-white">OWASP ASVS Level 2</h3>
+          <h3 class="text-lg font-bold text-white">OWASP ASVS Level 2</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Verificación continua de código fuente contra las 14 secciones del estándar OWASP. Sanitización con DOMPurify y CI/CD automatizado con TruffleHog.
+            Verificación continua de código fuente contra las 14 secciones del estándar OWASP. Sanitización con DOMPurify y CI/CD automatizado.
           </p>
-          <div class="pt-2">
-            <a href="/docs/SECURITY_COMPLIANCE_ASVS.md" target="_blank" class="text-xs font-bold text-blue-400 hover:underline flex items-center gap-1">
-              Ver Matriz ASVS L2 →
-            </a>
+          <div class="pt-2 text-xs font-bold text-blue-400 flex items-center gap-1">
+            <span>Ver Matriz ASVS L2</span>
+            <span>→</span>
           </div>
-        </div>
+        </a>
 
         <!-- Card 3: Multitenant RLS -->
-        <div class="glass-card glass-card-hover rounded-3xl p-8 space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl font-black">
+        <a href="./security.html#policy" class="glass-card rounded-2xl p-6 space-y-3 block">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl font-bold">
             ⚖️
           </div>
-          <h3 class="text-xl font-bold text-white">Aislamiento Multitenant RLS</h3>
+          <h3 class="text-lg font-bold text-white">Aislamiento Multitenant RLS</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Segregación estricta de base de datos a nivel PostgreSQL. Row Level Security impone que ningún comercio pueda acceder a la información de otro.
+            Segregación estricta de base de datos a nivel PostgreSQL. Row Level Security impone que ningún comercio pueda acceder a información ajena.
           </p>
-          <div class="pt-2">
-            <span class="text-xs font-bold text-emerald-400">100% Cifrado & Segregado</span>
+          <div class="pt-2 text-xs font-bold text-emerald-400 flex items-center gap-1">
+            <span>Ver Política RLS</span>
+            <span>→</span>
           </div>
-        </div>
+        </a>
 
         <!-- Card 4: Data Privacy -->
-        <div class="glass-card glass-card-hover rounded-3xl p-8 space-y-4">
-          <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-2xl font-black">
+        <a href="./privacy.html" class="glass-card rounded-2xl p-6 space-y-3 block">
+          <div class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-2xl font-bold">
             👤
           </div>
-          <h3 class="text-xl font-bold text-white">Privacidad LFPDPPP / GDPR</h3>
+          <h3 class="text-lg font-bold text-white">Privacidad LFPDPPP / GDPR</h3>
           <p class="text-xs text-slate-400 leading-relaxed">
-            Minimización de datos de rendimiento. CERO venta de información de clientes y protección rigurosa de datos personales.
+            Minimización de datos de rendimiento. CERO venta de información de clientes y protección rigurosa de datos personales PII.
           </p>
-          <div class="pt-2">
-            <a href="/privacy.html" class="text-xs font-bold text-indigo-400 hover:underline flex items-center gap-1">
-              Aviso de Privacidad →
-            </a>
+          <div class="pt-2 text-xs font-bold text-indigo-400 flex items-center gap-1">
+            <span>Aviso de Privacidad</span>
+            <span>→</span>
           </div>
-        </div>
+        </a>
 
       </div>
 
@@ -372,57 +383,54 @@
   </section>
 
   <!-- 🌟 VIP & ENTERPRISE SUITE SECTION (REPLACES PUBLIC PRICING) -->
-  <section id="vip" class="py-24 bg-[#07090E] relative overflow-hidden">
-    <div class="max-w-7xl mx-auto px-6">
+  <section id="vip" class="py-20 bg-slate-900 relative overflow-hidden">
+    <div class="max-w-6xl mx-auto px-6">
       
-      <div class="glass-card rounded-[2.5rem] p-8 sm:p-16 border-2 border-amber-500/30 relative overflow-hidden shadow-2xl">
-        <!-- Glow accents -->
-        <div class="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div class="grid lg:grid-cols-12 gap-12 items-center">
+      <div class="glass-card rounded-3xl p-8 sm:p-12 border border-amber-500/30 relative overflow-hidden shadow-2xl">
+        <div class="grid lg:grid-cols-12 gap-8 items-center">
           
-          <div class="lg:col-span-7 space-y-6">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-black uppercase tracking-widest">
+          <div class="lg:col-span-7 space-y-5">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-widest">
               <span>✨ EDICIÓN VIP & ENTERPRISE DEDICADA</span>
             </div>
 
-            <h2 class="text-3xl sm:text-5xl font-extrabold text-white leading-tight">
+            <h2 class="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
               Atención Consultiva Personalizada y Soluciones a la Medida
             </h2>
 
-            <p class="text-slate-300 text-base sm:text-lg font-light leading-relaxed">
+            <p class="text-slate-300 text-xs sm:text-sm font-normal leading-relaxed">
               No ofrecemos paquetes genéricos con tarjeta. En Reisbloc Retail trabajamos de la mano con dueños de negocios, boutiques y franquicias para ofrecer despliegues VIP personalizados.
             </p>
 
-            <ul class="space-y-3 text-sm text-slate-200">
-              <li class="flex items-center gap-3">
-                <span class="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-xs font-bold">✓</span>
+            <ul class="space-y-2.5 text-xs sm:text-sm text-slate-200">
+              <li class="flex items-center gap-2.5">
+                <span class="w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-bold">✓</span>
                 <span>Configuración de Marca y Dominio Personalizado (White Label Ready)</span>
               </li>
-              <li class="flex items-center gap-3">
-                <span class="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-xs font-bold">✓</span>
+              <li class="flex items-center gap-2.5">
+                <span class="w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-bold">✓</span>
                 <span>Tokens ilimitados de Agentes de Inteligencia Artificial Gemini</span>
               </li>
-              <li class="flex items-center gap-3">
-                <span class="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-xs font-bold">✓</span>
+              <li class="flex items-center gap-2.5">
+                <span class="w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-bold">✓</span>
                 <span>Integración de Facturación Fiscal CFDI 4.0 Ilimitada</span>
               </li>
-              <li class="flex items-center gap-3">
-                <span class="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center text-xs font-bold">✓</span>
+              <li class="flex items-center gap-2.5">
+                <span class="w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center text-[10px] font-bold">✓</span>
                 <span>Soporte Técnico y Asesoría 24/7 por Canal Dedicado de WhatsApp</span>
               </li>
             </ul>
           </div>
 
           <!-- VIP Direct Call to Action Card -->
-          <div class="lg:col-span-5 bg-[#0B0F17] rounded-3xl p-8 border border-amber-500/30 space-y-6 text-center shadow-xl">
-            <div class="w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto text-3xl font-black">
+          <div class="lg:col-span-5 bg-[#0F172A] rounded-2xl p-6 border border-amber-500/30 space-y-5 text-center shadow-xl">
+            <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto text-2xl font-bold">
               💬
             </div>
 
             <div>
-              <h3 class="text-2xl font-bold text-white">¿Listo para escalar tu tienda?</h3>
-              <p class="text-xs text-slate-400 mt-2">
+              <h3 class="text-xl font-bold text-white">¿Listo para escalar tu tienda?</h3>
+              <p class="text-xs text-slate-400 mt-1">
                 Habla directamente con nuestro equipo fundador a través de WhatsApp para recibir una propuesta VIP adaptada al tamaño de tu negocio.
               </p>
             </div>
@@ -431,15 +439,15 @@
               href="https://wa.me/5215665848231?text=Hola%2C%20quiero%20cotizar%20la%20versi%C3%B3n%20VIP%20%2F%20Enterprise%20de%20Reisbloc%20Retail"
               target="_blank"
               rel="noopener noreferrer"
-              class="btn-wa-vip w-full py-4 text-white font-black text-base rounded-2xl flex items-center justify-center gap-3 shadow-2xl"
+              class="btn-wa-vip w-full py-3.5 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-xl"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
               </svg>
               <span>Solicitar Cotización VIP</span>
             </a>
             
-            <p class="text-[11px] text-slate-500">
+            <p class="text-[10px] text-slate-500">
               Respuesta promedio en menos de 15 minutos en horario comercial.
             </p>
           </div>
@@ -451,37 +459,37 @@
   </section>
 
   <!-- 🐞 CUSTOM BRANDS & SUCCESS STORY: MODA MIEL MX -->
-  <section id="custom-brands" class="py-20 bg-[#0B0F17] border-t border-white/5">
-    <div class="max-w-7xl mx-auto px-6 space-y-12">
-      <div class="text-center max-w-3xl mx-auto space-y-3">
-        <span class="px-4 py-1.5 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-black uppercase tracking-widest">
+  <section id="custom-brands" class="py-16 bg-[#0F172A] border-t border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 space-y-10">
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span class="px-3 py-1 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-bold uppercase tracking-widest">
           Caso de Éxito & Personalización de Marca
         </span>
-        <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
           Potenciando Marcas de Moda & Retail
         </h2>
-        <p class="text-slate-400 text-sm sm:text-base">
-          Conoce cómo marcas como <strong>Moda Miel MX</strong> operan su canal e-commerce de mayoreo por paquete y su venta en punto de venta con la tecnología de Reisbloc.
+        <p class="text-slate-400 text-xs sm:text-sm">
+          Conoce cómo marcas como <strong>Moda Miel MX</strong> operan su canal e-commerce de mayoreo por paquete y su venta en punto de venta con Reisbloc.
         </p>
       </div>
 
-      <div class="glass-card rounded-3xl p-8 border border-pink-500/30 grid md:grid-cols-12 gap-8 items-center">
-        <div class="md:col-span-8 space-y-4">
+      <div class="glass-card rounded-2xl p-6 sm:p-8 border border-pink-500/30 grid md:grid-cols-12 gap-6 items-center">
+        <div class="md:col-span-8 space-y-3">
           <div class="flex items-center gap-3">
             <span class="text-3xl">🐞</span>
             <div>
-              <h3 class="text-2xl font-black text-white">Moda Miel MX</h3>
-              <p class="text-xs text-pink-400 font-bold uppercase tracking-wider">Tienda de Importación · Pasillo 3 Local 230</p>
+              <h3 class="text-xl font-bold text-white">Moda Miel MX</h3>
+              <p class="text-[10px] text-pink-400 font-bold uppercase tracking-wider">Tienda de Importación · Pasillo 3 Local 230</p>
             </div>
           </div>
-          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          <p class="text-xs text-slate-300 leading-relaxed">
             Personalización completa con catálogo e-commerce en tiempo real de lotes por paquete, canal directo de pedidos hacia WhatsApp e integración total con la caja registradora POS de su local físico.
           </p>
         </div>
         <div class="md:col-span-4 text-center md:text-right">
           <a
-            href="/modamiel.html"
-            class="inline-flex items-center gap-2 bg-[#E62E6B] hover:bg-pink-700 text-white font-black px-6 py-3 rounded-2xl text-sm transition-all shadow-lg"
+            href="./modamiel.html"
+            class="inline-flex items-center gap-2 bg-[#E62E6B] hover:bg-pink-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md"
           >
             <span>Ver Experiencia Moda Miel</span>
             <span>→</span>
@@ -492,21 +500,21 @@
   </section>
 
   <!-- FOOTER -->
-  <footer class="bg-[#07090E] text-slate-400 py-12 border-t border-white/10">
-    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+  <footer class="bg-slate-950 text-slate-400 py-10 border-t border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
       
-      <div class="flex items-center gap-3">
-        <span class="font-bold text-lg text-white">Reisbloc <span class="font-light text-cyan-400">Retail</span></span>
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-base text-white">Reisbloc <span class="font-light text-cyan-400">Retail</span></span>
       </div>
 
-      <p class="text-xs text-center text-slate-500">
-        © 2026 Reisbloc Store. Todos los derechos reservados. Infraestructura Segura PCI-DSS v4.0 SAQ A.
+      <p class="text-[11px] text-center text-slate-500">
+        © 2026 Reisbloc Store. Todos los derechos reservados. Infraestructura Segura PCI-DSS v4.0 SAQ A & OWASP ASVS L2.
       </p>
 
-      <div class="flex items-center gap-6 text-xs font-semibold">
-        <a href="#security" class="hover:text-cyan-400 transition">Seguridad & PCI</a>
-        <a href="/terms.html" class="hover:text-cyan-400 transition">Términos</a>
-        <a href="/privacy.html" class="hover:text-cyan-400 transition">Privacidad</a>
+      <div class="flex items-center gap-5 text-xs font-medium">
+        <a href="./security.html" class="hover:text-cyan-400 transition">Centro de Seguridad</a>
+        <a href="./terms.html" class="hover:text-cyan-400 transition">Términos</a>
+        <a href="./privacy.html" class="hover:text-cyan-400 transition">Privacidad</a>
         <a href="https://wa.me/5215665848231" target="_blank" class="text-emerald-400 hover:underline">Contacto WhatsApp</a>
       </div>
 

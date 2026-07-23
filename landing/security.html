@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <base href="./">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Reisbloc Retail · Portal de Seguridad de la Información, Cumplimiento PCI-DSS v4.0 SAQ A y Matriz OWASP ASVS Level 2." />
+
+  <title>Centro de Seguridad & Cumplimiento · Reisbloc Retail</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    body { font-family: 'Outfit', sans-serif; background-color: #0F172A; color: #F8FAFC; }
+    .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+  </style>
+</head>
+<body class="selection:bg-cyan-500 selection:text-black">
+
+  <!-- NAVBAR -->
+  <nav class="sticky top-0 z-50 bg-[#0F172A]/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="./index.html" class="flex items-center gap-3">
+        <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="512" height="512" rx="120" fill="#1E293B"/>
+          <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#0F172A"/>
+          <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" stroke-width="14" stroke-linejoin="round"/>
+        </svg>
+        <span class="font-extrabold text-xl tracking-tight text-white">Reisbloc <span class="font-light text-cyan-400">Security</span></span>
+      </a>
+
+      <div class="flex items-center gap-4">
+        <a href="./index.html" class="text-xs font-bold text-slate-300 hover:text-white transition">← Volver al Sitio Principal</a>
+        <a
+          href="https://wa.me/5215665848231?text=Hola%2C%20tengo%20una%20consulta%20sobre%20la%20seguridad%20y%20cumplimiento%20de%20Reisbloc"
+          target="_blank"
+          class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-full transition"
+        >
+          Consulta Técnica WhatsApp
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header class="py-16 bg-slate-900 border-b border-slate-800 text-center">
+    <div class="max-w-4xl mx-auto px-6 space-y-4">
+      <span class="inline-block px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-xs font-bold uppercase tracking-widest">
+        Centro Oficial de Seguridad & Cumplimiento
+      </span>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white">
+        Estándares de Protección & Declaraciones de Cumplimiento
+      </h1>
+      <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+        Reisbloc Retail opera bajo estrictos protocolos de ciberseguridad, tokenización fuera de alcance para pagos y auditoría continua en código.
+      </p>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-5xl mx-auto px-6 py-16 space-y-16">
+    
+    <!-- 💳 SECCIÓN 1: PCI-DSS v4.0 SAQ A -->
+    <section id="pci-dss" class="glass-card rounded-3xl p-8 sm:p-12 space-y-6">
+      <div class="flex items-center gap-4 border-b border-slate-700 pb-6">
+        <div class="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-2xl font-bold">
+          💳
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-white">1. Declaración PCI-DSS v4.0 (SAQ A / SAQ A-EP)</h2>
+          <p class="text-xs text-cyan-400 font-semibold uppercase tracking-wider">Cumplimiento de Estándares de la Industria de Tarjetas de Pago</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+        <p>
+          Reisbloc Retail implementa una arquitectura de <strong>Tokenización de Pagos Fuera de Alcance (Out-of-Scope Architecture)</strong>. Los cobros realizados con tarjeta de crédito o débito a través de MercadoPago o Conekta se procesan mediante campos integrados (iFrames / SDKs) directamente con las pasarelas certificadas PCI-DSS Nivel 1.
+        </p>
+
+        <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-2 text-xs">
+          <h4 class="font-bold text-white uppercase text-cyan-300">Garantía Cero Almacenamiento de Tarjetas (No PAN Storage):</h4>
+          <ul class="list-disc list-inside space-y-1 text-slate-400">
+            <li>Reisbloc <strong>NUNCA procesa, transmite ni almacena</strong> números de tarjeta (PAN), fechas de expiración ni códigos CVV/CVC en sus servidores.</li>
+            <li>Únicamente se registran tokens anónimos de transacción retornados por la pasarela autorizada.</li>
+            <li>Todo canal de comunicación está cifrado con <strong>TLS 1.3 y HSTS (Strict Transport Security)</strong>.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 🛡️ SECCIÓN 2: OWASP ASVS LEVEL 2 -->
+    <section id="owasp-asvs" class="glass-card rounded-3xl p-8 sm:p-12 space-y-6">
+      <div class="flex items-center gap-4 border-b border-slate-700 pb-6">
+        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-bold">
+          🛡️
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-white">2. Matriz de Cumplimiento OWASP ASVS Level 2</h2>
+          <p class="text-xs text-blue-400 font-semibold uppercase tracking-wider">Verificación de Seguridad en Código y Arquitectura</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4 text-xs">
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2">
+          <h4 class="font-bold text-white">V1 & V3: Aislamiento Multitenant</h4>
+          <p class="text-slate-400">Row Level Security (RLS) activo en PostgreSQL Supabase imponiendo la segregación estricta de datos por organización.</p>
+        </div>
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2">
+          <h4 class="font-bold text-white">V2: Autenticación & PIN Bcrypt</h4>
+          <p class="text-slate-400">Confirmación de correo obligatoria en registro y hashing Bcrypt con salt para PINs de cajero.</p>
+        </div>
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2">
+          <h4 class="font-bold text-white">V4: Prevención XSS</h4>
+          <p class="text-slate-400">Sanitización estricta de código HTML mediante DOMPurify en la generación e impresión de tickets.</p>
+        </div>
+        <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 space-y-2">
+          <h4 class="font-bold text-white">V14: Encabezados de Seguridad</h4>
+          <p class="text-slate-400">Headers HTTP de seguridad configurados: HSTS, Content-Security-Policy (CSP), X-Frame-Options: DENY, nosniff.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 📜 SECCIÓN 3: POLÍTICA DE SEGURIDAD -->
+    <section id="policy" class="glass-card rounded-3xl p-8 sm:p-12 space-y-6">
+      <div class="flex items-center gap-4 border-b border-slate-700 pb-6">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl font-bold">
+          📜
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-white">3. Política Corporativa de Seguridad de la Información</h2>
+          <p class="text-xs text-emerald-400 font-semibold uppercase tracking-wider">Requisito 12.1 PCI-DSS & ISO 27001</p>
+        </div>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+        <p>
+          Reisbloc Store S.A. de C.V. mantiene un programa activo de gestión de riesgos, análisis estático de vulnerabilidades en CI/CD con GitHub Actions y monitoreo continuo.
+        </p>
+        <p>
+          Cualquier reporte de seguridad o consulta de vulnerabilidades puede ser enviada directamente a nuestro equipo de ingeniería a <a href="mailto:daniel@megamayoreo.mx" class="text-cyan-400 underline">daniel@megamayoreo.mx</a>.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-950 py-8 border-t border-slate-800 text-center text-xs text-slate-500">
+    <p>© 2026 Reisbloc Store. Centro Oficial de Seguridad & Cumplimiento.</p>
+  </footer>
+
+</body>
+</html>
