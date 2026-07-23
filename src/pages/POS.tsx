@@ -706,6 +706,31 @@ export default function POS() {
       return
     }
 
+    // 2. CRM Client Check (Obligatorio o Bypass con Bitácora de Auditoría) 👤
+    if (!selectedClient) {
+      setShowClientSelector(true)
+      return
+    }
+
+    confirmCheckout()
+  }
+
+  const handleBypassCrmClient = () => {
+    if (!currentUser) return
+    
+    // Registrar Audit Log del Bypass de CRM por el cajero
+    supabaseService.createAuditLog({
+      userId: currentUser.id,
+      action: 'POS_CRM_CLIENT_BYPASS',
+      entityType: 'POS',
+      entityId: `caja-${tableNumber}`,
+      newValue: {
+        total: currentTotal,
+        reason: 'Venta realizada sin asociación de cliente CRM (Bypass autorizado por cajero)'
+      }
+    }).catch(err => console.error('Error logging CRM bypass:', err))
+
+    setShowClientSelector(false)
     confirmCheckout()
   }
 
@@ -1377,16 +1402,26 @@ export default function POS() {
                 </div>
 
                 {/* Quick Register Trigger */}
-                <button
-                  onClick={() => {
-                    setShowClientSelector(false)
-                    setShowNewClientModal(true)
-                  }}
-                  className="w-full py-3.5 bg-slate-900 text-white hover:bg-slate-850 rounded-xl font-black text-xs uppercase tracking-tight flex items-center justify-center gap-2 shrink-0 transition-all active:scale-95 shadow-lg shadow-slate-900/10"
-                >
-                  <Plus size={16} />
-                  Registrar Nuevo Cliente
-                </button>
+                <div className="space-y-2 shrink-0 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      setShowClientSelector(false)
+                      setShowNewClientModal(true)
+                    }}
+                    className="w-full py-3.5 bg-slate-900 text-white hover:bg-slate-850 rounded-xl font-black text-xs uppercase tracking-tight flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md"
+                  >
+                    <Plus size={16} />
+                    + Crear Nuevo Cliente en CRM
+                  </button>
+
+                  <button
+                    onClick={handleBypassCrmClient}
+                    className="w-full py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all"
+                    title="Registra esta omisión en los Audit Logs de Configuración"
+                  >
+                    <span>⚠️ Omitir Registro CRM y Continuar Cobro (Bitácora Log)</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
