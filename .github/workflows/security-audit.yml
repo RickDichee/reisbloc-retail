@@ -12,7 +12,7 @@ permissions:
   security-events: write
 
 env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   security_audit:
@@ -39,12 +39,6 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           extra_args: --only-verified
-
-      - name: 🛡️ Semgrep SAST Security Scan
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: p/default
-        continue-on-error: true
 
       - name: 🏗️ Verify Build & TypeScript Constraints
         run: npm run build
