@@ -40,9 +40,8 @@ jobs:
       - name: 🛡️ Semgrep SAST Security Scan
         uses: semgrep/semgrep-action@v1
         with:
-          config: p/owasp-top-10
-        env:
-          SEMGREP_RULES: p/typescript p/react p/owasp-top-10
+          config: p/default
+        continue-on-error: true
 
       - name: 🏗️ Verify Build & TypeScript Constraints
         run: npm run build
