@@ -38,10 +38,14 @@ export default function Login() {
 
       await supabase.auth.signOut()
 
+      const params = new URLSearchParams(window.location.search)
+      const brandParam = params.get('brand')
+      const redirectUrl = window.location.origin + '/auth/callback' + (brandParam ? `?brand=${brandParam}` : '')
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth/callback'
+          redirectTo: redirectUrl
         }
       })
 

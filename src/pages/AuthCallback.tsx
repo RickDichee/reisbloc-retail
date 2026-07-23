@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
 import { logSuccessfulLogin } from '@/services/authService'
 import { ShieldCheck } from 'lucide-react'
-
 import { checkIsModaMiel } from '@/config/branding'
+import supabaseService from '@/services/supabaseService'
+import { useAppStore } from '@/store/appStore'
 
 const LOADING_TIPS = [
   "Verificando identidad...",
@@ -28,7 +29,7 @@ export function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        setStatus('Iniciando sesion...')
+        setStatus('Iniciando sesión...')
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (sessionError || !session?.user) {
@@ -38,25 +39,44 @@ export function AuthCallback() {
         }
 
         const user = session.user
-        setStatus('Verificando organizacion...')
+        setStatus('Verificando organización y permisos...')
 
         const { data: existingUser } = await supabase
           .from('users')
           .select('organization_id')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
 
-        // 🛡️ SEGURIDAD MODA MIEL: Bloquear a usuarios no registrados o no invitados previamente
-        if (isMM && !existingUser?.organization_id) {
-          await supabase.auth.signOut()
-          navigate('/login?brand=modamiel&error=unauthorized_collaborator')
-          return
+        // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ESTRICTA:
+        // Si el login se realiza en el dominio/marca de Moda Miel MX, verificar que el usuario
+        // esté registrado y que su organización pertenezca ESTRICTAMENTE a Moda Miel MX.
+        if (isMM) {
+          const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
+          const mmOrgId = mmOrg?.id
+
+          let isAuthorized = false
+          if (existingUser?.organization_id) {
+            if (mmOrgId) {
+              isAuthorized = existingUser.organization_id === mmOrgId
+            } else {
+              isAuthorized = checkIsModaMiel('', '', '', existingUser.organization_id)
+            }
+          }
+
+          if (!isAuthorized) {
+            console.warn('⛔ Acceso rechazado: El usuario no pertenece a la organización Moda Miel MX')
+            await supabase.auth.signOut()
+            localStorage.removeItem('reisbloc_auth_token')
+            useAppStore.getState().logout()
+            navigate('/login?brand=modamiel&error=unauthorized_collaborator', { replace: true })
+            return
+          }
         }
 
         if (existingUser?.organization_id) {
-          setStatus('Organizacion encontrada!')
+          setStatus('¡Organización encontrada!')
           await logSuccessfulLogin().catch(console.error)
           setTimeout(() => navigate('/admin'), 500)
           return

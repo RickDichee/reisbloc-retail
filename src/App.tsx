@@ -49,8 +49,43 @@ import { useTenantTheme } from '@/hooks/useTenantTheme'
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
-  const { accessibility } = useAppStore()
+  const { accessibility, currentUser, isAuthenticated, logout } = useAppStore()
   const { isModaMiel } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
+
+  // 🛡️ SEGURIDAD EN TIEMPO DE EJECUCIÓN MULTI-TENANT:
+  // Si la sesión activa pertenece a otra empresa (Org B) y el usuario intenta navegar en el dominio de Moda Miel MX,
+  // se cierra la sesión inmediatamente y se le redirige al login con la advertencia correspondiente.
+  useEffect(() => {
+    const enforceTenantIsolation = async () => {
+      if (!isAuthenticated || !currentUser) return
+
+      const isDomainMM = checkIsModaMiel(
+        window.location.hostname,
+        window.location.search,
+        window.location.hash
+      )
+
+      if (isDomainMM) {
+        const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
+        const mmOrgId = mmOrg?.id
+
+        const isUserMM = 
+          (mmOrgId && currentUser.organizationId === mmOrgId) ||
+          checkIsModaMiel('', '', '', currentUser.organizationId) ||
+          checkIsModaMiel('', '', '', (currentUser as any).businessName)
+
+        if (!isUserMM) {
+          console.warn('⛔ [Tenant Isolation] Usuario de otra empresa detectado en el subdominio de Moda Miel MX. Denegando acceso.')
+          await supabase.auth.signOut()
+          localStorage.removeItem('reisbloc_auth_token')
+          logout()
+          window.location.href = '/login?brand=modamiel&error=unauthorized_collaborator'
+        }
+      }
+    }
+
+    enforceTenantIsolation()
+  }, [pathname, isAuthenticated, currentUser, logout])
 
   // Ocultar NavBar solo en: público, invitaciones, legales y portada de tienda de cliente
   const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms' || pathname === '/modamielmx' || (isModaMiel && pathname === '/')

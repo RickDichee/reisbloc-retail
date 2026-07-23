@@ -1494,7 +1494,7 @@ class SupabaseService {
       const { data, error } = await supabase
         .from('organizations')
         .select('id, name, slug, logo_url, settings, plan, plan_note')
-        .eq('slug', slug)
+        .or(`slug.eq.${slug},slug.eq.moda-miel,slug.eq.modamielmx,name.ilike.%modamiel%`)
         .eq('active', true)
         .maybeSingle()
 
