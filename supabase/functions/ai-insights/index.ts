@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
@@ -16,6 +17,36 @@ serve(async (req) => {
     try {
         if (!GEMINI_API_KEY) {
             throw new Error('GEMINI_API_KEY environment variable is not set');
+        }
+
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401, headers: corsHeaders });
+        }
+
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+            global: { headers: { Authorization: authHeader } }
+        });
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return new Response(JSON.stringify({ error: 'Usuario no autenticado' }), { status: 401, headers: corsHeaders });
+        }
+
+        const { data: profile } = await supabase
+            .from('users')
+            .select('organization_id, organizations(plan)')
+            .eq('id', user.id)
+            .single();
+
+        const orgPlan = (profile?.organizations as any)?.plan || 'free';
+        if (orgPlan === 'free') {
+            return new Response(
+                JSON.stringify({ error: 'Las herramientas de Inteligencia Artificial están reservadas para planes Pro y Enterprise. Actualiza tu suscripción para acceder.' }),
+                { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
         }
 
         const { metrics, topProducts } = await req.json();

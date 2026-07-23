@@ -31,6 +31,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
     }
 
+    const { data: profile } = await supabase
+      .from('users')
+      .select('organization_id, organizations(plan)')
+      .eq('id', user.id)
+      .single()
+
+    const orgPlan = (profile?.organizations as any)?.plan || 'free'
+    if (orgPlan === 'free') {
+      return new Response(
+        JSON.stringify({ error: 'La facturación CFDI no está disponible en el plan Gratuito. Actualiza tu suscripción a Pro o Enterprise.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const body = await req.json()
     
     const { customer, items, use, paymentForm, paymentMethod, observations } = body

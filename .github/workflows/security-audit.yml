@@ -1,0 +1,50 @@
+name: 🛡️ Security Audit & OWASP ASVS Verification
+
+on:
+  push:
+    branches: [ main, staging ]
+  pull_request:
+    branches: [ main, staging ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security_audit:
+    name: 🔒 Security Scan & Code Hardening Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📥 Install Dependencies
+        run: npm ci
+
+      - name: 🔍 Dependency Security Vulnerability Audit
+        run: npm audit --audit-level=high
+
+      - name: 🔑 Secret Leak Detection (TruffleHog)
+        uses: trufflesecurity/trufflehog-actions-scan@v3.88.15
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          head: ${{ github.sha }}
+          extra_args: --debug --only-verified
+
+      - name: 🛡️ Semgrep SAST Security Scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/owasp-top-10
+        env:
+          SEMGREP_RULES: p/typescript p/react p/owasp-top-10
+
+      - name: 🏗️ Verify Build & TypeScript Constraints
+        run: npm run build

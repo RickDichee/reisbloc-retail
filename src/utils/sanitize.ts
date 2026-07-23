@@ -1,20 +1,19 @@
 /**
- * Simple HTML sanitization utility
- * Strips script tags, event handlers, and dangerous protocols
+ * Reisbloc POS - Secure HTML sanitization utility
+ * Uses DOMPurify to prevent XSS (Cross-Site Scripting) attacks
  */
+import DOMPurify from 'dompurify'
 
-const SCRIPT_REGEX = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi
-const ON_EVENT_REGEX = /\s*on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi
-const JS_PROTOCOL_REGEX = /href\s*=\s*["']?\s*javascript\s*:/gi
-const DATA_PROTOCOL_REGEX = /href\s*=\s*["']?\s*data\s*:\s*text\/html/gi
-
+/**
+ * Sanitize HTML string to eliminate script execution, dangerous event handlers,
+ * and malicious javascript: or data: URIs.
+ */
 export function sanitizeHTML(html: string): string {
   if (!html) return ''
-  return html
-    .replace(SCRIPT_REGEX, '')
-    .replace(ON_EVENT_REGEX, '')
-    .replace(JS_PROTOCOL_REGEX, 'href="#"')
-    .replace(DATA_PROTOCOL_REGEX, 'href="#"')
+  return DOMPurify.sanitize(html, {
+    USE_PROFILES: { html: true },
+    ADD_ATTR: ['target', 'style', 'class'],
+  })
 }
 
 /**

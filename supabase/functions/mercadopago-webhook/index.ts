@@ -6,35 +6,61 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-signature, x-timestamp",
 }
 
-// Helper para validar firma del webhook
-function validateWebhookSignature(req: Request, webhookToken: string): boolean {
-  const signature = req.headers.get('x-signature')
-  const timestamp = req.headers.get('x-timestamp')
+// Helper para validar firma HMAC de MercadoPago
+async function validateWebhookSignature(req: Request, webhookSecret: string, dataId: string): Promise<boolean> {
+  const xSignature = req.headers.get('x-signature')
+  const xRequestId = req.headers.get('x-request-id')
   
-  if (!signature || !timestamp) {
-    console.log('⚠️ Falta firma o timestamp')
+  if (!xSignature || !webhookSecret) {
+    console.log('⚠️ Falta firma x-signature o webhook secret')
     return false
   }
 
-  // MP envía la firma en formato: ts=xxx,v1=abc123
-  const sigParts = signature.split(',')
-  const tsPart = sigParts.find(p => p.startsWith('ts='))
-  const v1Part = sigParts.find(p => p.startsWith('v1='))
-  
-  if (!tsPart || !v1Part) {
-    console.log('⚠️ Formato de firma inválido')
+  const sigParts = Object.fromEntries(
+    xSignature.split(',').map(part => {
+      const [k, v] = part.split('=').map(s => s.trim())
+      return [k, v]
+    })
+  )
+
+  const ts = sigParts['ts']
+  const v1 = sigParts['v1']
+
+  if (!ts || !v1) {
+    console.log('⚠️ Header x-signature incompleto (falta ts o v1)')
     return false
   }
 
-  const ts = tsPart.split('=')[1]
-  const v1 = v1Part.split('=')[1]
-  
-  // La firma se genera con: sha256(token + "_" + timestamp + "_" + request_id + "|" + raw_body)
-  // Pero también podemos validar haciendo una запрос a MP - implementación simple
-  // Por ahora aceptamos si viene de MP (production) o si es request válido
-  // En producción, validar contra el token secreto
-  
-  return true // MP ya envía solo desde IPs whitelist
+  // Plantilla de manifest de MercadoPago:
+  // id:[data.id_url];request-id:[x-request-id_header];ts:[ts_header];
+  const manifest = `id:${dataId};request-id:${xRequestId || ''};ts:${ts};`
+
+  try {
+    const encoder = new TextEncoder()
+    const keyData = encoder.encode(webhookSecret)
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    )
+
+    const signature = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      encoder.encode(manifest)
+    )
+
+    const hashHex = Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    return hashHex === v1
+  } catch (err: any) {
+    console.error('Error calculando HMAC:', err.message)
+    return false
+  }
 }
 
 // Helper para checar si payment ya fue procesado (idempotencia)
@@ -72,10 +98,14 @@ serve(async (req) => {
   try {
     const webhookToken = Deno.env.get("MERCADOPAGO_WEBHOOK_TOKEN") || ""
 
-    // F1: Validar firma del webhook
-    // En desarrollo/debug, permitimos sin validación
+    // Leer body como texto primero
+    const rawBody = await req.text()
+    const body = JSON.parse(rawBody || '{}')
+    const dataId = (body.data?.id || body.id || '').toString()
+
+    // F1: Validar firma del webhook en producción
     const isDevelopment = Deno.env.get("DENO_ENV") === "development" || !webhookToken
-    if (!isDevelopment && !validateWebhookSignature(req, webhookToken)) {
+    if (!isDevelopment && !(await validateWebhookSignature(req, webhookToken, dataId))) {
       console.error('❌ Firma de webhook inválida')
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 401,
@@ -87,10 +117,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     )
-
-    // Leer body como texto para mantener raw para firma
-    const rawBody = await req.text()
-    const body = JSON.parse(rawBody)
 
     // Log del evento recibido
     await logWebhookEvent(supabaseAdmin, body)

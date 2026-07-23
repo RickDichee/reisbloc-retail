@@ -99,19 +99,30 @@ serve(async (req) => {
       });
     }
 
-    // 2. Validar que sea admin
+    // 2. Validar que sea admin y que tenga plan Pro/Enterprise
     const { data: userData } = await supabaseClient
       .from('users')
-      .select('role, is_primary_admin, organization_id')
+      .select('role, is_primary_admin, organization_id, organizations(plan)')
       .eq('id', user.id)
       .single();
 
     const isAdmin = userData?.role === 'admin' || userData?.is_primary_admin === true;
+    const orgPlan = (userData?.organizations as any)?.plan || 'free';
     
     if (!isAdmin) {
       return new Response(JSON.stringify({ 
         error: "Forbidden", 
         message: "Solo administradores pueden usar el agente de marketing" 
+      }), { 
+        status: 403, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    if (orgPlan === 'free') {
+      return new Response(JSON.stringify({ 
+        error: "Forbidden", 
+        message: "El Agente de Redes Sociales con IA requiere suscripción Pro o Enterprise." 
       }), { 
         status: 403, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
