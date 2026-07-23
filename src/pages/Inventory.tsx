@@ -295,7 +295,7 @@ export default function Inventory() {
                 <div className="flex items-end justify-between pt-2 border-t border-slate-50 mt-2">
                   <div className="space-y-0.5">
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                      {isModaMiel ? 'Precio x Prenda (Paquete)' : 'Precio'}
+                      {isModaMiel ? 'Precio Paquete' : 'Precio'}
                     </p>
                     {(() => {
                       if (isModaMiel) {
@@ -304,12 +304,12 @@ export default function Inventory() {
                         const fullPackPrice = product.packPrice || (unitPrice * packQty)
                         return (
                           <div>
-                            <div className="text-2xl font-black text-[#E62E6B] tracking-tighter">
-                              ${unitPrice.toFixed(2)} <span className="text-[10px] text-slate-500 font-bold">/ pza</span>
+                            <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                              ${fullPackPrice.toFixed(2)}
                             </div>
-                            <span className="text-[9px] font-black bg-pink-100 text-[#E62E6B] px-1.5 py-0.5 rounded border border-pink-200 uppercase inline-block mt-0.5">
-                              📦 Paquete (${fullPackPrice.toFixed(2)} x {packQty} pcs)
-                            </span>
+                            <p className="text-[11px] font-bold text-slate-500">
+                              (${unitPrice.toFixed(2)} / pza · {packQty} pcs)
+                            </p>
                           </div>
                         )
                       }

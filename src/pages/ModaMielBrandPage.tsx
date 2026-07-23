@@ -266,10 +266,10 @@ export default function ModaMielBrandPage() {
             <Link
               to="/login?brand=modamiel"
               className="bg-pink-950/40 hover:bg-pink-950/60 border border-pink-300/40 text-white font-bold px-3.5 py-2 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2"
-              title="Acceso reservado a personal contratado"
+              title="Acceso restringido a colaboradores autorizados de Moda Miel MX"
             >
               <UserCheck size={16} className="text-pink-200" />
-              <span className="hidden sm:inline">Acceso Personal POS</span>
+              <span>Acceso a Colaboradores</span>
             </Link>
           </div>
         </div>

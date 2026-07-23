@@ -4,6 +4,8 @@ import { supabase } from '@/config/supabase'
 import { logSuccessfulLogin } from '@/services/authService'
 import { ShieldCheck } from 'lucide-react'
 
+import { checkIsModaMiel } from '@/config/branding'
+
 const LOADING_TIPS = [
   "Verificando identidad...",
   "Preparando tu cuenta...",
@@ -43,6 +45,15 @@ export function AuthCallback() {
           .select('organization_id')
           .eq('id', user.id)
           .single()
+
+        const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
+
+        // 🛡️ SEGURIDAD MODA MIEL: Bloquear a usuarios no registrados o no invitados previamente
+        if (isMM && !existingUser?.organization_id) {
+          await supabase.auth.signOut()
+          navigate('/login?brand=modamiel&error=unauthorized_collaborator')
+          return
+        }
 
         if (existingUser?.organization_id) {
           setStatus('Organizacion encontrada!')

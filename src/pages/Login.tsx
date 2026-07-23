@@ -12,6 +12,14 @@ export default function Login() {
   const navigate = useNavigate()
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const errParam = params.get('error')
+    if (errParam === 'unauthorized_collaborator') {
+      setError('⚠️ Acceso restringido: Únicamente los colaboradores autorizados por Moda Miel MX pueden ingresar. Solicita una invitación a tu Administrador.')
+    }
+  }, [])
+
+  useEffect(() => {
     const checkSession = async () => {
       if (isInitializing) return
 
