@@ -201,13 +201,38 @@ export default function ProductModal({
                 const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
                 const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
+                const isAdmin = currentUser?.role === 'admin'
+                const oldStock = product.currentStock ?? (product as any).current_stock ?? 0
+                const targetStock = isBulk ? totalPiecesReceived : formData.currentStock
+
+                // 🛡️ REGLA DE SEGURIDAD: Solo Admin puede modificar existencias en productos existentes
+                const finalStock = (isAdmin || isBulk) ? targetStock : oldStock
+
                 const updatedPayload = {
                     ...payload,
-                    currentStock: isBulk ? totalPiecesReceived : formData.currentStock,
+                    currentStock: finalStock,
                     hasInventory: isBulk ? true : formData.hasInventory
                 }
 
                 await supabaseService.updateRetailProduct(product.id, updatedPayload)
+
+                // Audit Log especial si se modificó el Stock manualmente
+                if (oldStock !== finalStock) {
+                    await supabaseService.createAuditLog({
+                        userId: currentUser?.id || 'unknown',
+                        action: 'INVENTORY_STOCK_MANUALLY_ADJUSTED',
+                        entityType: 'PRODUCT',
+                        entityId: product.id,
+                        oldValue: { currentStock: oldStock },
+                        newValue: { 
+                            currentStock: finalStock, 
+                            productName: formData.name, 
+                            reason: 'Ajuste manual de existencia por Administrador',
+                            adminId: currentUser?.id 
+                        }
+                    }).catch(err => console.error('Error logging stock adjustment:', err))
+                }
+
                 await supabaseService.createAuditLog({
                     userId: currentUser?.id || 'unknown',
                     action: 'PRODUCT_UPDATED',
@@ -845,15 +870,22 @@ export default function ProductModal({
                                 <div className="grid grid-cols-2 gap-4 animate-scaleIn pt-2">
                                     <div>
                                         <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                            Stock Actual
+                                            Stock Actual {product && !isAdminOrManager && '(Protegido)'}
                                         </label>
                                         <input
                                             type="number"
                                             value={formData.currentStock || ''}
                                             onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center text-sm"
+                                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center text-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                             min="0"
-                                            required />
+                                            disabled={!!product && currentUser?.role !== 'admin'}
+                                            required 
+                                        />
+                                        {!!product && currentUser?.role !== 'admin' && (
+                                            <p className="text-[9px] font-bold text-amber-700 bg-amber-50 p-1.5 rounded-lg border border-amber-200 mt-1">
+                                                🔒 Solo Administrador (Registra en Audit Logs)
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div>

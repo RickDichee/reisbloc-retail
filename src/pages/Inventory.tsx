@@ -10,9 +10,11 @@ import ProductModal from '@/components/admin/ProductModal'
 import ImportProductsModal from '@/components/admin/ImportProductsModal'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
+import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
+  const { isModaMiel } = useTenantTheme()
   const { hasAnyRole } = usePermissions()
   const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
   const [loading, setLoading] = useState(true)
@@ -292,10 +294,30 @@ export default function Inventory() {
 
                 <div className="flex items-end justify-between pt-2 border-t border-slate-50 mt-2">
                   <div className="space-y-0.5">
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Precio</p>
-                    <div className="text-2xl font-black text-slate-900 tracking-tighter">
-                      ${Number(product.price).toFixed(2)}
-                    </div>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                      {isModaMiel ? 'Precio Unitario x Paquete' : 'Precio'}
+                    </p>
+                    {(() => {
+                      if (isModaMiel && product.packPrice && product.packPrice > 0) {
+                        const packQty = product.packQty || product.packQuantity || 10
+                        const packUnitPrice = product.packPrice / packQty
+                        return (
+                          <div>
+                            <div className="text-2xl font-black text-[#E62E6B] tracking-tighter">
+                              ${packUnitPrice.toFixed(2)} <span className="text-[10px] text-slate-500 font-bold">/ pza</span>
+                            </div>
+                            <span className="text-[9px] font-black bg-pink-100 text-[#E62E6B] px-1.5 py-0.5 rounded border border-pink-200 uppercase">
+                              Paquete (${product.packPrice} x {packQty} pcs)
+                            </span>
+                          </div>
+                        )
+                      }
+                      return (
+                        <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                          ${Number(product.price).toFixed(2)}
+                        </div>
+                      )
+                    })()}
                   </div>
                   {product.hasInventory && (
                     <div className="text-right">
