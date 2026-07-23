@@ -18,13 +18,24 @@ export function useTenantTheme(): {
   const [isModaMielActive, setIsModaMielActive] = useState<boolean>(false)
 
   useEffect(() => {
-    const orgSlug = organizationSettings?.slug || currentUser?.organizationId
-    const isMM = checkIsModaMiel(
-      window.location.hostname,
-      location.search || window.location.search,
-      location.hash || window.location.hash,
-      orgSlug
-    )
+    // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ROBUSTA:
+    // Si el usuario está autenticado (currentUser), su tema se define ESTRICTAMENTE por su propia Organización.
+    // Jamás imponer el tema de Moda Miel a un usuario de otra tienda (ej. Reisbloc Store) por el hostname.
+    let isMM = false
+    const userOrgSlug = organizationSettings?.slug || currentUser?.businessName || currentUser?.organizationId
+
+    if (currentUser) {
+      // Usuario autenticado -> Evaluar únicamente si la organización del usuario es Moda Miel
+      isMM = checkIsModaMiel('', '', '', userOrgSlug)
+    } else {
+      // Visitante público no autenticado -> Evaluar por subdominio o parámetro
+      isMM = checkIsModaMiel(
+        window.location.hostname,
+        location.search || window.location.search,
+        location.hash || window.location.hash,
+        userOrgSlug
+      )
+    }
 
     const selectedTheme = isMM ? MODA_MIEL_THEME : DEFAULT_THEME
     setActiveTheme(selectedTheme)
@@ -59,13 +70,6 @@ export function useTenantTheme(): {
       root.style.setProperty('--font-serif', selectedTheme.fontSerif)
       root.style.setProperty('--font-script', selectedTheme.fontScript)
       root.style.setProperty('--font-sans', selectedTheme.fontSans)
-      
-      // Favicon y Título
-      document.title = selectedTheme.name
-      const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
-      if (favicon) {
-        favicon.href = '/images/moda-miel-mx-logo.jpeg'
-      }
     } else {
       root.classList.remove('theme-modamiel')
       body.classList.remove('theme-modamiel')
@@ -81,6 +85,13 @@ export function useTenantTheme(): {
       root.style.setProperty('--font-serif', DEFAULT_THEME.fontSerif)
       root.style.setProperty('--font-script', DEFAULT_THEME.fontScript)
       root.style.setProperty('--font-sans', DEFAULT_THEME.fontSans)
+    }
+
+    // Favicon y Título
+    document.title = isMM ? 'Moda Miel MX' : (currentUser?.businessName || 'Reisbloc Store')
+    const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
+    if (favicon) {
+      favicon.href = isMM ? '/images/moda-miel-mx-logo.jpeg' : '/icon.svg'
     }
   }, [location.search, location.hash, location.pathname, organizationSettings, currentUser])
 

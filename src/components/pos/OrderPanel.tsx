@@ -39,13 +39,14 @@ export function OrderPanel({
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
   const [editingPriceVal, setEditingPriceVal] = useState<string>('')
 
-  const totalPieces = items.reduce((sum, item) => sum + (item.quantity * (item.packQuantity || 1)), 0)
+  const safeItems = items || []
+  const totalPieces = safeItems.reduce((sum, item) => sum + ((item?.quantity || 0) * (item?.packQuantity || 1)), 0)
   const isAutoWholesale = totalPieces >= 3
 
-  const effectiveTotal = items.reduce((sum, item) => {
-    const rawWholesale = (item as any).wholesalePrice || (item as any).wholesale_price
-    const price = (isAutoWholesale && rawWholesale) ? rawWholesale : item.unitPrice
-    return sum + (price * item.quantity)
+  const effectiveTotal = safeItems.reduce((sum, item) => {
+    const rawWholesale = (item as any)?.wholesalePrice || (item as any)?.wholesale_price
+    const price = (isAutoWholesale && rawWholesale) ? rawWholesale : (item?.unitPrice || 0)
+    return sum + (price * (item?.quantity || 0))
   }, 0)
 
   return (

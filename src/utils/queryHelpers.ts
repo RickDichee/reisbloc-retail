@@ -8,11 +8,12 @@
  * @returns La consulta modificada
  */
 export const withOrg = (query: any, orgId?: string | null) => {
-  // Validación robusta: Evitar strings vacíos que causan error 22P02 en PostgREST
+  // 🛡️ SEGURIDAD MULTI-TENANT ROBUSTA:
+  // Si existe orgId válido, filtrar estrictamente por esa organización.
   if (orgId && orgId.trim() !== '') {
     return query.eq('organization_id', orgId)
   }
-  // Si no hay orgId, devolvemos el query sin filtrar.
-  // RLS se encargará de mostrar solo lo público/demo o nada, pero sin dar error 400.
-  return query
+  // Si NO hay orgId asignado al usuario, FORZAR un filtro nulo para DEVOLVER 0 REGISTROS.
+  // JAMÁS devolver la tabla completa sin filtrar.
+  return query.eq('organization_id', '00000000-0000-0000-0000-000000000000')
 }
