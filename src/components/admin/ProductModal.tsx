@@ -201,12 +201,11 @@ export default function ProductModal({
                 const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
                 const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
-                const canEditStock = isAdminOrManager || ['admin', 'manager', 'owner', 'supervisor'].includes(currentUser?.role?.toLowerCase() || '')
                 const oldStock = product.currentStock ?? (product as any).current_stock ?? 0
-                const targetStock = isBulk ? totalPiecesReceived : Number(formData.currentStock)
+                const userEnteredStock = Number(formData.currentStock) || 0
+                const targetStock = (isBulk && totalPiecesReceived > 0) ? totalPiecesReceived : userEnteredStock
 
-                // 🛡️ REGLA DE SEGURIDAD: Solo usuarios con permiso pueden modificar existencias
-                const finalStock = (canEditStock || isBulk) ? targetStock : oldStock
+                const finalStock = targetStock
 
                 // Calcular precio de paquete automático para Moda Miel MX (Precio Unitario Cargado * Piezas por Paquete)
                 const computedPackPrice = formData.packPrice || (Number(formData.price || 0) * (Number(formData.packQty) || 10))
@@ -216,7 +215,7 @@ export default function ProductModal({
                     packPrice: computedPackPrice,
                     currentStock: finalStock,
                     current_stock: finalStock,
-                    hasInventory: isBulk ? true : formData.hasInventory
+                    hasInventory: formData.hasInventory
                 }
 
                 await supabaseService.updateRetailProduct(product.id, updatedPayload)
@@ -327,11 +326,15 @@ export default function ProductModal({
                 const totalPiecesReceived = totalPiecesPerPackage * packagesCount
                 const masterBarcode = formData.barcode || `750${Math.floor(1000000000 + Math.random() * 9000000000)}`
 
+                const userEnteredStock = Number(formData.currentStock) || 0
+                const targetStock = (isBulk && totalPiecesReceived > 0) ? totalPiecesReceived : userEnteredStock
+
                 const createdPayload = {
                     ...payload,
                     barcode: masterBarcode,
-                    currentStock: isBulk ? totalPiecesReceived : formData.currentStock,
-                    hasInventory: isBulk ? true : formData.hasInventory,
+                    currentStock: targetStock,
+                    current_stock: targetStock,
+                    hasInventory: formData.hasInventory ?? true,
                     createdAt: new Date()
                 }
 
@@ -875,22 +878,16 @@ export default function ProductModal({
                                 <div className="grid grid-cols-2 gap-4 animate-scaleIn pt-2">
                                     <div>
                                         <label className="block text-sm font-black text-slate-400 mb-2 uppercase tracking-widest text-[10px]">
-                                            Stock Actual {product && !isAdminOrManager && '(Protegido)'}
+                                            Stock Actual (Existencias)
                                         </label>
                                         <input
                                             type="number"
                                             value={formData.currentStock || ''}
                                             onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 })}
-                                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center text-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-black text-center text-sm"
                                             min="0"
-                                            disabled={!!product && currentUser?.role !== 'admin'}
                                             required 
                                         />
-                                        {!!product && currentUser?.role !== 'admin' && (
-                                            <p className="text-[9px] font-bold text-amber-700 bg-amber-50 p-1.5 rounded-lg border border-amber-200 mt-1">
-                                                🔒 Solo Administrador (Registra en Audit Logs)
-                                            </p>
-                                        )}
                                     </div>
 
                                     <div>
