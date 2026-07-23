@@ -295,19 +295,20 @@ export default function Inventory() {
                 <div className="flex items-end justify-between pt-2 border-t border-slate-50 mt-2">
                   <div className="space-y-0.5">
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                      {isModaMiel ? 'Precio Unitario x Paquete' : 'Precio'}
+                      {isModaMiel ? 'Precio x Prenda (Paquete)' : 'Precio'}
                     </p>
                     {(() => {
-                      if (isModaMiel && product.packPrice && product.packPrice > 0) {
+                      if (isModaMiel) {
+                        const unitPrice = Number(product.price) || 0
                         const packQty = product.packQty || product.packQuantity || 10
-                        const packUnitPrice = product.packPrice / packQty
+                        const fullPackPrice = product.packPrice || (unitPrice * packQty)
                         return (
                           <div>
                             <div className="text-2xl font-black text-[#E62E6B] tracking-tighter">
-                              ${packUnitPrice.toFixed(2)} <span className="text-[10px] text-slate-500 font-bold">/ pza</span>
+                              ${unitPrice.toFixed(2)} <span className="text-[10px] text-slate-500 font-bold">/ pza</span>
                             </div>
-                            <span className="text-[9px] font-black bg-pink-100 text-[#E62E6B] px-1.5 py-0.5 rounded border border-pink-200 uppercase">
-                              Paquete (${product.packPrice} x {packQty} pcs)
+                            <span className="text-[9px] font-black bg-pink-100 text-[#E62E6B] px-1.5 py-0.5 rounded border border-pink-200 uppercase inline-block mt-0.5">
+                              📦 Paquete (${fullPackPrice.toFixed(2)} x {packQty} pcs)
                             </span>
                           </div>
                         )

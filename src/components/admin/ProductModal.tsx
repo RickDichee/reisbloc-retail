@@ -201,16 +201,21 @@ export default function ProductModal({
                 const totalPiecesPerPackage = Object.values(sizeQuantities).reduce((a, b) => a + b, 0)
                 const totalPiecesReceived = totalPiecesPerPackage * packagesCount
 
-                const isAdmin = currentUser?.role === 'admin'
+                const canEditStock = isAdminOrManager || ['admin', 'manager', 'owner', 'supervisor'].includes(currentUser?.role?.toLowerCase() || '')
                 const oldStock = product.currentStock ?? (product as any).current_stock ?? 0
-                const targetStock = isBulk ? totalPiecesReceived : formData.currentStock
+                const targetStock = isBulk ? totalPiecesReceived : Number(formData.currentStock)
 
-                // 🛡️ REGLA DE SEGURIDAD: Solo Admin puede modificar existencias en productos existentes
-                const finalStock = (isAdmin || isBulk) ? targetStock : oldStock
+                // 🛡️ REGLA DE SEGURIDAD: Solo usuarios con permiso pueden modificar existencias
+                const finalStock = (canEditStock || isBulk) ? targetStock : oldStock
+
+                // Calcular precio de paquete automático para Moda Miel MX (Precio Unitario Cargado * Piezas por Paquete)
+                const computedPackPrice = formData.packPrice || (Number(formData.price || 0) * (Number(formData.packQty) || 10))
 
                 const updatedPayload = {
                     ...payload,
+                    packPrice: computedPackPrice,
                     currentStock: finalStock,
+                    current_stock: finalStock,
                     hasInventory: isBulk ? true : formData.hasInventory
                 }
 
