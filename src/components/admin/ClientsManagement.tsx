@@ -437,6 +437,8 @@ export default function ClientsManagement() {
                         </form>
                     </div>
                 </div>
+            )}
+
             {/* 📦 BATCH IMPORT CLIENTS MODAL (CSV / TEXT PASTE) */}
             {showImportModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
