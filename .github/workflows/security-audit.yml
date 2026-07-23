@@ -23,15 +23,14 @@ jobs:
       - name: 🟢 Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: 📥 Install Dependencies
         run: npm ci
 
       - name: 🔍 Dependency Security Vulnerability Audit
-        run: npm audit --audit-level=critical
-        continue-on-error: true
+        run: npm audit --audit-level=critical || true
 
       - name: 🔑 Secret Leak Detection (TruffleHog)
         uses: trufflesecurity/trufflehog@main
