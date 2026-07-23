@@ -2,6 +2,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { supabase } from '@/config/supabase';
 import { BRANDING } from '@/config/branding';
+import { whatsappService } from './whatsappService';
 
 export interface TicketData {
   orderId: string;
@@ -89,8 +90,6 @@ export const ticketService = {
     ticketData: TicketData
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      const { whatsappService } = await import('./whatsappService');
-
       if (!whatsappService.isConfigured()) {
         const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(
           this.formatTicketAsText(ticketData)
