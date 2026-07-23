@@ -297,28 +297,9 @@ export default function Inventory() {
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
                       {isModaMiel ? 'Precio Paquete' : 'Precio'}
                     </p>
-                    {(() => {
-                      if (isModaMiel) {
-                        const unitPrice = Number(product.price) || 0
-                        const packQty = product.packQty || product.packQuantity || 10
-                        const fullPackPrice = product.packPrice || (unitPrice * packQty)
-                        return (
-                          <div>
-                            <div className="text-2xl font-black text-slate-900 tracking-tighter">
-                              ${fullPackPrice.toFixed(2)}
-                            </div>
-                            <p className="text-[11px] font-bold text-slate-500">
-                              (${unitPrice.toFixed(2)} / pza · {packQty} pcs)
-                            </p>
-                          </div>
-                        )
-                      }
-                      return (
-                        <div className="text-2xl font-black text-slate-900 tracking-tighter">
-                          ${Number(product.price).toFixed(2)}
-                        </div>
-                      )
-                    })()}
+                    <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                      ${Number(product.packPrice || product.price || 0).toFixed(2)}
+                    </div>
                   </div>
                   {product.hasInventory && (
                     <div className="text-right">
