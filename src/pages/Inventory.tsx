@@ -80,34 +80,52 @@ export default function Inventory() {
 
   const handlePrintLabel = async (product: any) => {
     try {
-      if (!product.barcode) {
-        alert('Este producto no tiene un Código de Barras / EAN configurado.');
+      const pieceCode = product.barcode || product.sku
+      if (!pieceCode) {
+        alert('Este producto no tiene un Código de Barras o SKU configurado.');
         return;
       }
 
-      // We use bwip-js external API for raw SVG/PNG generation within a static HTML string
-      const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(product.barcode)}&scale=3&height=12&includetext`;
+      const packCode = product.barcode_pack || `${pieceCode}-PAQ`
+      const packQty = product.packQuantity || 6
+      const packPrice = product.packPrice || (product.price * packQty * 0.85)
+
+      // Generate barcode images using bwip-js
+      const pieceBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(pieceCode)}&scale=3&height=10&includetext`;
+      const packBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(packCode)}&scale=3&height=10&includetext`;
 
       const htmlContent = `
-        <div style="text-align: center; width: 58mm; padding: 2px; font-family: monospace;">
-          <h2 style="font-size: 14px; margin: 0 0 5px 0; text-transform: uppercase; word-wrap: break-word; font-weight: 900;">
-            ${product.name}
-          </h2>
-          <p style="font-size: 18px; font-weight: bold; margin: 0 0 5px 0;">
-            $${product.price ? Number(product.price).toFixed(2) : '0.00'}
-          </p>
-          <div style="display: flex; justify-content: center; width: 100%;">
-            <img src="${barcodeImgUrl}" style="max-width: 100%; height: auto;" alt="barcode">
+        <div style="width: 58mm; padding: 2px; font-family: sans-serif; text-align: center;">
+          <!-- 📦 ETIQUETA 1: PIEZA INDIVIDUAL -->
+          <div style="border-bottom: 2px dashed #ccc; padding-bottom: 10px; margin-bottom: 10px;">
+            <span style="font-size: 8px; font-weight: 900; background: #1A1A1A; color: white; padding: 1px 4px; border-radius: 3px; uppercase">PIEZA INDIVIDUAL</span>
+            <h2 style="font-size: 12px; margin: 4px 0 2px 0; font-weight: 900;">${product.name}</h2>
+            <p style="font-size: 16px; font-weight: 900; color: #E62E6B; margin: 0 0 4px 0;">$${Number(product.price || 0).toFixed(2)} c/u</p>
+            <div style="display: flex; justify-content: center; width: 100%;">
+              <img src="${pieceBarcodeImg}" style="max-width: 95%; height: auto;" alt="barcode-piece">
+            </div>
           </div>
-          <p style="font-size: 9px; margin-top: 5px; color: #555;">MODA MIEL MX · Powered by REISBLOC</p>
+
+          <!-- 📦 ETIQUETA 2: PAQUETE DE MAYOREO -->
+          <div style="padding-bottom: 5px;">
+            <span style="font-size: 8px; font-weight: 900; background: #E62E6B; color: white; padding: 1px 4px; border-radius: 3px; uppercase">PAQUETE DE ${packQty} PIEZAS</span>
+            <h2 style="font-size: 12px; margin: 4px 0 2px 0; font-weight: 900;">${product.name} (PAQ)</h2>
+            <p style="font-size: 16px; font-weight: 900; color: #1A1A1A; margin: 0 0 4px 0;">$${Number(packPrice).toFixed(2)} / Paq</p>
+            <div style="display: flex; justify-content: center; width: 100%;">
+              <img src="${packBarcodeImg}" style="max-width: 95%; height: auto;" alt="barcode-pack">
+            </div>
+            <p style="font-size: 8px; margin-top: 4px; color: #666; font-weight: bold;">Descuenta ${packQty} piezas de inventario</p>
+          </div>
+
+          <p style="font-size: 8px; margin-top: 8px; color: #888; font-weight: bold; border-top: 1px solid #eee; pt-1">MODA MIEL MX · Powered by REISBLOC</p>
         </div>
       `;
 
-      await printService.printHTML(htmlContent, { width: 58, title: `Label-${product.barcode}` });
+      await printService.printHTML(htmlContent, { width: 58, title: `Labels-${pieceCode}` });
 
     } catch (error) {
-      console.error('Error printing label:', error);
-      alert('Error al mandar impresión de etiqueta térmica.');
+      console.error('Error printing labels:', error);
+      alert('Error al mandar impresión de etiquetas térmicas.');
     }
   }
 

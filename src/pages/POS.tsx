@@ -969,21 +969,12 @@ export default function POS() {
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
-            <span className="text-[9px] font-black text-slate-400 uppercase px-2 whitespace-nowrap">Tarifa:</span>
-            {(['pieza', 'mayoreo', 'paquete', 'bulto'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => handleChangePriceMode(mode)}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all whitespace-nowrap ${
-                  priceMode === mode
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
+          {/* Automated Tariff Badge (1-2 Pzas: Menudeo | 3+ Pzas: Mayoreo Auto | Escáner Paquete) */}
+          <div className="flex items-center gap-1.5 bg-[#E62E6B]/10 border border-[#E62E6B]/30 px-3 py-2 rounded-xl shrink-0">
+            <Sparkles size={14} className="text-[#E62E6B]" />
+            <span className="text-[10px] font-black text-[#E62E6B] uppercase tracking-wider whitespace-nowrap">
+              Tarifa Automatizada (Mayoreo 3+ / Paquete Escaneado)
+            </span>
           </div>
 
           <button
