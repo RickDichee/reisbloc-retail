@@ -226,11 +226,11 @@ export default function Inventory() {
               <div className="p-5 flex-1 space-y-4">
                 {/* Product Image */}
                 {product.image ? (
-                  <div className="w-full h-36 rounded-2xl overflow-hidden bg-slate-100 -mx-0 -mt-0">
+                  <div className="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-50/80 border border-slate-100 flex items-center justify-center p-2">
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
                       onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
                     />
                   </div>

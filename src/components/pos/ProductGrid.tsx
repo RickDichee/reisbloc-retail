@@ -95,11 +95,11 @@ export function ProductGrid({ products, onAdd, disableAdd = false }: ProductGrid
               >
                 {/* Product Image / Placeholder - Compact */}
                 {product.image ? (
-                  <div className="w-full h-16 sm:h-20 overflow-hidden bg-gray-100">
+                  <div className="w-full h-20 sm:h-24 bg-slate-50 flex items-center justify-center p-1 border-b border-slate-100 overflow-hidden">
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       onError={(e) => { (e.target as HTMLImageElement).parentElement!.className = `w-full h-16 sm:h-20 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center` }}
                     />
                   </div>
