@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Search, Plus, Edit2, Trash2, Phone, Mail, X, Save, Loader2, Calendar } from 'lucide-react'
+import { Users, Search, Plus, Edit2, Trash2, Phone, Mail, X, Save, Loader2, Calendar, Upload, FileText, Check, AlertCircle, FileSpreadsheet, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
 import logger from '@/utils/logger'
 import { withOrg } from '@/utils/queryHelpers'
+import supabaseService from '@/services/supabaseService'
 
 export default function ClientsManagement() {
     const { currentUser } = useAppStore()
@@ -20,6 +21,96 @@ export default function ClientsManagement() {
         address: '',
         notes: ''
     })
+
+    // 📦 Importación por Lote (Bulk Import) State
+    const [showImportModal, setShowImportModal] = useState(false)
+    const [importText, setImportText] = useState('')
+    const [isImporting, setIsImporting] = useState(false)
+    const [importSuccessCount, setImportSuccessCount] = useState<number | null>(null)
+
+    const parseImportText = (text: string) => {
+        const lines = text.split('\n').filter(line => line.trim() !== '')
+        const parsed: any[] = []
+
+        lines.forEach(line => {
+          if (line.toLowerCase().includes('nombre') && (line.toLowerCase().includes('telefono') || line.toLowerCase().includes('phone'))) {
+            return
+          }
+
+          const parts = line.split(/[,;\t]/).map(p => p.trim())
+          if (parts.length === 0 || !parts[0]) return
+
+          const name = parts[0]
+          const phone = parts[1] || ''
+          const email = parts[2] || ''
+          const address = parts[3] || ''
+
+          const cleanPhone = phone.replace(/\D/g, '')
+          const isDup = clients.some(c => 
+            (c.phone && cleanPhone && c.phone.replace(/\D/g, '') === cleanPhone) ||
+            (c.name.toLowerCase().trim() === name.toLowerCase().trim())
+          )
+
+          parsed.push({ name, phone, email, address, isDuplicate: isDup })
+        })
+
+        return parsed
+    }
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const content = event.target?.result as string
+        if (content) {
+          setImportText(content)
+        }
+      }
+      reader.readAsText(file)
+    }
+
+    const handleExecuteImport = async () => {
+      if (!currentUser?.organizationId) return
+      const parsedItems = parseImportText(importText)
+      const itemsToImport = parsedItems.filter(item => !item.isDuplicate)
+      
+      if (itemsToImport.length === 0) {
+        alert('No hay contactos nuevos para importar (todos son duplicados o líneas vacías).')
+        return
+      }
+
+      setIsImporting(true)
+      try {
+        const payload = itemsToImport.map(item => ({
+          name: item.name,
+          phone: item.phone,
+          email: item.email,
+          address: item.address,
+          organization_id: currentUser.organizationId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }))
+
+        const { error } = await supabase.from('clients').insert(payload)
+        if (error) throw error
+
+        supabaseService.createAuditLog({
+          userId: currentUser.id,
+          action: 'CLIENTS_BULK_IMPORTED',
+          entityType: 'CLIENTS',
+          newValue: { count: itemsToImport.length, totalParsed: parsedItems.length }
+        }).catch(err => console.error('Error logging bulk import:', err))
+
+        setImportSuccessCount(itemsToImport.length)
+        await loadClients()
+      } catch (e) {
+        logger.error('clients', 'Error importing clients in bulk', e as any)
+        alert('Error al importar la lista de clientes')
+      } finally {
+        setIsImporting(false)
+      }
+    }
 
     const loadClients = useCallback(async () => {
         setLoading(true)
@@ -160,13 +251,26 @@ export default function ClientsManagement() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="w-full md:w-auto bg-emerald-500 text-slate-950 px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-emerald-400 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] uppercase tracking-tight"
-                >
-                    <Plus size={24} />
-                    Nuevo Cliente
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <button
+                        onClick={() => {
+                          setImportText('')
+                          setImportSuccessCount(null)
+                          setShowImportModal(true)
+                        }}
+                        className="w-full sm:w-auto bg-slate-900 text-white px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-slate-850 transition-all active:scale-95 shadow-md uppercase tracking-tight text-xs"
+                    >
+                        <Upload size={18} />
+                        Importar por Lote (CSV)
+                    </button>
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="w-full sm:w-auto bg-emerald-500 text-slate-950 px-6 py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-emerald-400 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] uppercase tracking-tight text-xs"
+                    >
+                        <Plus size={20} />
+                        Nuevo Cliente
+                    </button>
+                </div>
             </div>
 
             {/* Clients Grid */}
@@ -331,6 +435,146 @@ export default function ClientsManagement() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            {/* 📦 BATCH IMPORT CLIENTS MODAL (CSV / TEXT PASTE) */}
+            {showImportModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scaleIn border border-slate-200 flex flex-col max-h-[90vh]">
+                        {/* Modal Header */}
+                        <div className="bg-slate-900 p-6 text-white flex justify-between items-center shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+                                    <FileSpreadsheet size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black uppercase tracking-tight">Importar Clientes por Lote</h2>
+                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Carga desde CSV o pega tu lista de contactos</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowImportModal(false)}
+                                className="p-2 hover:bg-white/20 rounded-xl transition-colors text-slate-400 hover:text-white"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                            {importSuccessCount !== null ? (
+                                <div className="py-8 text-center space-y-4">
+                                    <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md">
+                                        <CheckCircle2 size={36} />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-slate-900">¡Importación Exitosa!</h3>
+                                    <p className="text-sm text-slate-600 font-medium max-w-md mx-auto">
+                                        Se agregaron <strong>{importSuccessCount} nuevos clientes</strong> correctamente a tu base de datos de CRM & Loyalty.
+                                    </p>
+                                    <button
+                                        onClick={() => setShowImportModal(false)}
+                                        className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-wider hover:bg-slate-800 transition-all"
+                                    >
+                                        Entendido / Cerrar
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Upload Controls */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                                                <Upload size={16} className="text-emerald-500" />
+                                                Opción 1: Cargar Archivo CSV (.csv)
+                                            </label>
+                                            <input
+                                                type="file"
+                                                accept=".csv,.txt"
+                                                onChange={handleFileUpload}
+                                                className="hidden"
+                                                id="csv-file-input"
+                                            />
+                                            <label
+                                                htmlFor="csv-file-input"
+                                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs cursor-pointer transition-colors"
+                                            >
+                                                Seleccionar Archivo
+                                            </label>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                                                <FileText size={16} className="text-indigo-500" />
+                                                Opción 2: Pegar Lista de Contactos (Línea por línea)
+                                            </label>
+                                            <p className="text-[11px] text-slate-400 font-semibold">
+                                                Formato sugerido: <code>Nombre, Teléfono, Email, Dirección</code> (un contacto por línea).
+                                            </p>
+                                            <textarea
+                                                value={importText}
+                                                onChange={(e) => setImportText(e.target.value)}
+                                                placeholder={`Juan Pérez, 5512345678, juan@ejemplo.com, CDMX\nMaría Gómez, 5598765432, maria@ejemplo.com, Guadalajara\nCarlos López, 9981234567`}
+                                                className="w-full h-36 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-xs focus:ring-2 focus:ring-slate-900 outline-none resize-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Live Preview Table */}
+                                    {importText.trim() !== '' && (
+                                        <div className="space-y-3 pt-4 border-t border-slate-100">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-xs font-black uppercase text-slate-900 tracking-wider">
+                                                    Vista Previa ({parseImportText(importText).length} detectados)
+                                                </h4>
+                                                <span className="text-[10px] font-bold text-slate-400">
+                                                    {parseImportText(importText).filter(i => i.isDuplicate).length} duplicados omitidos
+                                                </span>
+                                            </div>
+
+                                            <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-2xl divide-y divide-slate-100 text-xs font-medium">
+                                                {parseImportText(importText).map((item, idx) => (
+                                                    <div key={idx} className={`p-3 flex items-center justify-between ${item.isDuplicate ? 'bg-amber-50/60' : 'bg-white'}`}>
+                                                        <div>
+                                                            <span className="font-bold text-slate-900 block">{item.name}</span>
+                                                            <span className="text-[11px] text-slate-500">{item.phone || 'Sin teléfono'} · {item.email || 'Sin email'}</span>
+                                                        </div>
+                                                        {item.isDuplicate ? (
+                                                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-black text-[9px] uppercase tracking-wider">
+                                                                Duplicado (Omitir)
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-black text-[9px] uppercase tracking-wider flex items-center gap-1">
+                                                                <Check size={10} /> Listo para importar
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        {importSuccessCount === null && (
+                            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3 shrink-0">
+                                <button
+                                    onClick={() => setShowImportModal(false)}
+                                    className="flex-1 py-3.5 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-slate-100 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleExecuteImport}
+                                    disabled={isImporting || importText.trim() === ''}
+                                    className="flex-1 py-3.5 bg-emerald-500 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-emerald-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-md"
+                                >
+                                    {isImporting ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16} />}
+                                    Confirmar e Importar Lote
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
