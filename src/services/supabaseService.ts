@@ -1506,27 +1506,43 @@ class SupabaseService {
     }
   }
 
-  async getPublicProducts(orgId: string): Promise<Product[]> {
+  async getPublicProducts(orgId?: string): Promise<Product[]> {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('organization_id', orgId)
-        .eq('available', true)
+      let query = supabase.from('retail_products').select('*')
+      if (orgId && orgId.trim() !== '') {
+        query = query.eq('organization_id', orgId)
+      }
+      const { data, error } = await query
+        .eq('active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true })
 
       if (error) throw error
 
-      return (data || []).map((p: any) => ({
-        ...p,
-        image: p.image || p.image_url || null,
-        active: p.available,
-        currentStock: p.current_stock,
-        minimumStock: p.minimum_stock,
-        hasInventory: p.has_inventory,
-        createdAt: new Date(p.created_at)
-})) as Product[]
+      return (data || []).map((p: any) => {
+        let parsedDesc: any = {}
+        if (p.description && p.description.startsWith('{') && p.description.endsWith('}')) {
+          try {
+            parsedDesc = JSON.parse(p.description)
+          } catch (e) {}
+        }
+
+        const packQty = p.pack_quantity || parsedDesc.packQty || 10
+        const packPrice = parsedDesc.packPrice || (p.price * packQty)
+
+        return {
+          ...p,
+          description: parsedDesc.description || p.description || '',
+          image: p.image || p.image_url || null,
+          active: p.active,
+          currentStock: p.current_stock,
+          minimumStock: p.minimum_stock,
+          hasInventory: p.has_inventory,
+          packQuantity: packQty,
+          packPrice: packPrice,
+          createdAt: new Date(p.created_at)
+        }
+      }) as Product[]
     } catch (error) {
       logger.error('getPublicProducts', error)
       return []

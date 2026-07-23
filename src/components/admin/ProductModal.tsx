@@ -220,6 +220,11 @@ export default function ProductModal({
 
                 await supabaseService.updateRetailProduct(product.id, updatedPayload)
 
+                try {
+                  sessionStorage.removeItem('modamiel_public_products_cache')
+                  sessionStorage.removeItem('modamiel_public_products_cache_time')
+                } catch (e) {}
+
                 // Audit Log especial si se modificó el Stock manualmente
                 if (oldStock !== finalStock) {
                     await supabaseService.createAuditLog({
@@ -339,6 +344,11 @@ export default function ProductModal({
                 }
 
                 const newId = await supabaseService.createRetailProduct(createdPayload)
+
+                try {
+                  sessionStorage.removeItem('modamiel_public_products_cache')
+                  sessionStorage.removeItem('modamiel_public_products_cache_time')
+                } catch (e) {}
                 await supabaseService.createAuditLog({
                     userId: currentUser?.id || 'unknown',
                     action: 'PRODUCT_CREATED',

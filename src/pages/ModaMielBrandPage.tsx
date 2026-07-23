@@ -121,16 +121,20 @@ export default function ModaMielBrandPage() {
       }
 
       try {
-        const org = await supabaseService.getOrganizationBySlug('modamiel')
-        if (org?.id) {
-          const fetchedProducts = await supabaseService.getPublicProducts(org.id)
-          if (fetchedProducts && fetchedProducts.length > 0) {
-            setProducts(fetchedProducts)
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(fetchedProducts))
-            sessionStorage.setItem(CACHE_TIME_KEY, String(Date.now()))
-            setLoading(false)
-            return
+        let fetchedProducts = await supabaseService.getPublicProducts()
+        if (!fetchedProducts || fetchedProducts.length === 0) {
+          const org = await supabaseService.getOrganizationBySlug('modamiel')
+          if (org?.id) {
+            fetchedProducts = await supabaseService.getPublicProducts(org.id)
           }
+        }
+
+        if (fetchedProducts && fetchedProducts.length > 0) {
+          setProducts(fetchedProducts)
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify(fetchedProducts))
+          sessionStorage.setItem(CACHE_TIME_KEY, String(Date.now()))
+          setLoading(false)
+          return
         }
       } catch (e) {
         console.info('Cargando catálogo oficial de Moda Miel MX', e)
