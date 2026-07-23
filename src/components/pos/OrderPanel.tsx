@@ -39,21 +39,30 @@ export function OrderPanel({
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
   const [editingPriceVal, setEditingPriceVal] = useState<string>('')
 
+  const totalPieces = items.reduce((sum, item) => sum + (item.quantity * (item.packQuantity || 1)), 0)
+  const isAutoWholesale = totalPieces >= 3
+
+  const effectiveTotal = items.reduce((sum, item) => {
+    const rawWholesale = (item as any).wholesalePrice || (item as any).wholesale_price
+    const price = (isAutoWholesale && rawWholesale) ? rawWholesale : item.unitPrice
+    return sum + (price * item.quantity)
+  }, 0)
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Icon className="text-indigo-600" size={24} />
             Ticket {tableNumber}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            {items.length} productos {activeOrders.length > 0 ? '· Historial de venta' : ''}
+            {items.length} productos ({totalPieces} pzas total)
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-bold text-lg border border-indigo-100">
-            {currency.format(items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0))}
+            {currency.format(effectiveTotal)}
           </div>
           {items.length > 0 && (
             <button
@@ -65,6 +74,13 @@ export function OrderPanel({
           )}
         </div>
       </div>
+
+      {isAutoWholesale && (
+        <div className="mb-4 bg-gradient-to-r from-pink-500 to-[#E62E6B] text-white px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-sm flex items-center justify-between animate-fadeIn">
+          <span>🎉 Mayoreo Automático (3+ Piezas)</span>
+          <span className="bg-white/20 px-2 py-0.5 rounded text-[10px]">3+ pzas activas</span>
+        </div>
+      )}
 
       {items.length === 0 && activeOrders.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">

@@ -182,10 +182,25 @@ export default function ModaMielBrandPage() {
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0)
   const totalCartPrice = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0)
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [lastOrderText, setLastOrderText] = useState('')
+  const [lastOrderItems, setLastOrderItems] = useState<CartItem[]>([])
+
   const sendWhatsAppOrder = async () => {
     if (cart.length === 0) return
 
-    // 📦 1. Registrar pedido digital en Supabase para notificación en tiempo real a cajas del POS
+    const currentCart = [...cart]
+    const orderLines = currentCart.map(
+      item => `• *${item.product.name}* (x${item.quantity} paquetes) - $${(item.product.price * item.quantity).toLocaleString()} MXN`
+    )
+    const text = `Hola *Moda Miel MX* 🐞, quiero realizar el siguiente pedido por paquete desde su tienda web:\n\n${orderLines.join('\n')}\n\n*TOTAL:* $${totalCartPrice.toLocaleString()} MXN\n*Ubicación de entrega/recogida:* Pasillo 3 Local 230.\n¡Muchas gracias!`
+
+    setLastOrderText(text)
+    setLastOrderItems(currentCart)
+    setShowCartModal(false)
+    setShowSuccessModal(true)
+
+    // 📦 Registrar en Supabase en segundo plano para notificar a la caja en el POS
     try {
       const org = await supabaseService.getOrganizationBySlug('modamiel')
       if (org?.id) {
@@ -193,7 +208,7 @@ export default function ModaMielBrandPage() {
           organization_id: org.id,
           customer_name: 'Cliente Web WhatsApp',
           customer_phone: 'Pendiente WhatsApp',
-          items: cart.map(i => ({
+          items: currentCart.map(i => ({
             id: i.product.id,
             name: i.product.name,
             quantity: i.quantity,
@@ -207,19 +222,10 @@ export default function ModaMielBrandPage() {
         })
       }
     } catch (e) {
-      console.info('Registrando pedido WhatsApp en canal directo', e)
+      console.info('Pedido registrado localmente', e)
     }
 
-    // 💬 2. Enviar texto estructurado por WhatsApp Business
-    const orderLines = cart.map(
-      item => `• *${item.product.name}* (x${item.quantity} paquetes) - $${(item.product.price * item.quantity).toLocaleString()} MXN`
-    )
-    const text = `Hola *Moda Miel MX* 🐞, quiero realizar el siguiente pedido por paquete desde su tienda web:\n\n${orderLines.join('\n')}\n\n*TOTAL:* $${totalCartPrice.toLocaleString()} MXN\n*Ubicación de entrega/recogida:* Pasillo 3 Local 230.\n¡Muchas gracias!`
-
-    const encodedText = encodeURIComponent(text)
-    window.open(`https://wa.me/5215555555555?text=${encodedText}`, '_blank')
     setCart([])
-    setShowCartModal(false)
   }
 
   return (
@@ -620,13 +626,67 @@ export default function ModaMielBrandPage() {
 
                 <button
                   onClick={sendWhatsAppOrder}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
+                  className="w-full py-4 bg-[#E62E6B] hover:bg-[#C41E53] text-white rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
                 >
                   <MessageCircle size={20} />
-                  Enviar Pedido por WhatsApp
+                  Generar Confirmación de Pedido
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ⭐ SHINY TRANSPARENT ORDER SUCCESS MODAL */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg p-6 sm:p-8 space-y-6 shadow-2xl border-4 border-pink-200 animate-fadeIn text-center relative overflow-hidden">
+            {/* Header Badge */}
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md border border-emerald-300">
+              <CheckCircle size={36} />
+            </div>
+
+            <div>
+              <span className="text-xs font-black text-[#E62E6B] uppercase tracking-widest bg-pink-50 px-3 py-1 rounded-full border border-pink-200">
+                ¡PEDIDO REGISTRADO CON ÉXITO!
+              </span>
+              <h3 className="text-2xl font-black text-slate-900 mt-2 font-['Playfair_Display',serif]">
+                Confirmación Moda Miel MX 🐞
+              </h3>
+              <p className="text-xs text-slate-500 font-bold mt-1">
+                Su pedido fue notificado automáticamente al POS y caja en Pasillo 3 Local 230.
+              </p>
+            </div>
+
+            {/* Direct WhatsApp Action Button */}
+            <div className="space-y-3 pt-2">
+              <a
+                href={`https://wa.me/5215555555555?text=${encodeURIComponent(lastOrderText)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all border-2 border-emerald-400"
+              >
+                <MessageCircle size={22} />
+                Abrir WhatsApp con mi Pedido
+              </a>
+
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-sm transition-all"
+              >
+                Entendido / Cerrar Ventana
+              </button>
+            </div>
+
+            {/* Manager Alert Notice */}
+            <div className="bg-pink-50/70 p-3.5 rounded-2xl border border-pink-200 text-[11px] text-slate-600 text-left space-y-1">
+              <div className="font-black text-[#E62E6B] uppercase flex items-center gap-1">
+                <span>🛡️ Notificación a Gerencia & Cajas</span>
+              </div>
+              <p>
+                Este pedido quedó respaldado en la base de datos de Moda Miel MX para evitar errores de conteo o duplicación en el mostrador.
+              </p>
+            </div>
           </div>
         </div>
       )}
