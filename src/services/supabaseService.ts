@@ -1537,26 +1537,41 @@ class SupabaseService {
       if (!rpcError && rpcData) {
         const productsList = Array.isArray(rpcData) ? rpcData : [rpcData]
         if (productsList.length > 0) {
-          return productsList.map((p: any) => ({
-            id: p.id,
-            name: p.name || 'Producto Sin Nombre',
-            price: Number(p.price) || 0,
-            category: p.category || 'General',
-            description: p.description || '',
-            imageUrl: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-            image: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-            isAvailable: p.available ?? true,
-            active: p.available ?? true,
-            stock: Number(p.stock) || 10,
-            currentStock: Number(p.stock) || 10,
-            minimumStock: 1,
-            hasInventory: true,
-            packQuantity: Number(p.pack_quantity) || 6,
-            packPrice: Number(p.price) || 0,
-            sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          })) as Product[]
+          return productsList.map((p: any) => {
+            let cleanDesc = p.description || ''
+            while (typeof cleanDesc === 'string' && cleanDesc.trim().startsWith('{')) {
+              try {
+                const parsed = JSON.parse(cleanDesc)
+                cleanDesc = typeof parsed === 'string' ? parsed : (parsed.description || '')
+              } catch (e) {
+                break
+              }
+            }
+            if (typeof cleanDesc !== 'string' || (cleanDesc.includes('{') && cleanDesc.includes('}'))) {
+              cleanDesc = ''
+            }
+
+            return {
+              id: p.id,
+              name: p.name || 'Producto Sin Nombre',
+              price: Number(p.price) || 0,
+              category: p.category || 'General',
+              description: cleanDesc,
+              imageUrl: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+              image: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+              isAvailable: p.available ?? true,
+              active: p.available ?? true,
+              stock: Number(p.stock) || 10,
+              currentStock: Number(p.stock) || 10,
+              minimumStock: 1,
+              hasInventory: true,
+              packQuantity: Number(p.pack_quantity) || 6,
+              packPrice: Number(p.price) || 0,
+              sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          }) as Product[]
         }
       }
 

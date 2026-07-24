@@ -417,22 +417,31 @@ export default function ModaMielBrandPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredProducts.map(product => {
                 const inCart = cart.find(item => item.product.id === product.id)
+                const packQty = Number(product.packQuantity || (product as any).pack_quantity || 10)
+                const rawPrice = Number(product.price || 0)
+                let unitPackPrice = rawPrice
+                if (rawPrice > 300 && packQty > 1) {
+                  unitPackPrice = rawPrice / packQty
+                }
+
                 return (
                   <div
                     key={product.id}
                     className="bg-white border-2 border-pink-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group"
                   >
-                    <div className="relative h-48 bg-slate-100 overflow-hidden">
+                    {/* 🖼️ Imagen Completa (object-contain sin cortar prendar) */}
+                    <div className="relative h-64 bg-slate-50/80 p-3 flex items-center justify-center overflow-hidden border-b border-slate-100">
                       <img
                         src={
                           product.imageUrl ||
+                          product.image ||
                           'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=600&q=80'
                         }
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="max-h-full max-w-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 left-3 bg-[#1A1A1A] text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md">
-                        {product.packQuantity || 6} Piezas / Paquete
+                      <div className="absolute top-3 left-3 bg-[#E62E6B] text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md">
+                        PAQUETE DE {packQty} PIEZAS
                       </div>
                     </div>
 
@@ -445,17 +454,37 @@ export default function ModaMielBrandPage() {
                           {product.name}
                         </h3>
                         <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                          {product.description}
+                          {(() => {
+                            let desc = product.description || ''
+                            while (typeof desc === 'string' && desc.trim().startsWith('{')) {
+                              try {
+                                const parsed = JSON.parse(desc)
+                                desc = typeof parsed === 'string' ? parsed : (parsed.description || '')
+                              } catch (e) {
+                                break
+                              }
+                            }
+                            if (typeof desc !== 'string' || desc.includes('{') || !desc.trim()) {
+                              return `Paquete surtido de ${product.category || 'moda'} para boutique.`
+                            }
+                            return desc.trim()
+                          })()}
                         </p>
                       </div>
 
                       <div className="pt-3 border-t border-pink-100 flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                            Precio Paquete
+                          <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+                            Precio por Pieza en Paquete
                           </span>
-                          <span className="text-xl font-black text-[#E62E6B]">
-                            ${product.price.toLocaleString()} MXN
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-black text-[#E62E6B]">
+                              ${unitPackPrice.toFixed(0)}
+                            </span>
+                            <span className="text-xs font-bold text-slate-500">MXN / pza</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-emerald-600 block mt-0.5">
+                            (Lote surtido de {packQty} pzas)
                           </span>
                         </div>
 
