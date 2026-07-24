@@ -257,7 +257,6 @@ export default function ModaMielBrandPage() {
       return `• *${details.cleanName}* (${item.quantity} Paquete${item.quantity > 1 ? 's' : ''} de ${details.packQty} pzas @ $${details.unitPackPrice}/pza) - *$${total.toLocaleString()} MXN*`
     })
     const text = `Hola *Moda Miel MX* 🐞, quiero realizar el siguiente pedido por paquete desde su tienda web:\n\n${orderLines.join('\n')}\n\n*TOTAL:* $${totalCartPrice.toLocaleString()} MXN\n*Ubicación de entrega/recogida:* Pasillo 3 Local 230.\n¡Muchas gracias!`
-    const text = `Hola *Moda Miel MX* 🐞, quiero realizar el siguiente pedido por paquete desde su tienda web:\n\n${orderLines.join('\n')}\n\n*TOTAL:* $${totalCartPrice.toLocaleString()} MXN\n*Ubicación de entrega/recogida:* Pasillo 3 Local 230.\n¡Muchas gracias!`
 
     setLastOrderText(text)
     setLastOrderItems(currentCart)
