@@ -1529,82 +1529,76 @@ class SupabaseService {
       const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
       const targetSlug = (orgIdOrSlug || 'modamiel').trim()
 
-      // 1. Intentar consultar la función RPC Gold Standard 'get_public_storefront_catalog'
+      // 1. Consultar la función RPC Gold Standard 'get_public_storefront_catalog'
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_storefront_catalog', {
         p_slug: targetSlug
       })
 
-      if (rpcError) {
-        console.warn('⚠️ [getPublicProducts RPC error]:', rpcError.message, rpcError.details)
+      if (!rpcError && rpcData) {
+        const productsList = Array.isArray(rpcData) ? rpcData : [rpcData]
+        if (productsList.length > 0) {
+          return productsList.map((p: any) => ({
+            id: p.id,
+            name: p.name || 'Producto Sin Nombre',
+            price: Number(p.price) || 0,
+            category: p.category || 'General',
+            description: p.description || '',
+            imageUrl: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+            image: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+            isAvailable: p.available ?? true,
+            active: p.available ?? true,
+            stock: Number(p.stock) || 10,
+            currentStock: Number(p.stock) || 10,
+            minimumStock: 1,
+            hasInventory: true,
+            packQuantity: Number(p.pack_quantity) || 6,
+            packPrice: Number(p.price) || 0,
+            sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })) as Product[]
+        }
       }
 
-      const productsList = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : [])
-
-      if (!rpcError && productsList.length > 0) {
-        return productsList.map((p: any) => ({
-          id: p.id,
-          name: p.name || 'Producto Sin Nombre',
-          price: Number(p.price) || 0,
-          category: p.category || 'General',
-          description: p.description || '',
-          imageUrl: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-          image: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-          isAvailable: p.available ?? true,
-          active: p.available ?? true,
-          stock: Number(p.stock) || 10,
-          currentStock: Number(p.stock) || 10,
-          minimumStock: 1,
-          hasInventory: true,
-          packQuantity: Number(p.pack_quantity) || 6,
-          packPrice: Number(p.price) || 0,
-          sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })) as Product[]
-      }
-
-      // 2. Fallback seguro: Si orgIdOrSlug es un UUID válido, consultar por organization_id
+      // 2. Solo si la RPC falla con error, ejecutar fallback secundario
       let query = supabase.from('products').select('id, name, price, category, current_stock, available, active, created_at, organization_id')
       if (isUUID(targetSlug)) {
         query = query.eq('organization_id', targetSlug)
       } else {
-        // Resolver primero el UUID de la organización por slug
-        const { data: org } = await supabase.from('organizations').select('id').or(`slug.eq.${targetSlug}`).limit(1).maybeSingle()
+        const { data: org } = await supabase.from('organizations').select('id').eq('slug', targetSlug).limit(1).maybeSingle()
         if (org?.id) {
           query = query.eq('organization_id', org.id)
         }
       }
       
-      let { data, error } = await query.order('name', { ascending: true })
+      let { data } = await query.order('name', { ascending: true })
 
-      if (error || !data || data.length === 0) {
+      if (!data || data.length === 0) {
         const fallbackRes = await supabase.from('products').select('id, name, price, category, current_stock, available, active, created_at, organization_id').limit(50)
         data = fallbackRes.data || []
       }
 
-      return (data || []).map((p: any) => {
-        return {
-          ...p,
-          id: p.id,
-          name: p.name || 'Producto Sin Nombre',
-          price: p.price || 0,
-          category: p.category || 'General',
-          description: '',
-          imageUrl: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-          image: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-          isAvailable: p.available ?? p.active ?? true,
-          active: p.available ?? p.active ?? true,
-          stock: p.stock ?? p.current_stock ?? 10,
-          currentStock: p.current_stock ?? p.stock ?? 10,
-          minimumStock: p.minimum_stock || 1,
-          hasInventory: p.has_inventory ?? true,
-          packQuantity: p.pack_quantity || 6,
-          packPrice: p.price || 0,
-          sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
-          createdAt: new Date(p.created_at || Date.now()),
-          updatedAt: new Date(p.updated_at || Date.now())
-        }
-      }) as Product[]
+      return (data || []).map((p: any) => ({
+        ...p,
+        id: p.id,
+        name: p.name || 'Producto Sin Nombre',
+        price: p.price || 0,
+        category: p.category || 'General',
+        description: '',
+        imageUrl: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+        image: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+        isAvailable: p.available ?? p.active ?? true,
+        active: p.available ?? p.active ?? true,
+        stock: p.stock ?? p.current_stock ?? 10,
+        currentStock: p.current_stock ?? p.stock ?? 10,
+        minimumStock: p.minimum_stock || 1,
+        hasInventory: p.has_inventory ?? true,
+        packQuantity: p.pack_quantity || 6,
+        packPrice: p.price || 0,
+        sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
+        createdAt: new Date(p.created_at || Date.now()),
+        updatedAt: new Date(p.updated_at || Date.now())
+      })) as Product[]
     } catch (error) {
       logger.error('getPublicProducts exception', error)
       return []
