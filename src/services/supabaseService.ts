@@ -1494,12 +1494,12 @@ class SupabaseService {
       const { data, error } = await supabase
         .from('organizations')
         .select('id, name, slug, logo_url, settings, plan, plan_note')
-        .or(`slug.eq.${slug},slug.eq.moda-miel,slug.eq.modamielmx,name.ilike.%modamiel%`)
+        .or(`slug.eq.${slug},slug.eq.moda-miel,slug.eq.modamielmx,slug.eq.modamiel,name.ilike.%modamiel%`)
         .eq('active', true)
-        .maybeSingle()
+        .limit(1)
 
       if (error) throw error
-      return data
+      return data && data.length > 0 ? data[0] : null
     } catch (error) {
       logger.error('supabase', 'Error getting organization by slug', error as any)
       return null
@@ -1508,17 +1508,17 @@ class SupabaseService {
 
   async getPublicProducts(orgId?: string): Promise<Product[]> {
     try {
-      // 1. Intentar obtener productos de la tabla principal 'products'
+      // 1. Consultar la tabla principal 'products'
       let query = supabase.from('products').select('*')
       if (orgId && orgId.trim() !== '') {
         query = query.eq('organization_id', orgId)
       }
+      
       let { data, error } = await query
-        .eq('active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true })
 
-      // 2. Fallback a 'retail_products' si la vista/tabla legacy se utiliza
+      // 2. Fallback a 'retail_products' si la vista legacy se utiliza o si ocurre un error
       if (error || !data || data.length === 0) {
         let fallbackQuery = supabase.from('retail_products').select('*')
         if (orgId && orgId.trim() !== '') {
@@ -1530,9 +1530,15 @@ class SupabaseService {
         }
       }
 
-      return (data || []).map((p: any) => {
+      // 3. Filtrar en memoria por estado disponible ('available' / 'active' / no borrado)
+      const rawProducts = (data || []).filter((p: any) => {
+        const isAvail = p.available ?? p.active ?? true
+        return isAvail && !p.deleted_at
+      })
+
+      return rawProducts.map((p: any) => {
         let parsedDesc: any = {}
-        if (p.description && p.description.startsWith('{') && p.description.endsWith('}')) {
+        if (p.description && typeof p.description === 'string' && p.description.startsWith('{') && p.description.endsWith('}')) {
           try {
             parsedDesc = JSON.parse(p.description)
           } catch (e) {}
@@ -1547,10 +1553,10 @@ class SupabaseService {
           name: p.name,
           price: p.price,
           category: p.category || 'General',
-          description: parsedDesc.description || p.description || '',
+          description: parsedDesc.description || (typeof p.description === 'string' ? p.description : ''),
           imageUrl: p.image_url || p.image || null,
           image: p.image_url || p.image || null,
-          active: p.active,
+          active: p.available ?? p.active ?? true,
           stock: p.stock ?? p.current_stock ?? 0,
           currentStock: p.current_stock ?? p.stock ?? 0,
           minimumStock: p.minimum_stock || 1,
@@ -1563,7 +1569,7 @@ class SupabaseService {
         }
       }) as Product[]
     } catch (error) {
-      logger.error('getPublicProducts', error)
+      logger.error('getPublicProducts exception', error)
       return []
     }
   }
