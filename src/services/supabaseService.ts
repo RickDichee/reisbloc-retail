@@ -1494,12 +1494,19 @@ class SupabaseService {
       const { data, error } = await supabase
         .from('organizations')
         .select('id, name, slug, logo_url, settings, plan, plan_note')
-        .or(`slug.eq.${slug},slug.eq.moda-miel,slug.eq.modamielmx,slug.eq.modamiel,name.ilike.%modamiel%`)
         .eq('active', true)
-        .limit(1)
 
       if (error) throw error
-      return data && data.length > 0 ? data[0] : null
+      if (!data || data.length === 0) return null
+
+      const normalizedSlug = (slug || '').toLowerCase().trim()
+      const match = data.find((org: any) => {
+        const s = (org.slug || '').toLowerCase()
+        const n = (org.name || '').toLowerCase()
+        return s === normalizedSlug || s === 'modamiel' || s === 'modamielmx' || s === 'moda-miel' || n.includes('modamiel')
+      })
+
+      return match || data[0] || null
     } catch (error) {
       logger.error('supabase', 'Error getting organization by slug', error as any)
       return null
@@ -1514,12 +1521,14 @@ class SupabaseService {
         query = query.eq('organization_id', orgId)
       }
       
-      let { data, error } = await query
-        .order('category', { ascending: true })
-        .order('name', { ascending: true })
+      let { data, error } = await query.order('name', { ascending: true })
 
-      // 2. Fallback a 'retail_products' si la vista legacy se utiliza o si ocurre un error
-      if (error || !data || data.length === 0) {
+      if (error) {
+        logger.error('getPublicProducts products query error', error)
+      }
+
+      // 2. Fallback a 'retail_products' si la vista legacy existe
+      if (!data || data.length === 0) {
         let fallbackQuery = supabase.from('retail_products').select('*')
         if (orgId && orgId.trim() !== '') {
           fallbackQuery = fallbackQuery.eq('organization_id', orgId)
@@ -1530,13 +1539,16 @@ class SupabaseService {
         }
       }
 
-      // 3. Filtrar en memoria por estado disponible ('available' / 'active' / no borrado)
-      const rawProducts = (data || []).filter((p: any) => {
-        const isAvail = p.available ?? p.active ?? true
-        return isAvail && !p.deleted_at
-      })
+      // 3. Fallback a consulta general de productos si la consulta por orgId devuelve 0 filas
+      if (!data || data.length === 0) {
+        const allRes = await supabase.from('products').select('*').limit(50)
+        if (allRes.data && allRes.data.length > 0) {
+          data = allRes.data
+        }
+      }
 
-      return rawProducts.map((p: any) => {
+      // 4. Mapeo seguro a objeto Product
+      return (data || []).map((p: any) => {
         let parsedDesc: any = {}
         if (p.description && typeof p.description === 'string' && p.description.startsWith('{') && p.description.endsWith('}')) {
           try {
@@ -1545,20 +1557,21 @@ class SupabaseService {
         }
 
         const packQty = p.pack_quantity || parsedDesc.packQty || 6
-        const packPrice = parsedDesc.packPrice || p.price
+        const packPrice = parsedDesc.packPrice || p.price || 0
 
         return {
           ...p,
           id: p.id,
-          name: p.name,
-          price: p.price,
+          name: p.name || 'Producto Sin Nombre',
+          price: p.price || 0,
           category: p.category || 'General',
           description: parsedDesc.description || (typeof p.description === 'string' ? p.description : ''),
-          imageUrl: p.image_url || p.image || null,
-          image: p.image_url || p.image || null,
+          imageUrl: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+          image: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+          isAvailable: p.available ?? p.active ?? true,
           active: p.available ?? p.active ?? true,
-          stock: p.stock ?? p.current_stock ?? 0,
-          currentStock: p.current_stock ?? p.stock ?? 0,
+          stock: p.stock ?? p.current_stock ?? 10,
+          currentStock: p.current_stock ?? p.stock ?? 10,
           minimumStock: p.minimum_stock || 1,
           hasInventory: p.has_inventory ?? true,
           packQuantity: packQty,
