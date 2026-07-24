@@ -130,6 +130,87 @@ export default function ModaMielBrandPage() {
     return matchesSearch && matchesCat
   })
 
+  // 🔍 Helper para calcular detalles de paquete exactos (Precio Unitario * Piezas por Paquete)
+  const calculatePackageItemDetails = (product: any) => {
+    let parsedDesc: any = {}
+    if (product.description && typeof product.description === 'string' && product.description.trim().startsWith('{')) {
+      try {
+        parsedDesc = JSON.parse(product.description)
+      } catch (e) {}
+    }
+
+    let packQty = Number(
+      product.packQuantity ||
+      (product as any).pack_quantity ||
+      (product as any).pack_qty ||
+      parsedDesc.packQty ||
+      parsedDesc.pack_quantity ||
+      product.wholesale_min_qty ||
+      product.wholesaleMinQty ||
+      0
+    )
+
+    let rawPrice = Number(product.price || 0)
+    let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+
+    let extractedPriceFromName: number | null = null
+    const nameStr = product.name || ''
+    if (nameStr.includes('$')) {
+      const afterDollar = nameStr.split('$')[1] || ''
+      const parsedNum = parseFloat(afterDollar)
+      if (!isNaN(parsedNum) && parsedNum > 0) {
+        extractedPriceFromName = parsedNum
+      }
+    }
+
+    let unitPackPrice = rawPrice
+    if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
+      unitPackPrice = extractedPriceFromName
+    } else if (packPrice > 0) {
+      unitPackPrice = packPrice > rawPrice * 2 && packQty > 1 ? packPrice / packQty : packPrice
+    } else if (wholesalePrice > 0) {
+      unitPackPrice = wholesalePrice
+    }
+
+    if (packQty <= 1) {
+      const upperName = nameStr.toUpperCase()
+      if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
+        packQty = 10
+      } else {
+        packQty = 6
+      }
+    }
+
+    let cleanName = nameStr
+    if (cleanName.startsWith('$')) {
+      const dashPos = cleanName.indexOf('-')
+      if (dashPos !== -1 && dashPos < 30) {
+        cleanName = cleanName.slice(dashPos + 1)
+      }
+    }
+    if (cleanName.toUpperCase().startsWith('PQT')) {
+      const dashPos = cleanName.indexOf('-')
+      if (dashPos !== -1 && dashPos < 10) {
+        cleanName = cleanName.slice(dashPos + 1)
+      }
+    }
+    cleanName = cleanName.trim()
+    if (!cleanName) cleanName = nameStr || 'Producto'
+
+    let fullPackagePrice = Math.round(unitPackPrice * packQty)
+    if (rawPrice > 500 && rawPrice > unitPackPrice * 2) {
+      fullPackagePrice = Math.round(rawPrice)
+    }
+
+    return {
+      cleanName,
+      unitPackPrice,
+      packQty,
+      fullPackagePrice
+    }
+  }
+
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id)
@@ -157,7 +238,10 @@ export default function ModaMielBrandPage() {
   }
 
   const totalCartCount = cart.reduce((acc, item) => acc + item.quantity, 0)
-  const totalCartPrice = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0)
+  const totalCartPrice = cart.reduce((acc, item) => {
+    const details = calculatePackageItemDetails(item.product)
+    return acc + (details.fullPackagePrice * item.quantity)
+  }, 0)
 
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [lastOrderText, setLastOrderText] = useState('')
@@ -167,9 +251,12 @@ export default function ModaMielBrandPage() {
     if (cart.length === 0) return
 
     const currentCart = [...cart]
-    const orderLines = currentCart.map(
-      item => `• *${item.product.name}* (x${item.quantity} paquetes) - $${(item.product.price * item.quantity).toLocaleString()} MXN`
-    )
+    const orderLines = currentCart.map(item => {
+      const details = calculatePackageItemDetails(item.product)
+      const total = details.fullPackagePrice * item.quantity
+      return `• *${details.cleanName}* (${item.quantity} Paquete${item.quantity > 1 ? 's' : ''} de ${details.packQty} pzas @ $${details.unitPackPrice}/pza) - *$${total.toLocaleString()} MXN*`
+    })
+    const text = `Hola *Moda Miel MX* 🐞, quiero realizar el siguiente pedido por paquete desde su tienda web:\n\n${orderLines.join('\n')}\n\n*TOTAL:* $${totalCartPrice.toLocaleString()} MXN\n*Ubicación de entrega/recogida:* Pasillo 3 Local 230.\n¡Muchas gracias!`
     const text = `Hola *Moda Miel MX* 🐞, quiero realizar el siguiente pedido por paquete desde su tienda web:\n\n${orderLines.join('\n')}\n\n*TOTAL:* $${totalCartPrice.toLocaleString()} MXN\n*Ubicación de entrega/recogida:* Pasillo 3 Local 230.\n¡Muchas gracias!`
 
     setLastOrderText(text)
@@ -654,19 +741,28 @@ export default function ModaMielBrandPage() {
               <p className="text-center text-slate-500 py-8 font-medium">Tu carrito está vacío</p>
             ) : (
               <div className="space-y-4">
-                {cart.map(item => (
-                  <div
-                    key={item.product.id}
-                    className="flex items-center justify-between p-3 bg-pink-50/60 border border-pink-100 rounded-2xl"
-                  >
-                    <div className="flex-1 pr-3">
-                      <h4 className="font-bold text-slate-900 text-sm leading-tight">
-                        {item.product.name}
-                      </h4>
-                      <span className="text-xs text-[#E62E6B] font-black">
-                        ${(item.product.price * item.quantity).toLocaleString()} MXN
-                      </span>
-                    </div>
+                {cart.map(item => {
+                  const details = calculatePackageItemDetails(item.product)
+                  const itemTotalPrice = details.fullPackagePrice * item.quantity
+
+                  return (
+                    <div
+                      key={item.product.id}
+                      className="flex items-center justify-between p-3.5 bg-pink-50/60 border border-pink-100 rounded-2xl"
+                    >
+                      <div className="flex-1 pr-3">
+                        <h4 className="font-bold text-slate-900 text-sm leading-tight">
+                          {details.cleanName}
+                        </h4>
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          <span className="text-xs text-[#E62E6B] font-black">
+                            ${itemTotalPrice.toLocaleString()} MXN
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-bold">
+                            {item.quantity} {item.quantity === 1 ? 'Paquete' : 'Paquetes'} ({details.packQty} pzas c/u @ ${details.unitPackPrice}/pza)
+                          </span>
+                        </div>
+                      </div>
 
                     <div className="flex items-center gap-2 bg-white border border-pink-200 rounded-xl px-2 py-1">
                       <button
@@ -684,7 +780,8 @@ export default function ModaMielBrandPage() {
                       </button>
                     </div>
                   </div>
-                ))}
+                )
+              })}
 
                 <div className="pt-4 border-t border-pink-100 flex items-center justify-between">
                   <span className="font-bold text-slate-500">Total a pagar:</span>
