@@ -88,13 +88,37 @@ export default function Inventory() {
         return;
       }
 
-      const packCode = product.barcode_pack || (product as any).barcodePack || `${pieceCode}-PAQ`
-      const packQty = Number(product.packQuantity || product.pack_quantity || product.wholesale_min_qty || product.wholesaleMinQty || 6)
+      // 🔍 Extraer de forma dinámica e infalible los datos del paquete configurados en el sistema
+      let parsedDesc: any = {}
+      if (product.description && typeof product.description === 'string' && product.description.startsWith('{')) {
+        try {
+          parsedDesc = JSON.parse(product.description)
+        } catch (e) {}
+      }
+
+      const packQty = Number(
+        product.packQuantity ||
+        product.pack_quantity ||
+        parsedDesc.packQty ||
+        parsedDesc.pack_quantity ||
+        product.wholesale_min_qty ||
+        product.wholesaleMinQty ||
+        10
+      )
+
       const piecePrice = Number(product.price || 0)
-      const wholesalePrice = Number(product.wholesalePrice || product.wholesale_price || (piecePrice * 0.88))
-      const packPrice = Number(product.packPrice || product.pack_price || (piecePrice * packQty * 0.75))
-      const unitPackPrice = packQty > 0 ? (packPrice / packQty) : piecePrice
-      const assortmentText = product.description ? product.description.slice(0, 40) : `Surtido: Tallas y Colores variados (${product.category || 'Moda'})`
+      const wholesalePrice = Number(product.wholesalePrice || product.wholesale_price || parsedDesc.wholesalePrice || (piecePrice * 0.88))
+      
+      let rawPackPrice = Number(product.packPrice || product.pack_price || parsedDesc.packPrice || (piecePrice * packQty * 0.75))
+      let unitPackPrice = rawPackPrice
+      if (rawPackPrice > piecePrice * 2 && packQty > 1) {
+        unitPackPrice = rawPackPrice / packQty
+      }
+
+      const descString = parsedDesc.description || (typeof product.description === 'string' && !product.description.startsWith('{') ? product.description : '')
+      const assortmentText = descString ? descString.slice(0, 45) : `Surtido: Tallas y Colores variados (${product.category || 'Moda'})`
+
+      const packCode = product.barcode_pack || (product as any).barcodePack || `${pieceCode}-PAQ`
 
       // Generate barcode images using bwip-js
       const pieceBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(pieceCode)}&scale=3&height=10&includetext`;
@@ -117,7 +141,7 @@ export default function Inventory() {
             </div>
           </div>
 
-          <!-- 📦 ETIQUETA 2: PAQUETE DE MAYOREO (SURTIDO - SIN PRECIO ACUMULADO) -->
+          <!-- 📦 ETIQUETA 2: PAQUETE DE MAYOREO (SURTIDO EXACTO) -->
           <div style="padding-bottom: 5px;">
             <span style="font-size: 9px; font-weight: 900; background: #E62E6B; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">PAQUETE DE ${packQty} PIEZAS</span>
             <h2 style="font-size: 11px; margin: 4px 0 2px 0; font-weight: 900; line-height: 1.1;">${product.name} (PAQ)</h2>
