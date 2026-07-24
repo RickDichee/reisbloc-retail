@@ -1526,14 +1526,16 @@ class SupabaseService {
 
   async getPublicProducts(orgIdOrSlug?: string): Promise<Product[]> {
     try {
-      // 1. Intentar consultar la función RPC Gold Standard 'get_public_storefront_catalog'
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
       const targetSlug = (orgIdOrSlug || 'modamiel').trim()
+
+      // 1. Intentar consultar la función RPC Gold Standard 'get_public_storefront_catalog'
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_storefront_catalog', {
         p_slug: targetSlug
       })
 
       if (rpcError) {
-        console.warn('⚠️ [getPublicProducts RPC error]:', rpcError.message, rpcError.details, rpcError.hint)
+        console.warn('⚠️ [getPublicProducts RPC error]:', rpcError.message, rpcError.details)
       }
 
       const productsList = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : [])
@@ -1561,37 +1563,33 @@ class SupabaseService {
         })) as Product[]
       }
 
-      // 2. Fallback a consulta directa si la función RPC aún no está creada
-      let query = supabase.from('products').select('*')
-      if (orgIdOrSlug && orgIdOrSlug.trim() !== '') {
-        query = query.eq('organization_id', orgIdOrSlug)
+      // 2. Fallback seguro: Si orgIdOrSlug es un UUID válido, consultar por organization_id
+      let query = supabase.from('products').select('id, name, price, category, current_stock, available, active, created_at, organization_id')
+      if (isUUID(targetSlug)) {
+        query = query.eq('organization_id', targetSlug)
+      } else {
+        // Resolver primero el UUID de la organización por slug
+        const { data: org } = await supabase.from('organizations').select('id').or(`slug.eq.${targetSlug}`).limit(1).maybeSingle()
+        if (org?.id) {
+          query = query.eq('organization_id', org.id)
+        }
       }
       
       let { data, error } = await query.order('name', { ascending: true })
 
       if (error || !data || data.length === 0) {
-        const fallbackRes = await supabase.from('products').select('*').limit(50)
+        const fallbackRes = await supabase.from('products').select('id, name, price, category, current_stock, available, active, created_at, organization_id').limit(50)
         data = fallbackRes.data || []
       }
 
       return (data || []).map((p: any) => {
-        let parsedDesc: any = {}
-        if (p.description && typeof p.description === 'string' && p.description.startsWith('{') && p.description.endsWith('}')) {
-          try {
-            parsedDesc = JSON.parse(p.description)
-          } catch (e) {}
-        }
-
-        const packQty = p.pack_quantity || parsedDesc.packQty || 6
-        const packPrice = parsedDesc.packPrice || p.price || 0
-
         return {
           ...p,
           id: p.id,
           name: p.name || 'Producto Sin Nombre',
           price: p.price || 0,
           category: p.category || 'General',
-          description: parsedDesc.description || (typeof p.description === 'string' ? p.description : ''),
+          description: '',
           imageUrl: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
           image: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
           isAvailable: p.available ?? p.active ?? true,
@@ -1600,8 +1598,8 @@ class SupabaseService {
           currentStock: p.current_stock ?? p.stock ?? 10,
           minimumStock: p.minimum_stock || 1,
           hasInventory: p.has_inventory ?? true,
-          packQuantity: packQty,
-          packPrice: packPrice,
+          packQuantity: p.pack_quantity || 6,
+          packPrice: p.price || 0,
           sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
           createdAt: new Date(p.created_at || Date.now()),
           updatedAt: new Date(p.updated_at || Date.now())
