@@ -1525,30 +1525,36 @@ class SupabaseService {
         p_slug: targetSlug
       })
 
-      if (!rpcError && rpcData && rpcData.length > 0) {
-        return rpcData.map((p: any) => ({
+      if (rpcError) {
+        logger.warn('getPublicProducts RPC warning', rpcError)
+      }
+
+      const productsList = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : [])
+
+      if (!rpcError && productsList.length > 0) {
+        return productsList.map((p: any) => ({
           id: p.id,
           name: p.name || 'Producto Sin Nombre',
-          price: p.price || 0,
+          price: Number(p.price) || 0,
           category: p.category || 'General',
           description: p.description || '',
           imageUrl: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
           image: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
           isAvailable: p.available ?? true,
           active: p.available ?? true,
-          stock: p.stock ?? 10,
-          currentStock: p.stock ?? 10,
+          stock: Number(p.stock) || 10,
+          currentStock: Number(p.stock) || 10,
           minimumStock: 1,
           hasInventory: true,
-          packQuantity: p.pack_quantity || 6,
-          packPrice: p.price || 0,
+          packQuantity: Number(p.pack_quantity) || 6,
+          packPrice: Number(p.price) || 0,
           sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
           createdAt: new Date(),
           updatedAt: new Date()
         })) as Product[]
       }
 
-      // 2. Fallback a consulta directa si la función RPC aún no ha sido ejecutada en el SQL Editor
+      // 2. Fallback a consulta directa si la función RPC aún no está creada
       let query = supabase.from('products').select('*')
       if (orgIdOrSlug && orgIdOrSlug.trim() !== '') {
         query = query.eq('organization_id', orgIdOrSlug)
