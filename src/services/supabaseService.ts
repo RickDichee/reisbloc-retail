@@ -1517,41 +1517,50 @@ class SupabaseService {
     }
   }
 
-  async getPublicProducts(orgId?: string): Promise<Product[]> {
+  async getPublicProducts(orgIdOrSlug?: string): Promise<Product[]> {
     try {
-      // 1. Consultar la tabla principal 'products'
+      // 1. Intentar consultar la función RPC Gold Standard 'get_public_storefront_catalog'
+      const targetSlug = (orgIdOrSlug || 'modamiel').trim()
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_storefront_catalog', {
+        p_slug: targetSlug
+      })
+
+      if (!rpcError && rpcData && rpcData.length > 0) {
+        return rpcData.map((p: any) => ({
+          id: p.id,
+          name: p.name || 'Producto Sin Nombre',
+          price: p.price || 0,
+          category: p.category || 'General',
+          description: p.description || '',
+          imageUrl: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+          image: p.image_url || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
+          isAvailable: p.available ?? true,
+          active: p.available ?? true,
+          stock: p.stock ?? 10,
+          currentStock: p.stock ?? 10,
+          minimumStock: 1,
+          hasInventory: true,
+          packQuantity: p.pack_quantity || 6,
+          packPrice: p.price || 0,
+          sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })) as Product[]
+      }
+
+      // 2. Fallback a consulta directa si la función RPC aún no ha sido ejecutada en el SQL Editor
       let query = supabase.from('products').select('*')
-      if (orgId && orgId.trim() !== '') {
-        query = query.eq('organization_id', orgId)
+      if (orgIdOrSlug && orgIdOrSlug.trim() !== '') {
+        query = query.eq('organization_id', orgIdOrSlug)
       }
       
       let { data, error } = await query.order('name', { ascending: true })
 
-      if (error) {
-        logger.error('getPublicProducts products query error', error)
+      if (error || !data || data.length === 0) {
+        const fallbackRes = await supabase.from('products').select('*').limit(50)
+        data = fallbackRes.data || []
       }
 
-      // 2. Fallback a 'retail_products' si la vista legacy existe
-      if (!data || data.length === 0) {
-        let fallbackQuery = supabase.from('retail_products').select('*')
-        if (orgId && orgId.trim() !== '') {
-          fallbackQuery = fallbackQuery.eq('organization_id', orgId)
-        }
-        const fallbackRes = await fallbackQuery
-        if (fallbackRes.data && fallbackRes.data.length > 0) {
-          data = fallbackRes.data
-        }
-      }
-
-      // 3. Fallback a consulta general de productos si la consulta por orgId devuelve 0 filas
-      if (!data || data.length === 0) {
-        const allRes = await supabase.from('products').select('*').limit(50)
-        if (allRes.data && allRes.data.length > 0) {
-          data = allRes.data
-        }
-      }
-
-      // 4. Mapeo seguro a objeto Product
       return (data || []).map((p: any) => {
         let parsedDesc: any = {}
         if (p.description && typeof p.description === 'string' && p.description.startsWith('{') && p.description.endsWith('}')) {
