@@ -130,7 +130,7 @@ export default function ModaMielBrandPage() {
     return matchesSearch && matchesCat
   })
 
-  // 🔍 Helper para calcular detalles de paquete exactos (Precio Unitario * Piezas por Paquete)
+  // 🔍 Helper para calcular detalles de paquete exactos sin inventar números ficticios
   const calculatePackageItemDetails = (product: any) => {
     let parsedDesc: any = {}
     if (product.description && typeof product.description === 'string' && product.description.trim().startsWith('{')) {
@@ -139,7 +139,7 @@ export default function ModaMielBrandPage() {
       } catch (e) {}
     }
 
-    let packQty = Number(
+    const explicitPackQty = Number(
       product.packQuantity ||
       (product as any).pack_quantity ||
       (product as any).pack_qty ||
@@ -149,6 +149,9 @@ export default function ModaMielBrandPage() {
       product.wholesaleMinQty ||
       0
     )
+
+    const hasExplicitPackQty = explicitPackQty > 1
+    const packQty = hasExplicitPackQty ? explicitPackQty : 1
 
     let rawPrice = Number(product.price || 0)
     let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
@@ -168,18 +171,9 @@ export default function ModaMielBrandPage() {
     if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
       unitPackPrice = extractedPriceFromName
     } else if (packPrice > 0) {
-      unitPackPrice = packPrice > rawPrice * 2 && packQty > 1 ? packPrice / packQty : packPrice
+      unitPackPrice = packPrice > rawPrice * 2 && hasExplicitPackQty ? packPrice / packQty : packPrice
     } else if (wholesalePrice > 0) {
       unitPackPrice = wholesalePrice
-    }
-
-    if (packQty <= 1) {
-      const upperName = nameStr.toUpperCase()
-      if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
-        packQty = 10
-      } else {
-        packQty = 6
-      }
     }
 
     let cleanName = nameStr
@@ -198,15 +192,19 @@ export default function ModaMielBrandPage() {
     cleanName = cleanName.trim()
     if (!cleanName) cleanName = nameStr || 'Producto'
 
-    let fullPackagePrice = Math.round(unitPackPrice * packQty)
-    if (rawPrice > 500 && rawPrice > unitPackPrice * 2) {
-      fullPackagePrice = Math.round(rawPrice)
+    let fullPackagePrice = unitPackPrice
+    if (hasExplicitPackQty) {
+      fullPackagePrice = Math.round(unitPackPrice * packQty)
+      if (rawPrice > 500 && rawPrice > unitPackPrice * 2) {
+        fullPackagePrice = Math.round(rawPrice)
+      }
     }
 
     return {
       cleanName,
       unitPackPrice,
       packQty,
+      hasExplicitPackQty,
       fullPackagePrice
     }
   }
@@ -254,7 +252,8 @@ export default function ModaMielBrandPage() {
     const orderLines = currentCart.map(item => {
       const details = calculatePackageItemDetails(item.product)
       const total = details.fullPackagePrice * item.quantity
-      return `• *${details.cleanName}* (${item.quantity} Paquete${item.quantity > 1 ? 's' : ''} de ${details.packQty} pzas @ $${details.unitPackPrice}/pza) - *$${total.toLocaleString()} MXN*`
+      const pzaInfo = details.hasExplicitPackQty ? ` de ${details.packQty} pzas @ $${details.unitPackPrice}/pza` : ''
+      return `• *${details.cleanName}* (${item.quantity} Paquete${item.quantity > 1 ? 's' : ''}${pzaInfo}) - *$${total.toLocaleString()} MXN*`
     })
     const text = `Hola *Moda Miel MX* 🐞, quiero realizar el siguiente pedido por paquete desde su tienda web:\n\n${orderLines.join('\n')}\n\n*TOTAL:* $${totalCartPrice.toLocaleString()} MXN\n*Ubicación de entrega/recogida:* Pasillo 3 Local 230.\n¡Muchas gracias!`
 
@@ -503,75 +502,7 @@ export default function ModaMielBrandPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredProducts.map(product => {
                 const inCart = cart.find(item => item.product.id === product.id)
-                
-                // 🔍 Extractor Inteligente de Precios y Piezas de Paquete
-                let parsedDesc: any = {}
-                if (product.description && typeof product.description === 'string' && product.description.trim().startsWith('{')) {
-                  try {
-                    parsedDesc = JSON.parse(product.description)
-                  } catch (e) {}
-                }
-
-                let packQty = Number(
-                  product.packQuantity ||
-                  (product as any).pack_quantity ||
-                  (product as any).pack_qty ||
-                  parsedDesc.packQty ||
-                  parsedDesc.pack_quantity ||
-                  product.wholesale_min_qty ||
-                  product.wholesaleMinQty ||
-                  0
-                )
-
-                let rawPrice = Number(product.price || 0)
-                let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-                let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
-
-                // Extraer precio de paquete si viene en el título (ej. "$140X PQT-Conjunto")
-                let extractedPriceFromName: number | null = null
-                const nameStr = product.name || ''
-                if (nameStr.includes('$')) {
-                  const afterDollar = nameStr.split('$')[1] || ''
-                  const parsedNum = parseFloat(afterDollar)
-                  if (!isNaN(parsedNum) && parsedNum > 0) {
-                    extractedPriceFromName = parsedNum
-                  }
-                }
-
-                let unitPackPrice = rawPrice
-                if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
-                  unitPackPrice = extractedPriceFromName
-                } else if (packPrice > 0) {
-                  unitPackPrice = packPrice > rawPrice * 2 && packQty > 1 ? packPrice / packQty : packPrice
-                } else if (wholesalePrice > 0) {
-                  unitPackPrice = wholesalePrice
-                }
-
-                if (packQty <= 1) {
-                  const upperName = nameStr.toUpperCase()
-                  if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
-                    packQty = 10
-                  } else {
-                    packQty = 6
-                  }
-                }
-
-                // Limpiar prefijo técnico del nombre usando manipulación de string pura (sin corchetes regex)
-                let cleanName = nameStr
-                if (cleanName.startsWith('$')) {
-                  const dashPos = cleanName.indexOf('-')
-                  if (dashPos !== -1 && dashPos < 30) {
-                    cleanName = cleanName.slice(dashPos + 1)
-                  }
-                }
-                if (cleanName.toUpperCase().startsWith('PQT')) {
-                  const dashPos = cleanName.indexOf('-')
-                  if (dashPos !== -1 && dashPos < 10) {
-                    cleanName = cleanName.slice(dashPos + 1)
-                  }
-                }
-                cleanName = cleanName.trim()
-                if (!cleanName) cleanName = nameStr || 'Producto'
+                const details = calculatePackageItemDetails(product)
 
                 return (
                   <div
@@ -586,11 +517,11 @@ export default function ModaMielBrandPage() {
                           product.image ||
                           'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=600&q=80'
                         }
-                        alt={cleanName}
+                        alt={details.cleanName}
                         className="max-h-full max-w-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-3 left-3 bg-[#E62E6B] text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md">
-                        PAQUETE DE {packQty} PIEZAS
+                        {details.hasExplicitPackQty ? `PAQUETE DE ${details.packQty} PIEZAS` : 'PAQUETE DE MAYOREO'}
                       </div>
                     </div>
 
@@ -600,7 +531,7 @@ export default function ModaMielBrandPage() {
                           {product.category || 'Mayoreo'}
                         </span>
                         <h3 className="font-bold text-slate-900 text-base leading-tight mt-1">
-                          {cleanName}
+                          {details.cleanName}
                         </h3>
                         <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                           {(() => {
@@ -624,16 +555,18 @@ export default function ModaMielBrandPage() {
                       <div className="pt-3 border-t border-pink-100 flex items-center justify-between">
                         <div>
                           <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
-                            Precio por Pieza en Paquete
+                            {details.hasExplicitPackQty ? 'Precio por Pieza en Paquete' : 'Precio por Paquete'}
                           </span>
                           <div className="flex items-baseline gap-1">
                             <span className="text-2xl font-black text-[#E62E6B]">
-                              ${unitPackPrice.toFixed(0)}
+                              ${details.hasExplicitPackQty ? details.unitPackPrice.toFixed(0) : details.fullPackagePrice.toLocaleString()}
                             </span>
-                            <span className="text-xs font-bold text-slate-500">MXN / pza</span>
+                            <span className="text-xs font-bold text-slate-500">
+                              {details.hasExplicitPackQty ? 'MXN / pza' : 'MXN'}
+                            </span>
                           </div>
                           <span className="text-[9px] font-bold text-emerald-600 block mt-0.5">
-                            (Lote surtido de {packQty} pzas)
+                            {details.hasExplicitPackQty ? `(Lote surtido de ${details.packQty} pzas)` : '(Venta por Paquete Surtido)'}
                           </span>
                         </div>
 
