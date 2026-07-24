@@ -96,15 +96,25 @@ export default function Inventory() {
         } catch (e) {}
       }
 
-      const packQty = Number(
-        product.packQuantity ||
-        product.pack_quantity ||
+      let packQty = Number(
         parsedDesc.packQty ||
         parsedDesc.pack_quantity ||
-        product.wholesale_min_qty ||
-        product.wholesaleMinQty ||
+        (product as any).packQty ||
+        (product as any).pack_qty ||
+        (product.packQuantity && Number(product.packQuantity) > 1 ? product.packQuantity : null) ||
+        (product.pack_quantity && Number(product.pack_quantity) > 1 ? product.pack_quantity : null) ||
+        (product.wholesale_min_qty && Number(product.wholesale_min_qty) > 1 ? product.wholesale_min_qty : null) ||
         10
       )
+
+      if (packQty <= 1) {
+        const upperName = (product.name || '').toUpperCase()
+        if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
+          packQty = 10
+        } else {
+          packQty = 6
+        }
+      }
 
       const piecePrice = Number(product.price || 0)
       const wholesalePrice = Number(product.wholesalePrice || product.wholesale_price || parsedDesc.wholesalePrice || (piecePrice * 0.88))

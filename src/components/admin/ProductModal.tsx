@@ -188,13 +188,17 @@ export default function ProductModal({
                 formData.wholesaleMinQty
             )
 
+            const realPackQty = Number(formData.packQty || formData.packQuantity || 10)
+
             const payload = { 
                 ...formData, 
                 image: finalImageUrl,
                 description: finalDescription,
                 wholesalePrice: formData.wholesalePrice,
                 parentId: isWholesale && formData.parentId ? formData.parentId : undefined,
-                packQuantity: isWholesale ? Number(formData.packQuantity) : 1
+                packQuantity: realPackQty,
+                pack_quantity: realPackQty,
+                packQty: realPackQty
             }
 
             if (product) {
@@ -208,7 +212,7 @@ export default function ProductModal({
                 const finalStock = targetStock
 
                 // Calcular precio de paquete automático para Moda Miel MX (Precio Unitario Cargado * Piezas por Paquete)
-                const computedPackPrice = formData.packPrice || (Number(formData.price || 0) * (Number(formData.packQty) || 10))
+                const computedPackPrice = formData.packPrice || (Number(formData.price || 0) * realPackQty)
 
                 const updatedPayload = {
                     ...payload,

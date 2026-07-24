@@ -414,15 +414,64 @@ export default function ModaMielBrandPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredProducts.map(product => {
                 const inCart = cart.find(item => item.product.id === product.id)
-                const packQty = Number(product.packQuantity || (product as any).pack_quantity || 10)
-                const rawPrice = Number(product.price || 0)
-                let unitPackPrice = rawPrice
-                if (rawPrice > 300 && packQty > 1) {
-                  unitPackPrice = rawPrice / packQty
+                
+                // 🔍 Extractor Inteligente de Precios y Piezas de Paquete
+                let parsedDesc: any = {}
+                if (product.description && typeof product.description === 'string' && product.description.trim().startsWith('{')) {
+                  try {
+                    parsedDesc = JSON.parse(product.description)
+                  } catch (e) {}
                 }
+
+                let packQty = Number(
+                  product.packQuantity ||
+                  (product as any).pack_quantity ||
+                  (product as any).pack_qty ||
+                  parsedDesc.packQty ||
+                  parsedDesc.pack_quantity ||
+                  product.wholesale_min_qty ||
+                  product.wholesaleMinQty ||
+                  0
+                )
+
+                let rawPrice = Number(product.price || 0)
+                let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+                let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+
+                // Extraer precio de paquete si viene en el título (ej. "$140X PQT-Conjunto")
+                let extractedPriceFromName: number | null = null
+                const namePriceMatch = (product.name || '').match(/\$([0-9]+(?:\.[0-9]+)?)\s*x\s*pqt/i)
+                if (namePriceMatch && namePriceMatch[1]) {
+                  extractedPriceFromName = parseFloat(namePriceMatch[1])
+                }
+
+                let unitPackPrice = rawPrice
+                if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
+                  unitPackPrice = extractedPriceFromName
+                } else if (packPrice > 0) {
+                  unitPackPrice = packPrice > rawPrice * 2 && packQty > 1 ? packPrice / packQty : packPrice
+                } else if (wholesalePrice > 0) {
+                  unitPackPrice = wholesalePrice
+                }
+
+                if (packQty <= 1) {
+                  const upperName = (product.name || '').toUpperCase()
+                  if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
+                    packQty = 10
+                  } else {
+                    packQty = 6
+                  }
+                }
+
+                // Limpiar prefijo técnico del nombre para vista pública limpia
+                let cleanName = (product.name || '')
+                  .replace(/^\$[0-9]+(?:\.[0-9]+)?\s*x\s*pqt[-:\s]*/i, '')
+                  .replace(/^pqt[-:\s]*/i, '')
+                  .trim()
+
+                if (!cleanName) cleanName = product.name || 'Producto'
 
                 return (
                   <div
@@ -437,7 +486,7 @@ export default function ModaMielBrandPage() {
                           product.image ||
                           'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=600&q=80'
                         }
-                        alt={product.name}
+                        alt={cleanName}
                         className="max-h-full max-w-full object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-3 left-3 bg-[#E62E6B] text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md">
@@ -451,7 +500,7 @@ export default function ModaMielBrandPage() {
                           {product.category || 'Mayoreo'}
                         </span>
                         <h3 className="font-bold text-slate-900 text-base leading-tight mt-1">
-                          {product.name}
+                          {cleanName}
                         </h3>
                         <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                           {(() => {
