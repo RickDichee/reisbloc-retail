@@ -466,10 +466,13 @@ export default function ModaMielBrandPage() {
                   }
                 }
 
-                // Limpiar prefijo técnico del nombre para vista pública limpia
+                // Limpiar prefijo técnico del nombre usando new RegExp para evitar que Tailwind lo interprete como clase CSS
+                const pricePrefixRegex = new RegExp('^\\$[0-9]+(?:\\.[0-9]+)?\\s*x\\s*pqt[-:\\s]*', 'i')
+                const pqtPrefixRegex = new RegExp('^pqt[-:\\s]*', 'i')
+
                 let cleanName = (product.name || '')
-                  .replace(/^\$[0-9]+(?:\.[0-9]+)?\s*x\s*pqt[-:\s]*/i, '')
-                  .replace(/^pqt[-:\s]*/i, '')
+                  .replace(pricePrefixRegex, '')
+                  .replace(pqtPrefixRegex, '')
                   .trim()
 
                 if (!cleanName) cleanName = product.name || 'Producto'
