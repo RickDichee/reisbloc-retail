@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
-import { supabase } from '@/config/supabase'
+import { supabase, forceAuthHeader } from '@/config/supabase'
 import { BRANDING } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
@@ -203,7 +203,6 @@ export default function App() {
             })
             if (setSessionError) {
               // Si falla setSession, forzar header manualmente
-              const { forceAuthHeader } = await import('@/config/supabase')
               forceAuthHeader(tokenData.accessToken)
             } else {
               session = data.session

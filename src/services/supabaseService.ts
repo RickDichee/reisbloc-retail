@@ -1508,16 +1508,27 @@ class SupabaseService {
 
   async getPublicProducts(orgId?: string): Promise<Product[]> {
     try {
-      let query = supabase.from('retail_products').select('*')
+      // 1. Intentar obtener productos de la tabla principal 'products'
+      let query = supabase.from('products').select('*')
       if (orgId && orgId.trim() !== '') {
         query = query.eq('organization_id', orgId)
       }
-      const { data, error } = await query
+      let { data, error } = await query
         .eq('active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true })
 
-      if (error) throw error
+      // 2. Fallback a 'retail_products' si la vista/tabla legacy se utiliza
+      if (error || !data || data.length === 0) {
+        let fallbackQuery = supabase.from('retail_products').select('*')
+        if (orgId && orgId.trim() !== '') {
+          fallbackQuery = fallbackQuery.eq('organization_id', orgId)
+        }
+        const fallbackRes = await fallbackQuery
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+          data = fallbackRes.data
+        }
+      }
 
       return (data || []).map((p: any) => {
         let parsedDesc: any = {}
@@ -1527,20 +1538,28 @@ class SupabaseService {
           } catch (e) {}
         }
 
-        const packQty = p.pack_quantity || parsedDesc.packQty || 10
-        const packPrice = parsedDesc.packPrice || (p.price * packQty)
+        const packQty = p.pack_quantity || parsedDesc.packQty || 6
+        const packPrice = parsedDesc.packPrice || p.price
 
         return {
           ...p,
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          category: p.category || 'General',
           description: parsedDesc.description || p.description || '',
-          image: p.image || p.image_url || null,
+          imageUrl: p.image_url || p.image || null,
+          image: p.image_url || p.image || null,
           active: p.active,
-          currentStock: p.current_stock,
-          minimumStock: p.minimum_stock,
-          hasInventory: p.has_inventory,
+          stock: p.stock ?? p.current_stock ?? 0,
+          currentStock: p.current_stock ?? p.stock ?? 0,
+          minimumStock: p.minimum_stock || 1,
+          hasInventory: p.has_inventory ?? true,
           packQuantity: packQty,
           packPrice: packPrice,
-          createdAt: new Date(p.created_at)
+          sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
+          createdAt: new Date(p.created_at || Date.now()),
+          updatedAt: new Date(p.updated_at || Date.now())
         }
       }) as Product[]
     } catch (error) {

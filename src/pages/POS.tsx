@@ -3,6 +3,7 @@ import logger from '@/utils/logger'
 import { useAppStore } from '@/store/appStore'
 import { BRANDING } from '@/config/branding'
 import supabaseService from '@/services/supabaseService'
+import { supabase } from '@/config/supabase'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import ProductGrid from '@/components/pos/ProductGrid'
 import OrderPanel from '@/components/pos/OrderPanel'
@@ -109,7 +110,7 @@ export default function POS() {
   const loadClients = async () => {
     if (!currentUser?.organizationId) return
     try {
-      const { supabase } = await import('@/config/supabase')
+      // usando supabase importado estáticamente
       const { data, error } = await supabase
         .from('clients')
         .select('*')
@@ -133,7 +134,7 @@ export default function POS() {
     if (!newClientName.trim() || !currentUser?.organizationId) return
     setIsSavingClient(true)
     try {
-      const { supabase } = await import('@/config/supabase')
+      // usando supabase importado estáticamente
       const payload = {
         name: newClientName.trim(),
         phone: newClientPhone.trim() || null,
@@ -203,7 +204,7 @@ export default function POS() {
 
     if (currentUser?.organizationId && currentUser?.role === 'admin') {
       try {
-        const { supabase } = await import('@/config/supabase')
+        // usando supabase importado estáticamente
         await supabase
           .from('organizations')
           .update({ settings: updatedSettings })
@@ -242,7 +243,7 @@ export default function POS() {
 
     if (currentUser?.organizationId && currentUser?.role === 'admin') {
       try {
-        const { supabase } = await import('@/config/supabase')
+        // usando supabase importado estáticamente
         await supabase
           .from('organizations')
           .update({ settings: updatedSettings })
@@ -294,7 +295,7 @@ export default function POS() {
 
     if (currentUser?.organizationId && currentUser?.role === 'admin') {
       try {
-        const { supabase } = await import('@/config/supabase')
+        // usando supabase importado estáticamente
         await supabase
           .from('organizations')
           .update({ settings: updatedSettings })
@@ -875,7 +876,7 @@ export default function POS() {
                           setOrganizationSettings(updatedSettings)
                           if (currentUser?.organizationId) {
                             try {
-                              const { supabase } = await import('@/config/supabase')
+                              // usando supabase importado estáticamente
                               await supabase
                                 .from('organizations')
                                 .update({ settings: updatedSettings })
@@ -1030,7 +1031,7 @@ export default function POS() {
                   const updatedSettings = { ...(organizationSettings || {}), ticketPrinterWidth: val }
                   setOrganizationSettings(updatedSettings)
                   if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                    const { supabase } = await import('@/config/supabase')
+                    // usando supabase importado estáticamente
                     await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
                     useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
                   }
@@ -1051,7 +1052,7 @@ export default function POS() {
                   const updatedSettings = { ...(organizationSettings || {}), labelPrinterWidth: val }
                   setOrganizationSettings(updatedSettings)
                   if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                    const { supabase } = await import('@/config/supabase')
+                    // usando supabase importado estáticamente
                     await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
                     useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
                   }
@@ -1074,7 +1075,7 @@ export default function POS() {
                   const updatedSettings = { ...(organizationSettings || {}), localSyncServerIp: val }
                   setOrganizationSettings(updatedSettings)
                   if (currentUser?.organizationId && currentUser?.role === 'admin') {
-                    const { supabase } = await import('@/config/supabase')
+                    // usando supabase importado estáticamente
                     await supabase.from('organizations').update({ settings: updatedSettings }).eq('id', currentUser.organizationId)
                     useAppStore.setState({ currentUser: { ...currentUser, organizationSettings: updatedSettings } })
                   }

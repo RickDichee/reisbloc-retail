@@ -15,6 +15,7 @@ import {
   Smartphone
 } from 'lucide-react'
 import { PlanType } from '@/config/plans'
+import { supabase } from '@/config/supabase'
 
 const STEPS = [
   {
@@ -196,7 +197,7 @@ export default function Onboarding() {
       setOrgPlan('free', 'Onboarding completado')
       
       // Actualizar en Supabase
-      const { supabase } = await import('@/config/supabase')
+      // usando supabase importado estáticamente
       await supabase
         .from('organizations')
         .update({ 
