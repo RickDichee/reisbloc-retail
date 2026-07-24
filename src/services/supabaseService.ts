@@ -529,6 +529,10 @@ class SupabaseService {
 
   // ==================== PRODUCTS ====================
 
+  async getProducts(): Promise<Product[]> {
+    return this.getAllProducts()
+  }
+
   async getAllProducts(): Promise<Product[]> {
     return this.withRetry(async () => {
       // 📡 OFFLINE FIRST: Si no hay internet, devolver caché rápido

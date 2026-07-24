@@ -120,7 +120,7 @@ export default function ModaMielBrandPage() {
         // 3. Si hay sesión activa en el navegador, intentar obtener productos del estado del usuario
         if ((!fetchedProducts || fetchedProducts.length === 0)) {
           try {
-            const userProducts = await supabaseService.getProducts()
+            const userProducts = await supabaseService.getAllProducts()
             if (userProducts && userProducts.length > 0) {
               fetchedProducts = userProducts
               console.log('📦 [ModaMielMX] Productos cargados del inventario de usuario activo:', userProducts.length)
