@@ -98,24 +98,11 @@ export default function ModaMielBrandPage() {
   useEffect(() => {
     const loadStoreProducts = async () => {
       setLoading(true)
-      console.log('🔍 [ModaMielMX] Descargando catálogo web...')
+      console.log('🔍 [ModaMielMX] Descargando catálogo web en tiempo real...')
 
       try {
-        // 1. Obtener la organización por slug
-        const org = await supabaseService.getOrganizationBySlug('modamiel')
-        console.log('🏢 [ModaMielMX] Org encontrada:', org?.id, org?.name, org?.slug)
-
-        let fetchedProducts: Product[] = []
-        if (org?.id) {
-          fetchedProducts = await supabaseService.getPublicProducts(org.id)
-          console.log(`📦 [ModaMielMX] Productos por org.id (${org.id}):`, fetchedProducts.length)
-        }
-
-        // 2. Si no devolvió por org.id, consultar productos públicos sin filtro de org.id
-        if (!fetchedProducts || fetchedProducts.length === 0) {
-          fetchedProducts = await supabaseService.getPublicProducts()
-          console.log('📦 [ModaMielMX] Productos por consulta pública global:', fetchedProducts.length)
-        }
+        const fetchedProducts = await supabaseService.getPublicProducts('modamiel')
+        console.log('📦 [ModaMielMX] Productos obtenidos:', fetchedProducts?.length || 0)
 
         if (fetchedProducts && fetchedProducts.length > 0) {
           setProducts(fetchedProducts)
@@ -123,10 +110,10 @@ export default function ModaMielBrandPage() {
           return
         }
       } catch (e) {
-        console.error('❌ [ModaMielMX] Error en catálogo:', e)
+        console.error('❌ [ModaMielMX] Error descargando productos:', e)
       }
 
-      console.warn('⚠️ [ModaMielMX] Usando productos de demostración (fallbackPackages)')
+      console.warn('⚠️ [ModaMielMX] Usando productos de demostración por omisión (fallbackPackages)')
       setProducts(fallbackPackages)
       setLoading(false)
     }

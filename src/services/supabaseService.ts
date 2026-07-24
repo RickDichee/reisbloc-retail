@@ -1495,6 +1495,8 @@ class SupabaseService {
 
   async getOrganizationBySlug(slug: string): Promise<any | null> {
     try {
+      const normalizedSlug = (slug || '').toLowerCase().trim()
+
       const { data, error } = await supabase
         .from('organizations')
         .select('id, name, slug, logo_url, settings, plan, plan_note')
@@ -1503,11 +1505,16 @@ class SupabaseService {
       if (error) throw error
       if (!data || data.length === 0) return null
 
-      const normalizedSlug = (slug || '').toLowerCase().trim()
       const match = data.find((org: any) => {
         const s = (org.slug || '').toLowerCase()
         const n = (org.name || '').toLowerCase()
-        return s === normalizedSlug || s === 'modamiel' || s === 'modamielmx' || s === 'moda-miel' || n.includes('modamiel')
+        const idStr = (org.id || '').toLowerCase()
+        return (
+          s === normalizedSlug ||
+          idStr === normalizedSlug ||
+          s === normalizedSlug.replace(/mx$/, '') ||
+          n.includes(normalizedSlug)
+        )
       })
 
       return match || data[0] || null
@@ -1526,7 +1533,7 @@ class SupabaseService {
       })
 
       if (rpcError) {
-        logger.warn('getPublicProducts RPC warning', rpcError)
+        console.warn('⚠️ [getPublicProducts RPC error]:', rpcError.message, rpcError.details, rpcError.hint)
       }
 
       const productsList = Array.isArray(rpcData) ? rpcData : (rpcData ? [rpcData] : [])
