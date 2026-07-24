@@ -443,9 +443,13 @@ export default function ModaMielBrandPage() {
 
                 // Extraer precio de paquete si viene en el título (ej. "$140X PQT-Conjunto")
                 let extractedPriceFromName: number | null = null
-                const namePriceMatch = (product.name || '').match(/\$([0-9]+(?:\.[0-9]+)?)\s*x\s*pqt/i)
-                if (namePriceMatch && namePriceMatch[1]) {
-                  extractedPriceFromName = parseFloat(namePriceMatch[1])
+                const nameStr = product.name || ''
+                if (nameStr.includes('$')) {
+                  const afterDollar = nameStr.split('$')[1] || ''
+                  const parsedNum = parseFloat(afterDollar)
+                  if (!isNaN(parsedNum) && parsedNum > 0) {
+                    extractedPriceFromName = parsedNum
+                  }
                 }
 
                 let unitPackPrice = rawPrice
@@ -458,7 +462,7 @@ export default function ModaMielBrandPage() {
                 }
 
                 if (packQty <= 1) {
-                  const upperName = (product.name || '').toUpperCase()
+                  const upperName = nameStr.toUpperCase()
                   if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
                     packQty = 10
                   } else {
@@ -466,16 +470,22 @@ export default function ModaMielBrandPage() {
                   }
                 }
 
-                // Limpiar prefijo técnico del nombre usando new RegExp para evitar que Tailwind lo interprete como clase CSS
-                const pricePrefixRegex = new RegExp('^\\$[0-9]+(?:\\.[0-9]+)?\\s*x\\s*pqt[-:\\s]*', 'i')
-                const pqtPrefixRegex = new RegExp('^pqt[-:\\s]*', 'i')
-
-                let cleanName = (product.name || '')
-                  .replace(pricePrefixRegex, '')
-                  .replace(pqtPrefixRegex, '')
-                  .trim()
-
-                if (!cleanName) cleanName = product.name || 'Producto'
+                // Limpiar prefijo técnico del nombre usando manipulación de string pura (sin corchetes regex)
+                let cleanName = nameStr
+                if (cleanName.startsWith('$')) {
+                  const dashPos = cleanName.indexOf('-')
+                  if (dashPos !== -1 && dashPos < 30) {
+                    cleanName = cleanName.slice(dashPos + 1)
+                  }
+                }
+                if (cleanName.toUpperCase().startsWith('PQT')) {
+                  const dashPos = cleanName.indexOf('-')
+                  if (dashPos !== -1 && dashPos < 10) {
+                    cleanName = cleanName.slice(dashPos + 1)
+                  }
+                }
+                cleanName = cleanName.trim()
+                if (!cleanName) cleanName = nameStr || 'Producto'
 
                 return (
                   <div
