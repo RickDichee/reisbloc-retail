@@ -414,6 +414,7 @@ export default function ModaMielBrandPage() {
               </button>
             </div>
           ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredProducts.map(product => {
                 const inCart = cart.find(item => item.product.id === product.id)
                 
