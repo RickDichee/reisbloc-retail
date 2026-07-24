@@ -91,5 +91,18 @@ export const shiftService = {
       logger.error('shift', 'Unexpected error in calculateExpectedAmount', error);
       return 0;
     }
+  },
+
+  async appendShiftNote(shiftId: string, note: string) {
+    try {
+      const { data: currentShift } = await supabase.from('shifts').select('notes').eq('id', shiftId).maybeSingle();
+      const existingNotes = currentShift?.notes || '';
+      const timeStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      const updatedNotes = existingNotes ? `${existingNotes}\n[${timeStr}] ${note}` : `[${timeStr}] ${note}`;
+
+      await supabase.from('shifts').update({ notes: updatedNotes }).eq('id', shiftId);
+    } catch (e) {
+      logger.warn('shift', 'Could not append shift note', e);
+    }
   }
 };

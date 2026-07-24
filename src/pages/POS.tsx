@@ -451,52 +451,43 @@ export default function POS() {
 
   useBarcodeScanner((code, scannerNum) => {
     if (isReadOnly || !currentUser) return
-    
-    // Si viene prefijo de escáner (1, 2, 3, 4) y la caja existe, redirigir a esa caja
-    if (scannerNum && tableButtons.includes(scannerNum)) {
-      setCurrentTicket(scannerNum)
-      // Agregar el producto a los borradores de esa caja específica
-      const product = products.find(p => p.barcode === code || p.sku === code)
-      if (product) {
-        const parsedDesc = parseProductDescription(product.description || '')
-        let activePrice = product.price
-        let activePackQty = 1
+    const targetTicket = (scannerNum && tableButtons.includes(scannerNum)) ? scannerNum : tableNumber
+    const scanned = code.trim().toLowerCase()
 
-        if (priceMode === 'mayoreo') {
-          activePrice = product.wholesalePrice || (product as any).wholesale_price || product.price
-          activePackQty = 1
-        } else if (priceMode === 'paquete') {
-          activePrice = parsedDesc.packPrice || (product.price * 0.75)
-          activePackQty = parsedDesc.packQty || 6
-        } else if (priceMode === 'bulto') {
-          activePrice = parsedDesc.bulkPrice || (product.price * 0.65)
-          activePackQty = parsedDesc.bulkQty || 12
-        }
+    let isPackScan = false
+    let matchedProduct = products.find(p => {
+      const pPiece = (p.barcode || p.sku || '').trim().toLowerCase()
+      const pPack = ((p as any).barcode_pack || (p as any).barcodePack || `${pPiece}-paq`).toLowerCase()
+      
+      if (scanned === pPack || scanned === `${pPiece}-paq` || (p.sku && scanned === `${p.sku.toLowerCase()}-paq`)) {
+        isPackScan = true
+        return true
+      }
+      return scanned === pPiece || scanned === (p.sku || '').toLowerCase()
+    })
 
-        const computedProduct = {
-          ...product,
-          price: activePrice,
-          packQuantity: activePackQty
-        }
+    if (!matchedProduct) return
 
-        addItemToDraft(scannerNum, computedProduct, currentUser.username || currentUser.email || '')
-        
-        // PUSH local sync para esa caja específica
-        const localIp = organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip')
-        if (!navigator.onLine && localIp) {
-          const nextItems = [...(draftOrders[scannerNum] || []), { productId: product.id, quantity: 1, unitPrice: activePrice, packQuantity: activePackQty }]
-          const url = `${localIp.replace(/\/$/, '')}/api/drafts`
-          fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ticketNumber: scannerNum, items: nextItems })
-          }).catch(err => console.warn('⚠️ Falló sincronización local:', err))
-        }
+    const parsedDesc = parseProductDescription(matchedProduct.description || '')
+    const packQty = Number(matchedProduct.packQuantity || (matchedProduct as any).pack_quantity || (matchedProduct as any).wholesale_min_qty || parsedDesc.packQty || 6)
+    const packPrice = Number((matchedProduct as any).packPrice || (matchedProduct as any).pack_price || parsedDesc.packPrice || (matchedProduct.price * packQty * 0.75))
+    const unitPackPrice = packQty > 0 ? (packPrice / packQty) : matchedProduct.price
+
+    if (isPackScan) {
+      // 📦 Escaneo de Paquete Completo: agregar N piezas de paquete al ticket
+      const computedProduct = {
+        ...matchedProduct,
+        price: unitPackPrice,
+        packQuantity: packQty
+      }
+      for (let i = 0; i < packQty; i++) {
+        addItemToDraft(targetTicket, computedProduct, currentUser.username || currentUser.email || currentUser.id)
       }
     } else {
-      // Flujo normal para el escáner del usuario actual en la caja activa
-      const product = products.find(p => p.barcode === code || p.sku === code)
-      if (product) handleAddProduct(product)
+      if (targetTicket !== tableNumber) {
+        setCurrentTicket(targetTicket)
+      }
+      handleAddProduct(matchedProduct)
     }
   })
 
@@ -605,16 +596,31 @@ export default function POS() {
     if (!currentUser || isReadOnly) return
     const item = items.find(i => i.id === itemId)
     if (item) {
+      const isPriceReduction = newPrice < item.unitPrice
+      const isAdmin = ['admin', 'owner', 'superadmin'].includes(currentUser.role?.toLowerCase() || '')
+
+      if (isPriceReduction && !isAdmin) {
+        alert(`⚠️ ALERTA DE EXCEPCIÓN DE PRECIO (ADMIN):
+Se está aplicando un precio especial ($${newPrice.toFixed(2)}) por debajo del precio público a una sola pieza.
+Esta excepción será registrada en el registro de auditoría y quedará notificada en las observaciones del Cierre de Caja.`)
+      }
+
       updateDraftItemPrice(tableNumber, itemId, newPrice)
       
-      // Audit Log: Price manually adjusted in cart
+      // Audit Log: Price manually adjusted in cart with exception flag
       supabaseService.createAuditLog({
         userId: currentUser.id,
-        action: 'POS_PRICE_ADJUSTED',
+        action: isPriceReduction ? 'POS_SPECIAL_PRICE_EXCEPTION_APPLIED' : 'POS_PRICE_ADJUSTED',
         entityType: 'POS',
         entityId: `caja-${tableNumber}`,
-        newValue: { itemId, oldPrice: item.unitPrice, newPrice, productName: item.name || 'Producto' }
+        newValue: { itemId, oldPrice: item.unitPrice, newPrice, productName: item.name || 'Producto', isException: isPriceReduction, userRole: currentUser.role }
       }).catch(err => console.error('Error logging price adjustment:', err))
+
+      // Registrar nota de ajuste en el turno de caja activo si aplica reducción
+      if (isPriceReduction && activeShift?.id) {
+        const noteMsg = `⚠️ Excepción de Precio Aplicada por ${currentUser.name || currentUser.username}: ${item.name} de $${item.unitPrice.toFixed(2)} a $${newPrice.toFixed(2)}`
+        shiftService.appendShiftNote(activeShift.id, noteMsg)
+      }
     }
   }
 

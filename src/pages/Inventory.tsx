@@ -88,9 +88,13 @@ export default function Inventory() {
         return;
       }
 
-      const packCode = product.barcode_pack || `${pieceCode}-PAQ`
-      const packQty = product.packQuantity || 6
-      const packPrice = product.packPrice || (product.price * packQty * 0.85)
+      const packCode = product.barcode_pack || (product as any).barcodePack || `${pieceCode}-PAQ`
+      const packQty = Number(product.packQuantity || product.pack_quantity || product.wholesale_min_qty || product.wholesaleMinQty || 6)
+      const piecePrice = Number(product.price || 0)
+      const wholesalePrice = Number(product.wholesalePrice || product.wholesale_price || (piecePrice * 0.88))
+      const packPrice = Number(product.packPrice || product.pack_price || (piecePrice * packQty * 0.75))
+      const unitPackPrice = packQty > 0 ? (packPrice / packQty) : piecePrice
+      const assortmentText = product.description ? product.description.slice(0, 40) : `Surtido: Tallas y Colores variados (${product.category || 'Moda'})`
 
       // Generate barcode images using bwip-js
       const pieceBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(pieceCode)}&scale=3&height=10&includetext`;
@@ -98,28 +102,40 @@ export default function Inventory() {
 
       const htmlContent = `
         <div style="width: 58mm; padding: 2px; font-family: sans-serif; text-align: center;">
-          <!-- 📦 ETIQUETA 1: PIEZA INDIVIDUAL -->
-          <div style="border-bottom: 2px dashed #ccc; padding-bottom: 10px; margin-bottom: 10px;">
-            <span style="font-size: 8px; font-weight: 900; background: #1A1A1A; color: white; padding: 1px 4px; border-radius: 3px; uppercase">PIEZA INDIVIDUAL</span>
-            <h2 style="font-size: 12px; margin: 4px 0 2px 0; font-weight: 900;">${product.name}</h2>
-            <p style="font-size: 16px; font-weight: 900; color: #E62E6B; margin: 0 0 4px 0;">$${Number(product.price || 0).toFixed(2)} c/u</p>
+          <!-- 📦 ETIQUETA 1: PIEZA INDIVIDUAL (MENUDEO & MAYOREO) -->
+          <div style="border-bottom: 2px dashed #ccc; padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="font-size: 8px; font-weight: 900; background: #1A1A1A; color: white; padding: 1px 5px; border-radius: 3px; text-transform: uppercase;">PIEZA INDIVIDUAL</span>
+            <h2 style="font-size: 11px; margin: 4px 0 2px 0; font-weight: 900; line-height: 1.1;">${product.name}</h2>
+            
+            <div style="margin: 4px 0; border: 1px solid #f1f5f9; border-radius: 6px; padding: 3px; background: #f8fafc;">
+              <p style="font-size: 14px; font-weight: 900; color: #E62E6B; margin: 0;">$${piecePrice.toFixed(2)} c/u (Menudeo)</p>
+              <p style="font-size: 10px; font-weight: 800; color: #2563EB; margin: 1px 0;">$${wholesalePrice.toFixed(2)} c/u (Mayoreo 3+ pcs)</p>
+            </div>
+
             <div style="display: flex; justify-content: center; width: 100%;">
               <img src="${pieceBarcodeImg}" style="max-width: 95%; height: auto;" alt="barcode-piece">
             </div>
           </div>
 
-          <!-- 📦 ETIQUETA 2: PAQUETE DE MAYOREO -->
+          <!-- 📦 ETIQUETA 2: PAQUETE DE MAYOREO (SURTIDO - SIN PRECIO ACUMULADO) -->
           <div style="padding-bottom: 5px;">
-            <span style="font-size: 8px; font-weight: 900; background: #E62E6B; color: white; padding: 1px 4px; border-radius: 3px; uppercase">PAQUETE DE ${packQty} PIEZAS</span>
-            <h2 style="font-size: 12px; margin: 4px 0 2px 0; font-weight: 900;">${product.name} (PAQ)</h2>
-            <p style="font-size: 16px; font-weight: 900; color: #1A1A1A; margin: 0 0 4px 0;">$${Number(packPrice).toFixed(2)} / Paq</p>
+            <span style="font-size: 9px; font-weight: 900; background: #E62E6B; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">PAQUETE DE ${packQty} PIEZAS</span>
+            <h2 style="font-size: 11px; margin: 4px 0 2px 0; font-weight: 900; line-height: 1.1;">${product.name} (PAQ)</h2>
+            
+            <div style="margin: 4px 0; border: 1px solid #fef3c7; border-radius: 6px; padding: 4px; background: #fffbeb;">
+              <p style="font-size: 16px; font-weight: 900; color: #059669; margin: 0;">$${unitPackPrice.toFixed(2)} / pza en Paquete</p>
+              <p style="font-size: 9px; font-weight: 800; color: #92400e; margin: 2px 0 0 0;">✨ ${assortmentText}</p>
+            </div>
+
             <div style="display: flex; justify-content: center; width: 100%;">
               <img src="${packBarcodeImg}" style="max-width: 95%; height: auto;" alt="barcode-pack">
             </div>
-            <p style="font-size: 8px; margin-top: 4px; color: #666; font-weight: bold;">Descuenta ${packQty} piezas de inventario</p>
+            <p style="font-size: 8px; margin-top: 4px; color: #64748b; font-weight: bold;">
+              Código de Paquete Surtido (${packQty} pzas)
+            </p>
           </div>
 
-          <p style="font-size: 8px; margin-top: 8px; color: #888; font-weight: bold; border-top: 1px solid #eee; pt-1">MODA MIEL MX · Powered by REISBLOC</p>
+          <p style="font-size: 8px; margin-top: 6px; color: #94a3b8; font-weight: bold; border-top: 1px solid #f1f5f9; padding-top: 3px;">MODA MIEL MX · Powered by REISBLOC</p>
         </div>
       `;
 
