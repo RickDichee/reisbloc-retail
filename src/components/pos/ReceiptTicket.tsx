@@ -58,8 +58,10 @@ export default function ReceiptTicket({
     return acc
   }, {} as Record<string, any[]>)
 
-  const ticketId = (order.id || '').replace('ticket-', '').slice(0, 10).toUpperCase()
-  const qrVerificationUrl = `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=TICKET-${ticketId}&scale=2`
+  const ticketId = (order.id || '').replace('ticket-', '').slice(0, 8).toUpperCase()
+  const ticketFolio = tableNumber ? `TK-${tableNumber}-${ticketId}` : `TK-${ticketId}`
+  const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(ticketFolio)}&scale=2&height=12&includetext`
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -205,14 +207,16 @@ export default function ReceiptTicket({
         PAGO CON: {paymentMethod.toUpperCase()}
       </div>
 
-      {/* QR de Validación y Pie de Página */}
+      {/* Código de Barras Térmico Code128 con Folio del Ticket */}
       <div style={{ textAlign: 'center', fontSize: '9.5px', borderTop: '2px dashed #000', paddingTop: '4px', marginTop: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <img 
-          src={qrVerificationUrl} 
-          alt="qr-ticket" 
-          style={{ width: '22mm', height: '22mm', margin: '2px auto', display: 'block' }} 
+          src={barcodeUrl} 
+          alt={`barcode-${ticketFolio}`} 
+          style={{ width: '38mm', height: '14mm', margin: '3px auto', display: 'block', objectFit: 'contain' }} 
         />
+        <div style={{ fontWeight: 900, marginTop: '1px', fontSize: '9px', letterSpacing: '0.5px' }}>FOLIO: {ticketFolio}</div>
         <div style={{ fontWeight: 900, marginTop: '2px' }}>{ticketFooterMsg}</div>
+
         <div style={{ fontSize: '8.5px', marginTop: '1px' }}>{BRANDING.receiptTagline}</div>
 
         {/* Powered by Reisbloc */}

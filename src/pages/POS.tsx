@@ -649,14 +649,16 @@ export default function POS() {
       return
     }
 
-    // 👤 MODO PIEZA: Agregar 1 pieza individual usando PRECIO POR PIEZA EN PAQUETE
+    // 👤 MODO PIEZA: Agregar 1 pieza individual usando PRECIO REAL POR PIEZA
+    const singlePiecePrice = Number((product as any).piecePrice || (product as any).piece_price || (product as any).unit_price || rawPrice)
     const computedProduct = {
       ...product,
-      price: unitPackPrice,
+      price: singlePiecePrice,
       packQuantity: 1
     }
 
     addItemToDraft(tableNumber, computedProduct, currentUser.id)
+
   }
 
   const handleAddPackageProduct = (product: Product) => {
@@ -1241,17 +1243,29 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             </div>
           )}
 
+          {/* Barra de Búsqueda Principal Amplificada y Visible */}
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-600" />
             <input
               type="text"
-              className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl bg-slate-50 font-bold focus:ring-2 focus:ring-slate-900 transition-all"
-              placeholder="Escanear o buscar producto..."
+              className="w-full pl-11 pr-10 py-3.5 border-2 border-slate-300 rounded-2xl bg-white text-base font-extrabold text-slate-900 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm outline-none placeholder:text-slate-400 placeholder:font-bold"
+              placeholder="🔍 ESCANEAR CÓDIGO O BUSCAR POR SKU / NOMBRE..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchKeyDown}
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+                title="Limpiar búsqueda"
+              >
+                <X size={18} />
+              </button>
+            )}
           </div>
+
 
           <button
             onClick={() => setShowManualItemModal(true)}
