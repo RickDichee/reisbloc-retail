@@ -36,6 +36,10 @@ export default function ReceiptTicket({
   const ticketAddress = organizationSettings?.ticketAddress || address
   const ticketPhone = organizationSettings?.ticketPhone || phone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
+  const ticketWidth = organizationSettings?.ticketPrinterWidth || 58
+
+  // Ancho imprimible real para impresora de 58mm (48mm área neta imprimible para evitar recortes laterales)
+  const printableWidth = ticketWidth === 58 ? 48 : (ticketWidth === 80 ? 72 : 48)
 
   const registerName = (() => {
     const customNames = organizationSettings?.cashRegisters
@@ -48,49 +52,53 @@ export default function ReceiptTicket({
   // Agrupar items por categoría
   const itemsByCategory = order.items.reduce((acc, item) => {
     const product = products.find(p => p.id === item.productId)
-    const category = product?.category || 'Productos'
+    const category = product?.category || 'General'
     if (!acc[category]) acc[category] = []
-    acc[category].push({ ...item, productName: product?.name || 'Desconocido' })
+    acc[category].push({ ...item, productName: product?.name || item.name || 'Producto' })
     return acc
   }, {} as Record<string, any[]>)
+
+  const ticketId = (order.id || '').replace('ticket-', '').slice(0, 10).toUpperCase()
+  const qrVerificationUrl = `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=TICKET-${ticketId}&scale=2`
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (receiptRef.current) {
-        const printWindow = window.open('', '', 'height=800,width=400')
+        const printWindow = window.open('', '_blank', 'width=420,height=600,left=200,top=200')
         if (printWindow) {
-          const printerWidth = organizationSettings?.ticketPrinterWidth || 58
           printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
               <meta charset="UTF-8">
+              <title>Ticket_${ticketId}</title>
               <style>
                 * {
                   margin: 0;
                   padding: 0;
                   box-sizing: border-box;
                   color: #000 !important;
-                  -webkit-font-smoothing: none !important;
-                  -moz-osx-font-smoothing: none !important;
-                  font-smooth: never !important;
                 }
                 body {
-                  width: ${printerWidth}mm;
-                  padding: 4px;
-                  background: white;
-                  font-family: Arial, Helvetica, sans-serif;
-                  font-weight: 900;
-                  font-size: 12px;
-                  line-height: 1.3;
+                  width: ${printableWidth}mm;
+                  margin: 0 auto;
+                  padding: 1mm 0;
+                  background: #fff;
+                  font-family: 'Consolas', 'Courier New', monospace, system-ui;
+                  font-weight: 700;
+                  font-size: 11px;
+                  line-height: 1.25;
+                  text-align: left;
                 }
-                .dashed-divider {
-                  border-bottom: 2px dashed #000 !important;
-                  margin: 6px 0;
-                }
-                .solid-divider {
-                  border-bottom: 3px solid #000 !important;
-                  margin: 8px 0;
+                @media print {
+                  @page {
+                    size: ${ticketWidth}mm auto;
+                    margin: 0;
+                  }
+                  body {
+                    width: ${printableWidth}mm;
+                    margin: 0 auto;
+                  }
                 }
               </style>
             </head>
@@ -100,148 +108,119 @@ export default function ReceiptTicket({
             </html>
           `)
           printWindow.document.close()
-          printWindow.print()
-          printWindow.close()
+          setTimeout(() => {
+            try {
+              printWindow.focus()
+              printWindow.print()
+            } catch (e) {}
+          }, 300)
         }
       }
-    }, 500)
+    }, 400)
 
     return () => clearTimeout(timer)
-  }, [organizationSettings])
+  }, [organizationSettings, printableWidth, ticketId, ticketWidth])
 
   return (
     <div
       ref={receiptRef}
       className="receipt-ticket"
       style={{
-        width: `${organizationSettings?.ticketPrinterWidth || 58}mm`,
-        padding: '6px',
-        fontFamily: 'Arial, Helvetica, sans-serif',
-        fontWeight: 900,
-        fontSize: '12px',
-        lineHeight: '1.3',
+        width: `${printableWidth}mm`,
+        margin: '0 auto',
+        padding: '1mm 0',
+        fontFamily: "'Consolas', 'Courier New', monospace, system-ui",
+        fontWeight: 700,
+        fontSize: '11px',
+        lineHeight: '1.25',
         backgroundColor: '#fff',
         color: '#000',
-        WebkitFontSmoothing: 'none',
-        fontSmooth: 'never'
+        boxSizing: 'border-box'
       }}
     >
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '6px', borderBottom: '3px solid #000', paddingBottom: '6px' }}>
+      {/* Header Térmico Alto Contraste */}
+      <div style={{ textAlign: 'center', marginBottom: '4px', borderBottom: '2px dashed #000', paddingBottom: '4px' }}>
         {ticketShowLogo && (
-          <img src={BRANDING.logoUrl} alt="Logo" style={{ width: '46px', height: '46px', marginBottom: '4px', borderRadius: '8px', objectFit: 'cover' }} />
+          <img 
+            src={BRANDING.logoUrl} 
+            alt="Logo" 
+            style={{ width: '42px', height: '42px', marginBottom: '3px', borderRadius: '6px', objectFit: 'cover', display: 'block', margin: '0 auto 3px auto' }} 
+          />
         )}
-        <div style={{ fontWeight: 'bold', fontSize: '15px', textTransform: 'uppercase' }}>{ticketBusinessName}</div>
-        <div style={{ fontSize: '11px', marginTop: '2px' }}>{ticketAddress}</div>
-        {ticketPhone && <div style={{ fontSize: '11px', marginTop: '1px' }}>Tel: {ticketPhone}</div>}
+        <div style={{ fontWeight: 900, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.3px', color: '#000' }}>
+          {ticketBusinessName}
+        </div>
+        <div style={{ fontSize: '10px', marginTop: '1px', color: '#000' }}>{ticketAddress}</div>
+        {ticketPhone && <div style={{ fontSize: '10px', marginTop: '1px', color: '#000' }}>Tel: {ticketPhone}</div>}
       </div>
 
-      {/* Ticket Info */}
-      <div style={{ marginBottom: '6px', fontSize: '10px' }}>
-        <div>Ticket: {order.id?.slice(0, 8) || 'N/A'}</div>
-        <div>Caja: {registerName}</div>
-        <div>Fecha: {new Date().toLocaleString('es-MX')}</div>
-        {clientName && <div>Cliente: {clientName} {clientPhone ? `(${clientPhone})` : ''}</div>}
+      {/* Info Ticket */}
+      <div style={{ marginBottom: '4px', fontSize: '9.5px', borderBottom: '1px solid #000', paddingBottom: '4px', color: '#000' }}>
+        <div style={{ display: 'flex', justifyBetween: 'space-between' }}>
+          <span>FOLIO: #{ticketId}</span>
+          <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>{registerName}</span>
+        </div>
+        <div>FECHA: {new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</div>
+        {clientName && <div style={{ fontWeight: 'bold', marginTop: '1px' }}>CLIENTE: {clientName.toUpperCase()} {clientPhone ? `(${clientPhone})` : ''}</div>}
       </div>
 
-      {/* Items */}
-      <div style={{ marginBottom: '6px', borderBottom: '2px dashed #000', paddingBottom: '6px' }}>
+      {/* Desglose de Artículos */}
+      <div style={{ marginBottom: '4px', borderBottom: '2px dashed #000', paddingBottom: '4px' }}>
         {Object.entries(itemsByCategory).map(([category, items]) => (
-          <div key={category} style={{ marginBottom: '6px' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '11px', borderBottom: '2px dashed #000', paddingBottom: '2px', textTransform: 'uppercase' }}>
+          <div key={category} style={{ marginBottom: '4px' }}>
+            <div style={{ fontWeight: 900, fontSize: '9.5px', textTransform: 'uppercase', background: '#000', color: '#fff', padding: '1px 3px', marginBottom: '3px', borderRadius: '1px' }}>
               {category}
             </div>
-            {items.map((item: any, idx: number) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}>
-                <div style={{ paddingRight: '4px' }}>
-                  {item.productName} ({item.quantity} pz)
+            {items.map((item: any, idx: number) => {
+              const itemQty = Number(item.quantity || 1)
+              const itemUnitPrice = Number(item.unitPrice || item.price || 0)
+              const itemTotal = itemUnitPrice * itemQty
+
+              return (
+                <div key={idx} style={{ marginBottom: '3px' }}>
+                  <div style={{ fontWeight: 800, fontSize: '10.5px', textTransform: 'uppercase', wordBreak: 'break-word', color: '#000' }}>
+                    {item.productName}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#000' }}>
+                    <span>{itemQty} pz x ${itemUnitPrice.toFixed(2)}</span>
+                    <span style={{ fontWeight: 900 }}>${itemTotal.toFixed(2)}</span>
+                  </div>
                 </div>
-                <div style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                  ${((item.unitPrice || item.price || 0) * item.quantity).toFixed(2)}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ))}
       </div>
 
-      {/* Totales */}
-      <div style={{ marginBottom: '6px', borderBottom: '3px solid #000', paddingBottom: '6px' }}>
-        <div style={{ fontWeight: 'black', display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
+      {/* Resumen Total Térmico */}
+      <div style={{ marginBottom: '4px', borderBottom: '2px solid #000', paddingBottom: '4px', paddingTop: '2px' }}>
+        <div style={{ fontWeight: 900, display: 'flex', justifyBetween: 'space-between', fontSize: '14px', border: '2px solid #000', padding: '3px 4px', textAlign: 'center' }}>
           <span>TOTAL:</span>
-          <span>${saleTotal.toFixed(2)}</span>
+          <span style={{ marginLeft: 'auto' }}>${saleTotal.toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Método de pago */}
-      <div style={{ marginBottom: '6px', fontSize: '11px', textAlign: 'center', fontWeight: 'bold' }}>
-        <div>PAGO: {paymentMethod.toUpperCase()}</div>
+      {/* Método de Pago */}
+      <div style={{ marginBottom: '4px', fontSize: '10.5px', textAlign: 'center', fontWeight: 900, textTransform: 'uppercase' }}>
+        PAGO CON: {paymentMethod.toUpperCase()}
       </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          textAlign: 'center',
-          fontSize: '11px',
-          borderTop: '2px dashed #000',
-          paddingTop: '6px',
-          marginTop: '6px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '2px'
-        }}
-      >
-        <div style={{ fontWeight: 'bold' }}>{ticketFooterMsg}</div>
-        <div style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '2px' }}>
-          {BRANDING.receiptTagline}
-        </div>
+      {/* QR de Validación y Pie de Página */}
+      <div style={{ textAlign: 'center', fontSize: '9.5px', borderTop: '2px dashed #000', paddingTop: '4px', marginTop: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <img 
+          src={qrVerificationUrl} 
+          alt="qr-ticket" 
+          style={{ width: '22mm', height: '22mm', margin: '2px auto', display: 'block' }} 
+        />
+        <div style={{ fontWeight: 900, marginTop: '2px' }}>{ticketFooterMsg}</div>
+        <div style={{ fontSize: '8.5px', marginTop: '1px' }}>{BRANDING.receiptTagline}</div>
 
-        {/* Publicidad Reisbloc (Siempre Visible al Bottom por Requerimiento Fijo) */}
-        <div style={{
-          marginTop: '8px',
-          borderTop: '2px dashed #000',
-          paddingTop: '6px',
-          width: '100%',
-          fontSize: '10px',
-          fontWeight: 'bold',
-          textAlign: 'center'
-        }}>
+        {/* Powered by Reisbloc */}
+        <div style={{ marginTop: '4px', borderTop: '1px solid #000', paddingTop: '3px', width: '100%', fontSize: '8.5px', fontWeight: 'bold' }}>
           <div>⚡ {BRANDING.poweredBy}</div>
-          <div style={{ fontSize: '9px', fontWeight: 'normal', marginTop: '1px' }}>{BRANDING.poweredByUrl}</div>
+          <div style={{ fontSize: '8px', fontWeight: 'normal' }}>{BRANDING.poweredByUrl}</div>
         </div>
       </div>
-
-      {/* Hidden styles para impresión */}
-      <style>{`
-        @media print {
-          @page {
-            margin: 0;
-          }
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            color: #000 !important;
-            -webkit-font-smoothing: none !important;
-            -moz-osx-font-smoothing: none !important;
-            font-smooth: never !important;
-          }
-          body {
-            width: ${organizationSettings?.ticketPrinterWidth || 58}mm;
-            font-family: Arial, Helvetica, sans-serif;
-            font-weight: 900;
-          }
-          .receipt-ticket {
-            width: ${organizationSettings?.ticketPrinterWidth || 58}mm;
-            padding: 1mm !important;
-          }
-          img {
-            -webkit-print-color-adjust: exact;
-            object-fit: cover;
-          }
-        }
-      `}</style>
     </div>
   )
 }

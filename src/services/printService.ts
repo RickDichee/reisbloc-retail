@@ -44,17 +44,20 @@ class PrintService {
             <meta charset="UTF-8">
             <title>${title}</title>
             <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
+              * { margin: 0; padding: 0; box-sizing: border-box; color: #000 !important; }
               body {
-                font-family: "Courier New", monospace;
-                font-size: 12px;
-                width: ${width}mm;
-                padding: 8px;
+                font-family: 'Consolas', 'Courier New', monospace, system-ui;
+                font-weight: 700;
+                font-size: 11px;
+                line-height: 1.25;
+                width: ${width === 58 ? 48 : (width === 80 ? 72 : width)}mm;
+                margin: 0 auto;
+                padding: 1mm 0;
                 background: white;
                 color: black;
               }
               @media print {
-                body { width: ${width}mm; }
+                body { width: ${width === 58 ? 48 : (width === 80 ? 72 : width)}mm; margin: 0 auto; }
                 @page { size: ${width}mm auto; margin: 0; }
               }
             </style>
