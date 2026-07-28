@@ -1069,10 +1069,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Cargando...</div>
 
-  const currentTotal = (
-    activeTableOrders.reduce((sum, o) => sum + (o.items?.reduce((s: number, i: any) => s + (i.unitPrice * i.quantity), 0) || 0), 0) +
-    items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
-  )
+  const currentTotal = items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
 
   return (
     <DashboardLayout>

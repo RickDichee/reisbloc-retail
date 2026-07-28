@@ -912,15 +912,39 @@ class SupabaseService {
 
   async updateOrder(orderId: string, updates: Partial<Order>): Promise<void> {
     try {
-      const payload = this.buildOrderPayload(updates)
+      // 1. Siempre actualizar el estado en almacenamiento local
+      this.updateLocalPendingOrder(orderId, updates)
 
-      const { error } = await supabase.from('orders').update(payload).eq('id', orderId)
+      // 2. Si orderId es un UUID válido de Postgres, intentar actualizar en Supabase remoto
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (uuidRegex.test(orderId) && navigator.onLine) {
+        const payload = this.buildOrderPayload(updates)
+        delete payload.paidAmount
+        delete payload.pendingBalance
+        delete payload.paymentStatus
+        delete payload.isPaid
 
-      if (error) throw error
+        const { error } = await supabase.from('orders').update(payload).eq('id', orderId)
+        if (error) {
+          logger.warn('supabase', `⚠️ Warning en updateOrder remoto: ${error.message}`)
+        }
+      }
     } catch (error) {
-      logger.error('supabase', 'Error updating order', error as any)
-      throw error
+      logger.warn('supabase', 'Catch en updateOrder (silencioso local):', error as any)
     }
+  }
+
+  updateLocalPendingOrder(orderId: string, updates: Partial<Order>) {
+    try {
+      const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+      const updated = existing.map((o: any) => {
+        if (o.id === orderId) {
+          return { ...o, ...updates }
+        }
+        return o
+      })
+      localStorage.setItem('local_pending_orders', JSON.stringify(updated))
+    } catch (e) {}
   }
 
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
@@ -930,18 +954,25 @@ class SupabaseService {
 
   async cancelOrder(orderId: string, reason: string, userId: string): Promise<void> {
     try {
-      // 1. Update status to cancelled
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          status: 'cancelled',
-          notes: reason ? `Cancelado: ${reason}` : 'Cancelado por el usuario'
-        })
-        .eq('id', orderId)
+      // 1. Actualizar estado localmente
+      this.updateLocalPendingOrder(orderId, {
+        status: 'cancelled',
+        notes: reason ? `Cancelado: ${reason}` : 'Cancelado por el usuario'
+      })
 
-      if (error) throw error
+      // 2. Si es UUID, actualizar en Supabase remoto
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (uuidRegex.test(orderId) && navigator.onLine) {
+        await supabase
+          .from('orders')
+          .update({
+            status: 'cancelled',
+            notes: reason ? `Cancelado: ${reason}` : 'Cancelado por el usuario'
+          })
+          .eq('id', orderId)
+      }
 
-      // 2. Audit Log
+      // 3. Audit Log
       await this.createAuditLog({
         userId: userId,
         action: 'ORDER_CANCELLED',
@@ -949,12 +980,11 @@ class SupabaseService {
         entityId: orderId,
         newValue: { reason },
         ipAddress: 'client-terminal'
-      })
+      }).catch(console.error)
 
       logger.info('supabase', `🛑 Order ${orderId} cancelled. Reason: ${reason}`)
     } catch (error) {
-      logger.error('supabase', 'Error cancelling order', error as any)
-      throw error
+      logger.warn('supabase', 'Error en cancelOrder (silencioso local):', error as any)
     }
   }
 

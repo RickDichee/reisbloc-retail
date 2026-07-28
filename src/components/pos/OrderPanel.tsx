@@ -60,19 +60,21 @@ export function OrderPanel({
           </p>
         </div>
 
+        {items.length > 0 && (
+          <button
+            onClick={onClear}
+            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 transition-all"
+            title="Vaciar ticket y liberar caja para nuevas ventas"
+          >
+            <Trash2 size={12} />
+            <span>Liberar Caja</span>
+          </button>
+        )}
+
         <div className="flex items-center gap-2">
           <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl font-black text-sm border border-indigo-100">
             {currency.format(effectiveTotal)}
           </div>
-          {items.length > 0 && (
-            <button
-              onClick={onClear}
-              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              title="Vaciar Ticket"
-            >
-              <Trash2 size={15} />
-            </button>
-          )}
         </div>
       </div>
 
