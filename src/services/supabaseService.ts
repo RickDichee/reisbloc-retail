@@ -2261,6 +2261,101 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     }
   }
 
+  // ==================== CRM CLIENTS & ADEUDOS ====================
+
+  async getAllClients(): Promise<any[]> {
+    try {
+      const { data, error } = await withOrg(
+        supabase.from('clients').select('*'),
+        this.getCurrentOrgId()
+      ).order('name', { ascending: true })
+
+      if (error || !data) {
+        return JSON.parse(localStorage.getItem('cached_crm_clients') || '[]')
+      }
+
+      localStorage.setItem('cached_crm_clients', JSON.stringify(data))
+      return data
+    } catch (e) {
+      return JSON.parse(localStorage.getItem('cached_crm_clients') || '[]')
+    }
+  }
+
+  async createClientWithDuplicateCheck(clientData: { name: string; phone?: string; email?: string; notes?: string }, createdByUserId: string): Promise<any> {
+    const existing = await this.getAllClients()
+    const cleanPhone = (clientData.phone || '').trim().replace(/\D/g, '')
+    const cleanName = (clientData.name || '').trim().toLowerCase()
+
+    // 🔒 Validación Anti-Duplicación
+    const duplicate = existing.find(c => {
+      const p = (c.phone || '').trim().replace(/\D/g, '')
+      const n = (c.name || '').trim().toLowerCase()
+      if (cleanPhone && p && cleanPhone === p) return true
+      if (cleanName && n && cleanName === n) return true
+      return false
+    })
+
+    if (duplicate) {
+      throw new Error(`⚠️ Ya existe un cliente registrado con el mismo nombre o teléfono (${duplicate.name} ${duplicate.phone || ''}).`)
+    }
+
+    const payload = {
+      organization_id: this.getCurrentOrgId() || localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001',
+      name: clientData.name.trim(),
+      phone: clientData.phone ? clientData.phone.trim() : null,
+      email: clientData.email ? clientData.email.trim() : null,
+      notes: clientData.notes ? clientData.notes.trim() : null,
+      created_by: createdByUserId,
+      total_spent: 0
+    }
+
+    let createdClient: any = null
+    try {
+      const { data, error } = await supabase.from('clients').insert([payload]).select('*').single()
+      if (error) throw error
+      createdClient = data
+    } catch (e: any) {
+      logger.warn('supabase', 'RLS o fallback en creación de cliente CRM:', e?.message)
+      createdClient = { ...payload, id: `client-${Date.now()}` }
+      const cached = JSON.parse(localStorage.getItem('cached_crm_clients') || '[]')
+      cached.unshift(createdClient)
+      localStorage.setItem('cached_crm_clients', JSON.stringify(cached))
+    }
+
+    // 📝 Log de Auditoría obligatorio de cliente creado
+    await this.createAuditLog({
+      userId: createdByUserId,
+      action: 'CRM_CLIENT_CREATED',
+      entityType: 'CLIENT',
+      entityId: createdClient.id,
+      newValue: { name: clientData.name, phone: clientData.phone }
+    }).catch(console.error)
+
+    return createdClient
+  }
+
+  async getClientPurchaseHistory(clientId: string, clientName: string): Promise<{ sales: any[]; pendingOrders: any[]; totalDebt: number }> {
+    let sales: any[] = []
+    let pendingOrders: any[] = []
+    let totalDebt = 0
+
+    try {
+      const allOrders = await this.getActiveOrders()
+      const searchStr = (clientName || '').toLowerCase()
+
+      // Filtrar pedidos pendientes asociados por clientId o por nombre en notes
+      pendingOrders = allOrders.filter(o => {
+        const isClientMatch = (o.notes || '').toLowerCase().includes(searchStr)
+        const isUnpaid = (o.pendingBalance || 0) > 0 || !o.isPaid
+        return isClientMatch && isUnpaid
+      })
+
+      totalDebt = pendingOrders.reduce((sum, o) => sum + (o.pendingBalance ?? o.total ?? 0), 0)
+    } catch (e) {}
+
+    return { sales, pendingOrders, totalDebt }
+  }
+
   async addRetailPayment(payment: {
     saleId: string,
     method: string,

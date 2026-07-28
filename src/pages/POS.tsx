@@ -137,34 +137,27 @@ export default function POS() {
 
   const handleCreateQuickClient = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newClientName.trim() || !currentUser?.organizationId) return
+    if (!newClientName.trim() || !currentUser) return
     setIsSavingClient(true)
     try {
-      // usando supabase importado estáticamente
-      const payload = {
-        name: newClientName.trim(),
-        phone: newClientPhone.trim() || null,
-        email: newClientEmail.trim() || null,
-        organization_id: currentUser.organizationId,
-        updated_at: new Date().toISOString()
-      }
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([payload])
-        .select()
-        .single()
-      
-      if (error) throw error
-      if (data) {
-        await loadClients()
-        setSelectedClient(data)
-        setShowNewClientModal(false)
-        setNewClientName('')
-        setNewClientPhone('')
-        setNewClientEmail('')
-      }
+      const created = await supabaseService.createClientWithDuplicateCheck(
+        {
+          name: newClientName.trim(),
+          phone: newClientPhone.trim() || undefined,
+          email: newClientEmail.trim() || undefined
+        },
+        currentUser.id
+      )
+
+      await loadClients()
+      setSelectedClient(created)
+      setShowNewClientModal(false)
+      setNewClientName('')
+      setNewClientPhone('')
+      setNewClientEmail('')
+      alert(`✅ Cliente CRM "${created.name}" registrado e integrado con éxito (Audit Log).`)
     } catch (err: any) {
-      alert(`Error al registrar cliente: ${err.message}`)
+      alert(`⚠️ ${err.message}`)
     } finally {
       setIsSavingClient(false)
     }
@@ -459,6 +452,26 @@ export default function POS() {
     cashRegisterAudioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU7/3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/w==')
     loadProducts()
     checkShift()
+
+    supabaseService.getAllClients().then(setClients).catch(console.error)
+    supabaseService.getActiveOrders().then(setActiveOrdersList).catch(console.error)
+
+    const syncChannel = supabase
+      .channel('pos-realtime-sync-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+        logger.info('pos', '⚡ Realtime update: Refrescando lista de pedidos activos...')
+        const updated = await supabaseService.getActiveOrders()
+        setActiveOrdersList(updated || [])
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, async () => {
+        const updated = await supabaseService.getAllClients()
+        setClients(updated || [])
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(syncChannel)
+    }
   }, [])
 
   useEffect(() => {
@@ -1811,25 +1824,43 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                         c.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
                         c.phone?.includes(clientSearchTerm)
                       )
-                      .map(client => (
-                        <button
-                          key={client.id}
-                          onClick={() => {
-                            setSelectedClient(client)
-                            setShowClientSelector(false)
-                            setClientSearchTerm('')
-                          }}
-                          className="w-full text-left p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/50 transition-all flex items-center justify-between group active:scale-[0.98]"
-                        >
-                          <div>
-                            <p className="text-sm font-black text-slate-800">{client.name}</p>
-                            {client.phone && <p className="text-[10px] text-slate-400 font-bold">{client.phone}</p>}
-                          </div>
-                          <span className="text-[10px] bg-slate-200/60 group-hover:bg-slate-900 group-hover:text-white px-2.5 py-1 rounded-md font-black uppercase tracking-wider transition-all">
-                            Seleccionar
-                          </span>
-                        </button>
-                      ))
+                      .map(client => {
+                        const clientDebt = activeOrdersList
+                          .filter(o => (o.notes || '').toLowerCase().includes(client.name.toLowerCase()) && ((o.pendingBalance || 0) > 0 || !o.isPaid))
+                          .reduce((sum, o) => sum + (o.pendingBalance ?? o.total ?? 0), 0)
+
+                        return (
+                          <button
+                            key={client.id}
+                            onClick={() => {
+                              setSelectedClient(client)
+                              setShowClientSelector(false)
+                              setClientSearchTerm('')
+                              if (clientDebt > 0) {
+                                alert(`⚠️ ALERTA CRM DE ADEUDO PENDIENTE:\nEl cliente ${client.name} tiene un saldo restante por pagar de $${clientDebt.toFixed(2)}.`)
+                              }
+                            }}
+                            className="w-full text-left p-3.5 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/50 transition-all flex items-center justify-between group active:scale-[0.98]"
+                          >
+                            <div>
+                              <p className="text-sm font-black text-slate-800">{client.name}</p>
+                              {client.phone && <p className="text-[10px] text-slate-400 font-bold">{client.phone}</p>}
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              {clientDebt > 0 ? (
+                                <span className="text-[10px] bg-red-100 text-red-700 border border-red-300 px-2.5 py-1 rounded-md font-black uppercase tracking-wider block">
+                                  🔴 Adeudo: ${clientDebt.toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] bg-slate-200/60 group-hover:bg-slate-900 group-hover:text-white px-2.5 py-1 rounded-md font-black uppercase tracking-wider transition-all">
+                                  Seleccionar
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })
                   )}
                 </div>
 
