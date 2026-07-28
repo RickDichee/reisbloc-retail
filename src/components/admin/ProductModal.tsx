@@ -99,9 +99,17 @@ export default function ProductModal({
     const [customSize, setCustomSize] = useState('')
     const [shouldPrint, setShouldPrint] = useState(true)
     const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
+    const [codeFormat, setCodeFormat] = useState<'code128' | 'qrcode'>('code128')
     const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
     const [showPricingOptions, setShowPricingOptions] = useState(() => !!formData.wholesalePrice || !!formData.packPrice || !!formData.bulkPrice)
     const [showStockAdvanced, setShowStockAdvanced] = useState(true)
+
+    const getCodeImageUrl = (code: string) => {
+        if (codeFormat === 'qrcode') {
+            return `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${encodeURIComponent(code)}&scale=3`
+        }
+        return `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(code)}&scale=3&height=12&includetext=false`
+    }
 
     const handleQtyChange = (sz: string, val: number) => {
         setSizeQuantities(prev => ({
@@ -286,7 +294,7 @@ export default function ProductModal({
                             const bulkBarcode = product.barcode || `750B${Math.floor(100000000 + Math.random() * 900000000)}`
 
                             for (let i = 0; i < packagesCount; i++) {
-                                const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(bulkBarcode)}&scale=3&height=12&includetext=false`
+                                const barcodeImgUrl = getCodeImageUrl(bulkBarcode)
                                 printHTML += `
                                   <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
                                     <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">MODA MIEL MX</div>
@@ -309,7 +317,7 @@ export default function ProductModal({
                             resultsToPrint.forEach(item => {
                                 const quantityToPrint = printMode === 'talla' ? 1 : item.count
                                 for (let i = 0; i < quantityToPrint; i++) {
-                                    const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(item.barcode)}&scale=3&height=12&includetext=false`
+                                    const barcodeImgUrl = getCodeImageUrl(item.barcode)
                                     printHTML += `
                                       <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
                                         <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Moda Miel MX · Powered by Reisbloc</div>
@@ -391,7 +399,7 @@ export default function ProductModal({
                                 .join(', ')
 
                             for (let i = 0; i < packagesCount; i++) {
-                                const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(masterBarcode)}&scale=3&height=12&includetext=false`
+                                const barcodeImgUrl = getCodeImageUrl(masterBarcode)
                                 printHTML += `
                                   <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
                                     <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">MODA MIEL MX</div>
@@ -414,7 +422,7 @@ export default function ProductModal({
                             resultsToPrint.forEach(item => {
                                 const quantityToPrint = printMode === 'talla' ? 1 : item.count
                                 for (let i = 0; i < quantityToPrint; i++) {
-                                    const barcodeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(item.barcode)}&scale=3&height=12&includetext=false`
+                                    const barcodeImgUrl = getCodeImageUrl(item.barcode)
                                     printHTML += `
                                       <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
                                         <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Moda Miel MX · Powered by Reisbloc</div>
@@ -649,22 +657,44 @@ export default function ProductModal({
                                                     className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
                                                 />
                                                 <label htmlFor="shouldPrint" className="text-xs font-black text-slate-700 cursor-pointer uppercase tracking-tight flex items-center gap-1">
-                                                    Imprimir etiquetas de código de barras
+                                                    Imprimir etiquetas al guardar
                                                 </label>
                                             </div>
 
                                             {shouldPrint && (
-                                                <div className="ml-6 flex flex-col gap-1.5 animate-scaleIn">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modo de Impresión</label>
-                                                    <select
-                                                        value={printMode}
-                                                        onChange={(e) => setPrintMode(e.target.value as any)}
-                                                        className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white outline-none font-bold text-[11px] text-slate-800"
-                                                    >
-                                                        <option value="bulto">📦 Impresora Nimbot: 1 Etiqueta por Paquete Completo (Con Desglose)</option>
-                                                        <option value="talla">🏷️ Impresora Nimbot: 1 Etiqueta por Talla</option>
-                                                        <option value="prenda">👕 Impresora Nimbot: 1 Etiqueta por cada Prenda individual</option>
-                                                    </select>
+                                                <div className="ml-6 flex flex-col gap-2 animate-scaleIn">
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Formato de Código</label>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setCodeFormat('code128')}
+                                                                className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-[11px] border transition-all ${codeFormat === 'code128' ? 'bg-indigo-900 text-white border-indigo-900 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
+                                                            >
+                                                                🏷️ Barras (1D)
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setCodeFormat('qrcode')}
+                                                                className={`flex-1 py-1.5 px-3 rounded-xl font-bold text-[11px] border transition-all ${codeFormat === 'qrcode' ? 'bg-indigo-900 text-white border-indigo-900 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
+                                                            >
+                                                                📱 QR Code (2D)
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modo de Impresión</label>
+                                                        <select
+                                                            value={printMode}
+                                                            onChange={(e) => setPrintMode(e.target.value as any)}
+                                                            className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white outline-none font-bold text-[11px] text-slate-800"
+                                                        >
+                                                            <option value="bulto">📦 Impresora Nimbot: 1 Etiqueta por Paquete Completo (Con Desglose)</option>
+                                                            <option value="talla">🏷️ Impresora Nimbot: 1 Etiqueta por Talla</option>
+                                                            <option value="prenda">👕 Impresora Nimbot: 1 Etiqueta por cada Prenda individual</option>
+                                                        </select>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -695,6 +725,24 @@ export default function ProductModal({
                                     </button>
                                 )}
                             </div>
+
+                            <div className="flex gap-2 mb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setCodeFormat('code128')}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${codeFormat === 'code128' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    🏷️ Código de Barras (1D)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCodeFormat('qrcode')}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${codeFormat === 'qrcode' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    📱 Código QR (2D)
+                                </button>
+                            </div>
+
                             <input
                                 type="text"
                                 value={formData.barcode}
@@ -703,7 +751,22 @@ export default function ProductModal({
                                 placeholder="Escanear o Escribir EAN / SKU"
                                 disabled={!isAdminOrManager}
                             />
-                            <p className="text-[10px] text-slate-400 mt-1">
+
+                            {formData.barcode && (
+                                <div className="mt-3 p-3 bg-white border border-indigo-100 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm">
+                                    <span className="text-[9px] font-black text-indigo-900 uppercase tracking-wider">
+                                        Vista previa: {codeFormat === 'qrcode' ? '📱 Código QR 2D' : '🏷️ Código de Barras 1D'}
+                                    </span>
+                                    <img 
+                                        src={getCodeImageUrl(formData.barcode)} 
+                                        alt={codeFormat}
+                                        className="max-h-24 object-contain my-1" 
+                                    />
+                                    <span className="text-xs font-mono font-bold text-slate-700">{formData.barcode}</span>
+                                </div>
+                            )}
+
+                            <p className="text-[10px] text-slate-400 mt-1.5">
                                 {isBulk 
                                     ? "Puedes ingresar/escanear el EAN/SKU cargado en las piezas o usar Auto-Generar EAN."
                                     : "Escanea o ingresa el código EAN/SKU del producto."

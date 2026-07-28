@@ -130,9 +130,12 @@ export default function Inventory() {
 
       const packCode = product.barcode_pack || (product as any).barcodePack || `${pieceCode}-PAQ`
 
-      // Generate barcode images using bwip-js
+      // Generate barcode & QR code images using bwip-js
       const pieceBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(pieceCode)}&scale=3&height=10&includetext`;
+      const pieceQRImg = `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${encodeURIComponent(pieceCode)}&scale=3`;
+
       const packBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(packCode)}&scale=3&height=10&includetext`;
+      const packQRImg = `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${encodeURIComponent(packCode)}&scale=3`;
 
       const htmlContent = `
         <div style="width: 58mm; padding: 2px; font-family: sans-serif; text-align: center;">
@@ -146,8 +149,9 @@ export default function Inventory() {
               <p style="font-size: 10px; font-weight: 800; color: #2563EB; margin: 1px 0;">$${wholesalePrice.toFixed(2)} c/u (Mayoreo 3+ pcs)</p>
             </div>
 
-            <div style="display: flex; justify-content: center; width: 100%;">
-              <img src="${pieceBarcodeImg}" style="max-width: 95%; height: auto;" alt="barcode-piece">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; margin-top: 4px;">
+              <img src="${pieceBarcodeImg}" style="max-width: 70%; height: auto;" alt="barcode-piece">
+              <img src="${pieceQRImg}" style="width: 38px; height: 38px;" alt="qr-piece">
             </div>
           </div>
 
@@ -161,8 +165,9 @@ export default function Inventory() {
               <p style="font-size: 9px; font-weight: 800; color: #92400e; margin: 2px 0 0 0;">✨ ${assortmentText}</p>
             </div>
 
-            <div style="display: flex; justify-content: center; width: 100%;">
-              <img src="${packBarcodeImg}" style="max-width: 95%; height: auto;" alt="barcode-pack">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; margin-top: 4px;">
+              <img src="${packBarcodeImg}" style="max-width: 70%; height: auto;" alt="barcode-pack">
+              <img src="${packQRImg}" style="width: 38px; height: 38px;" alt="qr-pack">
             </div>
             <p style="font-size: 8px; margin-top: 4px; color: #64748b; font-weight: bold;">
               Código de Paquete Surtido (${packQty} pzas)
