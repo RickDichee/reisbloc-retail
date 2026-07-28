@@ -1726,6 +1726,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 </div>
               </form>
             </div>
+          </div>
+        )}
+
         {showPendingOrdersModal && (
           <PendingOrdersModal
             isOpen={showPendingOrdersModal}
