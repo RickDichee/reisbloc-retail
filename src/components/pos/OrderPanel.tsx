@@ -5,7 +5,7 @@ import { LucideIcon, ShoppingBag, Plus, Minus, Trash2, Clock, Pencil } from 'luc
 interface OrderPanelProps {
   tableNumber: number
   items: OrderItem[]
-  activeOrders?: Order[] // Órdenes ya enviadas a cocina
+  activeOrders?: Order[]
   onIncrement: (itemId: string) => void
   onDecrement: (itemId: string) => void
   onRemove: (itemId: string) => void
@@ -32,8 +32,6 @@ export function OrderPanel({
   onClear,
   onEditNote,
   onUpdatePrice,
-  onPrintAccount,
-  onPay,
   icon: Icon = ShoppingBag
 }: OrderPanelProps) {
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
@@ -41,91 +39,65 @@ export function OrderPanel({
 
   const safeItems = items || []
   const totalPieces = safeItems.reduce((sum, item) => sum + ((item?.quantity || 0) * (item?.packQuantity || 1)), 0)
-  const isAutoWholesale = totalPieces >= 3
 
   const effectiveTotal = safeItems.reduce((sum, item) => {
-    const rawWholesale = (item as any)?.wholesalePrice || (item as any)?.wholesale_price
-    const price = (isAutoWholesale && rawWholesale) ? rawWholesale : (item?.unitPrice || 0)
-    return sum + (price * (item?.quantity || 0))
+    return sum + ((item?.unitPrice || 0) * (item?.quantity || 0))
   }, 0)
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 flex flex-col h-full">
+      {/* Header Compacto */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <Icon className="text-indigo-600" size={24} />
-            Ticket {tableNumber}
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {items.length} productos ({totalPieces} pzas total)
+          <div className="flex items-center gap-1.5">
+            <Icon className="text-indigo-600 shrink-0" size={18} />
+            <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+              Ticket #{tableNumber}
+            </h2>
+          </div>
+          <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+            {items.length} prod • {totalPieces} pzas total
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-bold text-lg border border-indigo-100">
+
+        <div className="flex items-center gap-2">
+          <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-xl font-black text-sm border border-indigo-100">
             {currency.format(effectiveTotal)}
           </div>
           {items.length > 0 && (
             <button
               onClick={onClear}
-              className="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1 uppercase tracking-wider transition-colors"
+              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              title="Vaciar Ticket"
             >
-              <Trash2 size={12} /> Vaciar Ticket
+              <Trash2 size={15} />
             </button>
           )}
         </div>
       </div>
 
-      {isAutoWholesale && (
-        <div className="mb-4 bg-gradient-to-r from-pink-500 to-[#E62E6B] text-white px-3 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-sm flex items-center justify-between animate-fadeIn">
-          <span>🎉 Mayoreo Automático (3+ Piezas)</span>
-          <span className="bg-white/20 px-2 py-0.5 rounded text-[10px]">3+ pzas activas</span>
-        </div>
-      )}
-
+      {/* Lista o Carrito Vacío Compacto */}
       {items.length === 0 && activeOrders.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center py-8">
-            <ShoppingBag className="mx-auto text-gray-300 mb-4" size={48} />
-            <p className="text-gray-500 text-lg font-medium">Carrito vacío</p>
-            <p className="text-gray-400 text-sm mt-1">Agrega productos</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center my-auto">
+          <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-300 mb-2">
+            <ShoppingBag size={20} />
           </div>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Ticket Vacío</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Selecciona prendas para cobrar</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-          {/* Sección: Historial (Vendido/Guardado) */}
-          {activeOrders.length > 0 && (
-            <div className="mb-4 pb-4 border-b border-gray-100">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Clock size={12} /> Ya registrado
-              </h3>
-              <div className="space-y-2 opacity-75">
-                {activeOrders.flatMap(order => (order.items || []).map(item => ({ ...item }))).map((item: any, idx) => (
-                  <div key={`prev-${idx}`} className="flex justify-between items-center text-sm text-gray-500 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                    <span className="font-medium text-gray-700">{item.productName}</span>
-                    <span className="font-black text-gray-900 bg-slate-200 px-2 py-0.5 rounded text-[10px]">{item.quantity} pz</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Sección: Carrito actual */}
-          {items.length > 0 && (
-            <h3 className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-2">Venta actual</h3>
-          )}
-
+        <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1 custom-scrollbar">
           {items.map(item => (
             <div
               key={item.id}
-              className="group relative rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:border-indigo-200 transition-all"
+              className="group relative rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs hover:border-indigo-300 transition-all space-y-1.5"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 pr-4">
-                  <p className="text-sm font-bold text-gray-900 mb-0.5">{item.productName}</p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1 pr-2 min-w-0">
+                  <p className="text-xs font-black text-slate-900 truncate leading-tight">{item.productName}</p>
                   {editingPriceId === item.id ? (
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[10px] font-bold text-gray-400">$</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-[10px] font-bold text-slate-400">$</span>
                       <input
                         type="number"
                         value={editingPriceVal}
@@ -141,7 +113,7 @@ export function OrderPanel({
                             setEditingPriceId(null)
                           }
                         }}
-                        className="w-16 px-1.5 py-0.5 border border-indigo-200 rounded font-black text-xs text-slate-900 bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-16 px-1 py-0.5 border border-indigo-300 rounded font-black text-xs text-slate-900 bg-slate-50 outline-none focus:ring-1 focus:ring-indigo-500"
                         autoFocus
                       />
                       <button
@@ -152,94 +124,76 @@ export function OrderPanel({
                           }
                           setEditingPriceId(null)
                         }}
-                        className="text-[9px] bg-slate-950 text-white px-1.5 py-0.5 rounded font-black uppercase hover:bg-slate-800 shrink-0"
+                        className="text-[10px] bg-indigo-600 text-white font-bold px-1.5 py-0.5 rounded"
                       >
-                        ok
+                        ✓
                       </button>
                     </div>
                   ) : (
-                    <p 
-                      onClick={() => {
-                        setEditingPriceId(item.id)
-                        setEditingPriceVal(item.unitPrice.toString())
-                      }}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-black cursor-pointer underline decoration-dotted mt-0.5 flex items-center gap-1"
-                      title="Haz clic para modificar el precio de este artículo"
-                    >
-                      {currency.format(item.unitPrice)} c/u ✏️
-                    </p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-xs font-black text-indigo-600">
+                        {currency.format(item.unitPrice)}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setEditingPriceId(item.id)
+                          setEditingPriceVal(item.unitPrice.toString())
+                        }}
+                        className="p-0.5 text-slate-300 hover:text-indigo-600 transition-colors"
+                        title="Editar precio unitario"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                    </div>
                   )}
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-black text-gray-900">
+
+                {/* Subtotal */}
+                <div className="text-right shrink-0">
+                  <span className="font-black text-xs text-slate-900">
                     {currency.format(item.unitPrice * item.quantity)}
-                  </p>
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 border border-gray-100">
-                  <button
-                    onClick={() => onDecrement(item.id)}
-                    className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded transition-all"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="w-8 text-center text-sm font-black text-gray-900">{item.quantity}</span>
-                  <button
-                    onClick={() => onIncrement(item.id)}
-                    className="p-1 text-gray-500 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded transition-all"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2">
+              {/* Botones de Cantidad (+ / - / eliminar) */}
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                {item.notes ? (
                   <button
                     onClick={() => onEditNote(item)}
-                    className={`p-2 rounded-lg transition-all ${item.notes ? 'bg-amber-50 text-amber-600' : 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'}`}
-                    title="Agregar nota"
+                    className="text-[9.5px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded truncate max-w-[120px]"
                   >
-                    <Pencil size={16} />
+                    📝 {item.notes}
                   </button>
+                ) : (
                   <button
-                    onClick={() => onRemove(item.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                    title="Eliminar"
+                    onClick={() => onEditNote(item)}
+                    className="text-[9.5px] font-bold text-slate-400 hover:text-slate-600"
                   >
-                    <Trash2 size={16} />
+                    + Nota
+                  </button>
+                )}
+
+                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+                  <button
+                    onClick={() => onDecrement(item.id)}
+                    className="w-5 h-5 bg-white hover:bg-slate-200 rounded text-slate-700 font-bold flex items-center justify-center transition-colors shadow-2xs"
+                  >
+                    <Minus size={11} />
+                  </button>
+                  <span className="w-6 text-center font-black text-xs text-slate-900">
+                    {item.quantity}
+                  </span>
+                  <button
+                    onClick={() => onIncrement(item.id)}
+                    className="w-5 h-5 bg-slate-900 hover:bg-slate-800 text-white rounded font-bold flex items-center justify-center transition-colors shadow-2xs"
+                  >
+                    <Plus size={11} />
                   </button>
                 </div>
               </div>
-
-              {item.notes && (
-                <div className="mt-2 text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded border border-amber-100 italic">
-                  "{item.notes}"
-                </div>
-              )}
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Acciones de Cuenta (Venta Viva) */}
-      {activeOrders.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 gap-3">
-          <button
-            onClick={onPrintAccount}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all border border-slate-200"
-          >
-            Imprimir Ticket
-          </button>
-          <button
-            onClick={() => {
-              const total = activeOrders.reduce((sum, o) => sum + (o.total || 0), 0)
-              onPay?.(total)
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-black transition-all shadow-lg"
-          >
-            Cobrar Cuenta
-          </button>
         </div>
       )}
     </div>

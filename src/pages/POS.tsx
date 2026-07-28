@@ -1282,10 +1282,10 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         )}
 
         {/* Main Workspace: Combined Grid and Cart */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-          {/* Catalog Panel (Left) */}
-          <div className="flex-[5] flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+          {/* Catalog Panel (Left - Maximized) */}
+          <div className="flex-[7.5] flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto custom-scrollbar">
               <ProductGrid 
                 products={filteredProducts} 
                 onAdd={handleAddProduct} 
@@ -1294,9 +1294,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             </div>
           </div>
 
-          {/* Cart Panel (Right) */}
-          <div className="flex-[3] flex flex-col min-h-0 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2">
+          {/* Cart Panel (Right - Compact & Sleek) */}
+          <div className="flex-[2.5] flex flex-col min-h-0 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-1.5 sm:p-2">
               <OrderPanel
                 tableNumber={tableNumber}
                 items={items}
@@ -1310,18 +1310,18 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               />
             </div>
 
-            {/* Checkout Region */}
-            <div className="p-4 bg-white border-t border-slate-200 space-y-4 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
+            {/* Checkout Region - Compact */}
+            <div className="p-3 bg-white border-t border-slate-200 space-y-2.5 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
               {/* CRM Client Association */}
               <div className="animate-fadeIn">
                 {selectedClient ? (
-                  <div className="w-full flex items-center justify-between px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl shadow-sm">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 bg-emerald-500 text-slate-950 font-black rounded-lg flex items-center justify-center text-xs shrink-0">
+                  <div className="w-full flex items-center justify-between px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl shadow-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 bg-emerald-500 text-slate-950 font-black rounded-md flex items-center justify-center text-[10px] shrink-0">
                         {selectedClient.name[0].toUpperCase()}
                       </div>
                       <div className="text-left min-w-0">
-                        <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-0.5">Cliente CRM</p>
+                        <p className="text-[7.5px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-0.5">Cliente CRM</p>
                         <p className="text-xs font-black text-slate-800 leading-none truncate">{selectedClient.name}</p>
                       </div>
                     </div>
@@ -1330,7 +1330,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                       className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors shrink-0"
                       title="Quitar cliente"
                     >
-                      <X size={16} />
+                      <X size={14} />
                     </button>
                   </div>
                 ) : (
@@ -1339,32 +1339,34 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                       setClientSearchTerm('')
                       setShowClientSelector(true)
                     }}
-                    className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl transition-all group"
+                    className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl transition-all group"
                   >
                     <div className="flex items-center gap-2 text-slate-600">
-                      <User size={16} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Asociar Cliente CRM</span>
+                      <User size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
+                      <span className="text-[9.5px] font-black uppercase tracking-wider">Asociar Cliente CRM</span>
                     </div>
-                    <Plus size={14} className="text-slate-400" />
+                    <Plus size={13} className="text-slate-400" />
                   </button>
                 )}
               </div>
 
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span className="font-black text-slate-500 text-sm">TOTAL</span>
-                <span className="font-black text-3xl text-slate-900 tracking-tight">
+              {/* Total Display */}
+              <div className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                <span className="font-black text-slate-500 text-xs uppercase">TOTAL</span>
+                <span className="font-black text-2xl text-slate-900 tracking-tight">
                   ${currentTotal.toFixed(2)}
                 </span>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={handleCreatePendingOrder}
                   disabled={currentTotal === 0}
-                  className="w-full py-3 bg-amber-400 text-slate-950 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all border border-amber-300 shadow-md shadow-amber-100 disabled:opacity-40 uppercase text-xs tracking-wider"
+                  className="w-full py-2.5 bg-amber-400 text-slate-950 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all border border-amber-300 shadow-xs shadow-amber-100 disabled:opacity-40 uppercase text-[11px] tracking-wider"
                 >
-                  <ShoppingBag size={18} />
+                  <ShoppingBag size={16} />
                   <span>Guardar Pedido / Apartado (Stock)</span>
                 </button>
 
@@ -1372,17 +1374,17 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                   <button
                     onClick={() => handlePrintAccount(tableNumber)}
                     disabled={currentTotal === 0}
-                    className="py-3.5 bg-slate-100 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-all border border-slate-300 text-xs"
+                    className="py-2.5 bg-slate-100 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-all border border-slate-300 text-xs"
                   >
-                    <Printer size={18} />
+                    <Printer size={16} />
                     Ticket
                   </button>
                   <button
                     onClick={handleQuickCheckout}
                     disabled={currentTotal === 0}
-                    className="py-3.5 bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all text-xs"
+                    className="py-2.5 bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200 hover:bg-emerald-700 transition-all text-xs"
                   >
-                    <DollarSign size={18} />
+                    <DollarSign size={16} />
                     COBRAR
                   </button>
                 </div>
