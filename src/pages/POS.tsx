@@ -540,22 +540,10 @@ export default function POS() {
       unitPackPrice = wholesalePrice
     }
 
-    if (isPackScan || priceMode === 'paquete') {
-      // 📦 Escaneo / Modo Paquete Completo: agregar packQty piezas al ticket con unitPackPrice
-      const computedProduct = {
-        ...matchedProduct,
-        price: unitPackPrice,
-        packQuantity: 1
-      }
-      for (let i = 0; i < packQty; i++) {
-        addItemToDraft(targetTicket, computedProduct, currentUser.username || currentUser.email || currentUser.id)
-      }
-    } else {
-      if (targetTicket !== tableNumber) {
-        setCurrentTicket(targetTicket)
-      }
-      handleAddProduct(matchedProduct, false)
+    if (targetTicket !== currentTicketNumber) {
+      setCurrentTicket(targetTicket)
     }
+    handleAddProduct(matchedProduct, isPackScan || priceMode === 'paquete')
   })
 
   if (!currentUser && !loading) {

@@ -176,21 +176,31 @@ export function OrderPanel({
                   </button>
                 )}
 
-                <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+                    <button
+                      onClick={() => onDecrement(item.id)}
+                      className="w-5 h-5 bg-white hover:bg-slate-200 rounded text-slate-700 font-bold flex items-center justify-center transition-colors shadow-2xs"
+                      title="Disminuir (si llega a 0 se elimina)"
+                    >
+                      <Minus size={11} />
+                    </button>
+                    <span className="w-6 text-center font-black text-xs text-slate-900">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => onIncrement(item.id)}
+                      className="w-5 h-5 bg-slate-900 hover:bg-slate-800 text-white rounded font-bold flex items-center justify-center transition-colors shadow-2xs"
+                    >
+                      <Plus size={11} />
+                    </button>
+                  </div>
                   <button
-                    onClick={() => onDecrement(item.id)}
-                    className="w-5 h-5 bg-white hover:bg-slate-200 rounded text-slate-700 font-bold flex items-center justify-center transition-colors shadow-2xs"
+                    onClick={() => onRemove(item.id)}
+                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-1"
+                    title="Eliminar producto del ticket"
                   >
-                    <Minus size={11} />
-                  </button>
-                  <span className="w-6 text-center font-black text-xs text-slate-900">
-                    {item.quantity}
-                  </span>
-                  <button
-                    onClick={() => onIncrement(item.id)}
-                    className="w-5 h-5 bg-slate-900 hover:bg-slate-800 text-white rounded font-bold flex items-center justify-center transition-colors shadow-2xs"
-                  >
-                    <Plus size={11} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>

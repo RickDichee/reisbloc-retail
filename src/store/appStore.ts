@@ -204,7 +204,7 @@ export const useAppStore = create<AppStore>()(
               [ticketKey]: currentItems
                 .map(item =>
                   item.id === itemId
-                    ? { ...item, quantity: Math.max(1, item.quantity - 1) }
+                    ? { ...item, quantity: item.quantity - 1 }
                     : item
                 )
                 .filter(item => item.quantity > 0),
