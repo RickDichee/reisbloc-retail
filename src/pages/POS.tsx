@@ -183,8 +183,33 @@ export default function POS() {
   }, [organizationSettings])
 
   const tableButtons = useMemo(() => {
-    return Object.keys(registers).map(Number).sort((a, b) => a - b)
-  }, [registers])
+    const allNums = Object.keys(registers).map(Number).sort((a, b) => a - b)
+    const isAdminOrManager = ['admin', 'manager', 'owner', 'superadmin'].includes(currentUser?.role?.toLowerCase() || '')
+
+    if (isAdminOrManager) {
+      return allNums
+    }
+
+    // Para Empleados / Cajeros (ej. Hilda): Mostrar únicamente su Caja Asignada + 1 Caja de Emergencia
+    let assignedNum: number | null = null
+    for (const num of allNums) {
+      const assignedUserId = registerAssignments[num.toString()]
+      if (assignedUserId === currentUser?.id) {
+        assignedNum = num
+        break
+      }
+    }
+
+    const userRegister = assignedNum || 1
+    const emergencyRegister = allNums.length > 1 ? allNums[allNums.length - 1] : (userRegister === 1 ? 2 : 1)
+
+    const visible = [userRegister]
+    if (emergencyRegister !== userRegister && !visible.includes(emergencyRegister)) {
+      visible.push(emergencyRegister)
+    }
+
+    return visible.sort((a, b) => a - b)
+  }, [registers, registerAssignments, currentUser])
 
   const handleAddRegister = async () => {
     if (currentUser?.role !== 'admin') return alert('Solo el administrador puede agregar cajas.')
