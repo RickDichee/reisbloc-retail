@@ -3,6 +3,7 @@ import logger from '@/utils/logger'
 import { useAppStore } from '@/store/appStore'
 import { BRANDING } from '@/config/branding'
 import supabaseService from '@/services/supabaseService'
+import imageCacheService from '@/services/imageCacheService'
 import { supabase } from '@/config/supabase'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import ProductGrid from '@/components/pos/ProductGrid'
@@ -558,10 +559,26 @@ export default function POS() {
   }
 
   const loadProducts = async () => {
-    setLoading(true)
+    // 1. Cargar instantáneamente desde caché local (IndexedDB/localStorage) a 0ms
+    try {
+      const cached = await imageCacheService.getCachedProducts()
+      if (cached && cached.length > 0) {
+        setProducts(cached)
+        setLoading(false)
+      } else {
+        setLoading(true)
+      }
+    } catch (e) {
+      setLoading(true)
+    }
+
+    // 2. Sincronizar catálogo actualizado desde Supabase en segundo plano
     try {
       const prods = await supabaseService.getAllRetailProducts()
-      setProducts(prods)
+      if (prods && prods.length > 0) {
+        setProducts(prods)
+        imageCacheService.saveCachedProducts(prods).catch(console.error)
+      }
     } catch (error) {
       logger.error('pos', 'Error loading retail products', error as any)
     } finally {
