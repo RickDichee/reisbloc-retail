@@ -258,7 +258,8 @@ export default function UsersManagement() {
                 )}
               </div>
             </div>
-          })}
+          )
+        })}
         </div>
       )}
 

@@ -221,13 +221,10 @@ export default function ProductModal({
 
                 const isAdminOrManager = ['admin', 'manager', 'owner', 'superadmin'].includes(currentUser?.role?.toLowerCase() || '')
 
-                // 🛡️ REGLA DE SEGURIDAD: Empleados solo pueden SUMAR inventario. Las reducciones requieren aprobación del Admin.
+                // 🛡️ REGLA DE SEGURIDAD: Empleados solo pueden SUMAR inventario. Las reducciones generan notificación al Admin.
                 if (oldStock > targetStock && !isAdminOrManager) {
                   finalStock = oldStock // Mantenemos el stock actual
-                  alert(`⚠️ REQUISITO DE AUTORIZACIÓN (ADMIN):
-Las reducciones de inventario (de ${oldStock} a ${targetStock} piezas) no se aplican directamente por empleados.
-
-Se ha generado una Notificación de Ajuste Pendiente para revisión y aprobación del Administrador. El stock se mantendrá en ${oldStock} piezas.`)
+                  alert(`✨ Notificación enviada: Tu solicitud de ajuste de inventario (${oldStock} ➔ ${targetStock} pzas) está en proceso de revisión por Administración y se reflejará a la brevedad.`)
 
                   await supabaseService.createAuditLog({
                     userId: currentUser?.id || 'unknown',
