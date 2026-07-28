@@ -144,8 +144,6 @@ export function ProductGrid({ products, onAdd, disableAdd = false }: ProductGrid
               const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
 
               const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
-              const singlePiecePrice = Number((product as any).piecePrice || (product as any).piece_price || (product as any).unit_price || rawPrice)
-              const displayPrice = isPackageMode ? unitPackPrice : singlePiecePrice
               const packQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 10)
 
               return (
@@ -190,15 +188,14 @@ export function ProductGrid({ products, onAdd, disableAdd = false }: ProductGrid
                       {product.name}
                     </h3>
                     
-                    {/* Muestra el PRECIO ADECUADO SEGÚN EL MODO (Pieza vs Paquete) */}
+                    {/* Muestra únicamente el PRECIO POR PIEZA EN PAQUETE */}
                     <div className="mt-1 flex items-baseline gap-1">
                       <span className="text-sm sm:text-base font-black text-indigo-600">
-                        {currency.format(displayPrice)}
+                        {currency.format(unitPackPrice)}
                       </span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">
-                        {isPackageMode ? '/ pz paq' : '/ pieza'}
-                      </span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
                     </div>
+
 
 
                     {/* Stock Indicator */}
