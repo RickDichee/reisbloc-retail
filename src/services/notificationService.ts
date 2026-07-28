@@ -66,6 +66,13 @@ export async function requestNotificationPermission(): Promise<boolean> {
 }
 
 /**
+ * Escuchar mensajes en primer plano
+ */
+export function listenToForegroundMessages(_callback: (payload: any) => void) {
+  return () => {}
+}
+
+/**
  * Crear una notificación en Supabase DB o Respaldo Local (Sin errores RLS)
  */
 export async function createNotification(
