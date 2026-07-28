@@ -3,4 +3,4 @@
 // La lógica de autenticación se movió a:
 // supabase/functions/verify-pin/index.ts
 
-export {};
+export { useRealtimeSync } from './useRealtimeSync'

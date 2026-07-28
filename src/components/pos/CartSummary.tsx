@@ -122,7 +122,31 @@ export function CartSummary({ tableNumber, items, onSend, onClear, sending, prod
         </button>
       </div>
 
+      {/* Indicador de Tipo de Precio / Mayoreo >= 3 */}
+      {items.length > 0 && (
+        <div className="mb-4 rounded-xl bg-slate-50 p-3 border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Modalidad de Precio</span>
+            {items.reduce((acc, item) => acc + item.quantity, 0) >= 3 ? (
+              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                ⚡ Mayoreo Automático (3+ Pzas)
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                📦 Precio Paquete (Predeterminado)
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] font-medium text-slate-600">
+            {items.reduce((acc, item) => acc + item.quantity, 0) >= 3 
+              ? 'Se aplicó tarifa de mayoreo al acumular 3 o más unidades en el carrito.'
+              : 'Se mantiene intacto el precio de paquete predeterminado desde el inicio para todas las piezas.'}
+          </p>
+        </div>
+      )}
+
       {stockError && (
+
         <div className="mb-4 rounded-lg bg-red-50 p-4 border border-red-200 animate-fadeIn">
           <div className="flex items-center gap-2">
             <AlertTriangle className="text-red-500" size={20} />
