@@ -720,16 +720,20 @@ class SupabaseService {
   private buildOrderPayload(order: Partial<Order> & Record<string, any>) {
     const payload: any = { ...order }
 
-    // Validar tableNumber si está presente (debe ser &gt; 0)
-    if ('tableNumber' in order) {
-      const tableNum = order.tableNumber
-      if (tableNum === null || tableNum === undefined || tableNum <= 0) {
-        throw new Error(`Invalid table number: ${tableNum}. Must be greater than 0.`)
-      }
-      payload.table_number = tableNum
-    }
+    // Table number para tienda/retail por defecto 1 si es <= 0 o indefinido
+    const rawTableNum = Number(order.tableNumber)
+    payload.table_number = (!isNaN(rawTableNum) && rawTableNum > 0) ? rawTableNum : 1
+
     if ('waiterId' in order) payload.waiter_id = (order as any).waiterId
-    if ('createdBy' in order) payload.created_by = (order as any).createdBy
+    
+    // Solo enviar created_by si es un UUID estricto para evitar fallos de RLS o Foreign Key en Postgres
+    if ('createdBy' in order && order.createdBy) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(order.createdBy))
+      if (isUuid) {
+        payload.created_by = order.createdBy
+      }
+    }
+
     if ('status' in order) payload.status = this.normalizeOrderStatus((order as any).status)
 
     if ('createdAt' in order) {
@@ -805,7 +809,42 @@ class SupabaseService {
     })
   }
 
+  async syncOfflineLocalOrdersToRemote(): Promise<void> {
+    try {
+      const localOrders: any[] = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+      if (localOrders.length === 0 || !navigator.onLine) return
+
+      const unsynced = localOrders.filter(o => typeof o.id === 'string' && o.id.startsWith('ord-'))
+      if (unsynced.length === 0) return
+
+      logger.info('supabase', `🔄 Intentando sincronizar ${unsynced.length} pedidos locales a Supabase...`)
+
+      for (const order of unsynced) {
+        try {
+          const payload = this.buildOrderPayload(order)
+          payload.organization_id = this.getCurrentOrgId() || '00000000-0000-0000-0000-000000000001'
+
+          delete payload.id
+          delete payload.paidAmount
+          delete payload.pendingBalance
+          delete payload.paymentStatus
+          delete payload.isPaid
+
+          const { data, error } = await supabase.from('orders').insert([payload]).select('id').single()
+          if (!error && data) {
+            const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+            const updated = existing.map((o: any) => o.id === order.id ? { ...o, id: data.id } : o)
+            localStorage.setItem('local_pending_orders', JSON.stringify(updated))
+            logger.info('supabase', `⚡ Pedido local #${order.id} sincronizado exitosamente a Supabase remoto como #${data.id}`)
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
+  }
+
   async getActiveOrders(): Promise<Order[]> {
+    this.syncOfflineLocalOrdersToRemote().catch(console.error)
+
     return this.withRetry(async () => {
       logger.info('supabase', '🔍 Getting active orders...')
       const { data, error } = await withOrg(

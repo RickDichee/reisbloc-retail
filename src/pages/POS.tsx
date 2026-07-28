@@ -453,6 +453,7 @@ export default function POS() {
     loadProducts()
     checkShift()
 
+    supabaseService.syncOfflineLocalOrdersToRemote().catch(console.error)
     supabaseService.getAllClients().then(setClients).catch(console.error)
     supabaseService.getActiveOrders().then(setActiveOrdersList).catch(console.error)
 
