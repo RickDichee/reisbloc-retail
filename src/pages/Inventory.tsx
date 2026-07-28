@@ -8,6 +8,7 @@ import supabaseService from '@/services/supabaseService'
 import printService from '@/services/printService'
 import ProductModal from '@/components/admin/ProductModal'
 import ImportProductsModal from '@/components/admin/ImportProductsModal'
+import LabelPrintModal from '@/components/admin/LabelPrintModal'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { useTenantTheme } from '@/hooks/useTenantTheme'
@@ -23,6 +24,7 @@ export default function Inventory() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [printingProduct, setPrintingProduct] = useState<any>(null)
   const [scannedBarcode, setScannedBarcode] = useState('')
 
   useBarcodeScanner((code) => {
@@ -80,110 +82,8 @@ export default function Inventory() {
     }
   }
 
-  const handlePrintLabel = async (product: any) => {
-    try {
-      const pieceCode = product.barcode || product.sku
-      if (!pieceCode) {
-        alert('Este producto no tiene un Código de Barras o SKU configurado.');
-        return;
-      }
-
-      // 🔍 Extraer de forma dinámica e infalible los datos del paquete configurados en el sistema
-      let parsedDesc: any = {}
-      if (product.description && typeof product.description === 'string' && product.description.startsWith('{')) {
-        try {
-          parsedDesc = JSON.parse(product.description)
-        } catch (e) {}
-      }
-
-      let packQty = Number(
-        parsedDesc.packQty ||
-        parsedDesc.pack_quantity ||
-        (product as any).packQty ||
-        (product as any).pack_qty ||
-        (product.packQuantity && Number(product.packQuantity) > 1 ? product.packQuantity : null) ||
-        (product.pack_quantity && Number(product.pack_quantity) > 1 ? product.pack_quantity : null) ||
-        (product.wholesale_min_qty && Number(product.wholesale_min_qty) > 1 ? product.wholesale_min_qty : null) ||
-        10
-      )
-
-      if (packQty <= 1) {
-        const upperName = (product.name || '').toUpperCase()
-        if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
-          packQty = 10
-        } else {
-          packQty = 6
-        }
-      }
-
-      const piecePrice = Number(product.price || 0)
-      const wholesalePrice = Number(product.wholesalePrice || product.wholesale_price || parsedDesc.wholesalePrice || (piecePrice * 0.88))
-      
-      let rawPackPrice = Number(product.packPrice || product.pack_price || parsedDesc.packPrice || (piecePrice * packQty * 0.75))
-      let unitPackPrice = rawPackPrice
-      if (rawPackPrice > piecePrice * 2 && packQty > 1) {
-        unitPackPrice = rawPackPrice / packQty
-      }
-
-      const descString = parsedDesc.description || (typeof product.description === 'string' && !product.description.startsWith('{') ? product.description : '')
-      const assortmentText = descString ? descString.slice(0, 45) : `Surtido: Tallas y Colores variados (${product.category || 'Moda'})`
-
-      const packCode = product.barcode_pack || (product as any).barcodePack || `${pieceCode}-PAQ`
-
-      // Generate barcode & QR code images using bwip-js
-      const pieceBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(pieceCode)}&scale=3&height=10&includetext`;
-      const pieceQRImg = `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${encodeURIComponent(pieceCode)}&scale=3`;
-
-      const packBarcodeImg = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(packCode)}&scale=3&height=10&includetext`;
-      const packQRImg = `https://bwipjs-api.metafloor.com/?bcid=qrcode&text=${encodeURIComponent(packCode)}&scale=3`;
-
-      const htmlContent = `
-        <div style="width: 58mm; padding: 2px; font-family: sans-serif; text-align: center;">
-          <!-- 📦 ETIQUETA 1: PIEZA INDIVIDUAL (MENUDEO & MAYOREO) -->
-          <div style="border-bottom: 2px dashed #ccc; padding-bottom: 8px; margin-bottom: 10px;">
-            <span style="font-size: 8px; font-weight: 900; background: #1A1A1A; color: white; padding: 1px 5px; border-radius: 3px; text-transform: uppercase;">PIEZA INDIVIDUAL</span>
-            <h2 style="font-size: 11px; margin: 4px 0 2px 0; font-weight: 900; line-height: 1.1;">${product.name}</h2>
-            
-            <div style="margin: 4px 0; border: 1px solid #f1f5f9; border-radius: 6px; padding: 3px; background: #f8fafc;">
-              <p style="font-size: 14px; font-weight: 900; color: #E62E6B; margin: 0;">$${piecePrice.toFixed(2)} c/u (Menudeo)</p>
-              <p style="font-size: 10px; font-weight: 800; color: #2563EB; margin: 1px 0;">$${wholesalePrice.toFixed(2)} c/u (Mayoreo 3+ pcs)</p>
-            </div>
-
-            <div style="display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; margin-top: 4px;">
-              <img src="${pieceBarcodeImg}" style="max-width: 70%; height: auto;" alt="barcode-piece">
-              <img src="${pieceQRImg}" style="width: 38px; height: 38px;" alt="qr-piece">
-            </div>
-          </div>
-
-          <!-- 📦 ETIQUETA 2: PAQUETE DE MAYOREO (SURTIDO EXACTO) -->
-          <div style="padding-bottom: 5px;">
-            <span style="font-size: 9px; font-weight: 900; background: #E62E6B; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">PAQUETE DE ${packQty} PIEZAS</span>
-            <h2 style="font-size: 11px; margin: 4px 0 2px 0; font-weight: 900; line-height: 1.1;">${product.name} (PAQ)</h2>
-            
-            <div style="margin: 4px 0; border: 1px solid #fef3c7; border-radius: 6px; padding: 4px; background: #fffbeb;">
-              <p style="font-size: 16px; font-weight: 900; color: #059669; margin: 0;">$${unitPackPrice.toFixed(2)} / pza en Paquete</p>
-              <p style="font-size: 9px; font-weight: 800; color: #92400e; margin: 2px 0 0 0;">✨ ${assortmentText}</p>
-            </div>
-
-            <div style="display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; margin-top: 4px;">
-              <img src="${packBarcodeImg}" style="max-width: 70%; height: auto;" alt="barcode-pack">
-              <img src="${packQRImg}" style="width: 38px; height: 38px;" alt="qr-pack">
-            </div>
-            <p style="font-size: 8px; margin-top: 4px; color: #64748b; font-weight: bold;">
-              Código de Paquete Surtido (${packQty} pzas)
-            </p>
-          </div>
-
-          <p style="font-size: 8px; margin-top: 6px; color: #94a3b8; font-weight: bold; border-top: 1px solid #f1f5f9; padding-top: 3px;">MODA MIEL MX · Powered by REISBLOC</p>
-        </div>
-      `;
-
-      await printService.printHTML(htmlContent, { width: 58, title: `Labels-${pieceCode}` });
-
-    } catch (error) {
-      console.error('Error printing labels:', error);
-      alert('Error al mandar impresión de etiquetas térmicas.');
-    }
+  const handlePrintLabel = (product: any) => {
+    setPrintingProduct(product)
   }
 
   const filteredProducts = products.filter(p => {
@@ -440,6 +340,13 @@ export default function Inventory() {
               loadInventory()
             }}
             currentProductsCount={products.length}
+          />
+        )}
+
+        {printingProduct && (
+          <LabelPrintModal
+            product={printingProduct}
+            onClose={() => setPrintingProduct(null)}
           />
         )}
 

@@ -725,24 +725,6 @@ export default function ProductModal({
                                     </button>
                                 )}
                             </div>
-
-                            <div className="flex gap-2 mb-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setCodeFormat('code128')}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${codeFormat === 'code128' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                                >
-                                    🏷️ Código de Barras (1D)
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setCodeFormat('qrcode')}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${codeFormat === 'qrcode' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
-                                >
-                                    📱 Código QR (2D)
-                                </button>
-                            </div>
-
                             <input
                                 type="text"
                                 value={formData.barcode}
@@ -751,27 +733,6 @@ export default function ProductModal({
                                 placeholder="Escanear o Escribir EAN / SKU"
                                 disabled={!isAdminOrManager}
                             />
-
-                            {formData.barcode && (
-                                <div className="mt-3 p-3 bg-white border border-indigo-100 rounded-2xl flex flex-col items-center justify-center gap-1 shadow-sm">
-                                    <span className="text-[9px] font-black text-indigo-900 uppercase tracking-wider">
-                                        Vista previa: {codeFormat === 'qrcode' ? '📱 Código QR 2D' : '🏷️ Código de Barras 1D'}
-                                    </span>
-                                    <img 
-                                        src={getCodeImageUrl(formData.barcode)} 
-                                        alt={codeFormat}
-                                        className="max-h-24 object-contain my-1" 
-                                    />
-                                    <span className="text-xs font-mono font-bold text-slate-700">{formData.barcode}</span>
-                                </div>
-                            )}
-
-                            <p className="text-[10px] text-slate-400 mt-1.5">
-                                {isBulk 
-                                    ? "Puedes ingresar/escanear el EAN/SKU cargado en las piezas o usar Auto-Generar EAN."
-                                    : "Escanea o ingresa el código EAN/SKU del producto."
-                                }
-                            </p>
                         </div>
 
                         {/* Checkbox for differentiated prices */}
