@@ -135,210 +135,212 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 overflow-hidden space-y-6">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-3 sm:p-4 animate-fadeIn overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col my-auto">
         
         {/* Header */}
-        <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-              <Printer size={24} />
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2.5 sm:p-3 bg-indigo-50 text-indigo-600 rounded-2xl shrink-0">
+              <Printer size={22} className="sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Impresor de Etiquetas Nimbot B1</h2>
-              <p className="text-xs text-slate-500 font-medium">Diseño optimizado para papel de 50x30mm con márgenes de seguridad</p>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight leading-snug">Impresor de Etiquetas Nimbot B1</h2>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Diseño optimizado para papel de 50x30mm con márgenes de seguridad</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+            className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors shrink-0"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Layout Grid: Controls (Left) + Visual Preview (Right) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Controls */}
-          <div className="space-y-4">
+        {/* Scrollable Body: Controls (Left) + Visual Preview (Right) */}
+        <div className="flex-1 overflow-y-auto py-4 pr-1 space-y-6 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* 1. Formato del Código */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">1. Formato del Código</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCodeType('qrcode')}
-                  className={`p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
-                    codeType === 'qrcode' 
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' 
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <QrCode size={16} />
-                  <span>📱 QR 2D (Recomendado)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCodeType('code128')}
-                  className={`p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
-                    codeType === 'code128' 
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' 
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Barcode size={16} />
-                  <span>🏷️ Barras 1D</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 2. Contenido del Código */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">2. Unidad a Identificar</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTargetType('piece')}
-                  className={`p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
-                    targetType === 'piece' 
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Tag size={16} />
-                  <span>👤 Pieza Individual</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTargetType('pack')}
-                  className={`p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
-                    targetType === 'pack' 
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Package size={16} />
-                  <span>📦 Paquete ({packQty} pzas)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 3. Estilo de Etiqueta */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">3. Estilo de Diseño</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStylePreset('minimal')}
-                  className={`p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
-                    stylePreset === 'minimal' 
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Check size={16} />
-                  <span>⚡ Minimal Nimbot B1</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStylePreset('full')}
-                  className={`p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
-                    stylePreset === 'full' 
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Layers size={16} />
-                  <span>📄 Detallada</span>
-                </button>
-              </div>
-            </div>
-
-            {/* 4. Número de Copias */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">4. Cantidad de Etiquetas</label>
-              <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setCopies(prev => Math.max(1, prev - 1))}
-                  className="w-10 h-10 bg-white hover:bg-slate-100 rounded-xl font-black text-slate-800 border border-slate-200 shadow-sm"
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  value={copies}
-                  onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full text-center font-black text-slate-900 bg-transparent outline-none text-base"
-                  min="1"
-                  max="100"
-                />
-                <button
-                  type="button"
-                  onClick={() => setCopies(prev => prev + 1)}
-                  className="w-10 h-10 bg-white hover:bg-slate-100 rounded-xl font-black text-slate-800 border border-slate-200 shadow-sm"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Live Visual Preview (Scaled 50x30mm label representation) */}
-          <div className="bg-slate-100 rounded-3xl p-5 flex flex-col items-center justify-center border border-slate-200/80">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3">
-              Vista Previa Fidedigna (50x30mm)
-            </span>
-
-            {/* Representation of 50mm x 30mm thermal label */}
-            <div className="w-[240px] h-[144px] bg-white rounded-xl shadow-lg border border-slate-300 p-2 flex flex-col justify-between items-center text-center relative overflow-hidden select-none">
+            {/* Controls */}
+            <div className="space-y-4">
               
-              {/* Top product name */}
-              <div className="font-extrabold text-[11px] text-slate-900 uppercase leading-tight tracking-tight line-clamp-1 w-full">
-                {product.name}
+              {/* 1. Formato del Código */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">1. Formato del Código</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCodeType('qrcode')}
+                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                      codeType === 'qrcode' 
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <QrCode size={16} />
+                    <span>📱 QR 2D (Rec.)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCodeType('code128')}
+                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                      codeType === 'code128' 
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Barcode size={16} />
+                    <span>🏷️ Barras 1D</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Code Image */}
-              <div className="flex items-center justify-center w-full my-0.5">
-                <img
-                  src={codeImgUrl}
-                  alt="preview-code"
-                  className={`object-contain ${codeType === 'qrcode' ? 'h-16 w-16' : 'h-10 max-w-[190px]'}`}
-                />
+              {/* 2. Contenido del Código */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">2. Unidad a Identificar</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTargetType('piece')}
+                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                      targetType === 'piece' 
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Tag size={16} />
+                    <span>👤 Pieza Individual</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetType('pack')}
+                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                      targetType === 'pack' 
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Package size={16} />
+                    <span>📦 Paquete ({packQty})</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Footer info */}
-              <div className="w-full flex justify-between items-center border-t border-slate-800 pt-1 font-black text-[10px] text-slate-900">
-                {targetType === 'piece' ? (
-                  <>
-                    <span className="text-slate-500 font-bold">SKU: {product.sku || 'PZA'}</span>
-                    <span className="text-xs">${piecePrice.toFixed(2)}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-slate-700 font-bold">${unitPackPrice.toFixed(2)}/pza</span>
-                    <span className="text-[9px] font-black bg-black text-white px-1.5 py-0.5 rounded uppercase">PAQ {packQty} PZAS</span>
-                  </>
-                )}
+              {/* 3. Estilo de Etiqueta */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">3. Estilo de Diseño</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStylePreset('minimal')}
+                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                      stylePreset === 'minimal' 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Check size={16} />
+                    <span>⚡ Minimal Nimbot</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStylePreset('full')}
+                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                      stylePreset === 'full' 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Layers size={16} />
+                    <span>📄 Detallada</span>
+                  </button>
+                </div>
               </div>
+
+              {/* 4. Número de Copias */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">4. Cantidad de Etiquetas</label>
+                <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setCopies(prev => Math.max(1, prev - 1))}
+                    className="w-9 h-9 sm:w-10 sm:h-10 bg-white hover:bg-slate-100 rounded-xl font-black text-slate-800 border border-slate-200 shadow-sm"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={copies}
+                    onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full text-center font-black text-slate-900 bg-transparent outline-none text-sm sm:text-base"
+                    min="1"
+                    max="100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCopies(prev => prev + 1)}
+                    className="w-9 h-9 sm:w-10 sm:h-10 bg-white hover:bg-slate-100 rounded-xl font-black text-slate-800 border border-slate-200 shadow-sm"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
             </div>
 
-            <p className="text-[10px] text-slate-400 font-medium text-center mt-4">
-              ✨ Diseñado con márgenes libres de 3mm para evitar que la Nimbot B1 recorte o muerda bordes.
-            </p>
-          </div>
+            {/* Live Visual Preview (Scaled 50x30mm label representation) */}
+            <div className="bg-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-center border border-slate-200/80">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3">
+                Vista Previa Fidedigna (50x30mm)
+              </span>
 
+              {/* Representation of 50mm x 30mm thermal label */}
+              <div className="w-[220px] sm:w-[240px] h-[132px] sm:h-[144px] bg-white rounded-xl shadow-lg border border-slate-300 p-2 flex flex-col justify-between items-center text-center relative overflow-hidden select-none">
+                
+                {/* Top product name */}
+                <div className="font-extrabold text-[11px] text-slate-900 uppercase leading-tight tracking-tight line-clamp-1 w-full">
+                  {product.name}
+                </div>
+
+                {/* Code Image */}
+                <div className="flex items-center justify-center w-full my-0.5">
+                  <img
+                    src={codeImgUrl}
+                    alt="preview-code"
+                    className={`object-contain ${codeType === 'qrcode' ? 'h-14 sm:h-16 w-14 sm:w-16' : 'h-9 sm:h-10 max-w-[170px] sm:max-w-[190px]'}`}
+                  />
+                </div>
+
+                {/* Footer info */}
+                <div className="w-full flex justify-between items-center border-t border-slate-800 pt-1 font-black text-[10px] text-slate-900">
+                  {targetType === 'piece' ? (
+                    <>
+                      <span className="text-slate-500 font-bold">SKU: {product.sku || 'PZA'}</span>
+                      <span className="text-xs">${piecePrice.toFixed(2)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-slate-700 font-bold">${unitPackPrice.toFixed(2)}/pza</span>
+                      <span className="text-[9px] font-black bg-black text-white px-1.5 py-0.5 rounded uppercase">PAQ {packQty} PZAS</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400 font-medium text-center mt-3">
+                ✨ Diseñado con márgenes libres de 3mm para evitar que la Nimbot B1 recorte o muerda bordes.
+              </p>
+            </div>
+
+          </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex justify-end gap-2.5 sm:gap-3 pt-3.5 border-t border-slate-100 shrink-0 bg-white">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-3 rounded-2xl text-slate-600 font-bold hover:bg-slate-100 transition-colors text-sm"
+            className="px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl text-slate-600 font-bold hover:bg-slate-100 transition-colors text-xs sm:text-sm"
           >
             Cancelar
           </button>
@@ -346,7 +348,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
             type="button"
             onClick={handlePrint}
             disabled={isPrinting}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all text-sm disabled:opacity-50"
+            className="px-5 py-2.5 sm:px-6 sm:py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all text-xs sm:text-sm disabled:opacity-50"
           >
             <Printer size={18} />
             <span>{isPrinting ? 'Imprimiendo...' : `Imprimir ${copies} ${copies === 1 ? 'Etiqueta' : 'Etiquetas'}`}</span>
