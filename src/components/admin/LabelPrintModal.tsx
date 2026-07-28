@@ -12,7 +12,7 @@ interface LabelPrintModalProps {
 export default function LabelPrintModal({ product, onClose }: LabelPrintModalProps) {
   const { organizationSettings } = useAppStore()
   
-  // Extraer datos del paquete si vienen formateados como JSON en description
+  // Extraer datos de precios y paquetes infaliblemente (sincronizado con Moda Miel MX)
   let parsedDesc: any = {}
   if (product.description && typeof product.description === 'string' && product.description.startsWith('{')) {
     try {
@@ -23,7 +23,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
   const pieceCode = product.barcode || product.sku || `750${Math.floor(1000000000 + Math.random() * 9000000000)}`
   const packCode = product.barcode_pack || (product as any).barcodePack || `${pieceCode}-PAQ`
 
-  let packQty = Number(
+  let explicitPackQty = Number(
     parsedDesc.packQty ||
     parsedDesc.pack_quantity ||
     (product as any).packQty ||
@@ -34,8 +34,9 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
     10
   )
 
-  if (packQty <= 1) {
-    const upperName = (product.name || '').toUpperCase()
+  let packQty = explicitPackQty > 1 ? explicitPackQty : 10
+  const upperName = (product.name || '').toUpperCase()
+  if (explicitPackQty <= 1) {
     if (upperName.includes('PQT') || upperName.includes('PAQ') || upperName.includes('CONJUNTO')) {
       packQty = 10
     } else {
@@ -43,16 +44,41 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
     }
   }
 
-  const piecePrice = Number(product.price || 0)
-  const wholesalePrice = Number(product.wholesalePrice || product.wholesale_price || parsedDesc.wholesalePrice || (piecePrice * 0.88))
-  
-  let rawPackPrice = Number(product.packPrice || product.pack_price || parsedDesc.packPrice || (piecePrice * packQty * 0.75))
-  let unitPackPrice = rawPackPrice
-  if (rawPackPrice > piecePrice * 2 && packQty > 1) {
-    unitPackPrice = rawPackPrice / packQty
-  } else if (rawPackPrice <= piecePrice) {
-    rawPackPrice = piecePrice * packQty
-    unitPackPrice = piecePrice
+  const rawPrice = Number(product.price || 0)
+  let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+  let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+
+  // Extraer precio del título de Moda Miel MX si viene formateado con $ (Ej: $45 - Blusa Miel)
+  let extractedPriceFromName: number | null = null
+  const nameStr = product.name || ''
+  if (nameStr.includes('$')) {
+    const afterDollar = nameStr.split('$')[1] || ''
+    const parsedNum = parseFloat(afterDollar)
+    if (!isNaN(parsedNum) && parsedNum > 0) {
+      extractedPriceFromName = parsedNum
+    }
+  }
+
+  // 1. PRECIO POR PIEZA EN PAQUETE (unitPackPrice) - Lo que este cliente maneja por defecto
+  let unitPackPrice = rawPrice
+  if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
+    unitPackPrice = extractedPriceFromName
+  } else if (packPrice > 0) {
+    unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
+  } else if (wholesalePrice > 0) {
+    unitPackPrice = wholesalePrice
+  }
+
+  // 2. PRECIO TOTAL DEL PAQUETE (rawPackPrice)
+  let rawPackPrice = packPrice > 0 ? packPrice : unitPackPrice * packQty
+  if (rawPrice > 500 && rawPrice > unitPackPrice * 2) {
+    rawPackPrice = Math.round(rawPrice)
+  }
+
+  // 3. PRECIO MENUDEO INDIVIDUAL (retailPiecePrice)
+  let retailPiecePrice = rawPrice > unitPackPrice ? rawPrice : Math.round(unitPackPrice * 1.3)
+  if (wholesalePrice === 0) {
+    wholesalePrice = Math.round(unitPackPrice * 1.15)
   }
 
   // Configuración interactiva de impresión
@@ -73,7 +99,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
       case 'unitPack':
         return `$${unitPackPrice.toFixed(2)}/pza`
       case 'retail':
-        return `$${piecePrice.toFixed(2)} c/u`
+        return `$${retailPiecePrice.toFixed(2)} c/u`
       case 'wholesale':
         return `$${wholesalePrice.toFixed(2)} (3+)`
       case 'totalPack':
@@ -244,7 +270,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                     }`}
                   >
                     <span className="font-extrabold">🏷️ Precio Menudeo</span>
-                    <span className="text-[9px] opacity-80">${piecePrice.toFixed(2)} c/u</span>
+                    <span className="text-[9px] opacity-80">${retailPiecePrice.toFixed(2)} c/u</span>
                   </button>
                   <button
                     type="button"
