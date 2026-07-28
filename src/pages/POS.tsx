@@ -469,16 +469,38 @@ export default function POS() {
     if (!matchedProduct) return
 
     const parsedDesc = parseProductDescription(matchedProduct.description || '')
-    const packQty = Number(matchedProduct.packQuantity || (matchedProduct as any).pack_quantity || (matchedProduct as any).wholesale_min_qty || parsedDesc.packQty || 6)
-    const packPrice = Number((matchedProduct as any).packPrice || (matchedProduct as any).pack_price || parsedDesc.packPrice || (matchedProduct.price * packQty * 0.75))
-    const unitPackPrice = packQty > 0 ? (packPrice / packQty) : matchedProduct.price
+    const explicitPackQty = Number(matchedProduct.packQuantity || (matchedProduct as any).pack_quantity || (matchedProduct as any).wholesale_min_qty || parsedDesc.packQty || 1)
+    const packQty = explicitPackQty > 1 ? explicitPackQty : 10
+
+    const rawPrice = Number(matchedProduct.price || 0)
+    let wholesalePrice = Number(matchedProduct.wholesalePrice || (matchedProduct as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    let packPrice = Number((matchedProduct as any).packPrice || (matchedProduct as any).pack_price || parsedDesc.packPrice || 0)
+
+    let extractedPriceFromName: number | null = null
+    const nameStr = matchedProduct.name || ''
+    if (nameStr.includes('$')) {
+      const afterDollar = nameStr.split('$')[1] || ''
+      const parsedNum = parseFloat(afterDollar)
+      if (!isNaN(parsedNum) && parsedNum > 0) {
+        extractedPriceFromName = parsedNum
+      }
+    }
+
+    let unitPackPrice = rawPrice
+    if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
+      unitPackPrice = extractedPriceFromName
+    } else if (packPrice > 0) {
+      unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
+    } else if (wholesalePrice > 0) {
+      unitPackPrice = wholesalePrice
+    }
 
     if (isPackScan) {
-      // 📦 Escaneo de Paquete Completo: agregar N piezas de paquete al ticket
+      // 📦 Escaneo de Paquete Completo: agregar packQty piezas al ticket con unitPackPrice
       const computedProduct = {
         ...matchedProduct,
         price: unitPackPrice,
-        packQuantity: packQty
+        packQuantity: 1
       }
       for (let i = 0; i < packQty; i++) {
         addItemToDraft(targetTicket, computedProduct, currentUser.username || currentUser.email || currentUser.id)

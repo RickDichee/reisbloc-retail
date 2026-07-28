@@ -70,8 +70,8 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
   }
 
   // 2. PRECIO TOTAL DEL PAQUETE (rawPackPrice)
-  let rawPackPrice = packPrice > 0 ? packPrice : unitPackPrice * packQty
-  if (rawPrice > 500 && rawPrice > unitPackPrice * 2) {
+  let rawPackPrice = (packPrice > 0 && packPrice > unitPackPrice * 1.5) ? packPrice : Math.round(unitPackPrice * packQty)
+  if (rawPrice > 500 && rawPrice > unitPackPrice * 2 && explicitPackQty > 1) {
     rawPackPrice = Math.round(rawPrice)
   }
 
