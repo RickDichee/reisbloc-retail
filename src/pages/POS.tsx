@@ -18,7 +18,7 @@ import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 function parseProductDescription(descriptionText: string | null) {
@@ -95,6 +95,7 @@ export default function POS() {
   const [editingRegisterId, setEditingRegisterId] = useState<number | null>(null)
   const [editingRegisterName, setEditingRegisterName] = useState<string>('')
   const [showHardwareConfig, setShowHardwareConfig] = useState(false)
+  const [showManualAdjustModal, setShowManualAdjustModal] = useState(false)
 
   // CRM Clients state & loading
   const [clients, setClients] = useState<any[]>([])
@@ -1110,27 +1111,20 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             />
           </div>
 
-          {/* Automated Tariff Badge (1-2 Pzas: Menudeo | 3+ Pzas: Mayoreo Auto | Escáner Paquete) */}
-          <div className="flex items-center gap-1.5 bg-[#E62E6B]/10 border border-[#E62E6B]/30 px-3 py-2 rounded-xl shrink-0">
-            <Sparkles size={14} className="text-[#E62E6B]" />
-            <span className="text-[10px] font-black text-[#E62E6B] uppercase tracking-wider whitespace-nowrap">
-              Tarifa Automatizada (Mayoreo 3+ / Paquete Escaneado)
-            </span>
-          </div>
-
           <button
             onClick={() => setShowManualItemModal(true)}
-            className="hidden md:flex p-3 bg-slate-900 text-white rounded-xl shadow-lg hover:scale-105 transition-all"
+            className="hidden md:flex p-3 bg-slate-900 text-white rounded-xl shadow-md hover:scale-105 transition-all"
+            title="Agregar producto manual"
           >
-            <PlusCircle size={24} />
+            <PlusCircle size={22} />
           </button>
 
           <button
-            onClick={() => setShowHardwareConfig(!showHardwareConfig)}
-            className={`hidden md:flex p-3 rounded-xl border transition-all ${showHardwareConfig ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
-            title="Configurar Impresoras y Red Local"
+            onClick={() => setShowManualAdjustModal(true)}
+            className="hidden md:flex p-3 bg-white text-slate-500 hover:text-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shrink-0 active:scale-95 shadow-sm"
+            title="Ajuste Manual de Ticket (Piezas y Precios)"
           >
-            <Printer size={24} />
+            <SlidersHorizontal size={20} />
           </button>
         </div>
 
@@ -1394,6 +1388,16 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           />
         )}
 
+        {showManualAdjustModal && (
+          <ManualAdjustModal
+            isOpen={showManualAdjustModal}
+            onClose={() => setShowManualAdjustModal(false)}
+            items={items}
+            tableNumber={tableNumber}
+            currentUser={currentUser}
+          />
+        )}
+
         {stockWarning.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fadeIn">
             <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-red-100">
@@ -1628,5 +1632,177 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
 
       </div>
     </DashboardLayout>
+  )
+}
+
+// Modal de Ajuste Manual de Ticket (Para todos los usuarios con Log de Auditoría obligatorio)
+function ManualAdjustModal({
+  isOpen,
+  onClose,
+  items,
+  tableNumber,
+  currentUser
+}: {
+  isOpen: boolean
+  onClose: () => void
+  items: OrderItem[]
+  tableNumber: number
+  currentUser: any
+}) {
+  const [adjustedItems, setAdjustedItems] = useState<OrderItem[]>([])
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (isOpen) {
+      setAdjustedItems(JSON.parse(JSON.stringify(items)))
+      setReason('')
+    }
+  }, [isOpen, items])
+
+  if (!isOpen) return null
+
+  const handleQtyChange = (id: string, newQty: number) => {
+    setAdjustedItems(prev => prev.map(item => item.id === id ? { ...item, quantity: Math.max(1, newQty) } : item))
+  }
+
+  const handlePriceChange = (id: string, newPrice: number) => {
+    setAdjustedItems(prev => prev.map(item => item.id === id ? { ...item, unitPrice: Math.max(0, newPrice) } : item))
+  }
+
+  const totalBefore = items.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0)
+  const totalAfter = adjustedItems.reduce((acc, i) => acc + (i.unitPrice * i.quantity), 0)
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!reason.trim()) {
+      alert('Por favor especifica un motivo o nota breve para el registro de auditoría de este ajuste.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      // 📝 LOG DE AUDITORÍA OBLIGATORIO PARA TODOS LOS USUARIOS
+      await supabaseService.createAuditLog({
+        userId: currentUser?.id || 'unknown',
+        action: 'POS_MANUAL_TICKET_ADJUSTMENT',
+        entityType: 'POS_TICKET',
+        entityId: `caja-${tableNumber}`,
+        oldValue: { totalBefore, itemsCountBefore: items.length },
+        newValue: {
+          totalAfter,
+          reason,
+          adjustedBy: currentUser?.username || currentUser?.email || currentUser?.id,
+          role: currentUser?.role,
+          itemsAfter: adjustedItems.map(i => ({ name: i.productName, qty: i.quantity, price: i.unitPrice }))
+        }
+      })
+
+      // Actualizar borrador en el store
+      useAppStore.setState(state => ({
+        draftOrders: {
+          ...state.draftOrders,
+          [tableNumber]: adjustedItems
+        }
+      }))
+
+      alert('✅ Ajuste manual registrado y auditado correctamente.')
+      onClose()
+    } catch (err: any) {
+      console.error('Error saving manual adjustment:', err)
+      alert('Error al aplicar ajuste manual: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 animate-scaleIn border border-slate-100 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+          <div className="flex items-center gap-2 text-slate-900">
+            <SlidersHorizontal size={20} className="text-indigo-600" />
+            <h2 className="text-base font-black uppercase">Ajuste Manual de Ticket (Caja {tableNumber})</h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+        </div>
+
+        {adjustedItems.length === 0 ? (
+          <div className="py-8 text-center text-slate-500 font-medium text-xs">
+            No hay productos cargados en esta caja para ajustar.
+          </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-4 flex-1 overflow-y-auto pr-1">
+            <div className="space-y-2">
+              {adjustedItems.map(item => (
+                <div key={item.id} className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                  <p className="font-extrabold text-xs text-slate-900 truncate">{item.productName}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Piezas (Cantidad):</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => handleQtyChange(item.id, parseInt(e.target.value) || 1)}
+                        className="w-full bg-white border border-slate-300 p-2 rounded-xl text-xs font-black text-slate-900 text-center outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Precio Unitario ($):</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.unitPrice}
+                        onChange={(e) => handlePriceChange(item.id, parseFloat(e.target.value) || 0)}
+                        className="w-full bg-white border border-slate-300 p-2 rounded-xl text-xs font-black text-slate-900 text-center outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl flex justify-between items-center text-xs font-black">
+              <span className="text-slate-600">Nuevo Total Calculado:</span>
+              <span className="text-indigo-600 text-base">${totalAfter.toFixed(2)}</span>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                Motivo del Ajuste (Log Obligatorio para Auditoría)
+              </label>
+              <input
+                type="text"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="ej: Descuento autorizado en mostrador / Corrección de piezas"
+                className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl font-bold text-xs text-slate-900 outline-none focus:border-indigo-500"
+                required
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs hover:bg-slate-200 transition-all"
+                disabled={saving}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                disabled={saving}
+              >
+                {saving ? 'Guardando...' : 'Aplicar Ajuste'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
   )
 }
