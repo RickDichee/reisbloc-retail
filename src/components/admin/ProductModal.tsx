@@ -683,7 +683,7 @@ export default function ProductModal({
                         <div>
                             <div className="flex justify-between items-center mb-2">
                                 <label className="block text-sm font-black text-slate-400 uppercase tracking-widest text-[10px]">
-                                    Código de Barras / QR
+                                    Código de Barras / QR / EAN
                                 </label>
                                 {isAdminOrManager && (
                                     <button
@@ -700,10 +700,15 @@ export default function ProductModal({
                                 value={formData.barcode}
                                 onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                                 className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                placeholder="Escanear o Escribir"
-                                disabled={isBulk || !isAdminOrManager}
+                                placeholder="Escanear o Escribir EAN / SKU"
+                                disabled={!isAdminOrManager}
                             />
-                            {isBulk && <p className="text-[10px] text-gray-400 mt-1">Los códigos se autogenerarán para cada variante.</p>}
+                            <p className="text-[10px] text-slate-400 mt-1">
+                                {isBulk 
+                                    ? "Puedes ingresar/escanear el EAN/SKU cargado en las piezas o usar Auto-Generar EAN."
+                                    : "Escanea o ingresa el código EAN/SKU del producto."
+                                }
+                            </p>
                         </div>
 
                         {/* Checkbox for differentiated prices */}
