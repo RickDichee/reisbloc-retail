@@ -592,35 +592,27 @@ export default function POS() {
     });
   }
 
-  const handleAddProduct = (product: Product) => {
+  const handleAddProduct = (product: Product, isPackageMode: boolean = false) => {
     if (!currentUser || isReadOnly) return
     
     const parsedDesc = parseProductDescription(product.description || '')
 
+    let namePrice: number | null = null
+    if (product.name && product.name.includes('$')) {
+      const afterDollar = product.name.split('$')[1] || ''
+      const pNum = parseFloat(afterDollar)
+      if (!isNaN(pNum) && pNum > 0) namePrice = pNum
+    }
+
+    const rawPrice = Number(product.price || 0)
+    const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+    const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
+
     // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
-    if (priceMode === 'paquete') {
+    if (isPackageMode || priceMode === 'paquete') {
       const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
       const packQty = explicitPackQty > 1 ? explicitPackQty : 10
-
-      const rawPrice = Number(product.price || 0)
-      let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-      let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
-
-      let namePrice: number | null = null
-      if (product.name && product.name.includes('$')) {
-        const afterDollar = product.name.split('$')[1] || ''
-        const pNum = parseFloat(afterDollar)
-        if (!isNaN(pNum) && pNum > 0) namePrice = pNum
-      }
-
-      let unitPackPrice = rawPrice
-      if (namePrice !== null && namePrice > 0) {
-        unitPackPrice = namePrice
-      } else if (packPrice > 0) {
-        unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
-      } else if (wholesalePrice > 0) {
-        unitPackPrice = wholesalePrice
-      }
 
       const computedProduct = {
         ...product,
@@ -634,44 +626,14 @@ export default function POS() {
       return
     }
 
-    // 👤 MODO PIEZA: Agregar 1 pieza individual
-    let activePrice = product.price
-    let activePackQty = 1
-
-    const currentDraft = draftOrders[tableNumber] || []
-    const existingItem = currentDraft.find(i => i.productId === product.id)
-    const nextQty = (existingItem?.quantity || 0) + 1
-
-    let namePrice: number | null = null
-    if (product.name && product.name.includes('$')) {
-      const afterDollar = product.name.split('$')[1] || ''
-      const pNum = parseFloat(afterDollar)
-      if (!isNaN(pNum) && pNum > 0) namePrice = pNum
-    }
-
-    const wholesalePrice = namePrice || Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-    const minQty = Number((product as any).wholesale_min_qty || (product as any).wholesaleMinQty || 3)
-
-    if (priceMode === 'mayoreo' || (nextQty >= minQty && wholesalePrice > 0)) {
-      activePrice = wholesalePrice || product.price
-      activePackQty = 1
-    }
-
+    // 👤 MODO PIEZA: Agregar 1 pieza individual usando PRECIO POR PIEZA EN PAQUETE
     const computedProduct = {
       ...product,
-      price: activePrice,
-      packQuantity: activePackQty
+      price: unitPackPrice,
+      packQuantity: 1
     }
 
     addItemToDraft(tableNumber, computedProduct, currentUser.id)
-
-    if (nextQty >= minQty && wholesalePrice > 0) {
-      useAppStore.setState(state => {
-        const draft = state.draftOrders[tableNumber] || []
-        const updated = draft.map(item => item.productId === product.id ? { ...item, unitPrice: wholesalePrice } : item)
-        return { draftOrders: { ...state.draftOrders, [tableNumber]: updated } }
-      })
-    }
   }
 
   const handleAddPackageProduct = (product: Product) => {
