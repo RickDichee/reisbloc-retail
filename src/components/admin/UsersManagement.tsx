@@ -156,52 +156,68 @@ export default function UsersManagement() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map(user => (
-            <div
-              key={user.id}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 hover:shadow-md transition-all"
-            >
-              {/* Header con rol */}
-              <div className={`bg-gradient-to-r ${roleColors[user.role]} rounded-xl p-4 -m-6 mb-4`}>
-                <div className="flex items-center justify-between text-white">
-                  <div className="flex items-center gap-3">
-                    {user.avatar_url ? (
-                      <img src={user.avatar_url} alt={user.username} className="w-12 h-12 rounded-full object-cover border-2 border-white/30 shadow-sm" />
-                    ) : (
-                      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                        <Shield size={24} />
+          {filteredUsers.map((user, idx) => {
+            const displayName = (user.name && user.name.trim() !== '') 
+              ? user.name 
+              : ((user.username && user.username.trim() !== '') ? user.username : (user.email ? user.email.split('@')[0] : `Staff ${idx + 1}`))
+            
+            const avatarSeed = encodeURIComponent(displayName)
+            const fallbackAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${avatarSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9`
+
+            return (
+              <div
+                key={user.id}
+                className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 hover:shadow-lg transition-all overflow-hidden relative group"
+              >
+                {/* Header con rol y Gafete Animado */}
+                <div className={`bg-gradient-to-r ${roleColors[user.role] || 'from-indigo-600 to-purple-600'} -mx-4 -mt-4 p-4.5 mb-4 rounded-t-2xl`}>
+                  <div className="flex items-center justify-between text-white">
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        <img 
+                          src={user.avatar_url || fallbackAvatar} 
+                          alt={displayName} 
+                          className="w-13 h-13 rounded-2xl object-cover border-2 border-white/40 bg-white/20 shadow-md transition-transform group-hover:scale-105" 
+                        />
+                        <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full border border-white uppercase shadow">
+                          GAFETE
+                        </span>
                       </div>
-                    )}
-                    <div>
-                      <h3 className="font-bold text-lg">{user.username}</h3>
-                      <p className="text-xs opacity-90">{roleLabels[user.role]}</p>
+                      <div className="min-w-0">
+                        <h3 className="font-extrabold text-base leading-tight truncate capitalize">{displayName}</h3>
+                        <p className="text-[11px] font-bold opacity-90 truncate">{user.email || 'Sin correo registrado'}</p>
+                        <span className="inline-block mt-1 bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                          {roleLabels[user.role] || user.role}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Status badge */}
+                    <div title={user.active ? 'Usuario Activo' : 'Usuario Inactivo'}>
+                      {user.active ? (
+                        <CheckCircle size={22} className="text-emerald-300 drop-shadow" />
+                      ) : (
+                        <XCircle size={22} className="opacity-60 text-red-200" />
+                      )}
                     </div>
                   </div>
-
-                  {/* Status badge */}
-                  {user.active ? (
-                    <CheckCircle size={24} />
-                  ) : (
-                    <XCircle size={24} className="opacity-60" />
-                  )}
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Estado:</span>
-                  <span className={`font-bold ${user.active ? 'text-green-600' : 'text-red-600'}`}>
-                    {user.active ? 'Activo' : 'Inactivo'}
-                  </span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Dispositivos:</span>
-                  <span className="font-bold text-gray-900">
-                    {user.devices?.length || 0}
-                  </span>
-                </div>
+                {/* Body */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Estado Operativo:</span>
+                    <span className={`font-black px-2 py-0.5 rounded-full text-[10px] uppercase ${user.active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                      {user.active ? '● Activo' : '○ Inactivo'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">ID de Empleado:</span>
+                    <span className="font-mono font-extrabold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                      #STF-0{idx + 1}
+                    </span>
+                  </div>
 
                 {/* Actions */}
                 {canManageUsers && !isReadOnly && user.id !== currentUser?.id && (
