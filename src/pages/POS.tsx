@@ -19,7 +19,7 @@ import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag, ChevronUp, ChevronDown } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 function parseProductDescription(descriptionText: string | null) {
@@ -99,6 +99,7 @@ export default function POS() {
   const [showManualAdjustModal, setShowManualAdjustModal] = useState(false)
   const [activeOrdersList, setActiveOrdersList] = useState<Order[]>([])
   const [showPendingOrdersModal, setShowPendingOrdersModal] = useState(false)
+  const [showMobileCartDrawer, setShowMobileCartDrawer] = useState(false)
 
   // CRM Clients state & loading
   const [clients, setClients] = useState<any[]>([])
@@ -1294,8 +1295,8 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             </div>
           </div>
 
-          {/* Cart Panel (Right - Compact & Sleek) */}
-          <div className="flex-[2.5] flex flex-col min-h-0 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+          {/* Cart Panel (Right - Pinned on Desktop, Hidden on Mobile/Tablet) */}
+          <div className="hidden lg:flex flex-[2.5] flex-col min-h-0 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-1.5 sm:p-2">
               <OrderPanel
                 tableNumber={tableNumber}
@@ -1310,7 +1311,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               />
             </div>
 
-            {/* Checkout Region - Compact */}
+            {/* Checkout Region - Compact Desktop */}
             <div className="p-3 bg-white border-t border-slate-200 space-y-2.5 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
               {/* CRM Client Association */}
               <div className="animate-fadeIn">
@@ -1392,6 +1393,145 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             </div>
           </div>
         </div>
+
+        {/* 📱 Mobile & Tablet Floating Ticket Bar (< lg screens) */}
+        <div className="lg:hidden fixed bottom-3 left-3 right-3 z-40 bg-slate-900 text-white rounded-2xl shadow-2xl p-3 border border-slate-800 flex items-center justify-between animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">
+                <ShoppingBag size={20} />
+              </div>
+              {items.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-950 font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+                  {items.reduce((acc, i) => acc + i.quantity, 0)}
+                </span>
+              )}
+            </div>
+            <div>
+              <p className="text-[9.5px] font-black text-amber-400 uppercase tracking-widest leading-none">Ticket #{tableNumber}</p>
+              <p className="text-base font-black text-white leading-tight">
+                ${currentTotal.toFixed(2)} <span className="text-xs text-slate-400 font-medium">({items.length} items)</span>
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setShowMobileCartDrawer(true)}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase rounded-xl shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+          >
+            <span>Ver Ticket</span>
+            <ChevronUp size={16} />
+          </button>
+        </div>
+
+        {/* 📱 Mobile & Tablet Slide-Up Ticket Drawer Sheet (< lg screens) */}
+        {showMobileCartDrawer && (
+          <div className="fixed inset-0 z-[9999] lg:hidden bg-slate-900/60 backdrop-blur-sm flex flex-col justify-end p-0 sm:p-4">
+            <div className="bg-slate-50 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-slideUp border border-slate-200">
+              {/* Header Drawer */}
+              <div className="bg-slate-900 text-white p-4 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag size={20} className="text-amber-400" />
+                  <h3 className="font-black text-base uppercase">Detalle de Ticket #{tableNumber}</h3>
+                </div>
+                <button
+                  onClick={() => setShowMobileCartDrawer(false)}
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl transition-all flex items-center gap-1 text-xs font-bold"
+                >
+                  <span>Ocultar</span>
+                  <ChevronDown size={16} />
+                </button>
+              </div>
+
+              {/* Order Panel Body */}
+              <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+                <OrderPanel
+                  tableNumber={tableNumber}
+                  items={items}
+                  activeOrders={[]}
+                  onIncrement={(id) => incrementDraftItem(tableNumber, id)}
+                  onDecrement={(id) => decrementDraftItem(tableNumber, id)}
+                  onRemove={(id) => removeDraftItem(tableNumber, id)}
+                  onClear={() => clearDraftForTable(tableNumber)}
+                  onEditNote={(item) => setEditingItem(item)}
+                  onUpdatePrice={(id, price) => handleUpdatePrice(id, price)}
+                />
+              </div>
+
+              {/* Checkout Region in Drawer */}
+              <div className="p-4 bg-white border-t border-slate-200 space-y-3 shrink-0">
+                {/* CRM Client */}
+                <div>
+                  {selectedClient ? (
+                    <div className="w-full flex items-center justify-between px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl">
+                      <span className="text-xs font-black text-slate-800 truncate">👤 {selectedClient.name}</span>
+                      <button onClick={() => setSelectedClient(null)} className="text-slate-400 hover:text-red-500">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowMobileCartDrawer(false)
+                        setShowClientSelector(true)
+                      }}
+                      className="w-full py-2 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase"
+                    >
+                      + Asociar Cliente CRM
+                    </button>
+                  )}
+                </div>
+
+                {/* Total */}
+                <div className="flex justify-between items-center bg-slate-50 px-4 py-2.5 rounded-xl">
+                  <span className="font-black text-slate-500 text-xs uppercase">TOTAL A COBRAR</span>
+                  <span className="font-black text-2xl text-slate-900">${currentTotal.toFixed(2)}</span>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileCartDrawer(false)
+                      handleCreatePendingOrder()
+                    }}
+                    disabled={currentTotal === 0}
+                    className="w-full py-3 bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md"
+                  >
+                    <ShoppingBag size={18} />
+                    <span>Guardar Pedido / Apartado (Stock)</span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        setShowMobileCartDrawer(false)
+                        handlePrintAccount(tableNumber)
+                      }}
+                      disabled={currentTotal === 0}
+                      className="py-3 bg-slate-100 text-slate-900 font-bold rounded-xl text-xs flex items-center justify-center gap-2"
+                    >
+                      <Printer size={18} />
+                      Imprimir
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMobileCartDrawer(false)
+                        handleQuickCheckout()
+                      }}
+                      disabled={currentTotal === 0}
+                      className="py-3 bg-emerald-600 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                    >
+                      <DollarSign size={18} />
+                      COBRAR
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modals */}
         {receiptModal?.isOpen && (
