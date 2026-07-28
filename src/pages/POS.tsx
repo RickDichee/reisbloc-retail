@@ -339,59 +339,8 @@ export default function POS() {
   }
 
   const tableNumber = currentTicketNumber || 1
-  const rawItems = draftOrders[tableNumber] || []
+  const items = draftOrders[tableNumber] || []
 
-  // Recalculación Dinámica según Regla de Negocio:
-  // 1. Si el ticket contiene al menos un paquete -> BENEFICIO TOTAL: todas las piezas (incluso sueltas) se cobran a precio de pieza en paquete ($40)
-  // 2. Si NO hay paquetes pero junta 3+ pzas -> Se conmuta a Precio de Mayoreo ($60)
-  // 3. Si NO hay paquetes y son 1 o 2 pzas -> Precio de Pieza ($80)
-  const items = useMemo(() => {
-    const totalPiecesInTicket = rawItems.reduce((sum, item) => sum + (item.quantity || 1), 0)
-    const hasPackageInTicket = rawItems.some(item => 
-      (item as any).isPackageItem || 
-      (item.notes && item.notes.includes('PAQUETE')) || 
-      (item.packQuantity && item.packQuantity > 1)
-    )
-
-    return rawItems.map(item => {
-      // Si el usuario fijó manualmente el precio (ej. admin), no alterar
-      if ((item as any).isManualPrice) return item
-
-      const product = products.find(p => p.id === item.productId)
-      if (!product) return item
-
-      const parsedDesc = parseProductDescription(product.description || '')
-      const rawPrice = Number(product.price || 0)
-
-      let namePrice: number | null = null
-      if (product.name && product.name.includes('$')) {
-        const afterDollar = product.name.split('$')[1] || ''
-        const pNum = parseFloat(afterDollar)
-        if (!isNaN(pNum) && pNum > 0) namePrice = pNum
-      }
-
-      // Precios de las 3 modalidades
-      const piecePrice = Number((product as any).piecePrice || (product as any).piece_price || (product as any).unit_price || rawPrice)
-      const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || (product as any).wholesalePrice || parsedDesc.wholesalePrice || (piecePrice > 0 ? piecePrice * 0.75 : rawPrice * 0.75))
-      const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || (piecePrice > 0 ? piecePrice * 0.5 : rawPrice * 0.5))
-
-      const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : wholesalePrice)
-
-      let activePrice = piecePrice
-      if (hasPackageInTicket || (item as any).isPackageItem) {
-        activePrice = unitPackPrice
-      } else if (totalPiecesInTicket >= 3) {
-        activePrice = wholesalePrice
-      } else {
-        activePrice = piecePrice
-      }
-
-      return {
-        ...item,
-        unitPrice: activePrice
-      }
-    })
-  }, [draftOrders, tableNumber, products])
 
 
   const isReadOnly = currentUser?.role === 'supervisor'
