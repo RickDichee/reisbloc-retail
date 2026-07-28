@@ -12,13 +12,14 @@ import OrderNoteModal from '@/components/pos/OrderNoteModal'
 import ManualItemModal from '@/components/pos/ManualItemModal'
 import ReceiptTicket from '@/components/pos/ReceiptTicket'
 import TicketShareModal from '@/components/pos/TicketShareModal'
+import PendingOrdersModal from '@/components/pos/PendingOrdersModal'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { Product, OrderItem } from '@/types/index'
+import { Product, OrderItem, Order } from '@/types/index'
 import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 function parseProductDescription(descriptionText: string | null) {
@@ -96,6 +97,8 @@ export default function POS() {
   const [editingRegisterName, setEditingRegisterName] = useState<string>('')
   const [showHardwareConfig, setShowHardwareConfig] = useState(false)
   const [showManualAdjustModal, setShowManualAdjustModal] = useState(false)
+  const [activeOrdersList, setActiveOrdersList] = useState<Order[]>([])
+  const [showPendingOrdersModal, setShowPendingOrdersModal] = useState(false)
 
   // CRM Clients state & loading
   const [clients, setClients] = useState<any[]>([])
@@ -700,6 +703,79 @@ export default function POS() {
     }).catch(err => console.error('Error logging manual item:', err))
   }
 
+  const handleCreatePendingOrder = async () => {
+    if (items.length === 0 || !currentUser) return
+
+    let clientInfo = selectedClient 
+      ? `${selectedClient.name} ${selectedClient.phone ? `(Tel: ${selectedClient.phone})` : ''}`
+      : prompt('Nombre / Datos del cliente para guardar este pedido/apartado:')
+
+    if (!clientInfo || !clientInfo.trim()) return
+
+    try {
+      const orderPayload: any = {
+        tableNumber,
+        items: items.map(i => ({
+          id: i.id,
+          productId: i.productId,
+          productName: i.productName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice
+        })),
+        total: currentTotal,
+        notes: clientInfo,
+        status: 'pending',
+        createdBy: currentUser.id
+      }
+
+      const orderId = await supabaseService.createOrder(orderPayload)
+
+      // Reservar inventario
+      for (const item of items) {
+        const prod = products.find(p => p.id === item.productId)
+        if (prod && prod.hasInventory) {
+          const newStock = Math.max(0, (prod.currentStock || 0) - item.quantity)
+          await supabaseService.updateProductStock(prod.id, newStock)
+        }
+      }
+
+      clearDraftForTable(tableNumber)
+      setSelectedClient(null)
+
+      alert(`✅ Pedido/Apartado #${(orderId || '').slice(0, 8).toUpperCase()} guardado con éxito. El inventario ha quedado reservado.`)
+      const updatedList = await supabaseService.getActiveOrders()
+      setActiveOrdersList(updatedList || [])
+    } catch (err: any) {
+      console.error('Error saving pending order:', err)
+      alert('Error al guardar el pedido: ' + err.message)
+    }
+  }
+
+  const handleCheckoutPendingOrder = (order: Order) => {
+    const draftItems: OrderItem[] = order.items.map(item => ({
+      id: item.id || `order-item-${Math.random()}`,
+      productId: item.productId,
+      productName: item.productName,
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+      packQuantity: 1
+    }))
+
+    useAppStore.setState(state => ({
+      draftOrders: {
+        ...state.draftOrders,
+        [tableNumber]: draftItems
+      }
+    }))
+
+    setPaymentPanel({
+      isOpen: true,
+      orderId: order.id,
+      orderTotal: order.total,
+      orderIds: [order.id]
+    })
+  }
+
   const handleUpdatePrice = (itemId: string, newPrice: number) => {
     if (!currentUser || isReadOnly) return
     const item = items.find(i => i.id === itemId)
@@ -1152,6 +1228,18 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           >
             <SlidersHorizontal size={20} />
           </button>
+
+          <button
+            onClick={() => setShowPendingOrdersModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-amber-400 text-slate-950 rounded-xl font-black text-xs hover:bg-amber-500 transition-all shrink-0 shadow-md shadow-amber-200 active:scale-95 border border-amber-300"
+            title="Ver Pedidos Pendientes y Apartados con Stock Reservado"
+          >
+            <ShoppingBag size={18} />
+            <span className="hidden sm:inline uppercase">Pedidos</span>
+            <span className="bg-slate-950 text-amber-300 font-mono text-[10.5px] px-1.5 py-0.5 rounded-full font-black">
+              {activeOrdersList.length}
+            </span>
+          </button>
         </div>
 
         {showHardwareConfig && (
@@ -1297,23 +1385,35 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => handlePrintAccount(tableNumber)}
+                  type="button"
+                  onClick={handleCreatePendingOrder}
                   disabled={currentTotal === 0}
-                  className="py-4 bg-slate-100 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-all border border-slate-300"
+                  className="w-full py-3 bg-amber-400 text-slate-950 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all border border-amber-300 shadow-md shadow-amber-100 disabled:opacity-40 uppercase text-xs tracking-wider"
                 >
-                  <Printer size={20} />
-                  Ticket
+                  <ShoppingBag size={18} />
+                  <span>Guardar Pedido / Apartado (Stock)</span>
                 </button>
-                <button
-                  onClick={handleQuickCheckout}
-                  disabled={currentTotal === 0}
-                  className="py-4 bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all"
-                >
-                  <DollarSign size={20} />
-                  COBRAR
-                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handlePrintAccount(tableNumber)}
+                    disabled={currentTotal === 0}
+                    className="py-3.5 bg-slate-100 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition-all border border-slate-300 text-xs"
+                  >
+                    <Printer size={18} />
+                    Ticket
+                  </button>
+                  <button
+                    onClick={handleQuickCheckout}
+                    disabled={currentTotal === 0}
+                    className="py-3.5 bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all text-xs"
+                  >
+                    <DollarSign size={18} />
+                    COBRAR
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1652,7 +1752,17 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 </div>
               </form>
             </div>
-          </div>
+        {showPendingOrdersModal && (
+          <PendingOrdersModal
+            isOpen={showPendingOrdersModal}
+            onClose={() => setShowPendingOrdersModal(false)}
+            orders={activeOrdersList}
+            onCheckoutOrder={handleCheckoutPendingOrder}
+            onRefresh={async () => {
+              const active = await supabaseService.getActiveOrders()
+              setActiveOrdersList(active || [])
+            }}
+          />
         )}
 
       </div>
