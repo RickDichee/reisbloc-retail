@@ -598,8 +598,23 @@ export default function POS() {
     let activePrice = product.price
     let activePackQty = 1
 
-    if (priceMode === 'mayoreo') {
-      activePrice = product.wholesalePrice || (product as any).wholesale_price || product.price
+    // Verificar si la cantidad acumulada o modo requiere precio de mayoreo
+    const currentDraft = draftOrders[tableNumber] || []
+    const existingItem = currentDraft.find(i => i.productId === product.id)
+    const nextQty = (existingItem?.quantity || 0) + 1
+
+    let namePrice: number | null = null
+    if (product.name && product.name.includes('$')) {
+      const afterDollar = product.name.split('$')[1] || ''
+      const pNum = parseFloat(afterDollar)
+      if (!isNaN(pNum) && pNum > 0) namePrice = pNum
+    }
+
+    const wholesalePrice = namePrice || Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    const minQty = Number((product as any).wholesale_min_qty || (product as any).wholesaleMinQty || 3)
+
+    if (priceMode === 'mayoreo' || (nextQty >= minQty && wholesalePrice > 0)) {
+      activePrice = wholesalePrice || product.price
       activePackQty = 1
     } else if (priceMode === 'paquete') {
       activePrice = parsedDesc.packPrice || (product.price * 0.75)
@@ -616,6 +631,53 @@ export default function POS() {
     }
 
     addItemToDraft(tableNumber, computedProduct, currentUser.id)
+
+    // Si al agregar esta pieza se alcanzó el mínimo de mayoreo, actualizar el precio unitario de todas las piezas de este producto en el borrador
+    if (nextQty >= minQty && wholesalePrice > 0) {
+      useAppStore.setState(state => {
+        const draft = state.draftOrders[tableNumber] || []
+        const updated = draft.map(item => item.productId === product.id ? { ...item, unitPrice: wholesalePrice } : item)
+        return { draftOrders: { ...state.draftOrders, [tableNumber]: updated } }
+      })
+    }
+  }
+
+  const handleAddPackageProduct = (product: Product) => {
+    if (!currentUser || isReadOnly) return
+
+    const parsedDesc = parseProductDescription(product.description || '')
+    const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+    const packQty = explicitPackQty > 1 ? explicitPackQty : 10
+
+    const rawPrice = Number(product.price || 0)
+    let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+
+    let namePrice: number | null = null
+    if (product.name && product.name.includes('$')) {
+      const afterDollar = product.name.split('$')[1] || ''
+      const pNum = parseFloat(afterDollar)
+      if (!isNaN(pNum) && pNum > 0) namePrice = pNum
+    }
+
+    let unitPackPrice = rawPrice
+    if (namePrice !== null && namePrice > 0) {
+      unitPackPrice = namePrice
+    } else if (packPrice > 0) {
+      unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
+    } else if (wholesalePrice > 0) {
+      unitPackPrice = wholesalePrice
+    }
+
+    const computedProduct = {
+      ...product,
+      price: unitPackPrice,
+      packQuantity: 1
+    }
+
+    for (let i = 0; i < packQty; i++) {
+      addItemToDraft(tableNumber, computedProduct, currentUser.id)
+    }
   }
 
   const handleAddManualItem = (description: string, price: number) => {
@@ -1144,7 +1206,12 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           {/* Catalog Panel (Left) */}
           <div className="flex-[5] flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar">
-              <ProductGrid products={filteredProducts} onAdd={handleAddProduct} disableAdd={isReadOnly || !!activeShift?.end_time} />
+              <ProductGrid 
+                products={filteredProducts} 
+                onAdd={handleAddProduct} 
+                onAddPackage={handleAddPackageProduct}
+                disableAdd={isReadOnly || !!activeShift?.end_time} 
+              />
             </div>
           </div>
 
