@@ -89,7 +89,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                 ${targetType === 'piece' ? `
                   <div style="text-align: left; line-height: 1.1;">
                     <div style="font-size: 7.5px; font-weight: 800; color: #555;">SKU: ${product.sku || 'PZA'}</div>
-                    <div style="font-size: 10.5px; font-weight: 900;">$${piecePrice.toFixed(2)}</div>
+                    <div style="font-size: 10.5px; font-weight: 900;">$${unitPackPrice.toFixed(2)} c/u</div>
                   </div>
                   <span style="font-size: 9px; font-weight: 900; background: #f1f5f9; color: #000; padding: 1px 4px; border-radius: 2px;">PZA</span>
                 ` : `
@@ -323,7 +323,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                     <>
                       <div className="text-left leading-tight">
                         <div className="text-[8px] text-slate-500 font-bold">SKU: {product.sku || 'PZA'}</div>
-                        <div className="text-xs font-black">${piecePrice.toFixed(2)}</div>
+                        <div className="text-xs font-black">${unitPackPrice.toFixed(2)} c/u</div>
                       </div>
                       <span className="text-[9px] font-black bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded uppercase">PZA</span>
                     </>
