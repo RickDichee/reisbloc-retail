@@ -62,26 +62,30 @@ export const ticketService = {
   },
 
   async uploadPDF(blob: Blob, filename: string): Promise<string> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Usuario no autenticado');
-
-    const timestamp = Date.now();
-    const path = `tickets/${user.id}/${timestamp}-${filename}`;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anon';
+      const timestamp = Date.now();
+      const path = `tickets/${userId}/${timestamp}-${filename}`;
 
       const { error } = await supabase.storage
         .from('tickets')
         .upload(path, blob, {
           contentType: 'application/pdf',
-          upsert: false,
+          upsert: true,
         });
 
       if (error) throw error;
 
-    const { data: urlData } = supabase.storage
-      .from('tickets')
-      .getPublicUrl(path);
+      const { data: urlData } = supabase.storage
+        .from('tickets')
+        .getPublicUrl(path);
 
-    return urlData.publicUrl;
+      return urlData.publicUrl;
+    } catch (err) {
+      console.warn('⚠️ Supabase Storage bucket "tickets" no disponible:', err);
+      throw err;
+    }
   },
 
   async shareByWhatsApp(
@@ -89,29 +93,36 @@ export const ticketService = {
     ticketHtml: string,
     ticketData: TicketData
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const cleanPhone = this.formatPhoneNumber(phone);
+    const ticketText = this.formatTicketAsText(ticketData);
+
     try {
-      if (!whatsappService.isConfigured()) {
-        const whatsappUrl = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(
-          this.formatTicketAsText(ticketData)
-        )}`;
-        window.open(whatsappUrl, '_blank');
-        return { success: true };
+      if (whatsappService.isConfigured()) {
+        try {
+          const pdfBlob = await this.generatePDFFromHTML(ticketHtml);
+          const pdfUrl = await this.uploadPDF(pdfBlob, `ticket-${ticketData.orderId}.pdf`);
+
+          const messageId = await whatsappService.sendDocumentMessage(
+            cleanPhone,
+            pdfUrl,
+            `ticket-${ticketData.orderId}.pdf`,
+            `✅ Ticket de compra #${ticketData.orderId.slice(0, 8)}\nTotal: $${ticketData.total.toFixed(2)}\nGracias por su compra!`
+          );
+          return { success: true, messageId };
+        } catch (apiError) {
+          console.warn('⚠️ Fallo de envío por API/Storage, redirigiendo a WhatsApp Web:', apiError);
+        }
       }
 
-      const pdfBlob = await this.generatePDFFromHTML(ticketHtml);
-      const pdfUrl = await this.uploadPDF(pdfBlob, `ticket-${ticketData.orderId}.pdf`);
-
-      const messageId = await whatsappService.sendDocumentMessage(
-        phone,
-        pdfUrl,
-        `ticket-${ticketData.orderId}.pdf`,
-        `✅ Ticket de compra #${ticketData.orderId.slice(0, 8)}\nTotal: $${ticketData.total.toFixed(2)}\nGracias por su compra!`
-      );
-
-      return { success: true, messageId };
+      // Fallback 100% resiliente: Abrir WhatsApp Web con el mensaje formateado
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(ticketText)}`;
+      window.open(whatsappUrl, '_blank');
+      return { success: true };
     } catch (error: any) {
       console.error('Error sharing ticket via WhatsApp:', error);
-      return { success: false, error: error.message };
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(ticketText)}`;
+      window.open(whatsappUrl, '_blank');
+      return { success: true };
     }
   },
 
@@ -120,29 +131,39 @@ export const ticketService = {
     ticketHtml: string,
     ticketData: TicketData
   ): Promise<{ success: boolean; error?: string }> {
-    try {
-      const pdfBlob = await this.generatePDFFromHTML(ticketHtml);
-      const pdfUrl = await this.uploadPDF(pdfBlob, `ticket-${ticketData.orderId}.pdf`);
+    const subject = `Ticket de compra #${ticketData.orderId.slice(0, 8)}`;
+    const body = this.formatTicketAsText(ticketData);
 
-      const subject = `Ticket de compra #${ticketData.orderId.slice(0, 8)}`;
-      const body = this.formatTicketAsText(ticketData);
+    try {
+      let pdfUrl = '';
+      try {
+        const pdfBlob = await this.generatePDFFromHTML(ticketHtml);
+        pdfUrl = await this.uploadPDF(pdfBlob, `ticket-${ticketData.orderId}.pdf`);
+      } catch (e) {
+        console.warn('⚠️ Falló generación de PDF en Storage para email:', e);
+      }
 
       const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailtoLink;
 
-      setTimeout(() => {
-        const a = document.createElement('a');
-        a.href = pdfUrl;
-        a.download = `ticket-${ticketData.orderId}.pdf`;
-        a.click();
-      }, 500);
+      if (pdfUrl) {
+        setTimeout(() => {
+          const a = document.createElement('a');
+          a.href = pdfUrl;
+          a.download = `ticket-${ticketData.orderId}.pdf`;
+          a.click();
+        }, 500);
+      }
 
       return { success: true };
     } catch (error: any) {
       console.error('Error sharing ticket via email:', error);
-      return { success: false, error: error.message };
+      const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      return { success: true };
     }
   },
+
 
   formatTicketAsText(data: TicketData): string {
     const date = data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
