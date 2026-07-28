@@ -81,14 +81,8 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                 ${product.name.trim()}
               </div>
 
-              ${targetType === 'pack' ? `
-                <div style="font-size: 8px; font-weight: 900; background: #000; color: #fff; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; margin: 1px 0;">
-                  PAQUETE DE ${packQty} PZAS
-                </div>
-              ` : ''}
-
               <div style="display: flex; align-items: center; justify-content: center; width: 100%; margin: 1mm 0;">
-                <img src="${codeImgUrl}" style="${codeType === 'qrcode' ? 'width: 17mm; height: 17mm;' : 'max-width: 42mm; height: 9mm;'}" alt="code">
+                <img src="${codeImgUrl}" style="${codeType === 'qrcode' ? 'width: 18mm; height: 18mm;' : 'max-width: 42mm; height: 9.5mm;'}" alt="code">
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; font-weight: 900; color: #000; border-top: 1px solid #000; padding-top: 1mm;">
@@ -97,7 +91,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                   <span style="font-size: 11px; font-weight: 900;">$${piecePrice.toFixed(2)}</span>
                 ` : `
                   <span>$${unitPackPrice.toFixed(2)}/pza</span>
-                  <span style="font-size: 11px; font-weight: 900;">TOT: $${rawPackPrice.toFixed(2)}</span>
+                  <span style="font-size: 9px; font-weight: 900; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">PAQ ${packQty} PZAS</span>
                 `}
               </div>
             </div>
@@ -115,7 +109,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                 </div>
               ` : `
                 <div style="font-size: 9px; font-weight: 800; color: #000; margin: 2px 0;">
-                  PAQUETE DE ${packQty} PZAS · Total: <strong>$${rawPackPrice.toFixed(2)}</strong> ($${unitPackPrice.toFixed(2)}/c.u)
+                  PAQUETE DE ${packQty} PZAS · <strong>$${unitPackPrice.toFixed(2)} / pza</strong>
                 </div>
               `}
 
@@ -307,12 +301,6 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                 {product.name}
               </div>
 
-              {targetType === 'pack' && stylePreset === 'minimal' && (
-                <span className="text-[9px] font-black bg-black text-white px-2 py-0.5 rounded uppercase tracking-wider">
-                  PAQUETE DE {packQty} PZAS
-                </span>
-              )}
-
               {/* Code Image */}
               <div className="flex items-center justify-center w-full my-0.5">
                 <img
@@ -331,8 +319,8 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                   </>
                 ) : (
                   <>
-                    <span className="text-slate-600 font-bold">${unitPackPrice.toFixed(2)}/pza</span>
-                    <span className="text-xs font-black">TOT: ${rawPackPrice.toFixed(2)}</span>
+                    <span className="text-slate-700 font-bold">${unitPackPrice.toFixed(2)}/pza</span>
+                    <span className="text-[9px] font-black bg-black text-white px-1.5 py-0.5 rounded uppercase">PAQ {packQty} PZAS</span>
                   </>
                 )}
               </div>
