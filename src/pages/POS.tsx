@@ -724,6 +724,15 @@ export default function POS() {
   const handleCreatePendingOrder = async () => {
     if (items.length === 0 || !currentUser) return
 
+    // 🔒 RESTRICCIÓN DE SEGURIDAD: Solo Admin y Gerencia pueden crear pedidos sin cobrar
+    const userRole = (currentUser?.role || '').toLowerCase()
+    const isAuthorized = userRole === 'admin' || userRole === 'manager' || userRole === 'supervisor' || userRole === 'gerente'
+    
+    if (!isAuthorized) {
+      alert('🔒 Acceso Restringido:\nLa creación de pedidos y apartados sin cobrar está reservada únicamente para Gerencia y Administradores.')
+      return
+    }
+
     let clientInfo = selectedClient 
       ? `${selectedClient.name} ${selectedClient.phone ? `(Tel: ${selectedClient.phone})` : ''}`
       : prompt('Nombre / Datos del cliente para guardar este pedido/apartado:')
@@ -742,11 +751,30 @@ export default function POS() {
         })),
         total: currentTotal,
         notes: clientInfo,
-        status: 'pending',
-        createdBy: currentUser.id
+        status: 'pending_surtir',
+        createdBy: currentUser.id,
+        paidAmount: 0,
+        pendingBalance: currentTotal,
+        paymentStatus: 'unpaid',
+        isPaid: false
       }
 
       const orderId = await supabaseService.createOrder(orderPayload)
+
+      // 📝 LOG DE AUDITORÍA OBLIGATORIO DE CREACIÓN DE PEDIDO
+      await supabaseService.createAuditLog({
+        userId: currentUser.id,
+        action: 'POS_PENDING_ORDER_CREATED',
+        entityType: 'ORDER',
+        entityId: orderId,
+        newValue: {
+          clientInfo,
+          total: currentTotal,
+          itemsCount: items.length,
+          createdBy: currentUser.username || currentUser.email || currentUser.id,
+          role: currentUser.role
+        }
+      })
 
       // Reservar inventario
       for (const item of items) {
@@ -760,7 +788,7 @@ export default function POS() {
       clearDraftForTable(tableNumber)
       setSelectedClient(null)
 
-      alert(`✅ Pedido/Apartado #${(orderId || '').slice(0, 8).toUpperCase()} guardado con éxito. El inventario ha quedado reservado.`)
+      alert(`✅ Pedido/Apartado #${(orderId || '').slice(0, 8).toUpperCase()} creado por ${currentUser.username || 'Gerencia'} y registrado en Auditoría. Stock reservado.`)
       const updatedList = await supabaseService.getActiveOrders()
       setActiveOrdersList(updatedList || [])
     } catch (err: any) {

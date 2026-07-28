@@ -72,9 +72,13 @@ export interface Order {
   id: string;
   ticketNumber: number;  // Número de ticket/orden (antes "tableNumber" - legado restaurante)
   items: OrderItem[];
-  status: 'open' | 'sent' | 'ready' | 'served' | 'completed' | 'cancelled';
+  status: 'open' | 'sent' | 'ready' | 'served' | 'completed' | 'cancelled' | 'pending' | 'apartado' | 'pending_surtir' | 'listo_entrega' | 'pendiente_entrega' | 'entregado';
   subtotal?: number;
   total?: number;
+  paidAmount?: number;      // Monto abonado (pagos parciales)
+  pendingBalance?: number;  // Saldo restante por cobrar
+  isPaid?: boolean;         // true únicamente cuando se liquida al 100%
+  paymentStatus?: 'unpaid' | 'partial' | 'paid';
   isCourtesy?: boolean; // Ticket de cortesía sin costo
   authorizedBy?: string; // Admin que autorizó cortesía
   createdAt: Date;
