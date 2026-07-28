@@ -1203,7 +1203,6 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               <ProductGrid 
                 products={filteredProducts} 
                 onAdd={handleAddProduct} 
-                onAddPackage={handleAddPackageProduct}
                 disableAdd={isReadOnly || !!activeShift?.end_time} 
               />
             </div>
