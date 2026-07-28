@@ -55,7 +55,9 @@ export default function Inventory() {
   }, [loadInventory])
 
   if (!currentUser) return <Navigate to="/login" replace />
-  if (!hasAnyRole(['admin', 'manager', 'supervisor'])) return <Navigate to="/pos" replace />
+  if (!hasAnyRole(['admin', 'manager', 'supervisor', 'employee', 'cashier'])) return <Navigate to="/pos" replace />
+
+  const canCreateProduct = ['admin', 'manager', 'employee', 'cashier'].includes(currentUser?.role || '')
 
   const handleShareProduct = async (product: any) => {
     const text = `
@@ -115,8 +117,8 @@ export default function Inventory() {
                 <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Gestión profesional de suministros y productos</p>
               </div>
             </div>
-            {isAdminOrManager && (
-              <div className="flex gap-2">
+            <div className="flex gap-2">
+              {canCreateProduct && (
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-4 rounded-2xl font-black flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] group"
@@ -124,14 +126,16 @@ export default function Inventory() {
                   <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
                   NUEVO PRODUCTO
                 </button>
+              )}
+              {isAdminOrManager && (
                 <button
                   onClick={() => setShowImportModal(true)}
                   className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95"
                 >
                   IMPORTAR
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 

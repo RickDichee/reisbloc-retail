@@ -185,7 +185,11 @@ export default function UsersManagement() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-extrabold text-base leading-tight truncate capitalize">{displayName}</h3>
-                        <p className="text-[11px] font-bold opacity-90 truncate">{user.email || 'Sin correo registrado'}</p>
+                        {user.email ? (
+                          <p className="text-[11px] font-bold opacity-90 truncate">{user.email}</p>
+                        ) : (
+                          <p className="text-[11px] font-bold opacity-90 truncate">@{user.username || 'staff'}</p>
+                        )}
                         <span className="inline-block mt-1 bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
                           {roleLabels[user.role] || user.role}
                         </span>
