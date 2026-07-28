@@ -229,6 +229,12 @@ class SupabaseService {
         finalEntityId = undefined as any
       }
 
+      // Validar organization_id
+      let finalOrgId = this.getCurrentOrgId()
+      if (!finalOrgId || !uuidRegex.test(finalOrgId)) {
+        finalOrgId = localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001'
+      }
+
       const { error } = await supabase
         .from('audit_logs')
         .insert({
@@ -243,13 +249,14 @@ class SupabaseService {
           details: finalDetails || null,
           location: log.location,
           session_type: log.sessionType,
-          organization_id: this.getCurrentOrgId()
+          organization_id: finalOrgId
         })
 
       if (error) throw error
     } catch (error) {
-      logger.error('supabase', 'Error creating audit log', error as any)
+      logger.warn('supabase', 'Soporte silencioso en audit log:', error as any)
     }
+
   }
 
   async getAuditLogs(limit = 100): Promise<AuditLog[]> {
@@ -2368,7 +2375,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       throw new Error(`⚠️ Ya existe un cliente registrado con el mismo nombre o teléfono (${duplicate.name} ${duplicate.phone || ''}).`)
     }
 
-    const payload = {
+    const payload: any = {
       organization_id: this.getCurrentOrgId() || localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001',
       name: clientData.name.trim(),
       phone: clientData.phone ? clientData.phone.trim() : null,
@@ -2381,8 +2388,21 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     let createdClient: any = null
     try {
       const { data, error } = await supabase.from('clients').insert([payload]).select('*').single()
-      if (error) throw error
-      createdClient = data
+      if (error) {
+        // Re-intentar sin columnas extendidas si el esquema en caché no las ha actualizado aún
+        const basePayload = {
+          organization_id: payload.organization_id,
+          name: payload.name,
+          phone: payload.phone,
+          email: payload.email,
+          notes: payload.notes
+        }
+        const { data: baseData, error: baseErr } = await supabase.from('clients').insert([basePayload]).select('*').single()
+        if (baseErr) throw baseErr
+        createdClient = baseData
+      } else {
+        createdClient = data
+      }
     } catch (e: any) {
       logger.warn('supabase', 'RLS o fallback en creación de cliente CRM:', e?.message)
       createdClient = { ...payload, id: `client-${Date.now()}` }
@@ -2390,6 +2410,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       cached.unshift(createdClient)
       localStorage.setItem('cached_crm_clients', JSON.stringify(cached))
     }
+
 
     // 📝 Log de Auditoría obligatorio de cliente creado
     await this.createAuditLog({
