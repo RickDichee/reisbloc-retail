@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Product } from '@/types/index'
-import { X, Printer, QrCode, Barcode, Package, Tag, Layers, Check } from 'lucide-react'
+import { X, Printer, QrCode, Barcode, Package, Tag, DollarSign, Layers, Check, Monitor } from 'lucide-react'
 import printService from '@/services/printService'
 import { useAppStore } from '@/store/appStore'
 
@@ -55,10 +55,11 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
     unitPackPrice = piecePrice
   }
 
-  // Configuración de impresión
+  // Configuración interactiva de impresión
   const [codeType, setCodeType] = useState<'qrcode' | 'code128'>('qrcode')
   const [targetType, setTargetType] = useState<'piece' | 'pack'>('piece')
-  const [stylePreset, setStylePreset] = useState<'minimal' | 'full'>('minimal')
+  const [priceContent, setPriceContent] = useState<'unitPack' | 'retail' | 'wholesale' | 'totalPack'>('unitPack')
+  const [printerFormat, setPrinterFormat] = useState<'nimbot50x30' | 'thermal58' | 'thermal80'>('nimbot50x30')
   const [copies, setCopies] = useState<number>(1)
   const [isPrinting, setIsPrinting] = useState<boolean>(false)
 
@@ -66,67 +67,52 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
   const bwipBcid = codeType === 'qrcode' ? 'qrcode' : 'code128'
   const codeImgUrl = `https://bwipjs-api.metafloor.com/?bcid=${bwipBcid}&text=${encodeURIComponent(activeCode)}&scale=3${codeType === 'code128' ? '&height=10&includetext=false' : ''}`
 
+  // Determinación dinámica del texto del precio seleccionado
+  const getSelectedPriceText = () => {
+    switch (priceContent) {
+      case 'unitPack':
+        return `$${unitPackPrice.toFixed(2)}/pza`
+      case 'retail':
+        return `$${piecePrice.toFixed(2)} c/u`
+      case 'wholesale':
+        return `$${wholesalePrice.toFixed(2)} (3+)`
+      case 'totalPack':
+        return `TOT: $${rawPackPrice.toFixed(2)}`
+      default:
+        return `$${unitPackPrice.toFixed(2)}/pza`
+    }
+  }
+
   const handlePrint = async () => {
     setIsPrinting(true)
     try {
-      const labelWidth = organizationSettings?.labelPrinterWidth || 50
+      const labelWidth = printerFormat === 'thermal80' ? 80 : (printerFormat === 'thermal58' ? 58 : 50)
       let printHTML = `<div style="display: flex; flex-direction: column; gap: 15px; font-family: system-ui, -apple-system, sans-serif; text-align: center; width: ${labelWidth}mm; margin: 0 auto;">`
 
+      const activePriceText = getSelectedPriceText()
+
       for (let i = 0; i < copies; i++) {
-        if (stylePreset === 'minimal') {
-          // ⚡ MODO MINIMALISTA (Optimizado Nimbot B1 - Papel 50x30mm con márgenes de seguridad de 3mm)
-          printHTML += `
-            <div style="width: ${labelWidth - 4}mm; height: 26mm; padding: 2mm; margin: 0 auto; box-sizing: border-box; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; page-break-after: always; background: #fff; border: 1px dashed #ccc;">
-              <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; color: #000;">
-                ${product.name.trim()}
-              </div>
-
-              <div style="display: flex; align-items: center; justify-content: center; width: 100%; margin: 1mm 0;">
-                <img src="${codeImgUrl}" style="${codeType === 'qrcode' ? 'width: 18mm; height: 18mm;' : 'max-width: 42mm; height: 9.5mm;'}" alt="code">
-              </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; font-size: 9px; font-weight: 900; color: #000; border-top: 1px solid #000; padding-top: 1mm;">
-                ${targetType === 'piece' ? `
-                  <div style="text-align: left; line-height: 1.1;">
-                    <div style="font-size: 7.5px; font-weight: 800; color: #555;">SKU: ${product.sku || 'PZA'}</div>
-                    <div style="font-size: 10.5px; font-weight: 900;">$${unitPackPrice.toFixed(2)} c/u</div>
-                  </div>
-                  <span style="font-size: 9px; font-weight: 900; background: #f1f5f9; color: #000; padding: 1px 4px; border-radius: 2px;">PZA</span>
-                ` : `
-                  <div style="text-align: left; line-height: 1.1;">
-                    <div style="font-size: 7.5px; font-weight: 800; color: #555;">SKU: ${product.sku || 'PAQ'}</div>
-                    <div style="font-size: 9.5px; font-weight: 900;">$${unitPackPrice.toFixed(2)}/pza</div>
-                  </div>
-                  <span style="font-size: 9px; font-weight: 900; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">PAQ ${packQty} PZAS</span>
-                `}
-              </div>
+        printHTML += `
+          <div style="width: ${labelWidth - 4}mm; min-height: 26mm; padding: 2mm; margin: 0 auto; box-sizing: border-box; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; page-break-after: always; background: #fff; border: 1px dashed #ccc;">
+            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; color: #000;">
+              ${product.name.trim()}
             </div>
-          `
-        } else {
-          // 📄 MODO COMPLETO (Con desglose y precios de mayoreo)
-          printHTML += `
-            <div style="width: ${labelWidth - 4}mm; padding: 2.5mm; margin: 0 auto; box-sizing: border-box; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; page-break-after: always; background: #fff; border: 1px dashed #000;">
-              <div style="font-size: 8px; font-weight: 900; text-transform: uppercase; color: #555;">MODA MIEL MX</div>
-              <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; margin: 2px 0; line-height: 1.1;">${product.name.trim()}</div>
-              
-              ${targetType === 'piece' ? `
-                <div style="font-size: 9px; font-weight: 800; color: #000; margin: 2px 0;">
-                  Menudeo: <strong>$${piecePrice.toFixed(2)}</strong> | Mayoreo (3+): <strong>$${wholesalePrice.toFixed(2)}</strong>
-                </div>
-              ` : `
-                <div style="font-size: 9px; font-weight: 800; color: #000; margin: 2px 0;">
-                  PAQUETE DE ${packQty} PZAS · <strong>$${unitPackPrice.toFixed(2)} / pza</strong>
-                </div>
-              `}
 
-              <div style="display: flex; justify-content: center; align-items: center; width: 100%; margin: 2mm 0;">
-                <img src="${codeImgUrl}" style="${codeType === 'qrcode' ? 'width: 20mm; height: 20mm;' : 'max-width: 44mm; height: 11mm;'}" alt="code">
-              </div>
-
-              <div style="font-size: 8px; font-weight: bold; color: #333;">COD: ${activeCode}</div>
+            <div style="display: flex; align-items: center; justify-content: center; width: 100%; margin: 1mm 0;">
+              <img src="${codeImgUrl}" style="${codeType === 'qrcode' ? 'width: 18mm; height: 18mm;' : 'max-width: 42mm; height: 9.5mm;'}" alt="code">
             </div>
-          `
-        }
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; font-size: 9px; font-weight: 900; color: #000; border-top: 1px solid #000; padding-top: 1mm;">
+              <div style="text-align: left; line-height: 1.1;">
+                <div style="font-size: 7.5px; font-weight: 800; color: #555;">SKU: ${product.sku || (targetType === 'piece' ? 'PZA' : 'PAQ')}</div>
+                <div style="font-size: 10px; font-weight: 900;">${activePriceText}</div>
+              </div>
+              <span style="font-size: 8.5px; font-weight: 900; background: ${targetType === 'pack' ? '#000' : '#f1f5f9'}; color: ${targetType === 'pack' ? '#fff' : '#000'}; padding: 1px 4px; border-radius: 2px;">
+                ${targetType === 'piece' ? 'PZA' : `PAQ ${packQty} PZAS`}
+              </span>
+            </div>
+          </div>
+        `
       }
 
       printHTML += '</div>'
@@ -142,7 +128,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-3 sm:p-4 animate-fadeIn overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-4 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col my-auto">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col my-auto">
         
         {/* Header */}
         <div className="flex justify-between items-center border-b border-slate-100 pb-3 shrink-0">
@@ -151,8 +137,8 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
               <Printer size={22} className="sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight leading-snug">Impresor de Etiquetas Nimbot B1</h2>
-              <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Diseño optimizado para papel de 50x30mm con márgenes de seguridad</p>
+              <h2 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight leading-snug">Personalizar e Imprimir Etiqueta</h2>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Configura precios, formatos de código y tamaños de impresora térmica</p>
             </div>
           </div>
           <button
@@ -165,10 +151,10 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
 
         {/* Scrollable Body: Controls (Left) + Visual Preview (Right) */}
         <div className="flex-1 overflow-y-auto py-4 pr-1 space-y-6 custom-scrollbar">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             
-            {/* Controls */}
-            <div className="space-y-4">
+            {/* Controls (7 cols) */}
+            <div className="md:col-span-7 space-y-4">
               
               {/* 1. Formato del Código */}
               <div className="space-y-1.5">
@@ -177,95 +163,162 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                   <button
                     type="button"
                     onClick={() => setCodeType('qrcode')}
-                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                    className={`p-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 border transition-all ${
                       codeType === 'qrcode' 
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' 
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <QrCode size={16} />
-                    <span>📱 QR 2D (Rec.)</span>
+                    <QrCode size={15} />
+                    <span>📱 QR (2D)</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setCodeType('code128')}
-                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                    className={`p-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 border transition-all ${
                       codeType === 'code128' 
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' 
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <Barcode size={16} />
-                    <span>🏷️ Barras 1D</span>
+                    <Barcode size={15} />
+                    <span>🏷️ Barras (1D)</span>
                   </button>
                 </div>
               </div>
 
-              {/* 2. Contenido del Código */}
+              {/* 2. Unidad a Identificar */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">2. Unidad a Identificar</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setTargetType('piece')}
-                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                    className={`p-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 border transition-all ${
                       targetType === 'piece' 
                         ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <Tag size={16} />
+                    <Tag size={15} />
                     <span>👤 Pieza Individual</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setTargetType('pack')}
-                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
+                    className={`p-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 border transition-all ${
                       targetType === 'pack' 
                         ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <Package size={16} />
-                    <span>📦 Paquete ({packQty})</span>
+                    <Package size={15} />
+                    <span>📦 Paquete ({packQty} pzas)</span>
                   </button>
                 </div>
               </div>
 
-              {/* 3. Estilo de Etiqueta */}
+              {/* 3. Selección del Precio a Mostrar (Personalizable) */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">3. Estilo de Diseño</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">3. Precio a Mostrar en Etiqueta</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setStylePreset('minimal')}
-                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
-                      stylePreset === 'minimal' 
+                    onClick={() => setPriceContent('unitPack')}
+                    className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
+                      priceContent === 'unitPack' 
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <Check size={16} />
-                    <span>⚡ Minimal Nimbot</span>
+                    <span className="font-extrabold">📦 Pza en Paquete (Predeterminado)</span>
+                    <span className="text-[9px] opacity-80">${unitPackPrice.toFixed(2)}/pza</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStylePreset('full')}
-                    className={`p-2.5 sm:p-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border transition-all ${
-                      stylePreset === 'full' 
+                    onClick={() => setPriceContent('retail')}
+                    className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
+                      priceContent === 'retail' 
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <Layers size={16} />
-                    <span>📄 Detallada</span>
+                    <span className="font-extrabold">🏷️ Precio Menudeo</span>
+                    <span className="text-[9px] opacity-80">${piecePrice.toFixed(2)} c/u</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPriceContent('wholesale')}
+                    className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
+                      priceContent === 'wholesale' 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="font-extrabold">💙 Precio Mayoreo (3+)</span>
+                    <span className="text-[9px] opacity-80">${wholesalePrice.toFixed(2)} c/u</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPriceContent('totalPack')}
+                    className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
+                      priceContent === 'totalPack' 
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="font-extrabold">💰 Precio Total Paquete</span>
+                    <span className="text-[9px] opacity-80">${rawPackPrice.toFixed(2)}</span>
                   </button>
                 </div>
               </div>
 
-              {/* 4. Número de Copias */}
+              {/* 4. Tamaño e Impresora Térmica */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">4. Cantidad de Etiquetas</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">4. Formato e Impresora Térmica</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPrinterFormat('nimbot50x30')}
+                    className={`p-2 rounded-2xl font-bold text-[10px] flex flex-col items-center justify-center border transition-all ${
+                      printerFormat === 'nimbot50x30' 
+                        ? 'bg-indigo-900 text-white border-indigo-900 shadow-md' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="font-black">⚡ Nimbot B1</span>
+                    <span className="text-[8px] opacity-80">50 x 30 mm</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrinterFormat('thermal58')}
+                    className={`p-2 rounded-2xl font-bold text-[10px] flex flex-col items-center justify-center border transition-all ${
+                      printerFormat === 'thermal58' 
+                        ? 'bg-indigo-900 text-white border-indigo-900 shadow-md' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="font-black">🖨️ Térmica 58mm</span>
+                    <span className="text-[8px] opacity-80">Rollo 58 mm</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrinterFormat('thermal80')}
+                    className={`p-2 rounded-2xl font-bold text-[10px] flex flex-col items-center justify-center border transition-all ${
+                      printerFormat === 'thermal80' 
+                        ? 'bg-indigo-900 text-white border-indigo-900 shadow-md' 
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="font-black">🏭 Térmica 80mm</span>
+                    <span className="text-[8px] opacity-80">Rollo 80 mm</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 5. Número de Copias */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">5. Cantidad de Etiquetas</label>
                 <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-200">
                   <button
                     type="button"
@@ -294,13 +347,13 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
 
             </div>
 
-            {/* Live Visual Preview (Scaled 50x30mm label representation) */}
-            <div className="bg-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-center border border-slate-200/80">
+            {/* Live Visual Preview (5 cols) */}
+            <div className="md:col-span-5 bg-slate-100 rounded-3xl p-4 sm:p-5 flex flex-col items-center justify-center border border-slate-200/80">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-3">
-                Vista Previa Fidedigna (50x30mm)
+                Vista Previa Fidedigna ({printerFormat === 'thermal80' ? '80mm' : (printerFormat === 'thermal58' ? '58mm' : '50x30mm')})
               </span>
 
-              {/* Representation of 50mm x 30mm thermal label */}
+              {/* Representation of label */}
               <div className="w-[220px] sm:w-[240px] h-[132px] sm:h-[144px] bg-white rounded-xl shadow-lg border border-slate-300 p-2 flex flex-col justify-between items-center text-center relative overflow-hidden select-none">
                 
                 {/* Top product name */}
@@ -319,28 +372,18 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
 
                 {/* Footer info */}
                 <div className="w-full flex justify-between items-end border-t border-slate-800 pt-1 font-black text-[10px] text-slate-900">
-                  {targetType === 'piece' ? (
-                    <>
-                      <div className="text-left leading-tight">
-                        <div className="text-[8px] text-slate-500 font-bold">SKU: {product.sku || 'PZA'}</div>
-                        <div className="text-xs font-black">${unitPackPrice.toFixed(2)} c/u</div>
-                      </div>
-                      <span className="text-[9px] font-black bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded uppercase">PZA</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-left leading-tight">
-                        <div className="text-[8px] text-slate-500 font-bold">SKU: {product.sku || 'PAQ'}</div>
-                        <div className="text-[11px] font-black">${unitPackPrice.toFixed(2)}/pza</div>
-                      </div>
-                      <span className="text-[9px] font-black bg-black text-white px-1.5 py-0.5 rounded uppercase">PAQ {packQty} PZAS</span>
-                    </>
-                  )}
+                  <div className="text-left leading-tight">
+                    <div className="text-[8px] text-slate-500 font-bold">SKU: {product.sku || (targetType === 'piece' ? 'PZA' : 'PAQ')}</div>
+                    <div className="text-[11px] font-black">{getSelectedPriceText()}</div>
+                  </div>
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${targetType === 'pack' ? 'bg-black text-white' : 'bg-slate-100 text-slate-800'}`}>
+                    {targetType === 'piece' ? 'PZA' : `PAQ ${packQty} PZAS`}
+                  </span>
                 </div>
               </div>
 
               <p className="text-[10px] text-slate-400 font-medium text-center mt-3">
-                ✨ Diseñado con márgenes libres de 3mm para evitar que la Nimbot B1 recorte o muerda bordes.
+                ✨ {printerFormat === 'nimbot50x30' ? 'Margen de 3mm anti-recortes para Nimbot B1.' : 'Diseño responsivo para impresora térmica.'}
               </p>
             </div>
 
