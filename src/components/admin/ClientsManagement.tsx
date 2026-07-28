@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Search, Plus, Edit2, Trash2, Phone, Mail, X, Save, Loader2, Calendar, Upload, FileText, Check, AlertCircle, FileSpreadsheet, CheckCircle2 } from 'lucide-react'
+import { Users, Search, Plus, Edit2, Trash2, Phone, Mail, X, Save, Loader2, Calendar, Upload, FileText, Check, AlertCircle, FileSpreadsheet, CheckCircle2, Receipt, Clock } from 'lucide-react'
 import { supabase } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
 import logger from '@/utils/logger'
 import { withOrg } from '@/utils/queryHelpers'
 import supabaseService from '@/services/supabaseService'
+import ClientHistoryModal from '@/components/crm/ClientHistoryModal'
 
 export default function ClientsManagement() {
     const { currentUser } = useAppStore()
@@ -14,6 +15,7 @@ export default function ClientsManagement() {
     const [showModal, setShowModal] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [editingClient, setEditingClient] = useState<any>(null)
+    const [historyClient, setHistoryClient] = useState<any>(null)
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -340,18 +342,27 @@ export default function ClientsManagement() {
                                 </div>
                             </div>
 
-                            <div className="pt-6 border-t-2 border-dashed border-slate-100 flex justify-between items-center mt-auto">
-                                <div className="shrink-0">
-                                    <p className="text-[10px] uppercase font-black text-slate-400 tracking-[0.1em] mb-1">Inversión Total</p>
-                                    <p className="text-xl font-black text-slate-900">${client.total_spent || '0.00'}</p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                    <p className="text-[10px] uppercase font-black text-slate-400 tracking-[0.1em] mb-1">Visitas</p>
-                                    <div className="flex items-center justify-end gap-1.5 font-black text-slate-700">
-                                        <span className="text-lg leading-none">12</span>
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <div className="pt-6 border-t-2 border-dashed border-slate-100 flex flex-col gap-3 mt-auto">
+                                <div className="flex justify-between items-center">
+                                    <div className="shrink-0">
+                                        <p className="text-[10px] uppercase font-black text-slate-400 tracking-[0.1em] mb-1">Inversión Total</p>
+                                        <p className="text-xl font-black text-slate-900">${client.total_spent || '0.00'}</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-[10px] uppercase font-black text-slate-400 tracking-[0.1em] mb-1">CRM Status</p>
+                                        <div className="flex items-center justify-end gap-1 font-black text-emerald-600 text-xs">
+                                            <span>● Activo</span>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <button
+                                    onClick={() => setHistoryClient(client)}
+                                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+                                >
+                                    <FileText size={14} />
+                                    <span>Ver Historial & Tickets</span>
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -579,6 +590,14 @@ export default function ClientsManagement() {
                         )}
                     </div>
                 </div>
+            )}
+
+            {historyClient && (
+                <ClientHistoryModal
+                    isOpen={!!historyClient}
+                    onClose={() => setHistoryClient(null)}
+                    client={historyClient}
+                />
             )}
         </div>
     )
