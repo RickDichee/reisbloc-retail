@@ -104,5 +104,16 @@ export const shiftService = {
     } catch (e) {
       logger.warn('shift', 'Could not append shift note', e);
     }
+  },
+
+  async getAllActiveShifts(orgId: string) {
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('*')
+      .eq('organization_id', orgId)
+      .eq('status', 'open');
+
+    if (error) throw error;
+    return data || [];
   }
 };

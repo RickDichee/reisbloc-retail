@@ -87,11 +87,19 @@ export const useBarcodeScanner = (
       }
     }
 
-    // Usar "true" para captura si es necesario, pero burbujeo está bien si evitamos inputs
+    const handleReset = () => {
+      buffer.current = ''
+      activeScannerNum.current = undefined
+    }
+
     window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('focus', handleReset)
+    document.addEventListener('visibilitychange', handleReset)
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('focus', handleReset)
+      document.removeEventListener('visibilitychange', handleReset)
       buffer.current = '' // Limpieza preventiva
       activeScannerNum.current = undefined
     }
