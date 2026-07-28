@@ -18,7 +18,7 @@ import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { sanitizeHTML } from '@/utils/sanitize'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
 function parseProductDescription(descriptionText: string | null) {
@@ -596,10 +596,48 @@ export default function POS() {
     if (!currentUser || isReadOnly) return
     
     const parsedDesc = parseProductDescription(product.description || '')
+
+    // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
+    if (priceMode === 'paquete') {
+      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+      const packQty = explicitPackQty > 1 ? explicitPackQty : 10
+
+      const rawPrice = Number(product.price || 0)
+      let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+      let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+
+      let namePrice: number | null = null
+      if (product.name && product.name.includes('$')) {
+        const afterDollar = product.name.split('$')[1] || ''
+        const pNum = parseFloat(afterDollar)
+        if (!isNaN(pNum) && pNum > 0) namePrice = pNum
+      }
+
+      let unitPackPrice = rawPrice
+      if (namePrice !== null && namePrice > 0) {
+        unitPackPrice = namePrice
+      } else if (packPrice > 0) {
+        unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
+      } else if (wholesalePrice > 0) {
+        unitPackPrice = wholesalePrice
+      }
+
+      const computedProduct = {
+        ...product,
+        price: unitPackPrice,
+        packQuantity: 1
+      }
+
+      for (let i = 0; i < packQty; i++) {
+        addItemToDraft(tableNumber, computedProduct, currentUser.id)
+      }
+      return
+    }
+
+    // 👤 MODO PIEZA: Agregar 1 pieza individual
     let activePrice = product.price
     let activePackQty = 1
 
-    // Verificar si la cantidad acumulada o modo requiere precio de mayoreo
     const currentDraft = draftOrders[tableNumber] || []
     const existingItem = currentDraft.find(i => i.productId === product.id)
     const nextQty = (existingItem?.quantity || 0) + 1
@@ -617,12 +655,6 @@ export default function POS() {
     if (priceMode === 'mayoreo' || (nextQty >= minQty && wholesalePrice > 0)) {
       activePrice = wholesalePrice || product.price
       activePackQty = 1
-    } else if (priceMode === 'paquete') {
-      activePrice = parsedDesc.packPrice || (product.price * 0.75)
-      activePackQty = parsedDesc.packQty || 6
-    } else if (priceMode === 'bulto') {
-      activePrice = parsedDesc.bulkPrice || (product.price * 0.65)
-      activePackQty = parsedDesc.bulkQty || 12
     }
 
     const computedProduct = {
@@ -633,7 +665,6 @@ export default function POS() {
 
     addItemToDraft(tableNumber, computedProduct, currentUser.id)
 
-    // Si al agregar esta pieza se alcanzó el mínimo de mayoreo, actualizar el precio unitario de todas las piezas de este producto en el borrador
     if (nextQty >= minQty && wholesalePrice > 0) {
       useAppStore.setState(state => {
         const draft = state.draftOrders[tableNumber] || []
@@ -1109,6 +1140,34 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchKeyDown}
             />
+          </div>
+
+          {/* Selector de Modo de Cobro: Pieza vs Paquete */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0 font-extrabold text-xs">
+            <button
+              type="button"
+              onClick={() => handleChangePriceMode('pieza')}
+              className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 uppercase ${
+                priceMode === 'pieza'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <User size={14} />
+              <span>Pieza</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleChangePriceMode('paquete')}
+              className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 uppercase ${
+                priceMode === 'paquete'
+                  ? 'bg-amber-400 text-slate-950 shadow-md font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Package size={14} />
+              <span>Paquete</span>
+            </button>
           </div>
 
           <button
