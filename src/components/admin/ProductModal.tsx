@@ -217,7 +217,34 @@ export default function ProductModal({
                 const userEnteredStock = Number(formData.currentStock) || 0
                 const targetStock = (isBulk && totalPiecesReceived > 0) ? totalPiecesReceived : userEnteredStock
 
-                const finalStock = targetStock
+                let finalStock = targetStock
+
+                const isAdminOrManager = ['admin', 'manager', 'owner', 'superadmin'].includes(currentUser?.role?.toLowerCase() || '')
+
+                // 🛡️ REGLA DE SEGURIDAD: Empleados solo pueden SUMAR inventario. Las reducciones requieren aprobación del Admin.
+                if (oldStock > targetStock && !isAdminOrManager) {
+                  finalStock = oldStock // Mantenemos el stock actual
+                  alert(`⚠️ REQUISITO DE AUTORIZACIÓN (ADMIN):
+Las reducciones de inventario (de ${oldStock} a ${targetStock} piezas) no se aplican directamente por empleados.
+
+Se ha generado una Notificación de Ajuste Pendiente para revisión y aprobación del Administrador. El stock se mantendrá en ${oldStock} piezas.`)
+
+                  await supabaseService.createAuditLog({
+                    userId: currentUser?.id || 'unknown',
+                    action: 'INVENTORY_REDUCTION_REQUESTED',
+                    entityType: 'PRODUCT',
+                    entityId: product.id,
+                    oldValue: { currentStock: oldStock },
+                    newValue: { 
+                      requestedStock: targetStock, 
+                      currentStock: oldStock, 
+                      difference: targetStock - oldStock,
+                      productName: formData.name, 
+                      requestedBy: currentUser?.name || currentUser?.username || currentUser?.email,
+                      reason: 'Solicitud de merma/ajuste negativo generada por empleado' 
+                    }
+                  }).catch(err => console.error('Error logging stock reduction request:', err))
+                }
 
                 // Calcular precio de paquete automático para Moda Miel MX (Precio Unitario Cargado * Piezas por Paquete)
                 const computedPackPrice = formData.packPrice || (Number(formData.price || 0) * realPackQty)
