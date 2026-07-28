@@ -54,7 +54,7 @@ export default function AvatarUpload({ userId, currentAvatarUrl, onUploadComplet
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="relative group">
-        <div className="w-32 h-32 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center relative shadow-inner">
+        <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center relative shadow-inner">
           {preview ? (
             <img src={preview} alt="Preview" className="w-full h-full object-cover" />
           ) : (

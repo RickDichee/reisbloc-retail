@@ -674,7 +674,7 @@ export default function POS() {
     }
   }
 
-  const handleAddManualItem = (description: string, price: number) => {
+  const handleAddManualItem = (description: string, price: number, packQty: number = 1) => {
     if (!currentUser || isReadOnly) return
     const virtualProduct: any = {
       id: `manual-${Date.now()}`,
@@ -682,8 +682,13 @@ export default function POS() {
       price: price,
       category: 'Manual',
       image: '',
+      packQuantity: 1
     }
-    addItemToDraft(tableNumber, virtualProduct, currentUser.id)
+
+    const count = packQty > 1 ? packQty : 1
+    for (let i = 0; i < count; i++) {
+      addItemToDraft(tableNumber, virtualProduct, currentUser.id)
+    }
     
     // Audit Log: Manual item added
     supabaseService.createAuditLog({
@@ -691,7 +696,7 @@ export default function POS() {
       action: 'POS_MANUAL_ITEM_ADDED',
       entityType: 'POS',
       entityId: `caja-${tableNumber}`,
-      newValue: { description, price }
+      newValue: { description, price, packQty: count }
     }).catch(err => console.error('Error logging manual item:', err))
   }
 
