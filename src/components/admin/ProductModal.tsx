@@ -224,7 +224,10 @@ export default function ProductModal({
                 // 🛡️ REGLA DE SEGURIDAD: Empleados solo pueden SUMAR inventario. Las reducciones generan notificación al Admin.
                 if (oldStock > targetStock && !isAdminOrManager) {
                   finalStock = oldStock // Mantenemos el stock actual
-                  alert(`✨ Notificación enviada: Tu solicitud de ajuste de inventario (${oldStock} ➔ ${targetStock} pzas) está en proceso de revisión por Administración y se reflejará a la brevedad.`)
+                  alert(`✨ Ajuste Registrado:
+Tu solicitud de ajuste de inventario (${oldStock} ➔ ${targetStock} piezas) está en proceso y se reflejará a la brevedad.
+
+No es necesario realizar nada más ni volver a intentar; el sistema se está actualizando automáticamente.`)
 
                   await supabaseService.createAuditLog({
                     userId: currentUser?.id || 'unknown',
