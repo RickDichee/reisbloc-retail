@@ -7,6 +7,8 @@ interface ProductGridProps {
   products: Product[]
   onAdd: (product: Product, isPackageMode: boolean) => void
   disableAdd?: boolean
+  isPackageMode?: boolean
+  onTogglePackageMode?: (isPack: boolean) => void
 }
 
 const currency = new Intl.NumberFormat('es-MX', {
@@ -23,9 +25,23 @@ const categoryColors: Record<string, string> = {
   'Otros': 'from-gray-500 to-gray-600',
 }
 
-export function ProductGrid({ products, onAdd, disableAdd = false }: ProductGridProps) {
+export function ProductGrid({
+  products,
+  onAdd,
+  disableAdd = false,
+  isPackageMode: externalIsPackageMode,
+  onTogglePackageMode
+}: ProductGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [isPackageMode, setIsPackageMode] = useState<boolean>(false)
+  const [internalIsPackageMode, setInternalIsPackageMode] = useState<boolean>(false)
+
+  const isPackageMode = externalIsPackageMode !== undefined ? externalIsPackageMode : internalIsPackageMode
+
+  const setPackageMode = (val: boolean) => {
+    setInternalIsPackageMode(val)
+    if (onTogglePackageMode) onTogglePackageMode(val)
+  }
+
 
   const categories = Array.from(new Set(products.map(p => p.category || 'General')))
   
@@ -59,7 +75,7 @@ export function ProductGrid({ products, onAdd, disableAdd = false }: ProductGrid
         <div className="flex bg-slate-800 p-1 rounded-2xl border border-slate-700 w-full sm:w-auto">
           <button
             type="button"
-            onClick={() => setIsPackageMode(false)}
+            onClick={() => setPackageMode(false)}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
               !isPackageMode 
                 ? 'bg-white text-slate-900 shadow-md' 
@@ -72,13 +88,14 @@ export function ProductGrid({ products, onAdd, disableAdd = false }: ProductGrid
 
           <button
             type="button"
-            onClick={() => setIsPackageMode(true)}
+            onClick={() => setPackageMode(true)}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
               isPackageMode 
                 ? 'bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 font-black' 
                 : 'text-slate-400 hover:text-white'
             }`}
           >
+
             <Package size={14} />
             <span>📦 PAQUETE</span>
             {isPackageMode && <Check size={14} className="text-slate-950" />}

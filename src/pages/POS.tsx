@@ -349,6 +349,12 @@ export default function POS() {
   const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('pieza')
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
 
+  const priceModeRef = useRef(priceMode)
+  useEffect(() => {
+    priceModeRef.current = priceMode
+  }, [priceMode])
+
+
   const handleChangePriceMode = (newMode: 'pieza' | 'mayoreo' | 'paquete' | 'bulto') => {
     setPriceMode(newMode)
     
@@ -547,8 +553,10 @@ export default function POS() {
     if (targetTicket !== currentTicketNumber) {
       setCurrentTicket(targetTicket)
     }
-    handleAddProduct(matchedProduct, isPackScan || priceMode === 'paquete')
+    const isPackModeActive = isPackScan || priceModeRef.current === 'paquete'
+    handleAddProduct(matchedProduct, isPackModeActive)
   })
+
 
   if (!currentUser && !loading) {
     return <Navigate to="/login" replace />
@@ -594,15 +602,17 @@ export default function POS() {
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm) {
+      const isPackModeActive = priceModeRef.current === 'paquete'
       const exactMatch = products.find(p => p.barcode === searchTerm || p.sku === searchTerm)
       if (exactMatch) {
-        handleAddProduct(exactMatch, priceMode === 'paquete')
+        handleAddProduct(exactMatch, isPackModeActive)
         setSearchTerm('')
         return
       }
       if (filteredProducts.length === 1) {
-        handleAddProduct(filteredProducts[0], priceMode === 'paquete')
+        handleAddProduct(filteredProducts[0], isPackModeActive)
         setSearchTerm('')
+        return
       }
     }
   }
@@ -1376,7 +1386,10 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 products={filteredProducts} 
                 onAdd={handleAddProduct} 
                 disableAdd={isReadOnly || !!activeShift?.end_time} 
+                isPackageMode={priceMode === 'paquete'}
+                onTogglePackageMode={(isPack) => setPriceMode(isPack ? 'paquete' : 'pieza')}
               />
+
             </div>
           </div>
 
