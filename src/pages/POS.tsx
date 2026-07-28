@@ -1185,34 +1185,6 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             />
           </div>
 
-          {/* Selector de Modo de Cobro: Pieza vs Paquete */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0 font-extrabold text-xs">
-            <button
-              type="button"
-              onClick={() => handleChangePriceMode('pieza')}
-              className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 uppercase ${
-                priceMode === 'pieza'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <User size={14} />
-              <span>Pieza</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleChangePriceMode('paquete')}
-              className={`px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 uppercase ${
-                priceMode === 'paquete'
-                  ? 'bg-amber-400 text-slate-950 shadow-md font-black'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Package size={14} />
-              <span>Paquete</span>
-            </button>
-          </div>
-
           <button
             onClick={() => setShowManualItemModal(true)}
             className="hidden md:flex p-3 bg-slate-900 text-white rounded-xl shadow-md hover:scale-105 transition-all"
