@@ -776,6 +776,10 @@ class SupabaseService {
     delete payload.cancelledAt
     delete payload.cancelledBy
     delete payload.cancelReason
+    delete payload.paidAmount
+    delete payload.pendingBalance
+    delete payload.paymentStatus
+    delete payload.isPaid
 
     return payload
   }
@@ -861,10 +865,16 @@ class SupabaseService {
       const payload = this.buildOrderPayload({ ...order, createdAt: (order as any).createdAt || new Date() })
       payload.organization_id = orgId
 
+      // Asegurar que solo campos soportados por la DB se envíen a Supabase
+      delete payload.paidAmount
+      delete payload.pendingBalance
+      delete payload.paymentStatus
+      delete payload.isPaid
+
       // 📡 OFFLINE / RLS FAILSAFE
       if (!navigator.onLine) {
         const fauxId = `ord-${Date.now()}`
-        this.saveLocalPendingOrder({ ...order, id: fauxId, status: order.status || 'pending' })
+        this.saveLocalPendingOrder({ ...order, id: fauxId, status: order.status || 'pending_surtir' })
         return fauxId
       }
 
@@ -875,17 +885,18 @@ class SupabaseService {
         .single()
 
       if (error) {
-        logger.warn('supabase', '⚠️ Warning/RLS en inserción de orden, usando fallback local respaldado:', error.message)
+        logger.warn('supabase', '⚠️ RLS/DB Warning en inserción de orden, usando fallback local respaldado:', error.message)
         const fallbackId = `ord-${Date.now()}`
-        this.saveLocalPendingOrder({ ...order, id: fallbackId, status: order.status || 'pending' })
+        this.saveLocalPendingOrder({ ...order, id: fallbackId, status: order.status || 'pending_surtir' })
         return fallbackId
       }
 
+      this.saveLocalPendingOrder({ ...order, id: data.id })
       return data.id
     } catch (error: any) {
       logger.warn('supabase', 'Catch en creación de orden, usando fallback local respaldado:', error?.message)
       const fallbackId = `ord-${Date.now()}`
-      this.saveLocalPendingOrder({ ...order, id: fallbackId, status: order.status || 'pending' })
+      this.saveLocalPendingOrder({ ...order, id: fallbackId, status: order.status || 'pending_surtir' })
       return fallbackId
     }
   }
