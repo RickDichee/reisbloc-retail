@@ -524,8 +524,8 @@ export default function POS() {
       unitPackPrice = wholesalePrice
     }
 
-    if (isPackScan) {
-      // 📦 Escaneo de Paquete Completo: agregar packQty piezas al ticket con unitPackPrice
+    if (isPackScan || priceMode === 'paquete') {
+      // 📦 Escaneo / Modo Paquete Completo: agregar packQty piezas al ticket con unitPackPrice
       const computedProduct = {
         ...matchedProduct,
         price: unitPackPrice,
@@ -538,7 +538,7 @@ export default function POS() {
       if (targetTicket !== tableNumber) {
         setCurrentTicket(targetTicket)
       }
-      handleAddProduct(matchedProduct)
+      handleAddProduct(matchedProduct, false)
     }
   })
 
@@ -572,12 +572,12 @@ export default function POS() {
     if (e.key === 'Enter' && searchTerm) {
       const exactMatch = products.find(p => p.barcode === searchTerm || p.sku === searchTerm)
       if (exactMatch) {
-        handleAddProduct(exactMatch)
+        handleAddProduct(exactMatch, priceMode === 'paquete')
         setSearchTerm('')
         return
       }
       if (filteredProducts.length === 1) {
-        handleAddProduct(filteredProducts[0])
+        handleAddProduct(filteredProducts[0], priceMode === 'paquete')
         setSearchTerm('')
       }
     }
