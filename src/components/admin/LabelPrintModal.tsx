@@ -85,12 +85,18 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                 <img src="${codeImgUrl}" style="${codeType === 'qrcode' ? 'width: 18mm; height: 18mm;' : 'max-width: 42mm; height: 9.5mm;'}" alt="code">
               </div>
 
-              <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; font-weight: 900; color: #000; border-top: 1px solid #000; padding-top: 1mm;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; font-size: 9px; font-weight: 900; color: #000; border-top: 1px solid #000; padding-top: 1mm;">
                 ${targetType === 'piece' ? `
-                  <span>SKU: ${product.sku || 'PZA'}</span>
-                  <span style="font-size: 11px; font-weight: 900;">$${piecePrice.toFixed(2)}</span>
+                  <div style="text-align: left; line-height: 1.1;">
+                    <div style="font-size: 7.5px; font-weight: 800; color: #555;">SKU: ${product.sku || 'PZA'}</div>
+                    <div style="font-size: 10.5px; font-weight: 900;">$${piecePrice.toFixed(2)}</div>
+                  </div>
+                  <span style="font-size: 9px; font-weight: 900; background: #f1f5f9; color: #000; padding: 1px 4px; border-radius: 2px;">PZA</span>
                 ` : `
-                  <span>$${unitPackPrice.toFixed(2)}/pza</span>
+                  <div style="text-align: left; line-height: 1.1;">
+                    <div style="font-size: 7.5px; font-weight: 800; color: #555;">SKU: ${product.sku || 'PAQ'}</div>
+                    <div style="font-size: 9.5px; font-weight: 900;">$${unitPackPrice.toFixed(2)}/pza</div>
+                  </div>
                   <span style="font-size: 9px; font-weight: 900; background: #000; color: #fff; padding: 1px 4px; border-radius: 2px;">PAQ ${packQty} PZAS</span>
                 `}
               </div>
@@ -312,15 +318,21 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                 </div>
 
                 {/* Footer info */}
-                <div className="w-full flex justify-between items-center border-t border-slate-800 pt-1 font-black text-[10px] text-slate-900">
+                <div className="w-full flex justify-between items-end border-t border-slate-800 pt-1 font-black text-[10px] text-slate-900">
                   {targetType === 'piece' ? (
                     <>
-                      <span className="text-slate-500 font-bold">SKU: {product.sku || 'PZA'}</span>
-                      <span className="text-xs">${piecePrice.toFixed(2)}</span>
+                      <div className="text-left leading-tight">
+                        <div className="text-[8px] text-slate-500 font-bold">SKU: {product.sku || 'PZA'}</div>
+                        <div className="text-xs font-black">${piecePrice.toFixed(2)}</div>
+                      </div>
+                      <span className="text-[9px] font-black bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded uppercase">PZA</span>
                     </>
                   ) : (
                     <>
-                      <span className="text-slate-700 font-bold">${unitPackPrice.toFixed(2)}/pza</span>
+                      <div className="text-left leading-tight">
+                        <div className="text-[8px] text-slate-500 font-bold">SKU: {product.sku || 'PAQ'}</div>
+                        <div className="text-[11px] font-black">${unitPackPrice.toFixed(2)}/pza</div>
+                      </div>
                       <span className="text-[9px] font-black bg-black text-white px-1.5 py-0.5 rounded uppercase">PAQ {packQty} PZAS</span>
                     </>
                   )}
