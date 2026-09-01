@@ -187,12 +187,16 @@ export const ticketService = {
     text += `Pago: ${data.paymentMethod}\n`;
     text += `Caja: ${data.tableNumber}\n`;
     text += `─────────────────\n`;
-    text += `¡Gracias por su compra!\n`;
+    text += `¡Gracias por su compra!\n\n`;
+    text += `*SALIDA LA MERCANCIA NO HAY CAMBIOS NI DEVOLUCIONES*\n`;
+    text += `*WHATSAPP: 445 131 1808*\n`;
+    text += `─────────────────\n`;
     text += `⚡ ${BRANDING.whiteLabelName}\n`;
     text += `${BRANDING.poweredBy}`;
 
     return text;
   },
+
 
   formatPhoneNumber(phone: string): string {
     let formatted = phone.replace(/\D/g, '');

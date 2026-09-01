@@ -1316,10 +1316,11 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               <span>🎟️ Ancho Ticket (SUM187443):</span>
               <input
                 type="number"
-                value={organizationSettings?.ticketPrinterWidth || 58}
+                value={organizationSettings?.ticketPrinterWidth || 80}
                 onChange={async (e) => {
-                  const val = parseInt(e.target.value) || 58
+                  const val = parseInt(e.target.value) || 80
                   const updatedSettings = { ...(organizationSettings || {}), ticketPrinterWidth: val }
+
                   setOrganizationSettings(updatedSettings)
                   if (currentUser?.organizationId && currentUser?.role === 'admin') {
                     // usando supabase importado estáticamente
