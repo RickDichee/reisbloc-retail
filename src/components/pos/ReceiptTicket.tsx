@@ -23,7 +23,7 @@ export default function ReceiptTicket({
   paymentMethod,
   tableNumber,
   businessName = BRANDING.appWithBrand.toUpperCase(),
-  address = 'Sistema Punto de Venta',
+  address = 'TEXTICUITZEO PASILLO 3 LOCAL 230',
   phone = '',
   clientName = '',
   clientPhone = '',
@@ -33,7 +33,8 @@ export default function ReceiptTicket({
   
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
   const ticketBusinessName = organizationSettings?.ticketBusinessName || businessName
-  const ticketAddress = organizationSettings?.ticketAddress || address
+  const ticketAddress = organizationSettings?.ticketAddress || 'TEXTICUITZEO PASILLO 3 LOCAL 230'
+
   const ticketPhone = organizationSettings?.ticketPhone || phone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
   const ticketWidth = organizationSettings?.ticketPrinterWidth || 80

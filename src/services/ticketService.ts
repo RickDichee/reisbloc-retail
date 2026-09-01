@@ -167,12 +167,15 @@ export const ticketService = {
 
   formatTicketAsText(data: TicketData): string {
     const date = data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
+    const addressStr = data.address || 'TEXTICUITZEO PASILLO 3 LOCAL 230';
 
     let text = `🧾 *TICKET DE COMPRA*\n`;
     text += `─────────────────\n`;
     text += `*${data.businessName}*\n`;
+    text += `📍 ${addressStr}\n`;
     text += `${date}\n`;
     text += `─────────────────\n\n`;
+
 
     data.items.forEach(item => {
       text += `${item.name}\n`;
