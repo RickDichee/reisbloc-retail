@@ -191,9 +191,10 @@ export const ticketService = {
     text += `Caja: ${data.tableNumber}\n`;
     text += `─────────────────\n`;
     text += `¡Gracias por su compra!\n\n`;
-    text += `*SALIDA LA MERCANCIA NO HAY CAMBIOS NI DEVOLUCIONES*\n`;
-    text += `*WHATSAPP: 445 131 1808*\n`;
+    text += `*NO HAY CAMBIOS NI DEVOLUCIONES*\n`;
+    text += `📲 *WHATSAPP: 445 131 1808*\n`;
     text += `─────────────────\n`;
+
     text += `⚡ ${BRANDING.whiteLabelName}\n`;
     text += `${BRANDING.poweredBy}`;
 
