@@ -84,8 +84,9 @@ export const BRANDING = {
   appName: isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store',
   whiteLabelName: isModaMiel ? 'Moda Miel MX' : 'Reisbloc',
   appWithBrand: isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store',
-  poweredBy: 'Powered by REISBLOC',
-  poweredByUrl: 'reisbloc.com',
+  poweredBy: 'POWERED BY REISBLOC',
+  poweredByUrl: 'reisbloc.store',
+  poweredByTagline: 'Integra el Poder de la IA en tu negocio',
   logoUrl: isModaMiel ? '/images/moda-miel-mx-logo.jpeg' : '/icon.svg',
   bannerUrl: isModaMiel ? '/images/moda-miel-mx-banner.jpeg' : undefined,
   loginSubtitle: isModaMiel ? 'Accede a tu sistema POS de Moda Miel MX' : 'Accede a tu punto de venta',
@@ -93,4 +94,5 @@ export const BRANDING = {
   receiptTagline: isModaMiel ? MODA_MIEL_THEME.tagline : DEFAULT_THEME.tagline,
   theme: isModaMiel ? MODA_MIEL_THEME : DEFAULT_THEME
 } as const
+
 

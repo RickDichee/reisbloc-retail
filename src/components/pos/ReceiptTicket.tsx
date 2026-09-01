@@ -257,14 +257,29 @@ export default function ReceiptTicket({
           </div>
         </div>
 
-        {/* Powered by Reisbloc */}
-        <div style={{ marginTop: '6px', borderTop: '1px solid #000', paddingTop: '3px', width: '100%', fontSize: '8.5px', fontWeight: 'bold' }}>
-          <div>⚡ {BRANDING.poweredBy}</div>
-          <div style={{ fontSize: '8px', fontWeight: 'normal' }}>{BRANDING.poweredByUrl}</div>
+        {/* Powered by Reisbloc - Discreto, Elegante y al Final */}
+        <div style={{
+          marginTop: '8px',
+          paddingTop: '5px',
+          borderTop: '1px solid #000',
+          width: '100%',
+          textAlign: 'center',
+          color: '#000'
+        }}>
+          <div style={{ fontSize: '8px', fontWeight: 900, letterSpacing: '0.4px' }}>
+            ⚡ {BRANDING.poweredBy}
+          </div>
+          <div style={{ fontSize: '7.5px', fontWeight: 700, marginTop: '1px', textTransform: 'none' }}>
+            {BRANDING.poweredByTagline}
+          </div>
+          <div style={{ fontSize: '8px', fontWeight: 900, marginTop: '1px', letterSpacing: '0.5px' }}>
+            {BRANDING.poweredByUrl}
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
 
 

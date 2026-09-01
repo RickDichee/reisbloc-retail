@@ -195,11 +195,13 @@ export const ticketService = {
     text += `📲 *WHATSAPP: 445 131 1808*\n`;
     text += `─────────────────\n`;
 
-    text += `⚡ ${BRANDING.whiteLabelName}\n`;
-    text += `${BRANDING.poweredBy}`;
+    text += `⚡ *${BRANDING.poweredBy}*\n`;
+    text += `_${BRANDING.poweredByTagline}_\n`;
+    text += `🌐 *${BRANDING.poweredByUrl}*`;
 
     return text;
   },
+
 
 
   formatPhoneNumber(phone: string): string {
