@@ -10,7 +10,7 @@
 
 // Servicio de autenticación solo Supabase
 import { supabase } from '@/config/supabase'
-import { clearAuthToken } from './jwtService'
+import { clearAuthToken, getStoredToken } from './jwtService'
 import supabaseService from './supabaseService'
 import deviceService from './deviceService'
 import { useAppStore } from '@/store/appStore'
@@ -172,22 +172,28 @@ export async function getCurrentUser(): Promise<User | null> {
   return null
 }
 
-export async function logSuccessfulLogin(): Promise<void> {
+export async function logSuccessfulLogin(orgIdOverride?: string): Promise<void> {
   try {
-    const { currentDevice } = useAppStore.getState()
+    const { currentDevice, currentUser } = useAppStore.getState()
+    const token = getStoredToken()
+    const organizationId = orgIdOverride || currentUser?.organizationId || token?.organizationId || null
 
     // Llamada centralizada a Edge Function para registro de logs y geolocalización segura por el backend.
     const { data, error } = await supabase.functions.invoke('log-auth-event', {
       body: {
         deviceId: currentDevice?.id || null,
+        organizationId,
         sessionType: 'External'
       }
     })
 
-    if (error) throw error
+    if (error) {
+      logger.warn('auth', '⚠️ Aviso al auditar el login vía Edge Function:', error.message || error)
+      return
+    }
 
     logger.info('auth', `📍 Login auditado centralizado. Detalles:`, data)
-  } catch (error) {
-    logger.error('auth', '❌ Error al auditar el login vía Edge Function', error)
+  } catch (error: any) {
+    logger.warn('auth', '⚠️ Aviso al auditar el login vía Edge Function:', error?.message || error)
   }
 }

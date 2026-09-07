@@ -77,7 +77,7 @@ export function AuthCallback() {
 
         if (existingUser?.organization_id) {
           setStatus('¡Organización encontrada!')
-          await logSuccessfulLogin().catch(console.error)
+          await logSuccessfulLogin(existingUser.organization_id).catch(console.error)
           setTimeout(() => navigate('/admin'), 500)
           return
         }
@@ -134,7 +134,7 @@ export function AuthCallback() {
         }
 
         setStatus('Listo!')
-        await logSuccessfulLogin().catch(console.error)
+        await logSuccessfulLogin(newOrg?.id).catch(console.error)
         setTimeout(() => navigate('/admin'), 500)
 
       } catch (err: any) {
