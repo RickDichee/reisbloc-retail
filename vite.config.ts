@@ -26,7 +26,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: {
-        enabled: true, // Enable for offline testing in dev
+        enabled: false, // Evita Source map errors y caché residual en modo desarrollo
         type: 'module',
       },
       workbox: {
