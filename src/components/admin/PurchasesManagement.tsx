@@ -325,12 +325,14 @@ export default function PurchasesManagement() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono (10 dígitos)</label>
                       <input
                         type="tel"
                         className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold"
                         value={providerForm.phone}
-                        onChange={e => setProviderForm({ ...providerForm, phone: e.target.value })}
+                        onChange={e => setProviderForm({ ...providerForm, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                        maxLength={10}
+                        placeholder="9981234567"
                       />
                     </div>
                   </div>

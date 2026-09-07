@@ -33,13 +33,13 @@
 .theme-modamiel {
   --primary: #1A1A1A;
   --primary-hover: #262626;
-  --secondary: #E62E6B;
-  --accent: #FF7597;
-  --bg-canvas: #FFF5F7;
+  --secondary: #D4386C;
+  --accent: #E8638B;
+  --bg-canvas: #FFF8F9;
   --bg-surface: #FFFFFF;
   --text-main: #1A1A1A;
   --text-secondary: #6B7280;
-  --border-light: #FCE7F3;
+  --border-light: #FCEBF2;
 }
 
 /* 🌸 Global Background Overrides when Moda Miel theme is active */
@@ -51,7 +51,7 @@ body.theme-modamiel,
 .theme-modamiel .bg-slate-50,
 .theme-modamiel .bg-slate-100,
 .theme-modamiel .bg-gray-50 {
-  background-color: #FFF5F7 !important;
+  background-color: #FFF8F9 !important;
 }
 
 /* 🌸 Dark Banners / Cards / Headers (e.g. Admin Header, POS topbar, Dark Widgets) */
@@ -60,10 +60,10 @@ body.theme-modamiel,
 .theme-modamiel .bg-slate-800,
 .theme-modamiel .bg-rb-nav {
   background-color: #1A1A1A !important;
-  border-color: #FCE7F3 !important;
+  border-color: #FCEBF2 !important;
 }
 
-/* 🌸 Primary Action Buttons & Highlights (Indigo/Emerald/Green -> Hot Pink #E62E6B) */
+/* 🌸 Primary Action Buttons & Highlights (Indigo/Emerald/Green -> Rose Berry #D4386C) */
 .theme-modamiel .btn-primary,
 .theme-modamiel .bg-indigo-600,
 .theme-modamiel .bg-indigo-500,
@@ -71,16 +71,16 @@ body.theme-modamiel,
 .theme-modamiel .bg-emerald-500,
 .theme-modamiel .bg-emerald-700,
 .theme-modamiel .bg-rb-action {
-  background-color: #E62E6B !important;
+  background-color: #D4386C !important;
   color: #FFFFFF !important;
-  border-color: #E62E6B !important;
+  border-color: #D4386C !important;
 }
 
 .theme-modamiel .btn-primary:hover {
-  background-color: #C41E53 !important;
+  background-color: #B52656 !important;
 }
 
-/* 🌸 Text Accent Overrides (Emerald / Indigo text -> Fucsia #E62E6B) */
+/* 🌸 Text Accent Overrides (Emerald / Indigo text -> Rose Berry #D4386C) */
 .theme-modamiel .text-emerald-400,
 .theme-modamiel .text-emerald-500,
 .theme-modamiel .text-emerald-600,
@@ -94,18 +94,18 @@ body.theme-modamiel,
 .theme-modamiel .text-yellow-500,
 .theme-modamiel .text-yellow-600,
 .theme-modamiel .text-orange-500 {
-  color: #E62E6B !important;
+  color: #D4386C !important;
 }
 
-/* 🌸 Soft Pink Light Badges (Indigo-50 / Emerald-50 / Amber-50 -> Blush #FCE7F3) */
+/* 🌸 Soft Pink Light Badges (Indigo-50 / Emerald-50 / Amber-50 -> Soft Blush #FCEBF2) */
 .theme-modamiel .bg-indigo-50,
 .theme-modamiel .bg-emerald-50,
 .theme-modamiel .bg-pink-50,
 .theme-modamiel .bg-amber-50,
 .theme-modamiel .bg-amber-100,
 .theme-modamiel .bg-yellow-50 {
-  background-color: #FCE7F3 !important;
-  color: #E62E6B !important;
+  background-color: #FCEBF2 !important;
+  color: #D4386C !important;
 }
 
 /* 🌸 Active Tabs & Navigation Ring Overrides */
@@ -114,13 +114,13 @@ body.theme-modamiel,
 .theme-modamiel .border-indigo-600,
 .theme-modamiel .border-indigo-200,
 .theme-modamiel .border-emerald-500 {
-  border-color: #E62E6B !important;
+  border-color: #D4386C !important;
 }
 
 /* 🌸 Selection Highlight */
 .theme-modamiel ::selection {
-  background-color: #FCE7F3;
-  color: #E62E6B;
+  background-color: #FCEBF2;
+  color: #D4386C;
 }
 
 body {

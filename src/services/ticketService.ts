@@ -61,6 +61,46 @@ export const ticketService = {
     }
   },
 
+  async generateImageFromHTML(html: string): Promise<{ blob: Blob; dataUrl: string }> {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '320px';
+    container.style.padding = '8px';
+    container.style.backgroundColor = '#ffffff';
+    document.body.appendChild(container);
+
+    try {
+      const canvas = await html2canvas(container, {
+        scale: 2.5,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b || new Blob()), 'image/jpeg', 0.95);
+      });
+
+      return { blob, dataUrl };
+    } finally {
+      document.body.removeChild(container);
+    }
+  },
+
+  downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
   async uploadPDF(blob: Blob, filename: string): Promise<string> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -166,38 +206,38 @@ export const ticketService = {
 
 
   formatTicketAsText(data: TicketData): string {
-    const date = data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
+    const date = data.date ? new Date(data.date).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
     const addressStr = data.address || 'TEXTICUITZEO PASILLO 3 LOCAL 230';
+    const bizName = (data.businessName || 'MODA MIEL MX').toUpperCase();
+    const folio = data.orderId ? data.orderId.slice(0, 8).toUpperCase() : 'VENTA';
 
-    let text = `🧾 *TICKET DE COMPRA*\n`;
-    text += `─────────────────\n`;
-    text += `*${data.businessName}*\n`;
+    let text = `🧾 *TICKET DE COMPRA DIGITAL*\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `✨ *${bizName}*\n`;
     text += `📍 ${addressStr}\n`;
-    text += `${date}\n`;
-    text += `─────────────────\n\n`;
-
+    text += `🗓️ ${date} hrs\n`;
+    text += `🏷️ Folio: #${folio}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     data.items.forEach(item => {
-      text += `${item.name}\n`;
-      text += `${item.quantity} x $${item.price.toFixed(2)} = $${(item.quantity * item.price).toFixed(2)}\n\n`;
+      const qty = Number(item.quantity || 1);
+      const price = Number(item.price || 0);
+      text += `🛍️ *${item.name}*\n`;
+      text += `   ${qty} pz × $${price.toFixed(2)} = *$${(qty * price).toFixed(2)}*\n\n`;
     });
 
-    text += `─────────────────\n`;
-    text += `Subtotal: $${data.subtotal.toFixed(2)}\n`;
-    text += `Impuesto: $${data.tax.toFixed(2)}\n`;
-    text += `*TOTAL: $${data.total.toFixed(2)}*\n`;
-    text += `─────────────────\n`;
-    text += `Pago: ${data.paymentMethod}\n`;
-    text += `Caja: ${data.tableNumber}\n`;
-    text += `─────────────────\n`;
-    text += `¡Gracias por su compra!\n\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `💵 Subtotal: $${data.subtotal.toFixed(2)}\n`;
+    text += `💰 *TOTAL A PAGAR: $${data.total.toFixed(2)} MXN*\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `💳 Forma de pago: ${data.paymentMethod}\n`;
+    text += `📦 Caja: ${data.ticketNumber || 1}\n\n`;
+    text += `¡Muchas gracias por su compra! ✨\n`;
+    text += `_Conserve este comprobante para cualquier duda._\n`;
     text += `*NO HAY CAMBIOS NI DEVOLUCIONES*\n`;
-    text += `📲 *WHATSAPP: 445 131 1808*\n`;
-    text += `─────────────────\n`;
-
-    text += `⚡ *${BRANDING.poweredBy}*\n`;
-    text += `_${BRANDING.poweredByTagline}_\n`;
-    text += `🌐 *${BRANDING.poweredByUrl}*`;
+    text += `━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `📲 *Atención a Clientes:* 445 131 1808\n`;
+    text += `⚡ *Powered by Reisbloc Retail*`;
 
     return text;
   },

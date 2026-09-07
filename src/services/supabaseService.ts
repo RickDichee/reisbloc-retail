@@ -816,20 +816,34 @@ class SupabaseService {
     })
   }
 
-  async syncOfflineLocalOrdersToRemote(): Promise<void> {
-    try {
-      const localOrders: any[] = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
-      if (localOrders.length === 0 || !navigator.onLine) return
+  private isSyncingOfflineOrders = false
 
-      const unsynced = localOrders.filter(o => typeof o.id === 'string' && o.id.startsWith('ord-'))
+  async syncOfflineLocalOrdersToRemote(): Promise<void> {
+    if (this.isSyncingOfflineOrders) return
+    try {
+      const currentOrgId = this.getCurrentOrgId()
+      if (!currentOrgId || !navigator.onLine) return
+
+      const localOrders: any[] = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+      if (localOrders.length === 0) return
+
+      const unsynced = localOrders.filter(o => typeof o.id === 'string' && o.id.startsWith('ord-') && (o.syncAttempts || 0) < 3)
       if (unsynced.length === 0) return
 
+      this.isSyncingOfflineOrders = true
       logger.info('supabase', `🔄 Intentando sincronizar ${unsynced.length} pedidos locales a Supabase...`)
 
       for (const order of unsynced) {
         try {
+          if (order.organizationId && order.organizationId !== currentOrgId) {
+            order.syncAttempts = 99
+            continue
+          }
+
+          order.syncAttempts = (order.syncAttempts || 0) + 1
+
           const payload = this.buildOrderPayload(order)
-          payload.organization_id = this.getCurrentOrgId() || '00000000-0000-0000-0000-000000000001'
+          payload.organization_id = currentOrgId
 
           delete payload.id
           delete payload.paidAmount
@@ -843,10 +857,29 @@ class SupabaseService {
             const updated = existing.map((o: any) => o.id === order.id ? { ...o, id: data.id } : o)
             localStorage.setItem('local_pending_orders', JSON.stringify(updated))
             logger.info('supabase', `⚡ Pedido local #${order.id} sincronizado exitosamente a Supabase remoto como #${data.id}`)
+          } else if (error) {
+            logger.warn('supabase', `⚠️ Fallo sincronización de pedido ${order.id}:`, error.message)
+            if (error.code === '42501' || (error as any).status === 403) {
+              order.syncAttempts = 99
+            }
           }
-        } catch (e) {}
+        } catch (e) {
+          order.syncAttempts = (order.syncAttempts || 0) + 1
+        }
       }
-    } catch (e) {}
+
+      try {
+        const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+        const updated = existing.map((o: any) => {
+          const matched = unsynced.find(u => u.id === o.id)
+          return matched ? { ...o, syncAttempts: matched.syncAttempts } : o
+        })
+        localStorage.setItem('local_pending_orders', JSON.stringify(updated))
+      } catch (e) {}
+
+    } catch (e) {} finally {
+      this.isSyncingOfflineOrders = false
+    }
   }
 
   async getActiveOrders(): Promise<Order[]> {

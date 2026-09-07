@@ -3,6 +3,7 @@ import { Order } from '@/types/index'
 import { X, Clock, User, DollarSign, Printer, Trash2, Package, ShoppingBag, AlertTriangle, Truck, CheckCircle2, ChevronRight, CreditCard } from 'lucide-react'
 import printService from '@/services/printService'
 import supabaseService from '@/services/supabaseService'
+import { useAppStore } from '@/store/appStore'
 
 interface PendingOrdersModalProps {
   isOpen: boolean
@@ -26,6 +27,8 @@ export default function PendingOrdersModal({
   onCheckoutOrder,
   onRefresh
 }: PendingOrdersModalProps) {
+  const { organizationSettings, currentUser } = useAppStore()
+  const storeTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'Moda Miel MX'
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
 
@@ -133,7 +136,7 @@ export default function PendingOrdersModal({
       </head>
       <body>
         <div style="text-align:center; font-weight:900; font-size:13px;">📋 TICKET DE PEDIDO / APARTADO</div>
-        <div style="text-align:center; font-size:10px;">REISBLOC STORE</div>
+        <div style="text-align:center; font-size:10px; font-weight:bold;">${storeTitle.toUpperCase()}</div>
         <div className="divider"></div>
         <div>FOLIO: #${ticketId}</div>
         <div>FECHA: ${new Date(order.createdAt).toLocaleString('es-MX')}</div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Receipt, ShoppingBag, Clock, DollarSign, Printer, User, FileText, CheckCircle2, AlertCircle } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
 import printService from '@/services/printService'
+import { useAppStore } from '@/store/appStore'
 import { sanitizeHTML } from '@/utils/sanitize'
 
 interface ClientHistoryModalProps {
@@ -21,6 +22,8 @@ export default function ClientHistoryModal({
   const [completedSales, setCompletedSales] = useState<any[]>([])
   const [totalDebt, setTotalDebt] = useState<number>(0)
   const [totalSpent, setTotalSpent] = useState<number>(0)
+  const { organizationSettings, currentUser } = useAppStore()
+  const storeTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'Moda Miel MX'
 
   useEffect(() => {
     if (!isOpen || !client) return
@@ -95,7 +98,7 @@ export default function ClientHistoryModal({
       </head>
       <body>
         <div style="text-align:center; font-weight:900; font-size:13px;">DOCUMENTO DE CLIENTE CRM</div>
-        <div style="text-align:center; font-size:10px;">REISBLOC STORE</div>
+        <div style="text-align:center; font-size:10px; font-weight:bold;">${storeTitle.toUpperCase()}</div>
         <div className="divider"></div>
         <div>CLIENTE: ${client.name}</div>
         <div>FOLIO: #${folio}</div>

@@ -2,7 +2,7 @@ import logger from '@/utils/logger'
 
 const CACHE_NAME = 'reisbloc-product-images-v1'
 const DB_NAME = 'reisbloc_offline_db'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE_PRODUCTS = 'products_cache'
 
 /**
@@ -82,7 +82,7 @@ class ImageCacheService {
     // 2. Guardar en IndexedDB
     try {
       const db = await this.dbPromise
-      if (db) {
+      if (db && db.objectStoreNames.contains(STORE_PRODUCTS)) {
         const tx = db.transaction(STORE_PRODUCTS, 'readwrite')
         const store = tx.objectStore(STORE_PRODUCTS)
         store.clear()
@@ -104,7 +104,7 @@ class ImageCacheService {
     // 1. Intentar desde IndexedDB
     try {
       const db = await this.dbPromise
-      if (db) {
+      if (db && db.objectStoreNames.contains(STORE_PRODUCTS)) {
         const tx = db.transaction(STORE_PRODUCTS, 'readonly')
         const store = tx.objectStore(STORE_PRODUCTS)
         const all = await new Promise<any[]>((resolve) => {

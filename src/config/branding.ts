@@ -43,15 +43,15 @@ export interface TenantThemeConfig {
 export const MODA_MIEL_THEME: TenantThemeConfig = {
   id: 'modamiel',
   name: 'Moda Miel MX',
-  primaryColor: '#E62E6B',       // Vibrant Hot Pink (Top Navbar & Header Accents)
-  primaryHoverColor: '#C41E53',  
-  secondaryColor: '#FF7597',     // Soft Rose Accent
+  primaryColor: '#D4386C',       // Refined Rose Berry (Softer, elegant accent)
+  primaryHoverColor: '#B52656',  
+  secondaryColor: '#E8638B',     // Delicate Rose Accent
   accentColor: '#1A1A1A',        // Deep Charcoal Contrast Text & Badges
-  bgCanvas: '#FFF5F7',           // Soft Sugar Blush Canvas Background
+  bgCanvas: '#FFF8F9',           // Gentle Soft Canvas Background
   bgSurface: '#FFFFFF',          // Crisp White Cards
   textMain: '#1A1A1A',           // High Contrast Readable Dark Text
   textSecondary: '#6B7280',     // Soft Slate Text
-  borderColor: '#FCE7F3',        // Light Pink Border
+  borderColor: '#FCEBF2',        // Subdued Soft Rose Border
   fontSerif: "'Playfair Display', Georgia, serif",
   fontScript: "'Dancing Script', cursive",
   fontSans: "'Outfit', sans-serif",

@@ -19,6 +19,7 @@ import { Product, OrderItem, Order } from '@/types/index'
 import { shiftService } from '@/services/shiftService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
+import { useTenantTheme } from '@/hooks/useTenantTheme'
 import { sanitizeHTML } from '@/utils/sanitize'
 import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag, ChevronUp, ChevronDown } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
@@ -62,6 +63,9 @@ export default function POS() {
     users,
     setUsers,
   } = useAppStore()
+
+  const { isModaMiel } = useTenantTheme()
+  const currentBusinessTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store')
 
   const [loading, setLoading] = useState(true)
   const [activeTableOrders, setActiveTableOrders] = useState<any[]>([])
@@ -913,6 +917,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           saleTotal={total}
           paymentMethod="Pendiente"
           tableNumber={tableNum}
+          businessName={currentBusinessTitle}
           clientName={selectedClient?.name}
           clientPhone={selectedClient?.phone}
         />
@@ -1044,6 +1049,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             saleTotal={result.total}
             paymentMethod={mappedMethod}
             tableNumber={tableNumber}
+            businessName={currentBusinessTitle}
             clientName={selectedClient?.name}
             clientPhone={selectedClient?.phone}
           />
@@ -1691,7 +1697,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               total: receiptModal.total,
               paymentMethod: receiptModal.paymentMethod,
               ticketNumber: tableNumber,  // Legacy: tableNumber → ticketNumber
-              businessName: currentUser?.businessName || BRANDING.appWithBrand.toUpperCase(),
+              businessName: currentBusinessTitle,
               cashier: currentUser?.username
             }}
           />
@@ -1940,11 +1946,12 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono móvil</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono móvil (10 dígitos)</label>
                     <input
                       type="tel"
                       value={newClientPhone}
-                      onChange={(e) => setNewClientPhone(e.target.value)}
+                      onChange={(e) => setNewClientPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      maxLength={10}
                       placeholder="9981234567"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-slate-700 text-sm"
                     />

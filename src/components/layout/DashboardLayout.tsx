@@ -166,11 +166,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                     }}
                                     title={isMini ? item.label : ''}
                                     className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 font-bold text-sm group ${isActive
-                                        ? 'bg-pink-100/70 text-[#E62E6B] shadow-xs border border-pink-200'
-                                        : 'text-slate-700 hover:bg-pink-50 hover:text-[#E62E6B]'
+                                        ? 'bg-pink-100/70 text-[#D4386C] shadow-xs border border-pink-200'
+                                        : 'text-slate-700 hover:bg-pink-50 hover:text-[#D4386C]'
                                         } ${isMini ? 'justify-center gap-0' : 'gap-3'}`}
                                 >
-                                    {item.icon && <item.icon size={20} className={isActive ? 'text-[#E62E6B]' : 'text-slate-600 group-hover:text-[#E62E6B] transition-colors'} />}
+                                    {item.icon && <item.icon size={20} className={isActive ? 'text-[#D4386C]' : 'text-slate-600 group-hover:text-[#D4386C] transition-colors'} />}
                                     {!isMini && <span className="animate-fadeIn whitespace-nowrap">{item.label}</span>}
                                 </button>
                             );

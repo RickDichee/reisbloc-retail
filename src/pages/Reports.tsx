@@ -738,35 +738,54 @@ function TokensReport() {
 
 // 📦 Componente de Reporte de Inventario (Entradas/Salidas)
 function InventoryReport({ isReadOnly }: { isReadOnly: boolean }) {
-  // Mock data para visualización "chula"
-  const movementData = [
-    { name: 'Lun', entradas: 40, salidas: 24 },
-    { name: 'Mar', entradas: 30, salidas: 13 },
-    { name: 'Mie', entradas: 20, salidas: 58 },
-    { name: 'Jue', entradas: 27, salidas: 39 },
-    { name: 'Vie', entradas: 18, salidas: 48 },
-    { name: 'Sab', entradas: 23, salidas: 38 },
-    { name: 'Dom', entradas: 34, salidas: 43 },
-  ]
+  const { products } = useAppStore()
+
+  const activeProducts = products.filter(p => p.active !== false)
+  const totalStock = activeProducts.reduce((sum, p) => sum + (p.hasInventory ? (p.currentStock || 0) : 0), 0)
+  const totalInventoryValue = activeProducts.reduce((sum, p) => {
+    if (p.hasInventory && p.currentStock) {
+      return sum + (p.currentStock * (p.price || 0))
+    }
+    return sum
+  }, 0)
+
+  // Productos con stock bajo o crítico
+  const lowStockProducts = activeProducts
+    .filter(p => p.hasInventory && (p.currentStock ?? 0) <= (p.minimumStock ?? 5))
+    .sort((a, b) => (a.currentStock ?? 0) - (b.currentStock ?? 0))
+
+  const displayedAlerts = lowStockProducts.slice(0, 8)
+
+  // Stock por categoría
+  const categoryStockMap: Record<string, { name: string; stock: number; items: number }> = {}
+  activeProducts.forEach(p => {
+    const cat = p.category?.trim() || 'General'
+    if (!categoryStockMap[cat]) {
+      categoryStockMap[cat] = { name: cat, stock: 0, items: 0 }
+    }
+    categoryStockMap[cat].stock += (p.hasInventory ? (p.currentStock || 0) : 1)
+    categoryStockMap[cat].items += 1
+  })
+  const categoryData = Object.values(categoryStockMap).slice(0, 7)
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
           title="Valor Inventario"
-          value="$125,430"
+          value={new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(totalInventoryValue)}
           icon={DollarSign}
           color="bg-blue-50 text-blue-600"
         />
         <StatCard
-          title="Items Totales"
-          value="1,240"
+          title="Unidades en Stock"
+          value={totalStock.toLocaleString('es-MX')}
           icon={Package}
           color="bg-purple-50 text-indigo-600"
         />
         <StatCard
-          title="Rotación (Mensual)"
-          value="12.5%"
+          title="Productos Activos"
+          value={activeProducts.length.toString()}
           icon={ArrowDownUp}
           color="bg-orange-50 text-orange-600"
         />
@@ -774,57 +793,57 @@ function InventoryReport({ isReadOnly }: { isReadOnly: boolean }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-          <h3 className="text-xl font-black text-slate-900 mb-6">Movimientos de Stock</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={movementData}>
-              <defs>
-                <linearGradient id="colorEntradas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorSalidas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
-              />
-              <Legend />
-              <Area type="monotone" dataKey="entradas" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorEntradas)" />
-              <Area type="monotone" dataKey="salidas" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorSalidas)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <h3 className="text-xl font-black text-slate-900 mb-6">Stock por Categoría</h3>
+          {categoryData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={categoryData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                  itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
+                />
+                <Bar dataKey="stock" fill="#d4386c" radius={[8, 8, 0, 0]} name="Unidades" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-slate-400">
+              No hay categorías con stock disponible
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
           <h3 className="text-xl font-black text-slate-900 mb-6">Alertas de Stock</h3>
           <div className="space-y-3">
-            {[
-              { name: 'Cerveza Corona', stock: 5, min: 12 },
-              { name: 'Limones (kg)', stock: 2, min: 5 },
-              { name: 'Servilletas (paq)', stock: 1, min: 4 },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 rounded-full text-red-600">
-                    <ArrowDownRight size={16} />
+            {displayedAlerts.length > 0 ? (
+              displayedAlerts.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-100 rounded-full text-red-600">
+                      <ArrowDownRight size={16} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800">{item.name}</p>
+                      <p className="text-xs text-red-600">
+                        {item.currentStock === 0 ? 'Agotado' : 'Stock crítico'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-gray-800">{item.name}</p>
-                    <p className="text-xs text-red-600">Stock crítico</p>
+                  <div className="text-right">
+                    <p className="font-bold text-red-700">{item.currentStock ?? 0} / {item.minimumStock ?? 5}</p>
+                    <p className="text-xs text-gray-500">Actual / Mín</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-red-700">{item.stock} / {item.min}</p>
-                  <p className="text-xs text-gray-500">Actual / Mín</p>
-                </div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-slate-500 bg-slate-50 rounded-2xl border border-slate-100">
+                <Package className="w-10 h-10 mx-auto text-emerald-500 mb-2" />
+                <p className="font-bold text-slate-800">¡Inventario en buen estado!</p>
+                <p className="text-xs text-slate-500 mt-1">No hay productos por debajo del stock mínimo.</p>
               </div>
-            ))}
+            )}
             {isReadOnly && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-blue-700 text-sm">
                 <Eye size={16} />

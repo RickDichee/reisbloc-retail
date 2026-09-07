@@ -22,18 +22,25 @@ export default function ReceiptTicket({
   saleTotal,
   paymentMethod,
   tableNumber,
-  businessName = BRANDING.appWithBrand.toUpperCase(),
+  businessName,
   address = 'TEXTICUITZEO PASILLO 3 LOCAL 230',
   phone = '',
   clientName = '',
   clientPhone = '',
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
-  const { organizationSettings } = useAppStore()
+  const { organizationSettings, currentUser } = useAppStore()
   
+  const isMM = Boolean(
+    organizationSettings?.slug?.includes('modamiel') ||
+    organizationSettings?.name?.toLowerCase().includes('moda miel') ||
+    currentUser?.organizationId === '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+  )
+
+  const defaultName = isMM ? 'MODA MIEL MX' : (organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'REISBLOC STORE')
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
-  const ticketBusinessName = organizationSettings?.ticketBusinessName || businessName
-  const ticketAddress = organizationSettings?.ticketAddress || 'TEXTICUITZEO PASILLO 3 LOCAL 230'
+  const ticketBusinessName = (organizationSettings?.ticketBusinessName || businessName || defaultName).toUpperCase()
+  const ticketAddress = organizationSettings?.ticketAddress || address || 'TEXTICUITZEO PASILLO 3 LOCAL 230'
 
   const ticketPhone = organizationSettings?.ticketPhone || phone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
@@ -145,7 +152,7 @@ export default function ReceiptTicket({
       <div style={{ textAlign: 'center', marginBottom: '6px', borderBottom: '2px dashed #000', paddingBottom: '5px' }}>
         {ticketShowLogo && (
           <img 
-            src={BRANDING.logoUrl} 
+            src={isMM ? '/images/moda-miel-mx-logo.jpeg' : (organizationSettings?.logoUrl || BRANDING.logoUrl)} 
             alt="Logo" 
             style={{ width: is80mm ? '52px' : '42px', height: is80mm ? '52px' : '42px', marginBottom: '4px', borderRadius: '6px', objectFit: 'cover', display: 'block', margin: '0 auto 4px auto' }} 
           />

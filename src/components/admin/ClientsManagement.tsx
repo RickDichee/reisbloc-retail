@@ -397,13 +397,14 @@ export default function ClientsManagement() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Teléfono</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Teléfono (10 dígitos)</label>
                                     <input
                                         type="tel"
                                         className="w-full px-4 py-3 bg-slate-50 border border-rb-border rounded-xl focus:ring-2 focus:ring-slate-900 outline-none font-bold text-slate-700"
                                         value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                        placeholder="998 123 4567"
+                                        onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                                        maxLength={10}
+                                        placeholder="9981234567"
                                     />
                                 </div>
                                 <div className="space-y-1">
