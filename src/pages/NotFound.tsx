@@ -9,17 +9,7 @@ export default function NotFound() {
       {/* Capa 1: Color de fondo base */}
       <div className="absolute inset-0 bg-slate-900 z-0" />
 
-      {/* Capa 2: Doodle */}
-      <div 
-        className="absolute inset-0 z-0 opacity-70 pointer-events-none bg-repeat"
-        style={{
-          backgroundImage: 'url("/doodle_ceviche.png?v=2")',
-          backgroundSize: '300px',
-          filter: 'grayscale(100%)'
-        }}
-      />
-      
-      {/* Capa 3: Gradiente */}
+      {/* Capa 2: Gradiente */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-slate-900/20 to-blue-900/20 z-0" />
 
       <div className="relative z-10 text-center text-white max-w-lg mx-auto p-8 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl">

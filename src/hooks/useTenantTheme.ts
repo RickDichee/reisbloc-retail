@@ -37,7 +37,17 @@ export function useTenantTheme(): {
       )
     }
 
-    const selectedTheme = isMM ? MODA_MIEL_THEME : DEFAULT_THEME
+    // 🎨 Soporte para temas personalizados definidos en organizationSettings.theme
+    // Si la organización tiene colores / tipografías custom en BD, se aplican sobre el baseTheme.
+    const baseTheme = isMM ? MODA_MIEL_THEME : DEFAULT_THEME
+    const customTheme = (organizationSettings?.theme as Partial<TenantThemeConfig>) || {}
+    const selectedTheme: TenantThemeConfig = {
+      ...baseTheme,
+      ...customTheme,
+      id: isMM ? 'modamiel' : (organizationSettings?.slug || customTheme.id || baseTheme.id),
+      name: organizationSettings?.businessName || customTheme.name || baseTheme.name
+    }
+
     setActiveTheme(selectedTheme)
     setIsModaMielActive(isMM)
 
@@ -58,40 +68,31 @@ export function useTenantTheme(): {
     if (isMM) {
       root.classList.add('theme-modamiel')
       body.classList.add('theme-modamiel')
-      root.style.setProperty('--primary', selectedTheme.primaryColor)
-      root.style.setProperty('--primary-hover', selectedTheme.primaryHoverColor)
-      root.style.setProperty('--secondary', selectedTheme.secondaryColor)
-      root.style.setProperty('--accent', selectedTheme.accentColor)
-      root.style.setProperty('--bg-canvas', selectedTheme.bgCanvas)
-      root.style.setProperty('--bg-surface', selectedTheme.bgSurface)
-      root.style.setProperty('--text-main', selectedTheme.textMain)
-      root.style.setProperty('--text-secondary', selectedTheme.textSecondary)
-      root.style.setProperty('--border-light', selectedTheme.borderColor)
-      root.style.setProperty('--font-serif', selectedTheme.fontSerif)
-      root.style.setProperty('--font-script', selectedTheme.fontScript)
-      root.style.setProperty('--font-sans', selectedTheme.fontSans)
     } else {
       root.classList.remove('theme-modamiel')
       body.classList.remove('theme-modamiel')
-      root.style.setProperty('--primary', DEFAULT_THEME.primaryColor)
-      root.style.setProperty('--primary-hover', DEFAULT_THEME.primaryHoverColor)
-      root.style.setProperty('--secondary', DEFAULT_THEME.secondaryColor)
-      root.style.setProperty('--accent', DEFAULT_THEME.accentColor)
-      root.style.setProperty('--bg-canvas', DEFAULT_THEME.bgCanvas)
-      root.style.setProperty('--bg-surface', DEFAULT_THEME.bgSurface)
-      root.style.setProperty('--text-main', DEFAULT_THEME.textMain)
-      root.style.setProperty('--text-secondary', DEFAULT_THEME.textSecondary)
-      root.style.setProperty('--border-light', DEFAULT_THEME.borderColor)
-      root.style.setProperty('--font-serif', DEFAULT_THEME.fontSerif)
-      root.style.setProperty('--font-script', DEFAULT_THEME.fontScript)
-      root.style.setProperty('--font-sans', DEFAULT_THEME.fontSans)
     }
 
-    // Favicon y Título
-    document.title = isMM ? 'Moda Miel MX' : (currentUser?.businessName || 'Reisbloc Store')
+    root.style.setProperty('--primary', selectedTheme.primaryColor)
+    root.style.setProperty('--primary-hover', selectedTheme.primaryHoverColor)
+    root.style.setProperty('--secondary', selectedTheme.secondaryColor)
+    root.style.setProperty('--accent', selectedTheme.accentColor)
+    root.style.setProperty('--bg-canvas', selectedTheme.bgCanvas)
+    root.style.setProperty('--bg-surface', selectedTheme.bgSurface)
+    root.style.setProperty('--text-main', selectedTheme.textMain)
+    root.style.setProperty('--text-secondary', selectedTheme.textSecondary)
+    root.style.setProperty('--border-light', selectedTheme.borderColor)
+    root.style.setProperty('--font-serif', selectedTheme.fontSerif)
+    root.style.setProperty('--font-script', selectedTheme.fontScript)
+    root.style.setProperty('--font-sans', selectedTheme.fontSans)
+
+    // Favicon y Título dinámicos
+    const appTitle = isMM ? 'Moda Miel MX' : (organizationSettings?.businessName || currentUser?.businessName || 'Reisbloc Store')
+    document.title = appTitle
     const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
     if (favicon) {
-      favicon.href = isMM ? '/images/moda-miel-mx-logo.jpeg' : '/icon.svg'
+      const customLogo = (organizationSettings as any)?.logo_url || currentUser?.avatar_url
+      favicon.href = isMM ? '/images/moda-miel-mx-logo.jpeg' : (customLogo || '/icon.svg')
     }
   }, [location.search, location.hash, location.pathname, organizationSettings, currentUser])
 

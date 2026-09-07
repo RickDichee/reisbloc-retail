@@ -104,13 +104,23 @@ serve(async (req) => {
     const dataId = (body.data?.id || body.id || '').toString()
 
     // F1: Validar firma del webhook en producción
-    const isDevelopment = Deno.env.get("DENO_ENV") === "development" || !webhookToken
-    if (!isDevelopment && !(await validateWebhookSignature(req, webhookToken, dataId))) {
-      console.error('❌ Firma de webhook inválida')
-      return new Response(JSON.stringify({ error: "Invalid signature" }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    const isDevelopment = Deno.env.get("DENO_ENV") === "development"
+    if (!isDevelopment) {
+      if (!webhookToken) {
+        console.error('❌ MERCADOPAGO_WEBHOOK_TOKEN no configurado en producción')
+        return new Response(JSON.stringify({ error: "Webhook signature secret unconfigured" }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      const isValid = await validateWebhookSignature(req, webhookToken, dataId)
+      if (!isValid) {
+        console.error('❌ Firma de webhook inválida')
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
     }
 
     const supabaseAdmin = createClient(

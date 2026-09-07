@@ -142,20 +142,6 @@ class PrintService {
     })
   }
 
-  /**
-   * Imprimir comanda de cocina/bar
-   */
-  async printKitchenTicket(
-    ticketHTML: string,
-    options: PrintOptions = {}
-  ): Promise<void> {
-    logger.info('print', 'Preparando impresión de comanda', {})
-    return this.printHTML(ticketHTML, {
-      title: 'Comanda',
-      width: 58,
-      ...options,
-    })
-  }
 
   /**
    * Detectar si estamos en Android nativo (Capacitor)

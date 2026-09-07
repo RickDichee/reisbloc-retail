@@ -186,7 +186,7 @@ export default function Onboarding() {
         team_size: formData.teamSize,
         payment_methods: formData.paymentMethods,
         preferences: {
-          sidebar: ['/pos', '/tables', '/inventory', '/clients', '/reports'],
+          sidebar: ['/pos', '/inventory', '/clients', '/reports', '/ecommerce'],
           navbar: ['/pos', '/inventory', '/reports']
         }
       }

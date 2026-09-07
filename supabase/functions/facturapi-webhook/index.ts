@@ -12,21 +12,24 @@ serve(async (req) => {
   }
 
   try {
+    const rawBody = await req.text()
     const signature = req.headers.get('x-facturapi-signature')
     const webhookSecret = Deno.env.get('FACTURAPI_WEBHOOK_SECRET')
     
-    // Verify webhook signature (optional but recommended)
-    if (webhookSecret && signature) {
-      const body = await req.text()
-      const expectedSignature = await generateSignature(body, webhookSecret)
-      
+    // Verify webhook signature
+    if (webhookSecret) {
+      if (!signature) {
+        console.error('Missing x-facturapi-signature header')
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      }
+      const expectedSignature = await generateSignature(rawBody, webhookSecret)
       if (signature !== expectedSignature) {
         console.error('Invalid webhook signature')
-        return new Response('Unauthorized', { status: 401 })
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders })
       }
     }
 
-    const payload = await req.json()
+    const payload = JSON.parse(rawBody || '{}')
     console.log('Facturapi webhook received:', JSON.stringify(payload))
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!

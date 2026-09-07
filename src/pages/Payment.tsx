@@ -97,16 +97,16 @@ export default function Payment() {
         return
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercadopago-webhook`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          action: 'create_preference',
           plan,
-          userId: session.user.id
+          userId: session.user.id,
+          email: session.user.email
         })
       })
 

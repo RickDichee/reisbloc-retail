@@ -41,7 +41,7 @@ export default function Settings() {
 
     // Estado local para personalización de interfaz
     const [favorites, setFavorites] = useState<{ sidebar: string[], navbar: string[] }>({
-        sidebar: ['/pos', '/tables', '/inventory', '/clients', '/reports'],
+        sidebar: ['/pos', '/inventory', '/clients', '/reports', '/purchases'],
         navbar: ['/pos', '/inventory', '/reports']
     })
     const [posMode, setPosMode] = useState<'restaurant' | 'retail'>('retail')
@@ -160,7 +160,6 @@ export default function Settings() {
 
     const availableModules = [
         { id: '/pos', label: 'Punto de Venta', icon: Banknote },
-        { id: '/tables', label: 'Gestión de Cuentas', icon: LayoutDashboard },
         { id: '/ecommerce', label: 'E-commerce', icon: Store },
         { id: '/inventory', label: 'Inventario', icon: ShoppingBag },
         { id: '/clients', label: 'Clientes', icon: Users },

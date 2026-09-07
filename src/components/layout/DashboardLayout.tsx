@@ -98,7 +98,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const finalMenuItems = visibleSections.flatMap(sec => {
         const visibleItems = sec.items.filter(item => {
             if (item.path === '/admin' || item.path === '/settings') return true;
-            const visibleItems = organizationSettings?.favorites?.sidebar || ['/pos', '/tables', '/inventory', '/clients', '/reports', '/purchases', '/marketing', '/agent', '/analytics', '/closing', '/ecommerce'];
+            const visibleItems = organizationSettings?.favorites?.sidebar || ['/pos', '/inventory', '/clients', '/reports', '/purchases', '/marketing', '/agent', '/analytics', '/closing', '/ecommerce'];
             return visibleItems.includes(item.path) || location.pathname === item.path;
         });
         if (visibleItems.length === 0) return [];

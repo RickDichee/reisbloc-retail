@@ -1,50 +1,57 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
 import { supabase, forceAuthHeader } from '@/config/supabase'
-import { BRANDING } from '@/config/branding'
+import { BRANDING, checkIsModaMiel } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { getStoredToken } from '@/services/jwtService'
-import LandingPage from '@/pages/LandingPage'
-import Register from '@/pages/Register'
-import Login from '@/pages/Login'
-import POS from '@/pages/POS'
-import Admin from '@/pages/Admin'
-import Inventory from '@/pages/Inventory'
-import OrdersToServe from '@/pages/OrdersToServe'
-import Closing from '@/pages/Closing'
-import Clients from '@/pages/Clients'
-import Settings from '@/pages/Settings'
-import Reports from '@/pages/Reports'
-import Purchases from '@/pages/Purchases'
-import NotFound from '@/pages/NotFound'
-import { AuthCallback } from '@/pages/AuthCallback'
-import Payment from '@/pages/Payment'
-import AcceptInvite from '@/pages/AcceptInvite'
-import StoreFront from '@/pages/StoreFront'
-import Ecommerce from '@/pages/Ecommerce'
-import Help from '@/pages/Help'
-import Marketing from '@/pages/Marketing'
-import Agent from '@/pages/Agent'
-import Analytics from '@/pages/Analytics'
-import Kitchen from '@/pages/Kitchen'
-import Bar from '@/pages/Bar'
 import OfflineIndicator from '@/components/common/OfflineIndicator'
-import PrivacyPolicy from '@/pages/PrivacyPolicy'
-import TermsOfService from '@/pages/TermsOfService'
-import ModaMielBrandPage from '@/pages/ModaMielBrandPage'
-import Pricing from '@/pages/Pricing'
-import Branches from '@/pages/Branches'
-import Schedules from '@/pages/Schedules'
-import Onboarding from '@/pages/Onboarding'
-import Invoicing from '@/pages/Invoicing'
-import Referral from '@/pages/Referral'
-import WholesaleCatalog from '@/pages/WholesaleCatalog'
-import WholesaleDashboard from '@/pages/WholesaleDashboard'
 import { useTenantTheme } from '@/hooks/useTenantTheme'
-// import OAuthConsent from '@/pages/OAuthConsent'; // Legacy archive
+
+// 🚀 Code Splitting: Carga diferida de páginas para optimización de bundle
+const LandingPage = lazy(() => import('@/pages/LandingPage'))
+const Register = lazy(() => import('@/pages/Register'))
+const Login = lazy(() => import('@/pages/Login'))
+const POS = lazy(() => import('@/pages/POS'))
+const Admin = lazy(() => import('@/pages/Admin'))
+const Inventory = lazy(() => import('@/pages/Inventory'))
+const Closing = lazy(() => import('@/pages/Closing'))
+const Clients = lazy(() => import('@/pages/Clients'))
+const Settings = lazy(() => import('@/pages/Settings'))
+const Reports = lazy(() => import('@/pages/Reports'))
+const Purchases = lazy(() => import('@/pages/Purchases'))
+const NotFound = lazy(() => import('@/pages/NotFound'))
+const AuthCallback = lazy(() => import('@/pages/AuthCallback').then(m => ({ default: m.AuthCallback })))
+const Payment = lazy(() => import('@/pages/Payment'))
+const AcceptInvite = lazy(() => import('@/pages/AcceptInvite'))
+const StoreFront = lazy(() => import('@/pages/StoreFront'))
+const Ecommerce = lazy(() => import('@/pages/Ecommerce'))
+const Help = lazy(() => import('@/pages/Help'))
+const Marketing = lazy(() => import('@/pages/Marketing'))
+const Agent = lazy(() => import('@/pages/Agent'))
+const Analytics = lazy(() => import('@/pages/Analytics'))
+const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'))
+const TermsOfService = lazy(() => import('@/pages/TermsOfService'))
+const ModaMielBrandPage = lazy(() => import('@/pages/ModaMielBrandPage'))
+const Pricing = lazy(() => import('@/pages/Pricing'))
+const Branches = lazy(() => import('@/pages/Branches'))
+const Schedules = lazy(() => import('@/pages/Schedules'))
+const Onboarding = lazy(() => import('@/pages/Onboarding'))
+const Invoicing = lazy(() => import('@/pages/Invoicing'))
+const Referral = lazy(() => import('@/pages/Referral'))
+const WholesaleCatalog = lazy(() => import('@/pages/WholesaleCatalog'))
+const WholesaleDashboard = lazy(() => import('@/pages/WholesaleDashboard'))
+
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex flex-col items-center justify-center p-8">
+      <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-3" />
+      <p className="text-slate-400 font-mono text-xs tracking-wider uppercase">Cargando...</p>
+    </div>
+  )
+}
 
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
@@ -109,55 +116,54 @@ function AppLayout() {
   return (
     <>
       {!hideNavBar && <NavBar />}
-      <Routes>
-        {/* 🌐 Rutas Públicas */}
-        <Route path="/" element={isModaMiel ? <ModaMielBrandPage /> : <LandingPage />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/p/:slug" element={<StoreFront />} />
-        <Route path="/accept-invite" element={<AcceptInvite />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/modamielmx" element={<ModaMielBrandPage />} />
-        <Route path="/modamielmxn" element={<ModaMielBrandPage />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/upgrade" element={<Pricing />} />
-        <Route path="/onboarding" element={<Onboarding />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* 🌐 Rutas Públicas */}
+          <Route path="/" element={isModaMiel ? <ModaMielBrandPage /> : <LandingPage />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/p/:slug" element={<StoreFront />} />
+          <Route path="/accept-invite" element={<AcceptInvite />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/modamielmx" element={<ModaMielBrandPage />} />
+          <Route path="/modamielmxn" element={<ModaMielBrandPage />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/upgrade" element={<Pricing />} />
+          <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* 🛒 Operación del POS */}
-        <Route path="/pos" element={<POS />} />
-        <Route path="/serve" element={<OrdersToServe />} />
-        <Route path="/kitchen" element={<Kitchen />} />
-        <Route path="/bar" element={<Bar />} />
+          {/* 🛒 Operación del POS Retail */}
+          <Route path="/pos" element={<POS />} />
 
-        {/* ⚙️ Administración */}
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/branches" element={<Branches />} />
-        <Route path="/schedules" element={<Schedules />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/purchases" element={<Purchases />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/closing" element={<Closing />} />
-        <Route path="/clients" element={<Clients />} />
-        <Route path="/ecommerce" element={<Ecommerce />} />
-        <Route path="/help" element={<Help />} />
+          {/* ⚙️ Administración */}
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/branches" element={<Branches />} />
+          <Route path="/schedules" element={<Schedules />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/purchases" element={<Purchases />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/closing" element={<Closing />} />
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/ecommerce" element={<Ecommerce />} />
+          <Route path="/help" element={<Help />} />
 
-        {/* 🤖 IA & Marketing */}
-        <Route path="/marketing" element={<Marketing />} />
-        <Route path="/wholesale" element={<WholesaleCatalog />} />
-        <Route path="/wholesale-dashboard" element={<WholesaleDashboard />} />
-        <Route path="/agent" element={<Agent />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/invoicing" element={<Invoicing />} />
-        <Route path="/referral" element={<Referral />} />
+          {/* 🤖 IA & Marketing */}
+          <Route path="/marketing" element={<Marketing />} />
+          <Route path="/wholesale" element={<WholesaleCatalog />} />
+          <Route path="/wholesale-dashboard" element={<WholesaleDashboard />} />
+          <Route path="/agent" element={<Agent />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/invoicing" element={<Invoicing />} />
+          <Route path="/referral" element={<Referral />} />
 
-        {/* 🚫 Manejo de errores */}
-        <Route path="/404" element={<NotFound />} />
-        <Route path="*" element={<Navigate to="/404" replace />} />
-      </Routes>
+          {/* 🚫 Manejo de errores */}
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
+        </Routes>
+      </Suspense>
     </>
   )
 }

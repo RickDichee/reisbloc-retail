@@ -138,8 +138,21 @@ serve(async (req) => {
       }
 
       case 'add_bonus': {
-        if (!amount || amount <= 0) {
-          return new Response(JSON.stringify({ error: "Amount required" }), {
+        // Enforce one-time welcome bonus (fixed 5 tokens) to prevent arbitrary credit minting
+        const BONUS_AMOUNT = 5
+        const { data: existingBonus } = await supabaseAdmin
+          .from('token_transactions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('type', 'bonus')
+          .eq('feature', 'signup_bonus')
+          .maybeSingle()
+
+        if (existingBonus) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: "El bono de bienvenida ya fue reclamado previamente." 
+          }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
@@ -147,10 +160,10 @@ serve(async (req) => {
 
         const { data, error } = await supabaseAdmin.rpc('add_tokens', {
           p_user_id: user.id,
-          p_amount: amount,
+          p_amount: BONUS_AMOUNT,
           p_type: 'bonus',
           p_feature: 'signup_bonus',
-          p_description: 'Bono de bienvenida'
+          p_description: 'Bono de bienvenida (único)'
         })
 
         if (error) throw error

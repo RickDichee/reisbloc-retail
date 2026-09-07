@@ -55,39 +55,28 @@ Deno.serve(async (req) => {
         }
 
         // 3. Extract invitation details from body
-        const { email, role = 'mesero', expires_in_hours = 48 } = await req.json();
+        const { email, role = 'employee', expires_in_hours = 48 } = await req.json();
 
         if (!email) {
             return new Response(JSON.stringify({ error: 'Email is required' }), { status: 400, headers: corsHeaders });
         }
 
-        // 4. Check if user already exists in the system (Mobility)
+        // 4. Check if user already exists in the same organization
         const { data: existingUserId, error: rpcError } = await supabaseAdmin
             .rpc('get_user_id_by_email', { p_email: email });
 
         if (!rpcError && existingUserId) {
-            // User already exists! Auto-transfer them to the new organization
-            const { error: updateError } = await supabaseAdmin
+            const { data: existingUser } = await supabaseAdmin
                 .from('users')
-                .update({
-                    organization_id: userData.organization_id,
-                    role: role,
-                    active: true
-                })
-                .eq('id', existingUserId);
+                .select('organization_id')
+                .eq('id', existingUserId)
+                .maybeSingle();
 
-            if (updateError) {
-                console.error('Auto-transfer error:', updateError);
-                return new Response(JSON.stringify({ error: 'Failed to transfer existing user' }), { status: 500, headers: corsHeaders });
+            if (existingUser && existingUser.organization_id === userData.organization_id) {
+                return new Response(JSON.stringify({ 
+                    error: 'El usuario ya forma parte de tu organización.' 
+                }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
-
-            console.log(`🔄 Auto-transferred existing user ${email} to org ${userData.organization_id}`);
-
-            return new Response(JSON.stringify({
-                success: true,
-                message: 'El usuario ya estaba registrado en el sistema. Ha sido transferido exitosamente a tu sucursal.',
-                dev_invite_link: null // No invlink needed
-            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
         // 5. Generate secure token for NEW users
