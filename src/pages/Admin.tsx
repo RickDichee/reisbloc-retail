@@ -48,7 +48,7 @@ import PromotionsManager from '@/components/admin/PromotionsManager'
 type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'marketing' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs' | 'analytics'
 
 export default function Admin() {
-  const { currentUser } = useAppStore()
+  const { currentUser, organizationSettings } = useAppStore()
   const navigate = useNavigate()
   const { canManageUsers, canManageInventory } = usePermissions()
   const { isPro, planName } = usePlanLimits()
@@ -137,7 +137,7 @@ export default function Admin() {
             <div className="flex items-center gap-3">
               <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 flex flex-col items-end">
                 <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Organización</span>
-                <span className="font-bold text-white text-sm">{currentUser?.organizationId?.split('-')[0] || 'REISBLOC'}</span>
+                <span className="font-bold text-white text-sm">{organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (currentUser?.organizationId ? 'Mi Organización' : 'REISBLOC')}</span>
               </div>
             </div>
           </div>

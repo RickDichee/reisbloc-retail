@@ -22,11 +22,11 @@ export function useTenantTheme(): {
     // Si el usuario está autenticado (currentUser), su tema se define ESTRICTAMENTE por su propia Organización.
     // Jamás imponer el tema de Moda Miel a un usuario de otra tienda (ej. Reisbloc Store) por el hostname.
     let isMM = false
-    const userOrgSlug = organizationSettings?.slug || currentUser?.businessName || currentUser?.organizationId
+    const userOrgSlug = organizationSettings?.slug || organizationSettings?.name || currentUser?.businessName || currentUser?.organizationId || ''
 
     if (currentUser) {
       // Usuario autenticado -> Evaluar únicamente si la organización del usuario es Moda Miel
-      isMM = checkIsModaMiel('', '', '', userOrgSlug)
+      isMM = checkIsModaMiel('', '', '', userOrgSlug) || currentUser?.organizationId === '1b498fa6-aca5-428c-9bdd-01e6fea30316'
     } else {
       // Visitante público no autenticado -> Evaluar por subdominio o parámetro
       isMM = checkIsModaMiel(

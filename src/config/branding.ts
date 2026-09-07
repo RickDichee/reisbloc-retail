@@ -10,7 +10,9 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
     query.includes('brand=modamiel') ||
     fragment.includes('brand=modamiel') ||
     slug.includes('modamiel') ||
-    slug.includes('moda-miel')
+    slug.includes('moda-miel') ||
+    slug.includes('moda miel') ||
+    slug.includes('1b498fa6')
   )
 }
 

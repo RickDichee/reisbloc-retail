@@ -242,8 +242,16 @@ export default function App() {
               // 🛡️ Pre-cargar configuración de la organización para el Layout
               try {
                 const org = await supabaseService.getOrganizationById(user.organizationId)
-                if (org?.settings) {
-                  useAppStore.getState().setOrganizationSettings(org.settings)
+                if (org) {
+                  const mergedSettings = {
+                    ...(org.settings || {}),
+                    id: org.id,
+                    name: org.name,
+                    businessName: org.settings?.businessName || org.name,
+                    slug: org.slug,
+                    logoUrl: org.logo_url
+                  }
+                  useAppStore.getState().setOrganizationSettings(mergedSettings)
                 }
                 // Cargar plan y plan_note al store global
                 if (org?.plan) {

@@ -351,6 +351,7 @@ export default function Settings() {
 
 function BrandingSettings({ currentUser }: { currentUser: any }) {
     const [org, setOrg] = useState<any>(null)
+    const [businessName, setBusinessName] = useState('')
     const [slug, setSlug] = useState('')
     const [logoUrl, setLogoUrl] = useState('')
     const [saving, setSaving] = useState(false)
@@ -371,12 +372,13 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
             const data = await supabaseService.getOrganizationById(currentUser.organizationId)
             if (data) {
                 setOrg(data)
+                setBusinessName(data.name || data.settings?.businessName || '')
                 setSlug(data.slug || '')
                 setLogoUrl(data.logo_url || '')
                 
                 const s = data.settings || {}
                 setTicketShowLogo(s.ticketShowLogo ?? true)
-                setTicketBusinessName(s.ticketBusinessName || '')
+                setTicketBusinessName(s.ticketBusinessName || data.name || '')
                 setTicketAddress(s.ticketAddress || '')
                 setTicketPhone(s.ticketPhone || '')
                 setTicketFooterMsg(s.ticketFooterMsg || '¡Gracias por su compra!')
@@ -422,10 +424,13 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
         setSaving(true)
         setError('')
         try {
+            const trimmedName = businessName.trim() || org?.name || 'Mi Negocio'
             const updatedSettings = {
                 ...(org?.settings || {}),
+                businessName: trimmedName,
+                name: trimmedName,
                 ticketShowLogo,
-                ticketBusinessName,
+                ticketBusinessName: ticketBusinessName.trim() || trimmedName,
                 ticketAddress,
                 ticketPhone,
                 ticketFooterMsg
@@ -434,16 +439,28 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
             await supabase
                 .from('organizations')
                 .update({ 
+                    name: trimmedName,
                     slug: slug.trim(),
                     logo_url: logoUrl.trim(),
                     settings: updatedSettings
                 })
                 .eq('id', currentUser.organizationId)
 
+            const mergedSettings = {
+                ...updatedSettings,
+                id: currentUser.organizationId,
+                name: trimmedName,
+                businessName: trimmedName,
+                slug: slug.trim(),
+                logoUrl: logoUrl.trim()
+            }
+
+            useAppStore.getState().setOrganizationSettings(mergedSettings)
             useAppStore.setState({
                 currentUser: {
                     ...currentUser,
-                    organizationSettings: updatedSettings
+                    businessName: trimmedName,
+                    organizationSettings: mergedSettings
                 }
             })
             
@@ -468,6 +485,25 @@ function BrandingSettings({ currentUser }: { currentUser: any }) {
                     <h2 className="text-xl font-black text-slate-900">Tu Tienda Online</h2>
                     <p className="text-sm text-slate-500">Personaliza el enlace y logo de tu catálogo digital</p>
                 </div>
+            </div>
+
+            {/* Business Name */}
+            <div className="space-y-3">
+                <label className="block text-sm font-bold text-slate-700">Nombre del Negocio / Empresa</label>
+                <input
+                    type="text"
+                    value={businessName}
+                    onChange={(e) => {
+                        const val = e.target.value
+                        setBusinessName(val)
+                        if (!ticketBusinessName || ticketBusinessName === businessName) {
+                            setTicketBusinessName(val)
+                        }
+                    }}
+                    placeholder="Ej. Moda Miel MX"
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl font-bold focus:border-purple-500 outline-none text-slate-800"
+                />
+                <p className="text-xs text-slate-400">Este nombre identifica a tu empresa en el panel de administración, la barra superior y los tickets.</p>
             </div>
 
             {/* Logo Upload */}
