@@ -12,6 +12,7 @@ dist/
 build/
 out/
 dev-dist/
+.vercel/
 
 # --- Logs ---
 logs/
