@@ -94,8 +94,18 @@ function AppLayout() {
     enforceTenantIsolation()
   }, [pathname, isAuthenticated, currentUser, logout])
 
-  // Ocultar NavBar solo en: público, invitaciones, legales y portada de tienda de cliente
-  const isPublicPage = pathname.startsWith('/p/') || pathname === '/auth/callback' || pathname === '/accept-invite' || pathname === '/privacy' || pathname === '/terms' || pathname === '/modamielmx' || (isModaMiel && pathname === '/')
+  // Ocultar NavBar en landing, login, registro, invitaciones, legales y portada de tienda
+  const isPublicPage = 
+    pathname === '/' || 
+    pathname === '/login' || 
+    pathname === '/register' || 
+    pathname === '/auth/callback' || 
+    pathname === '/accept-invite' || 
+    pathname === '/privacy' || 
+    pathname === '/terms' || 
+    pathname === '/modamielmx' || 
+    pathname === '/modamielmxn' || 
+    pathname.startsWith('/p/')
   const hideNavBar = isPublicPage
 
   // Aplicar clases de accesibilidad al body
@@ -265,7 +275,7 @@ export default function App() {
   }
 
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <OfflineIndicator />
       <AppLayout />
     </Router>

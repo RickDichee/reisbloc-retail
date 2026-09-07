@@ -1,398 +1,525 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, Zap, Check, Bot, Users, Package, BarChart3, ArrowRight } from 'lucide-react';
-import { useAppStore } from '@/store/appStore';
-import { BRANDING } from '@/config/branding';
+import { useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import {
+  ShieldCheck,
+  Zap,
+  Bot,
+  FileText,
+  Lock,
+  ArrowRight,
+  Sparkles,
+  MessageCircle,
+  ExternalLink,
+  Shield,
+  TrendingUp,
+  Database
+} from 'lucide-react'
+import { useAppStore } from '@/store/appStore'
+import { BRANDING } from '@/config/branding'
 
-const LandingPage = () => {
-  const navigate = useNavigate();
-  const { currentUser } = useAppStore();
+export default function LandingPage() {
+  const navigate = useNavigate()
+  const { currentUser } = useAppStore()
 
   useEffect(() => {
     if (currentUser) {
-      navigate('/admin');
+      navigate('/admin')
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate])
 
-  const plans = [
-    {
-      name: 'Libre',
-      price: '$0',
-      priceNote: 'para siempre',
-      features: [
-        '1 usuario',
-        '25 productos',
-        'Punto de Venta',
-        '10 consultas AI/día',
-        'Inventario básico',
-        'Reportes básicos'
-      ],
-      buttonText: 'Empezar Gratis',
-      planKey: 'free',
-      highlight: false,
-      link: `https://wa.me/5215665848231?text=Hola%2C%20quiero%20empezar%20con%20el%20plan%20Libre%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`
-    },
-    {
-      name: 'Negocio',
-      price: '$299',
-      priceNote: 'al mes',
-      features: [
-        '3 usuarios',
-        '100 productos',
-        'E-commerce básico',
-        'Multi-sucursal',
-        '100 consultas AI/día',
-        'Tokens de IA incluidos',
-        'Reportes avanzados',
-        'Soporte por WhatsApp'
-      ],
-      buttonText: 'Elegir Negocio',
-      planKey: 'starter',
-      highlight: true,
-      link: `https://wa.me/5215665848231?text=Hola%2C%20quiero%20el%20plan%20Negocio%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`
-    },
-    {
-      name: 'Empresarial',
-      price: '$799',
-      priceNote: 'al mes',
-      features: [
-        'Usuarios ilimitados',
-        'Productos ilimitados',
-        'E-commerce completo',
-        'Facturación CFDI 4.0',
-        'Tokens de IA ilimitados',
-        'API Access',
-        'Multi-sucursal',
-        'Soporte dedicado'
-      ],
-      buttonText: 'Elegir Empresarial',
-      planKey: 'growth',
-      highlight: false,
-      link: `https://wa.me/5215665848231?text=Hola%2C%20quiero%20el%20plan%20Empresarial%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`
-    }
-  ];
-
-  const featureCards = [
-    {
-      title: 'Punto de Venta',
-      description: 'Venta rápida por pieza o por kilo. Interfaz optimizada para cualquier tipo de negocio retail o mayoreo.',
-      icon: <Zap className="text-blue-500" size={28} />,
-      items: ['Funciona sin internet', 'Sincroniza automáticamente', 'Múltiples formas de pago']
-    },
-    {
-      title: 'Inventario en Tiempo Real',
-      description: 'Control de productos, variantes y stock. Alertas de stock mínimo y reportes por categoría.',
-      icon: <Package className="text-blue-500" size={28} />,
-      items: ['Control de producto', 'Alertas de stock', 'Reportes de venta']
-    },
-    {
-      title: 'Multi-Sucursal',
-      description: 'Controla todas tus tiendas desde un solo panel. Empleados, horarios y reportes centralizados.',
-      icon: <Users className="text-blue-500" size={28} />,
-      items: ['Dashboard centralizado', 'Empleados y horarios', 'Reportes por sucursal']
-    },
-    {
-      title: 'Agenda de Clientes',
-      description: 'Registra clientes frecuentes y sus condiciones de crédito. Historial de compras y límites.',
-      icon: <Shield className="text-blue-500" size={28} />,
-      items: ['Base de clientes', 'Crédito disponible', 'Historial de compras']
-    },
-    {
-      title: 'Agente IA de Ventas',
-      description: 'Tu agente de ventas por WhatsApp que responde cotizaciones, hace seguimiento y cierra ventas 24/7.',
-      icon: <Bot className="text-purple-500" size={28} />,
-      items: ['WhatsApp Business', 'Cotizaciones auto', 'Seguimiento a clientes'],
-      highlight: true
-    },
-    {
-      title: 'Reportes y Análisis',
-      description: 'Dashboard con ventas, productos más vendidos, margen de ganancia y tendencias.',
-      icon: <BarChart3 className="text-blue-500" size={28} />,
-      items: ['Ventas por día', 'Productos populares', 'Márgenes de ganancia']
-    }
-  ];
+  const waLink = (text: string) =>
+    `https://wa.me/5215665848231?text=${encodeURIComponent(text)}`
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#1F2937] font-['Outfit',sans-serif]">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
-        html { scroll-behavior: smooth; }
-        #features, #pricing { scroll-margin-top: 6rem; }
-        body { font-family: 'Outfit', sans-serif; }
-        .hero-gradient { background: linear-gradient(135deg, #1f2937 0%, #3f1d2e 55%, #111827 100%); }
-        .card-hover { transition: transform 0.25s ease, box-shadow 0.25s ease; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(31,41,59,0.12); }
-        .btn-wa { background: linear-gradient(135deg, #25D366, #128C7E); transition: filter 0.2s ease, transform 0.2s ease; }
-        .btn-wa:hover { filter: brightness(1.1); transform: scale(1.03); }
-        .btn-dark { background: #1F293B; transition: background 0.2s ease, transform 0.2s ease; }
-        .btn-dark:hover { background: #2d3f55; transform: scale(1.03); }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
-        .float { animation: float 4s ease-in-out infinite; }
-        .price-popular { background: linear-gradient(135deg, #1F293B, #2d3f55); }
-      `}</style>
+    <div className="min-h-screen bg-[#0F172A] text-[#F8FAFC] font-['Outfit',sans-serif] selection:bg-cyan-500 selection:text-black">
+      {/* NAVBAR */}
+      <nav className="sticky top-0 z-50 bg-[#0F172A]/90 backdrop-blur-md border-b border-slate-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+          {/* Brand */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center p-1.5 shadow-md group-hover:scale-105 transition-transform">
+              <img
+                src={BRANDING.logoUrl || '/icon.svg'}
+                alt={BRANDING.whiteLabelName}
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
+                Reisbloc <span className="font-light text-cyan-400">Retail</span>
+              </span>
+              <span className="hidden sm:block text-[9px] text-emerald-400 font-bold uppercase tracking-widest">
+                VIP & Enterprise Edition
+              </span>
+            </div>
+          </Link>
 
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-10 h-10 rounded-xl object-cover border border-pink-200" />
-            <span className="font-bold text-xl tracking-tight text-[#1F2937]">
-              {BRANDING.whiteLabelName === 'Moda Miel MX' ? 'Moda Miel MX' : BRANDING.appName}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <a href="#features" className="text-sm font-medium text-[#64748B] hover:text-[#1F293B] transition">Características</a>
-            <a href="#pricing" className="text-sm font-medium text-[#64748B] hover:text-[#1F293B] transition">Precios</a>
-            <a
-              href="/register"
-              className="text-sm font-medium text-[#64748B] hover:text-[#1F293B] transition"
-            >
-              Ingresar
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-300">
+            <a href="#features" className="hover:text-cyan-400 transition">Capacidades</a>
+            <a href="#security" className="hover:text-cyan-400 transition flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Seguridad & PCI
             </a>
+            <a href="#custom-brands" className="hover:text-cyan-400 transition">Casos de Éxito</a>
+            <a href="#vip" className="text-amber-400 hover:text-amber-300 transition flex items-center gap-1">
+              ✨ Edición VIP
+            </a>
+          </div>
+
+          {/* CTAs */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              to="/login"
+              className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-lg transition"
+            >
+              Iniciar Sesión
+            </Link>
             <a
-              href={`https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`}
+              href={waLink('Hola, quiero cotizar la versión VIP / Enterprise de Reisbloc Retail')}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-wa text-white text-sm font-semibold px-5 py-2.5 rounded-full flex items-center gap-2"
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-full flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all hover:scale-105"
             >
-              Solicitar Demo
+              <MessageCircle size={15} />
+              <span className="hidden sm:inline">Cotizar por WhatsApp</span>
+              <span className="sm:hidden">WhatsApp</span>
             </a>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <header className="hero-gradient text-white overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 py-24 md:py-32 grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-block mb-4 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-widest">
-              Sistema de Punto de Venta con IA
-            </div>
-            <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-              Haz crecer tu negocio<br/>
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                con {BRANDING.whiteLabelName}
+      {/* HERO SECTION */}
+      <header className="relative overflow-hidden py-16 md:py-24 border-b border-slate-800 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.12)_0%,rgba(0,245,255,0.04)_40%,transparent_70%)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-12 gap-10 items-center">
+          
+          {/* Text Content */}
+          <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+            {/* Trust Tag */}
+            <a
+              href="#security"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-semibold text-cyan-300 hover:border-cyan-400/50 transition backdrop-blur-md"
+            >
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span>PCI-DSS v4.0 SAQ A & OWASP ASVS LEVEL 2 CERTIFIED</span>
+              <span className="text-slate-400">→</span>
+            </a>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight tracking-tight">
+              El POS Inteligente para<br/>
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                Retail de Alto Rendimiento
               </span>
             </h1>
-            <p className="text-lg text-slate-300 mb-10 max-w-md leading-relaxed">
-              {BRANDING.whiteLabelName === 'Moda Miel MX'
-                ? 'Moda Miel MX es una aplicación de Punto de Venta (POS) diseñada para la gestión de ventas, facturación y control de inventario de nuestra tienda de ropa y moda.'
-                : 'El POS que funciona sin internet, maneja tu inventario, cierra ventas 24/7 con IA y genera facturas CFDI 4.0.'}
+
+            <p className="text-sm sm:text-base text-slate-300 max-w-xl font-normal leading-relaxed mx-auto lg:mx-0">
+              Optimiza tus ventas en mostrador y en línea con Agentes de IA, control de inventario multi-sucursal, facturación CFDI 4.0 y cobros seguros sin comisiones ocultas.
             </p>
-            <div className="flex flex-wrap gap-4">
+
+            {/* Bullet Highlights */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1 text-left text-xs font-medium text-slate-300 max-w-lg mx-auto lg:mx-0">
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Modo Offline-First
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Agentes IA de Ventas
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Facturación CFDI 4.0
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Aislamiento Multitenant
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Cobros MercadoPago/Conekta
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-400">✓</span> Soporte VIP Dedicado
+              </div>
+            </div>
+
+            {/* Primary Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-3">
               <a
-                href={`https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`}
+                href={waLink('Hola, deseo agendar una Demostración VIP Personalizada de Reisbloc Retail')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-wa text-white font-bold px-7 py-4 rounded-full shadow-lg flex items-center gap-2"
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm px-7 py-3.5 rounded-full flex items-center justify-center gap-2.5 shadow-xl shadow-emerald-500/20 transition-all hover:scale-105"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                Demo por WhatsApp
+                <MessageCircle size={18} />
+                <span>Agendar Demo en WhatsApp</span>
               </a>
-              <a href="#pricing" className="inline-flex items-center gap-2 border border-white/30 hover:bg-white/10 text-white font-semibold px-7 py-4 rounded-full transition">
-                Ver precios
-                <ArrowRight size={18} />
-              </a>
+
+              <Link
+                to="/register"
+                className="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 hover:text-white font-semibold text-xs px-6 py-3.5 rounded-full flex items-center justify-center gap-2 transition backdrop-blur-md"
+              >
+                <span>Probar Gratis</span>
+                <ArrowRight size={14} />
+              </Link>
             </div>
           </div>
 
-          <div className="flex justify-center">
-            <div className="float relative">
-            <div className="w-[22rem] h-[22rem] rounded-3xl bg-white/10 border border-white/20 backdrop-blur shadow-2xl overflow-hidden">
-              <img src={BRANDING.bannerUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
-            </div>
-            <div className="absolute -top-4 -right-4 bg-pink-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
-              Moda Miel MX
-            </div>
-            <div className="absolute -bottom-4 -left-4 bg-[#1F2937] text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg">
-              Powered by Reisbloc
-            </div>
+          {/* Hero Visual Station Mockup */}
+          <div className="lg:col-span-5">
+            <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-slate-700 shadow-2xl space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                </div>
+                <span className="text-[11px] font-mono text-cyan-400">REISBLOC-STATION-ONLINE</span>
+              </div>
+
+              {/* Mock Dashboard Analytics */}
+              <div className="space-y-3">
+                <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ventas del día</span>
+                    <div className="text-xl font-black text-white">
+                      $48,920.00 <span className="text-xs text-emerald-400 font-normal">+18%</span>
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <TrendingUp size={20} />
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Estado de Red & Sync</span>
+                    <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Offline-First Activo (Local)
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700">Synced</span>
+                </div>
+
+                {/* AI Insight Widget */}
+                <div className="bg-slate-900/90 border border-cyan-500/20 rounded-xl p-3.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-cyan-300 mb-1">
+                    <Bot size={16} />
+                    <span>Agente IA Reisbloc:</span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-normal">
+                    "Pico de ventas detectado en categoría Blusas. Sugerencia: Notificar reposición inmediata a sucursal matriz."
+                  </p>
+                </div>
+              </div>
+
+              {/* Security Footer inside card */}
+              <div className="pt-2 border-t border-slate-700 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center gap-1">
+                  <Lock size={12} className="text-cyan-400" />
+                  TLS 1.3 / HSTS
+                </span>
+                <span className="text-cyan-400 font-bold">PCI-DSS SAQ A Certified</span>
+              </div>
             </div>
           </div>
+
         </div>
       </header>
 
-      {/* Features Grid */}
-      <section id="features" className="max-w-6xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
-          <div className="inline-block mb-3 px-3 py-1 rounded-full bg-[#1F2937]/8 text-[#1F2937] text-xs font-semibold uppercase tracking-widest">
-            Características
+      {/* 💡 FEATURES CAPABILITIES SECTION */}
+      <section id="features" className="py-20 bg-slate-900/80 border-b border-slate-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-bold uppercase tracking-widest">
+              Capacidades de la Plataforma
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white">
+              Todo lo que tu Comercio Necesita para Vender Más
+            </h2>
           </div>
-          <h2 className="text-4xl font-extrabold text-[#1F2937]">Lo que puedes hacer hoy</h2>
-          <p className="mt-4 text-[#64748B] text-lg max-w-xl mx-auto">
-            Todo lo que necesitas para hacer crecer tu negocio en un solo sistema.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featureCards.map((feature) => (
-            <div 
-              key={feature.title} 
-              className={`card-hover bg-white rounded-3xl p-8 border border-[#E2E8F0] shadow-sm flex flex-col ${
-                feature.highlight ? 'relative' : ''
-              }`}
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Feature 1 */}
+            <a
+              href={waLink('Hola, quiero más información sobre el Punto de Venta POS')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/60 hover:border-cyan-400/40 rounded-2xl p-6 space-y-3 block transition-all group"
             >
-              {feature.highlight && (
-                <div className="absolute top-0 right-0 px-3 py-1 bg-purple-500 text-white text-xs font-bold rounded-full m-4">
-                  INCLUIDO
-                </div>
-              )}
-              <div className="w-14 h-14 mb-6 rounded-2xl bg-blue-50 flex items-center justify-center">
-                {feature.icon}
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
+                <Zap size={22} />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-[#1F2937]">{feature.title}</h3>
-              <p className="text-[#64748B] leading-relaxed flex-grow">{feature.description}</p>
-              <ul className="mt-6 space-y-2 text-sm text-[#1F2937] font-medium">
-                {feature.items.map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Check size={16} className="text-green-500" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="text-center mt-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-            <Check size={16} />
-            Disponible: Facturación CFDI 4.0
+              <h3 className="text-lg font-bold text-white group-hover:text-cyan-300 transition">
+                Punto de Venta POS Rápido
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Cobro rápido en mostrador con soporte para lectores de código de barras, impresoras térmicas Bluetooth/USB y cálculo automático.
+              </p>
+              <span className="text-xs font-bold text-cyan-400 block pt-1">
+                Consultar detalles por WhatsApp →
+              </span>
+            </a>
+
+            {/* Feature 2 */}
+            <a
+              href={waLink('Hola, quiero más información sobre los Agentes de IA')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/60 hover:border-purple-400/40 rounded-2xl p-6 space-y-3 block transition-all group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 flex items-center justify-center">
+                <Bot size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition">
+                Agentes IA de Ventas
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Asistentes virtuales Gemini integrados que analizan tu negocio, generan sugerencias de marketing y atienden prospectos por WhatsApp.
+              </p>
+              <span className="text-xs font-bold text-purple-400 block pt-1">
+                Probar Inteligencia Artificial →
+              </span>
+            </a>
+
+            {/* Feature 3 */}
+            <a
+              href={waLink('Hola, quiero más información sobre Facturación CFDI 4.0')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/60 hover:border-emerald-400/40 rounded-2xl p-6 space-y-3 block transition-all group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <FileText size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition">
+                Facturación CFDI 4.0 SAT
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Emisión instantánea de facturas electrónicas timbradas ante el SAT. Descarga directa de archivos PDF y XML para clientes.
+              </p>
+              <span className="text-xs font-bold text-emerald-400 block pt-1">
+                Ver Módulo de Facturación →
+              </span>
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="bg-[#F8FAFC] border-t border-[#E2E8F0]">
-        <div className="max-w-6xl mx-auto px-6 py-24">
-          <div className="text-center mb-16">
-            <div className="inline-block mb-3 px-3 py-1 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] text-xs font-semibold uppercase tracking-widest">
-              Precios
-            </div>
-            <h2 className="text-4xl font-extrabold text-[#1F2937]">Planes para Cada Tipo de Negocio</h2>
-            <p className="mt-4 text-[#64748B] text-lg max-w-xl mx-auto">
-              Desde la tiendita hasta la empresa con varias sucursales. Todos incluyen soporte y actualizaciones.
+      {/* 🛡️ SECURITY & COMPLIANCE SECTION */}
+      <section id="security" className="py-20 bg-[#0F172A] border-b border-slate-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
+          
+          <div className="text-center max-w-2xl mx-auto space-y-3">
+            <span className="inline-block px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold uppercase tracking-widest">
+              Infraestructura & Certificaciones
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white">
+              Seguridad de Grado Bancario
+            </h2>
+            <p className="text-slate-400 text-xs sm:text-sm">
+              Tus datos, tus ventas y las transacciones de tus clientes respaldados por los estándares internacionales más rigurosos.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {plans.map((plan) => (
-              <div 
-                key={plan.name}
-                className={`card-hover rounded-3xl p-8 border flex flex-col ${
-                  plan.highlight 
-                    ? 'price-popular text-white border-[#3B82F6] shadow-xl transform md:-translate-y-4' 
-                    : 'bg-white border-[#E2E8F0] shadow-sm'
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="mb-4 px-3 py-1 bg-[#3B82F6] text-white text-xs font-bold rounded-full w-fit">
-                    MÁS POPULAR
-                  </div>
-                )}
-                <h3 className={`text-xl font-bold mb-2 ${plan.highlight ? 'text-white' : 'text-[#1F2937]'}`}>{plan.name}</h3>
-                <div className="mb-6">
-                  <span className={`text-4xl font-extrabold ${plan.highlight ? 'text-white' : 'text-[#1F2937]'}`}>{plan.price}</span>
-                  <span className={plan.highlight ? 'text-slate-300' : 'text-[#64748B]'}>/mes</span>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Card 1: PCI-DSS */}
+            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 flex items-center justify-center">
+                <ShieldCheck size={26} />
+              </div>
+              <h3 className="text-lg font-bold text-white">PCI-DSS v4.0 SAQ A</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Arquitectura de tokenización fuera de alcance. Cobros seguros mediante MercadoPago y Conekta sin almacenamiento de tarjetas (PAN/CVV).
+              </p>
+              <div className="pt-2 text-xs font-bold text-cyan-400 flex items-center gap-1">
+                <span>Protección Cero Fugas</span>
+              </div>
+            </div>
+
+            {/* Card 2: OWASP ASVS */}
+            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
+                <Shield size={26} />
+              </div>
+              <h3 className="text-lg font-bold text-white">OWASP ASVS Level 2</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Verificación continua de código fuente contra los 14 estándares de OWASP. Sanitización con DOMPurify y CI/CD defensivo.
+              </p>
+              <div className="pt-2 text-xs font-bold text-blue-400 flex items-center gap-1">
+                <span>Auditado y Sanitizado</span>
+              </div>
+            </div>
+
+            {/* Card 3: Multitenant RLS */}
+            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <Database size={26} />
+              </div>
+              <h3 className="text-lg font-bold text-white">Aislamiento Multitenant RLS</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Segregación estricta de base de datos a nivel PostgreSQL. Row Level Security impone que ningún comercio pueda acceder a información ajena.
+              </p>
+              <div className="pt-2 text-xs font-bold text-emerald-400 flex items-center gap-1">
+                <span>100% Criptográficamente Seguro</span>
+              </div>
+            </div>
+
+            {/* Card 4: Data Privacy */}
+            <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-6 space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center">
+                <Lock size={26} />
+              </div>
+              <h3 className="text-lg font-bold text-white">Privacidad LFPDPPP / GDPR</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Minimización de datos. CERO venta de información de clientes y protección rigurosa de datos personales conforme a la ley mexicana.
+              </p>
+              <Link to="/privacy" className="pt-2 text-xs font-bold text-indigo-400 flex items-center gap-1 hover:underline">
+                <span>Aviso de Privacidad →</span>
+              </Link>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 🌟 VIP & ENTERPRISE SUITE SECTION */}
+      <section id="vip" className="py-20 bg-slate-900/90 relative overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-3xl p-8 sm:p-12 border border-amber-500/30 shadow-2xl">
+            <div className="grid lg:grid-cols-12 gap-8 items-center">
+              
+              <div className="lg:col-span-7 space-y-5">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-widest">
+                  <Sparkles size={14} />
+                  <span>EDICIÓN VIP & ENTERPRISE DEDICADA</span>
                 </div>
-                {plan.name === 'Libre' && <p className="text-[#64748B] text-sm -mt-4 mb-6">para siempre</p>}
-                <ul className={`space-y-3 text-sm mb-8 flex-grow ${plan.highlight ? 'text-slate-200' : 'text-[#1F2937]'}`}>
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <Check size={16} className={plan.highlight ? 'text-blue-400' : 'text-green-500'} />
-                      {feature}
-                    </li>
-                  ))}
+
+                <h2 className="text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+                  Atención Consultiva Personalizada y Soluciones a la Medida
+                </h2>
+
+                <p className="text-slate-300 text-xs sm:text-sm font-normal leading-relaxed">
+                  No ofrecemos paquetes genéricos con tarjeta. En Reisbloc Retail trabajamos de la mano con dueños de negocios, boutiques y franquicias para ofrecer despliegues VIP personalizados.
+                </p>
+
+                <ul className="space-y-3 text-xs sm:text-sm text-slate-200">
+                  <li className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 flex items-center justify-center text-[10px] font-bold">✓</span>
+                    <span>Configuración de Marca y Dominio Personalizado (White Label Ready)</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 flex items-center justify-center text-[10px] font-bold">✓</span>
+                    <span>Tokens ilimitados de Agentes de Inteligencia Artificial Gemini</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 flex items-center justify-center text-[10px] font-bold">✓</span>
+                    <span>Integración de Facturación Fiscal CFDI 4.0 Ilimitada</span>
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 flex items-center justify-center text-[10px] font-bold">✓</span>
+                    <span>Soporte Técnico y Asesoría 24/7 por Canal Dedicado de WhatsApp</span>
+                  </li>
                 </ul>
-                <a 
-                  href={plan.link}
+              </div>
+
+              {/* VIP Direct Card */}
+              <div className="lg:col-span-5 bg-[#0F172A] rounded-2xl p-6 sm:p-8 border border-amber-500/30 space-y-5 text-center shadow-xl">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto text-2xl font-bold">
+                  💎
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-bold text-white">¿Listo para escalar tu tienda?</h3>
+                  <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                    Habla directamente con nuestro equipo fundador a través de WhatsApp para recibir una propuesta VIP adaptada al tamaño de tu negocio.
+                  </p>
+                </div>
+
+                <a
+                  href={waLink('Hola, quiero cotizar la versión VIP / Enterprise de Reisbloc Retail')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`w-full py-4 rounded-full font-bold text-center transition-all ${
-                    plan.highlight 
-                      ? 'btn-wa text-white' 
-                      : 'btn-dark text-white'
-                  }`}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 transition-all hover:scale-105"
                 >
-                  {plan.buttonText}
+                  <MessageCircle size={18} />
+                  <span>Solicitar Cotización VIP</span>
                 </a>
+
+                <p className="text-[11px] text-slate-500">
+                  Respuesta promedio en menos de 15 minutos en horario comercial.
+                </p>
               </div>
-            ))}
+
+            </div>
           </div>
-          <div className="text-center mt-12">
-            <p className="text-[#64748B] text-sm">
-              Todos los precios son en MXN. Pago mensual con tarjeta o transferencia.
+        </div>
+      </section>
+
+      {/* 🐞 SUCCESS STORY: MODA MIEL MX */}
+      <section id="custom-brands" className="py-16 bg-[#0F172A] border-t border-slate-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="px-3 py-1 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-bold uppercase tracking-widest">
+              Caso de Éxito & Personalización de Marca
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              Potenciando Marcas de Moda & Retail
+            </h2>
+            <p className="text-slate-400 text-xs sm:text-sm">
+              Conoce cómo marcas como <strong>Moda Miel MX</strong> operan su canal e-commerce de mayoreo por paquete y su venta en punto de venta con Reisbloc.
             </p>
           </div>
+
+          <div className="bg-slate-800/40 border border-pink-500/30 rounded-2xl p-6 sm:p-8 grid md:grid-cols-12 gap-6 items-center">
+            <div className="md:col-span-8 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-xl">
+                  🐝
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Moda Miel MX</h3>
+                  <p className="text-[10px] text-pink-400 font-bold uppercase tracking-wider">Tienda de Ropa · Mayoreo & Menudeo</p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Personalización completa con catálogo e-commerce en tiempo real de lotes por paquete, canal directo de pedidos hacia WhatsApp e integración total con la caja registradora POS de su local físico.
+              </p>
+            </div>
+            <div className="md:col-span-4 text-center md:text-right">
+              <a
+                href="https://modamielmx.reisbloc.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#E62E6B] hover:bg-pink-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md hover:scale-105"
+              >
+                <span>Ver Experiencia Moda Miel</span>
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
-            <div className="text-4xl font-extrabold text-[#1F2937]">99%</div>
-            <div className="text-[#64748B] text-sm mt-1">Uptime garantizado</div>
-          </div>
-          <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
-            <div className="text-4xl font-extrabold text-[#1F2937]">24/7</div>
-            <div className="text-[#64748B] text-sm mt-1">Disponible siempre</div>
-          </div>
-          <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
-            <div className="text-4xl font-extrabold text-[#1F2937]">&lt;2s</div>
-            <div className="text-[#64748B] text-sm mt-1">Tiempo de respuesta</div>
-          </div>
-          <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
-            <div className="text-4xl font-extrabold text-[#1F2937]">MX</div>
-            <div className="text-[#64748B] text-sm mt-1">Hecho en México 🇲🇽</div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Final */}
-      <section className="hero-gradient text-white">
-        <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-          <h2 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
-            ¿Listo para digitalizar<br/>
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">tu negocio?</span>
-          </h2>
-          <p className="text-slate-300 text-lg mb-10 max-w-xl mx-auto">
-            Agenda una demo personalizada para ver cómo {BRANDING.appWithBrand} puede ayudarte a vender más y mejor.
-          </p>
-          <a 
-            href={`https://wa.me/5215665848231?text=Hola%2C%20quiero%20una%20demo%20de%20${encodeURIComponent(BRANDING.appWithBrand)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-wa text-white font-bold px-10 py-5 rounded-full shadow-2xl text-xl inline-flex items-center gap-3 transition-all hover:scale-105"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-            </svg>
-            Solicitar Demo por WhatsApp
-          </a>
-          <p className="mt-6 text-sm text-slate-400">
-            También disponible en <a href="mailto:daniel@megamayoreo.mx" className="underline hover:text-white">daniel@megamayoreo.mx</a>
-          </p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-[#1F2937] text-slate-400 py-10">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* FOOTER */}
+      <footer className="bg-slate-950 text-slate-400 py-10 border-t border-slate-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-7 h-7 rounded object-cover" />
+            <span className="font-bold text-base text-white">
+              Reisbloc <span className="font-light text-cyan-400">Retail</span>
+            </span>
           </div>
-          <p className="text-xs text-center">© 2026 {BRANDING.whiteLabelName}. {BRANDING.poweredBy}.</p>
-          <div className="flex gap-4 text-xs">
-            <a href="#features" className="hover:text-white transition">Características</a>
-            <a href="#pricing" className="hover:text-white transition">Precios</a>
-            <a href="https://wa.me/5215665848231" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Contacto</a>
-            <a href={BRANDING.whiteLabelName === 'Moda Miel MX' ? '/modamielmx' : '/privacy'} className="hover:text-white transition">Privacidad</a>
-            <a href={BRANDING.whiteLabelName === 'Moda Miel MX' ? '/modamielmx' : '/terms'} className="hover:text-white transition">Términos</a>
+
+          <p className="text-[11px] text-center text-slate-500">
+            © 2026 Reisbloc Store. Todos los derechos reservados. Infraestructura Segura PCI-DSS v4.0 SAQ A & OWASP ASVS L2.
+          </p>
+
+          <div className="flex items-center gap-5 text-xs font-medium">
+            <Link to="/terms" className="hover:text-cyan-400 transition">Términos</Link>
+            <Link to="/privacy" className="hover:text-cyan-400 transition">Privacidad</Link>
+            <a href="https://wa.me/5215665848231" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+              Contacto WhatsApp
+            </a>
           </div>
         </div>
       </footer>
     </div>
-  );
-};
+  )
+}
 
-export default LandingPage;
