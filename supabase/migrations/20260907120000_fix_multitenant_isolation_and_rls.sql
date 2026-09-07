@@ -41,6 +41,10 @@ DROP POLICY IF EXISTS "Manager can view sales and billing" ON "public"."sales";
 DROP POLICY IF EXISTS "Managers_view_org_metrics" ON "public"."sales";
 DROP POLICY IF EXISTS "Ventas: Registrar solo autenticados" ON "public"."sales";
 DROP POLICY IF EXISTS "Ventas: Ver solo misma org" ON "public"."sales";
+DROP POLICY IF EXISTS "sales_org_select" ON "public"."sales";
+DROP POLICY IF EXISTS "sales_org_insert" ON "public"."sales";
+DROP POLICY IF EXISTS "sales_org_update" ON "public"."sales";
+DROP POLICY IF EXISTS "sales_org_delete" ON "public"."sales";
 
 ALTER TABLE "public"."sales" ENABLE ROW LEVEL SECURITY;
 
@@ -67,6 +71,9 @@ CREATE POLICY "sales_org_delete" ON "public"."sales"
 DROP POLICY IF EXISTS "Enable insert for authenticated users" ON "public"."closings";
 DROP POLICY IF EXISTS "Enable read access for authenticated users" ON "public"."closings";
 DROP POLICY IF EXISTS "Acceso por organizacion" ON "public"."closings";
+DROP POLICY IF EXISTS "closings_org_select" ON "public"."closings";
+DROP POLICY IF EXISTS "closings_org_insert" ON "public"."closings";
+DROP POLICY IF EXISTS "closings_org_update" ON "public"."closings";
 
 ALTER TABLE "public"."closings" ENABLE ROW LEVEL SECURITY;
 
@@ -95,6 +102,11 @@ DROP POLICY IF EXISTS "Devices_Zen_Policy" ON "public"."devices";
 DROP POLICY IF EXISTS "Dispositivos: Registro inicial" ON "public"."devices";
 DROP POLICY IF EXISTS "Org: Gestionar dispositivos" ON "public"."devices";
 DROP POLICY IF EXISTS "Org: Ver dispositivos" ON "public"."devices";
+DROP POLICY IF EXISTS "devices_insert_policy" ON "public"."devices";
+DROP POLICY IF EXISTS "devices_org_select" ON "public"."devices";
+DROP POLICY IF EXISTS "devices_org_insert" ON "public"."devices";
+DROP POLICY IF EXISTS "devices_org_update" ON "public"."devices";
+DROP POLICY IF EXISTS "devices_org_delete" ON "public"."devices";
 
 ALTER TABLE "public"."devices" ENABLE ROW LEVEL SECURITY;
 
@@ -126,6 +138,11 @@ DROP POLICY IF EXISTS "Lectura pública de productos" ON "public"."products";
 DROP POLICY IF EXISTS "Manager can manage products" ON "public"."products";
 DROP POLICY IF EXISTS "Org: Gestionar productos" ON "public"."products";
 DROP POLICY IF EXISTS "Org: Ver productos" ON "public"."products";
+DROP POLICY IF EXISTS "products_org_select" ON "public"."products";
+DROP POLICY IF EXISTS "products_public_store_select" ON "public"."products";
+DROP POLICY IF EXISTS "products_org_insert" ON "public"."products";
+DROP POLICY IF EXISTS "products_org_update" ON "public"."products";
+DROP POLICY IF EXISTS "products_org_delete" ON "public"."products";
 
 ALTER TABLE "public"."products" ENABLE ROW LEVEL SECURITY;
 
@@ -200,3 +217,51 @@ CREATE POLICY "ecosystem_events_store_insert" ON "public"."ecosystem_events"
             WHERE s.organization_id = "public"."get_my_org_id"()
         )
     );
+
+-- -----------------------------------------------------------------------------
+-- 8. ASEGURAR WEBHOOK_LOGS, REFERRAL_CREDITS Y REFERRALS
+-- -----------------------------------------------------------------------------
+-- Webhook logs: solo administradores autenticados pueden consultar logs del sistema
+DROP POLICY IF EXISTS "Users can view webhook logs" ON "public"."webhook_logs";
+DROP POLICY IF EXISTS "webhook_logs_admin_select" ON "public"."webhook_logs";
+CREATE POLICY "webhook_logs_admin_select" ON "public"."webhook_logs"
+    FOR SELECT TO "authenticated"
+    USING (EXISTS (SELECT 1 FROM public.users u WHERE u.id = auth.uid() AND u.role = 'admin'));
+
+-- Referral credits: inserción reservada exclusivamente a service_role
+DROP POLICY IF EXISTS "Service can insert credits" ON "public"."referral_credits";
+DROP POLICY IF EXISTS "referral_credits_service_insert" ON "public"."referral_credits";
+CREATE POLICY "referral_credits_service_insert" ON "public"."referral_credits"
+    FOR INSERT TO "service_role"
+    WITH CHECK (true);
+
+-- Referrals: actualización reservada exclusivamente a service_role
+DROP POLICY IF EXISTS "Service can update referrals" ON "public"."referrals";
+DROP POLICY IF EXISTS "referrals_service_update" ON "public"."referrals";
+CREATE POLICY "referrals_service_update" ON "public"."referrals"
+    FOR UPDATE TO "service_role"
+    USING (true)
+    WITH CHECK (true);
+
+-- -----------------------------------------------------------------------------
+-- 9. ELIMINACIÓN DE ÍNDICES REDUNDANTES / DUPLICADOS
+-- -----------------------------------------------------------------------------
+DROP INDEX IF EXISTS public.org_member_org_user_uidx;
+
+-- -----------------------------------------------------------------------------
+-- 10. REVOCAR EJECUCIÓN PÚBLICA DE TRIGGERS/FUNCIONES INTERNAS (PostgREST RPC)
+-- -----------------------------------------------------------------------------
+REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.sync_user_role_to_auth() FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.universal_audit_trigger() FROM public, anon, authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 11. ÍNDICES DE RENDIMIENTO B-TREE PARA CONSULTAS MULTI-TENANT DE ALTO TRÁFICO
+-- -----------------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_sales_org_created ON public.sales (organization_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_org_sku ON public.products (organization_id, sku);
+CREATE INDEX IF NOT EXISTS idx_closings_org_created ON public.closings (organization_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_clients_org ON public.clients (organization_id);
+CREATE INDEX IF NOT EXISTS idx_devices_org ON public.devices (organization_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_org_created ON public.audit_logs (organization_id, created_at DESC);
+
