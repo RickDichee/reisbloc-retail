@@ -56,8 +56,14 @@ export function AuthCallback() {
           const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
           const mmOrgId = mmOrg?.id
 
-          let isAuthorized = false
-          if (existingUser?.organization_id) {
+          const isSuperAdmin = 
+            user.email === 'rick.playacar@gmail.com' || 
+            user.email === 'airproject360@gmail.com' ||
+            (existingUser as any)?.role === 'superadmin' ||
+            (existingUser as any)?.role === 'owner'
+
+          let isAuthorized = isSuperAdmin
+          if (!isAuthorized && existingUser?.organization_id) {
             if (mmOrgId) {
               isAuthorized = existingUser.organization_id === mmOrgId
             } else {

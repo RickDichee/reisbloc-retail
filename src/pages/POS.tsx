@@ -172,14 +172,12 @@ export default function POS() {
   // 1. Obtener cajas desde settings
   const registers = useMemo(() => {
     const stored = organizationSettings?.cashRegisters
-    if (stored && typeof stored === 'object') {
+    if (stored && typeof stored === 'object' && Object.keys(stored).length > 0) {
       return stored as Record<string, string>
     }
     return {
       "1": "Caja 1",
-      "2": "Caja 2",
-      "3": "Caja 3",
-      "4": "Caja 4"
+      "2": "Caja 2"
     }
   }, [organizationSettings])
 
@@ -1147,162 +1145,210 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         </div>
 
         {/* Unified Header with Search and Accounts */}
-        <div className={`bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center shrink-0 ${isHeaderExpanded ? 'flex animate-scaleIn' : 'hidden md:flex'}`}>
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shrink-0 flex-wrap">
-            <LayoutGrid size={18} className="text-slate-400 ml-2" />
-            {tableButtons.map(num => {
-              const isEditing = editingRegisterId === num
-              const isSelected = tableNumber === num
-              const registerName = registers[num.toString()] || `Caja ${num}`
-              const assignedUserId = registerAssignments[num.toString()]
-              const assignedUser = users.find(u => u.id === assignedUserId)
-              const assignedName = assignedUser ? (assignedUser.username || assignedUser.email?.split('@')[0]) : ''
+        {/* Unified Header with Search and Accounts - 2 Tier Optimized for 4:3 & 16:9 */}
+        <div className={`bg-white p-3 sm:p-4 rounded-2xl shadow-xs border border-slate-200 flex flex-col gap-3 shrink-0 ${isHeaderExpanded ? 'flex animate-scaleIn' : 'hidden md:flex'}`}>
+          {/* Fila 1: Control de Cajas & Acciones Rápidas */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
+            {/* Selector de Cajas */}
+            <div className="flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-xl border border-slate-200/80 flex-wrap">
+              <div className="flex items-center gap-1.5 pl-1.5 pr-2 text-slate-500">
+                <LayoutGrid size={16} className="text-slate-400" />
+                <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline text-slate-400">Cajas:</span>
+              </div>
+              {tableButtons.map(num => {
+                const isEditing = editingRegisterId === num
+                const isSelected = tableNumber === num
+                const registerName = registers[num.toString()] || `Caja ${num}`
+                const assignedUserId = registerAssignments[num.toString()]
+                const assignedUser = users.find(u => u.id === assignedUserId)
+                const assignedName = assignedUser ? (assignedUser.username || assignedUser.email?.split('@')[0]) : ''
 
-              return (
-                <div key={num} className="flex items-center">
-                  {isEditing ? (
-                    <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-300">
-                      <input
-                        type="text"
-                        value={editingRegisterName}
-                        onChange={(e) => setEditingRegisterName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveRegisterName(num)
-                          else if (e.key === 'Escape') setEditingRegisterId(null)
-                        }}
-                        className="px-1.5 py-0.5 text-xs font-bold outline-none text-slate-900 w-24 border-r border-slate-200"
-                        placeholder="Nombre caja"
-                        autoFocus
-                      />
-                      <select
-                        value={assignedUserId || ''}
-                        onChange={async (e) => {
-                          const val = e.target.value
-                          const newAssignments = {
-                            ...registerAssignments,
-                            [num.toString()]: val
-                          }
-                          const updatedSettings = {
-                            ...(organizationSettings || {}),
-                            registerAssignments: newAssignments
-                          }
-                          setOrganizationSettings(updatedSettings)
-                          if (currentUser?.organizationId) {
-                            try {
-                              // usando supabase importado estáticamente
-                              await supabase
-                                .from('organizations')
-                                .update({ settings: updatedSettings })
-                                .eq('id', currentUser.organizationId)
-
-                              // Actualizar currentUser.organizationSettings
-                              useAppStore.setState({
-                                currentUser: {
-                                  ...currentUser,
-                                  organizationSettings: updatedSettings
-                                }
-                              })
-                            } catch (err) {
-                              console.error('Error saving assignments:', err)
+                return (
+                  <div key={num} className="flex items-center">
+                    {isEditing ? (
+                      <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-300 shadow-xs">
+                        <input
+                          type="text"
+                          value={editingRegisterName}
+                          onChange={(e) => setEditingRegisterName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveRegisterName(num)
+                            else if (e.key === 'Escape') setEditingRegisterId(null)
+                          }}
+                          className="px-1.5 py-0.5 text-xs font-bold outline-none text-slate-900 w-20 sm:w-24 border-r border-slate-200"
+                          placeholder="Nombre caja"
+                          autoFocus
+                        />
+                        <select
+                          value={assignedUserId || ''}
+                          onChange={async (e) => {
+                            const val = e.target.value
+                            const newAssignments = {
+                              ...registerAssignments,
+                              [num.toString()]: val
                             }
+                            const updatedSettings = {
+                              ...(organizationSettings || {}),
+                              registerAssignments: newAssignments
+                            }
+                            setOrganizationSettings(updatedSettings)
+                            if (currentUser?.organizationId) {
+                              try {
+                                await supabase
+                                  .from('organizations')
+                                  .update({ settings: updatedSettings })
+                                  .eq('id', currentUser.organizationId)
+
+                                useAppStore.setState({
+                                  currentUser: {
+                                    ...currentUser,
+                                    organizationSettings: updatedSettings
+                                  }
+                                })
+                              } catch (err) {
+                                console.error('Error saving assignments:', err)
+                              }
+                            }
+                          }}
+                          className="text-[10px] font-bold bg-transparent outline-none text-slate-700 max-w-20 sm:max-w-24 cursor-pointer"
+                        >
+                          <option value="">-- Libre --</option>
+                          {users.map(u => (
+                            <option key={u.id} value={u.id}>{u.username || u.email?.split('@')[0]}</option>
+                          ))}
+                        </select>
+                        <button 
+                          onClick={() => handleSaveRegisterName(num)}
+                          className="text-[10px] bg-slate-900 text-white px-1.5 py-0.5 rounded font-bold hover:bg-slate-800 shrink-0"
+                        >
+                          OK
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setCurrentTicket(num)}
+                        onDoubleClick={() => {
+                          if (currentUser?.role === 'admin') {
+                            setEditingRegisterId(num)
+                            setEditingRegisterName(registerName)
                           }
                         }}
-                        className="text-[10px] font-bold bg-transparent outline-none text-slate-700 max-w-24 cursor-pointer"
+                        className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-all flex items-center gap-1.5 ${
+                          isSelected 
+                            ? 'bg-white text-slate-950 shadow-xs border border-slate-200 ring-2 ring-emerald-500/20' 
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                        }`}
+                        title={currentUser?.role === 'admin' ? "Doble clic para editar caja/cajero" : undefined}
                       >
-                        <option value="">-- Sin asignar --</option>
-                        {users.map(u => (
-                          <option key={u.id} value={u.id}>{u.username || u.email?.split('@')[0]}</option>
-                        ))}
-                      </select>
-                      <button 
-                        onClick={() => handleSaveRegisterName(num)}
-                        className="text-[10px] bg-slate-900 text-white px-1.5 py-0.5 rounded font-bold hover:bg-slate-800 shrink-0"
-                      >
-                        OK
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />}
+                        <span>
+                          {registerName}
+                          {assignedName ? ` (${assignedName})` : ''}
+                        </span>
+                        {isSelected && currentUser?.role === 'admin' && (
+                          <div className="flex items-center gap-1 ml-1 shrink-0">
+                            <span 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingRegisterId(num)
+                                setEditingRegisterName(registerName)
+                              }}
+                              className="opacity-50 hover:opacity-100 cursor-pointer p-0.5 hover:bg-slate-100 rounded"
+                              title="Editar Caja"
+                            >
+                              <Edit2 size={11} />
+                            </span>
+                            <span 
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                if (confirm(`¿Estás seguro de que deseas eliminar la ${registerName}? Se perderán los borradores de esta caja.`)) {
+                                  await handleDeleteRegister(num)
+                                }
+                              }}
+                              className="opacity-50 hover:opacity-100 text-red-500 cursor-pointer font-bold p-0.5 hover:bg-red-50 rounded"
+                              title="Eliminar Caja"
+                            >
+                              <X size={11} />
+                            </span>
+                          </div>
+                        )}
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setCurrentTicket(num)}
-                      onDoubleClick={() => {
-                        if (currentUser?.role === 'admin') {
-                          setEditingRegisterId(num)
-                          setEditingRegisterName(registerName)
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-lg text-xs font-black uppercase transition-all flex items-center gap-1 ${isSelected ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                      title={currentUser?.role === 'admin' ? "Doble clic para editar caja/cajero" : undefined}
-                    >
-                      <span>{registerName}{assignedName ? ` (${assignedName})` : ` (${assignedUserId ? 'Cargando...' : 'Libre'})`}</span>
-                      {isSelected && currentUser?.role === 'admin' && (
-                        <div className="flex items-center gap-1 ml-1 shrink-0">
-                          <span 
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setEditingRegisterId(num)
-                              setEditingRegisterName(registerName)
-                            }}
-                            className="opacity-50 hover:opacity-100 cursor-pointer"
-                            title="Editar Caja"
-                          >
-                            <Edit2 size={12} />
-                          </span>
-                          <span 
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              if (confirm(`¿Estás seguro de que deseas eliminar la ${registerName}? Se perderán los borradores de esta caja.`)) {
-                                await handleDeleteRegister(num)
-                              }
-                            }}
-                            className="opacity-50 hover:opacity-100 text-red-500 cursor-pointer font-bold"
-                            title="Eliminar Caja"
-                          >
-                            <X size={12} />
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  )}
+                    )}
+                  </div>
+                )
+              })}
+              {currentUser?.role === 'admin' && (
+                <button
+                  onClick={handleAddRegister}
+                  className="p-1.5 hover:bg-white text-slate-600 hover:text-slate-900 rounded-lg transition-all flex items-center justify-center border border-dashed border-slate-300 hover:border-slate-400"
+                  title="Agregar Nueva Caja"
+                >
+                  <Plus size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* Acciones Rápidas & Offline */}
+            <div className="flex items-center gap-2 shrink-0">
+              {!navigator.onLine && (
+                <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl text-amber-800 text-[11px] font-bold">
+                  <AlertTriangle size={14} className="text-amber-600 animate-pulse shrink-0" />
+                  <span className="hidden sm:inline">WiFi Local:</span>
+                  <input
+                    type="text"
+                    placeholder="IP Servidor"
+                    value={organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip') || ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      localStorage.setItem('local_sync_server_ip', val)
+                      setOrganizationSettings({
+                        ...(organizationSettings || {}),
+                        localSyncServerIp: val
+                      })
+                    }}
+                    className="px-1.5 py-0.5 bg-white border border-amber-300 rounded text-slate-900 w-32 font-normal text-xs"
+                  />
                 </div>
-              )
-            })}
-            <button
-              onClick={handleAddRegister}
-              className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-all flex items-center justify-center border border-dashed border-slate-400"
-              title="Agregar Nueva Caja"
-            >
-              <Plus size={14} />
-            </button>
+              )}
+
+              <button
+                onClick={() => setShowManualItemModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-xs transition-all active:scale-95"
+                title="Agregar producto manual no catalogado"
+              >
+                <PlusCircle size={15} />
+                <span className="hidden sm:inline">Item Manual</span>
+              </button>
+
+              <button
+                onClick={() => setShowManualAdjustModal(true)}
+                className="p-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl transition-all shadow-xs active:scale-95"
+                title="Ajuste Manual de Ticket (Piezas y Precios)"
+              >
+                <SlidersHorizontal size={16} />
+              </button>
+
+              <button
+                onClick={() => setShowPendingOrdersModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl font-black text-xs transition-all shadow-xs active:scale-95 border border-amber-300"
+                title="Ver Pedidos Pendientes y Apartados con Stock Reservado"
+              >
+                <ShoppingBag size={15} />
+                <span className="uppercase text-[11px] hidden sm:inline">Pedidos</span>
+                <span className="bg-slate-950 text-amber-300 font-mono text-[10px] px-1.5 py-0.5 rounded-full font-black">
+                  {activeOrdersList.length}
+                </span>
+              </button>
+            </div>
           </div>
 
-          {!navigator.onLine && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl text-amber-800 text-xs font-bold">
-              <AlertTriangle size={16} className="text-amber-600 animate-pulse shrink-0" />
-              <span className="whitespace-nowrap">Local WiFi Mode:</span>
-              <input
-                type="text"
-                placeholder="IP Servidor (ej: http://192.168.1.100:3001)"
-                value={organizationSettings?.localSyncServerIp || localStorage.getItem('local_sync_server_ip') || ''}
-                onChange={(e) => {
-                  const val = e.target.value
-                  localStorage.setItem('local_sync_server_ip', val)
-                  setOrganizationSettings({
-                    ...(organizationSettings || {}),
-                    localSyncServerIp: val
-                  })
-                }}
-                className="px-2 py-1 bg-white border border-amber-300 rounded outline-none text-slate-900 w-44 font-normal"
-              />
-            </div>
-          )}
-
-          {/* Barra de Búsqueda Principal Amplificada y Visible */}
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-600" />
+          {/* Fila 2: Barra de Búsqueda Principal 100% Full-Width */}
+          <div className="relative w-full">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-600" />
             <input
               type="text"
-              className="w-full pl-11 pr-10 py-3.5 border-2 border-slate-300 rounded-2xl bg-white text-base font-extrabold text-slate-900 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition-all shadow-sm outline-none placeholder:text-slate-400 placeholder:font-bold"
-              placeholder="🔍 ESCANEAR CÓDIGO O BUSCAR POR SKU / NOMBRE..."
+              className="w-full pl-12 pr-12 py-3 sm:py-3.5 border-2 border-slate-300 rounded-2xl bg-white text-sm sm:text-base font-extrabold text-slate-900 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 transition-all shadow-xs outline-none placeholder:text-slate-400 placeholder:font-bold"
+              placeholder="🔍 ESCANEAR CÓDIGO DE BARRAS O BUSCAR POR PRODUCTO / SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleSearchKeyDown}
@@ -1311,42 +1357,13 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
                 title="Limpiar búsqueda"
               >
                 <X size={18} />
               </button>
             )}
           </div>
-
-
-          <button
-            onClick={() => setShowManualItemModal(true)}
-            className="hidden md:flex p-3 bg-slate-900 text-white rounded-xl shadow-md hover:scale-105 transition-all"
-            title="Agregar producto manual"
-          >
-            <PlusCircle size={22} />
-          </button>
-
-          <button
-            onClick={() => setShowManualAdjustModal(true)}
-            className="hidden md:flex p-3 bg-white text-slate-500 hover:text-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl transition-all shrink-0 active:scale-95 shadow-sm"
-            title="Ajuste Manual de Ticket (Piezas y Precios)"
-          >
-            <SlidersHorizontal size={20} />
-          </button>
-
-          <button
-            onClick={() => setShowPendingOrdersModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-amber-400 text-slate-950 rounded-xl font-black text-xs hover:bg-amber-500 transition-all shrink-0 shadow-md shadow-amber-200 active:scale-95 border border-amber-300"
-            title="Ver Pedidos Pendientes y Apartados con Stock Reservado"
-          >
-            <ShoppingBag size={18} />
-            <span className="hidden sm:inline uppercase">Pedidos</span>
-            <span className="bg-slate-950 text-amber-300 font-mono text-[10.5px] px-1.5 py-0.5 rounded-full font-black">
-              {activeOrdersList.length}
-            </span>
-          </button>
         </div>
 
         {showHardwareConfig && (

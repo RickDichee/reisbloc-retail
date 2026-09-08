@@ -76,12 +76,18 @@ function AppLayout() {
         const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
         const mmOrgId = mmOrg?.id
 
+        const isSuperAdmin = 
+          currentUser.role === 'superadmin' || 
+          currentUser.role === 'owner' ||
+          currentUser.email === 'rick.playacar@gmail.com' ||
+          currentUser.email === 'airproject360@gmail.com'
+
         const isUserMM = 
           (mmOrgId && currentUser.organizationId === mmOrgId) ||
           checkIsModaMiel('', '', '', currentUser.organizationId) ||
           checkIsModaMiel('', '', '', (currentUser as any).businessName)
 
-        if (!isUserMM) {
+        if (!isUserMM && !isSuperAdmin) {
           console.warn('⛔ [Tenant Isolation] Usuario de otra empresa detectado en el subdominio de Moda Miel MX. Denegando acceso.')
           await supabase.auth.signOut()
           localStorage.removeItem('reisbloc_auth_token')

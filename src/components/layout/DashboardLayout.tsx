@@ -38,7 +38,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isMini, setIsMini] = useState(() => {
         const saved = localStorage.getItem('sidebar_mini');
-        return saved === 'true';
+        if (saved !== null) return saved === 'true';
+        return typeof window !== 'undefined' ? window.innerWidth < 1280 : false;
     });
 
     const toggleMini = () => {
