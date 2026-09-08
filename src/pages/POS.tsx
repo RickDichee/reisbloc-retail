@@ -475,8 +475,9 @@ export default function POS() {
     supabaseService.getActiveOrders().then(setActiveOrdersList).catch(console.error)
 
     const orgId = currentUser?.organizationId || supabaseService.getCurrentOrgId()
+    const channelName = `pos-realtime-${orgId || 'public'}-${Date.now()}`
     const syncChannel = supabase
-      .channel('pos-realtime-sync-channel')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -795,6 +796,7 @@ export default function POS() {
         notes: clientInfo,
         status: 'pending_surtir',
         createdBy: currentUser.id,
+        organizationId: currentUser.organizationId,
         paidAmount: 0,
         pendingBalance: currentTotal,
         paymentStatus: 'unpaid',
@@ -845,6 +847,7 @@ export default function POS() {
         notes: clientInfo,
         status: 'pending_surtir',
         createdBy: currentUser.id,
+        organizationId: currentUser.organizationId,
         paidAmount: 0,
         pendingBalance: currentTotal,
         paymentStatus: 'unpaid',

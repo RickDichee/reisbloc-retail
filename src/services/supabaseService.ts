@@ -44,7 +44,7 @@ class SupabaseService {
   }
 
   // Helper para obtener el ID de organización actual
-  private getCurrentOrgId(): string {
+  public getCurrentOrgId(): string {
     // 1. Intentar obtener del store global en memoria (siempre fresco)
     try {
       const storeState = useAppStore.getState()
@@ -58,10 +58,21 @@ class SupabaseService {
     if (token && token.organizationId) {
       return token.organizationId
     }
+
+    // 3. Fallback directo a localStorage
+    try {
+      const appStoreRaw = localStorage.getItem('app-store')
+      if (appStoreRaw) {
+        const parsed = JSON.parse(appStoreRaw)
+        if (parsed?.state?.currentUser?.organizationId) {
+          return parsed.state.currentUser.organizationId
+        }
+      }
+      const directOrg = localStorage.getItem('current_org_id')
+      if (directOrg) return directOrg
+    } catch (e) {}
+
     logger.warn('supabase', '⚠️ No organization ID found in token or store')
-    // Fallback: Si no hay token (raro en operaciones autenticadas), intentar obtener de sesión
-    // Por ahora retornamos string vacío que causará error SQL si es obligatorio, 
-    // lo cual es correcto para seguridad.
     return ''
   }
 
@@ -711,7 +722,10 @@ class SupabaseService {
 
   private normalizeOrderStatus(status: any): string | undefined {
     if (!status) return undefined
-    const allowed = ['pending', 'sent', 'preparing', 'ready', 'served', 'completed', 'cancelled', 'paid', 'open']
+    const allowed = [
+      'pending', 'sent', 'preparing', 'ready', 'served', 'completed', 'cancelled', 'paid', 'open',
+      'apartado', 'pending_surtir', 'listo_entrega', 'pendiente_entrega', 'entregado'
+    ]
     return allowed.includes(status) ? status : 'pending'
   }
 
@@ -724,12 +738,14 @@ class SupabaseService {
     }))
   }
 
-  private buildOrderPayload(order: Partial<Order> & Record<string, any>) {
+  private buildOrderPayload(order: Partial<Order> & Record<string, any>, isUpdate: boolean = false) {
     const payload: any = { ...order }
 
-    // Table number para tienda/retail por defecto 1 si es <= 0 o indefinido
-    const rawTableNum = Number(order.tableNumber)
-    payload.table_number = (!isNaN(rawTableNum) && rawTableNum > 0) ? rawTableNum : 1
+    // En updates parciales, solo asignar table_number si viene especificado
+    if ('tableNumber' in order || !isUpdate) {
+      const rawTableNum = Number(order.tableNumber)
+      payload.table_number = (!isNaN(rawTableNum) && rawTableNum > 0) ? rawTableNum : 1
+    }
 
     if ('waiterId' in order) payload.waiter_id = (order as any).waiterId
     
@@ -767,8 +783,13 @@ class SupabaseService {
       ? payload.items.reduce((sum: number, item: any) => sum + (item.unitPrice || 0) * (item.quantity || 0), 0)
       : 0
 
-    if (!('subtotal' in payload)) payload.subtotal = (order as any).subtotal ?? calculatedSubtotal
-    if (!('total' in payload)) payload.total = (order as any).total ?? (payload.subtotal ?? calculatedSubtotal) + ((order as any).tipAmount ?? 0)
+    if (!isUpdate) {
+      if (!('subtotal' in payload)) payload.subtotal = (order as any).subtotal ?? calculatedSubtotal
+      if (!('total' in payload)) payload.total = (order as any).total ?? (payload.subtotal ?? calculatedSubtotal) + ((order as any).tipAmount ?? 0)
+    } else {
+      if ('subtotal' in order) payload.subtotal = order.subtotal
+      if ('total' in order) payload.total = order.total
+    }
 
     delete payload.tableNumber
     delete payload.waiterId
@@ -854,7 +875,7 @@ class SupabaseService {
           const { data, error } = await supabase.from('orders').insert([payload]).select('id').single()
           if (!error && data) {
             const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
-            const updated = existing.map((o: any) => o.id === order.id ? { ...o, id: data.id } : o)
+            const updated = existing.map((o: any) => o.id === order.id ? { ...o, id: data.id, organizationId: currentOrgId } : o)
             localStorage.setItem('local_pending_orders', JSON.stringify(updated))
             logger.info('supabase', `⚡ Pedido local #${order.id} sincronizado exitosamente a Supabase remoto como #${data.id}`)
           } else if (error) {
@@ -887,9 +908,10 @@ class SupabaseService {
 
     return this.withRetry(async () => {
       logger.info('supabase', '🔍 Getting active orders...')
+      const currentOrgId = this.getCurrentOrgId()
       const { data, error } = await withOrg(
         supabase.from('orders').select('*'),
-        this.getCurrentOrgId()
+        currentOrgId
       )
         .in('status', ['sent', 'preparing', 'ready', 'served', 'pending', 'apartado', 'pending_surtir', 'listo_entrega', 'pendiente_entrega', 'entregado'])
         .order('created_at', { ascending: false })
@@ -900,14 +922,17 @@ class SupabaseService {
         createdAt: o.created_at || o.createdAt || new Date()
       }))
 
-      // Merge con órdenes respaldadas en caché local (para garantizar 0 pérdida por RLS)
+      // Merge con órdenes respaldadas en caché local (filtradas estrictamente por organización)
       let localOrders: any[] = []
       try {
         localOrders = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
       } catch (e) {}
 
       const remoteIds = new Set(normalizedRemote.map(o => o.id))
-      const validLocal = localOrders.filter(l => !remoteIds.has(l.id))
+      const validLocal = localOrders.filter(l => 
+        !remoteIds.has(l.id) && 
+        (!l.organizationId || !currentOrgId || l.organizationId === currentOrgId)
+      )
 
       const allOrders = [...validLocal, ...normalizedRemote]
       logger.info('supabase', `✅ Found ${allOrders.length} active pending/apartado orders`)
@@ -915,7 +940,9 @@ class SupabaseService {
     }).catch(error => {
       logger.error('supabase', 'Error getting active orders', error as any)
       try {
-        return JSON.parse(localStorage.getItem('local_pending_orders') || '[]') as Order[]
+        const currentOrgId = this.getCurrentOrgId()
+        const local = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+        return local.filter((l: any) => !l.organizationId || !currentOrgId || l.organizationId === currentOrgId) as Order[]
       } catch (e) {
         return []
       }
@@ -940,7 +967,7 @@ class SupabaseService {
 
   async createOrder(order: Omit<Order, 'id'>): Promise<string> {
     try {
-      const orgId = this.getCurrentOrgId() || localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001'
+      const orgId = (order as any).organizationId || (order as any).organization_id || this.getCurrentOrgId() || localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001'
       const payload = this.buildOrderPayload({ ...order, createdAt: (order as any).createdAt || new Date() })
       payload.organization_id = orgId
 
@@ -953,7 +980,7 @@ class SupabaseService {
       // 📡 OFFLINE / RLS FAILSAFE
       if (!navigator.onLine) {
         const fauxId = `ord-${Date.now()}`
-        this.saveLocalPendingOrder({ ...order, id: fauxId, status: order.status || 'pending_surtir' })
+        this.saveLocalPendingOrder({ ...order, id: fauxId, organizationId: orgId, status: order.status || 'pending_surtir' })
         return fauxId
       }
 
@@ -966,25 +993,31 @@ class SupabaseService {
       if (error) {
         logger.warn('supabase', '⚠️ RLS/DB Warning en inserción de orden, usando fallback local respaldado:', error.message)
         const fallbackId = `ord-${Date.now()}`
-        this.saveLocalPendingOrder({ ...order, id: fallbackId, status: order.status || 'pending_surtir' })
+        this.saveLocalPendingOrder({ ...order, id: fallbackId, organizationId: orgId, status: order.status || 'pending_surtir' })
         return fallbackId
       }
 
-      this.saveLocalPendingOrder({ ...order, id: data.id })
+      this.saveLocalPendingOrder({ ...order, id: data.id, organizationId: orgId })
       return data.id
     } catch (error: any) {
       logger.warn('supabase', 'Catch en creación de orden, usando fallback local respaldado:', error?.message)
       const fallbackId = `ord-${Date.now()}`
-      this.saveLocalPendingOrder({ ...order, id: fallbackId, status: order.status || 'pending_surtir' })
+      const orgId = (order as any).organizationId || (order as any).organization_id || this.getCurrentOrgId()
+      this.saveLocalPendingOrder({ ...order, id: fallbackId, organizationId: orgId, status: order.status || 'pending_surtir' })
       return fallbackId
     }
   }
 
   saveLocalPendingOrder(order: any) {
     try {
+      const orgId = order.organizationId || order.organization_id || this.getCurrentOrgId()
       const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
       const filtered = existing.filter((o: any) => o.id !== order.id)
-      filtered.unshift({ ...order, createdAt: order.createdAt || new Date().toISOString() })
+      filtered.unshift({
+        ...order,
+        organizationId: orgId,
+        createdAt: order.createdAt || new Date().toISOString()
+      })
       localStorage.setItem('local_pending_orders', JSON.stringify(filtered))
     } catch (e) {}
   }
@@ -997,7 +1030,7 @@ class SupabaseService {
       // 2. Si orderId es un UUID válido de Postgres, intentar actualizar en Supabase remoto
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       if (uuidRegex.test(orderId) && navigator.onLine) {
-        const payload = this.buildOrderPayload(updates)
+        const payload = this.buildOrderPayload(updates, true)
         delete payload.paidAmount
         delete payload.pendingBalance
         delete payload.paymentStatus
