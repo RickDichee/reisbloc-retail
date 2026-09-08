@@ -46,6 +46,7 @@ function parseProductDescription(descriptionText: string | null) {
 export default function POS() {
   const {
     currentUser,
+    isInitializing,
     products,
     setProducts,
     tickets,  // Legacy: antes "tables"
@@ -68,7 +69,6 @@ export default function POS() {
   const currentBusinessTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store')
 
   const [loading, setLoading] = useState(true)
-  const [activeTableOrders, setActiveTableOrders] = useState<any[]>([])
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
   const cashRegisterAudioRef = useRef<HTMLAudioElement | null>(null)
   const [receiptModal, setReceiptModal] = useState<{
@@ -344,6 +344,9 @@ export default function POS() {
 
   const tableNumber = currentTicketNumber || 1
   const items = draftOrders[tableNumber] || []
+  const activeTableOrders = useMemo(() => {
+    return activeOrdersList.filter(o => o.tableNumber === tableNumber || o.tableNumber === currentTicketNumber)
+  }, [activeOrdersList, tableNumber, currentTicketNumber])
 
 
 
@@ -471,34 +474,42 @@ export default function POS() {
     supabaseService.getAllClients().then(setClients).catch(console.error)
     supabaseService.getActiveOrders().then(setActiveOrdersList).catch(console.error)
 
+    const orgId = currentUser?.organizationId || supabaseService.getCurrentOrgId()
     const syncChannel = supabase
       .channel('pos-realtime-sync-channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
-        logger.info('pos', '⚡ Realtime update: Refrescando lista de pedidos activos...')
-        const updated = await supabaseService.getActiveOrders()
-        setActiveOrdersList(updated || [])
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, async () => {
-        const updated = await supabaseService.getAllClients()
-        setClients(updated || [])
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
+        },
+        async () => {
+          logger.info('pos', '⚡ Realtime update: Refrescando lista de pedidos activos...')
+          const updated = await supabaseService.getActiveOrders()
+          setActiveOrdersList(updated || [])
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clients',
+          ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
+        },
+        async () => {
+          const updated = await supabaseService.getAllClients()
+          setClients(updated || [])
+        }
+      )
       .subscribe()
 
     return () => {
       supabase.removeChannel(syncChannel)
     }
-  }, [])
-
-  useEffect(() => {
-    if (!currentTicketNumber) {
-      setActiveTableOrders([])
-      return
-    }
-    const unsubscribe = supabaseService.subscribeToActiveOrders((orders) => {
-      setActiveTableOrders(orders.filter(o => o.tableNumber === currentTicketNumber))
-    })
-    return () => unsubscribe?.()
-  }, [currentTicketNumber])
+  }, [currentUser?.organizationId])
 
   useEffect(() => {
     if (users.length === 0) {
@@ -562,7 +573,16 @@ export default function POS() {
   })
 
 
-  if (!currentUser && !loading) {
+  if (isInitializing || (loading && !currentUser)) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+        <p className="text-white font-mono text-sm tracking-widest uppercase">Cargando Punto de Venta...</p>
+      </div>
+    )
+  }
+
+  if (!currentUser) {
     return <Navigate to="/login" replace />
   }
 
@@ -1078,7 +1098,16 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen">Cargando...</div>
+  if (loading && products.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 text-[#D4386C] animate-spin mb-3" />
+          <p className="text-slate-500 font-bold text-sm">Cargando catálogo de productos...</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   const currentTotal = items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
 

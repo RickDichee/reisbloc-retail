@@ -1382,7 +1382,7 @@ class SupabaseService {
           logger.info('supabase', '✅ Realtime connected for orders')
         }
         if (status === 'CLOSED') {
-          logger.warn('supabase', '⚠️ Realtime connection closed for orders')
+          logger.info('supabase', '🔌 Realtime channel closed for orders')
         }
         if (status === 'CHANNEL_ERROR') {
           logger.error('supabase', '❌ Realtime channel error for orders')
