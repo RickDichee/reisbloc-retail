@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, Link } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
@@ -134,7 +134,14 @@ export default function Admin() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                to="/pos"
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105"
+              >
+                <ShoppingCart size={18} />
+                <span>Ir al Punto de Venta (POS)</span>
+              </Link>
               <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 flex flex-col items-end">
                 <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Organización</span>
                 <span className="font-bold text-white text-sm">{organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (currentUser?.organizationId ? 'Mi Organización' : 'REISBLOC')}</span>

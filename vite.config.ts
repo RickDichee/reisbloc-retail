@@ -127,6 +127,7 @@ export default defineConfig({
   },
   server: {
     host: true, // Permite acceso desde red/servidor virtual (0.0.0.0)
+    port: 5173,
   },
   build: {
     outDir: 'dist',

@@ -5,6 +5,7 @@ import {
   Scale,
   HelpCircle,
   ShoppingBag,
+  ShoppingCart,
   Shirt,
   Heart,
   QrCode,
@@ -20,6 +21,7 @@ import {
   UserCheck
 } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
+import { useAppStore } from '@/store/appStore'
 import { Product } from '@/types'
 
 interface CartItem {
@@ -28,6 +30,7 @@ interface CartItem {
 }
 
 export default function ModaMielBrandPage() {
+  const { currentUser } = useAppStore()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -292,8 +295,40 @@ export default function ModaMielBrandPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF5F7] text-slate-900 font-sans selection:bg-pink-200">
+      {/* 🛡️ Barra de Colaborador Autenticado (Acceso rápido a POS y Admin) */}
+      {currentUser && (
+        <div className="bg-slate-900 border-b border-slate-800 text-white px-4 py-2.5 text-xs sticky top-0 z-50 shadow-md">
+          <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-slate-300">Sesión activa:</span>
+              <strong className="text-white font-bold">{currentUser.name || currentUser.email}</strong>
+              <span className="bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] px-2 py-0.5 rounded-full font-black uppercase">
+                {currentUser.role}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/pos"
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-105"
+              >
+                <ShoppingCart size={15} />
+                <span>Ir al Punto de Venta (POS)</span>
+              </Link>
+              <Link
+                to="/admin"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold px-3 py-1.5 rounded-xl border border-slate-700 transition-all flex items-center gap-1.5"
+              >
+                <Shield size={14} />
+                <span>Admin</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 🌸 Top Navigation Bar */}
-      <div className="bg-[#E62E6B] text-white shadow-md sticky top-0 z-50 border-b-2 border-pink-300">
+      <div className={`bg-[#E62E6B] text-white shadow-md ${currentUser ? 'relative' : 'sticky top-0'} z-40 border-b-2 border-pink-300`}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white text-[#E62E6B] rounded-2xl flex items-center justify-center font-black text-xl shadow-md border-2 border-pink-200">
@@ -324,15 +359,36 @@ export default function ModaMielBrandPage() {
               </button>
             )}
 
-            {/* Restricted Staff Login Access Button */}
-            <Link
-              to="/login?brand=modamiel"
-              className="bg-pink-950/40 hover:bg-pink-950/60 border border-pink-300/40 text-white font-bold px-3.5 py-2 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2"
-              title="Acceso restringido a colaboradores autorizados de Moda Miel MX"
-            >
-              <UserCheck size={16} className="text-pink-200" />
-              <span>Acceso a Colaboradores</span>
-            </Link>
+            {/* Staff / POS Button */}
+            {currentUser ? (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/pos"
+                  className="bg-white text-[#E62E6B] hover:bg-pink-50 font-black px-4 py-2 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow-lg"
+                  title="Abrir el Punto de Venta para cobrar y registrar ventas"
+                >
+                  <ShoppingCart size={16} className="text-[#E62E6B]" />
+                  <span>Abrir POS</span>
+                </Link>
+                <Link
+                  to="/admin"
+                  className="bg-pink-950/40 hover:bg-pink-950/60 border border-pink-300/40 text-white font-bold px-3 py-2 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-1.5"
+                  title="Panel de Administración"
+                >
+                  <Shield size={15} />
+                  <span className="hidden sm:inline">Admin</span>
+                </Link>
+              </div>
+            ) : (
+              <Link
+                to="/login?brand=modamiel"
+                className="bg-pink-950/40 hover:bg-pink-950/60 border border-pink-300/40 text-white font-bold px-3.5 py-2 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2"
+                title="Acceso restringido a colaboradores autorizados de Moda Miel MX"
+              >
+                <UserCheck size={16} className="text-pink-200" />
+                <span>Acceso a Colaboradores</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>
