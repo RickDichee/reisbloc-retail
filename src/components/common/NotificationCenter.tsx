@@ -5,6 +5,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Notification } from '../../services/notificationService'
 
+import { playNotificationSound } from '@/utils/audioAlerts'
+
 interface NotificationCenterProps {
   notifications: Notification[]
   unreadCount: number
@@ -22,12 +24,6 @@ export default function NotificationCenter({
   const navigate = useNavigate()
   const [flash, setFlash] = useState<Notification | null>(null)
   const prevCountRef = useRef(0)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-
-  useEffect(() => {
-    // Sonido de campana tipo restaurante (Mixkit Bell)
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
-  }, [])
 
   // Mostrar aviso breve cuando llega una nueva notificación
   useEffect(() => {
@@ -37,8 +33,8 @@ export default function NotificationCenter({
       const newest = notifications[0]
       setFlash(newest)
 
-      // 🔊 Reproducir sonido
-      audioRef.current?.play().catch(() => { })
+      // 🔊 Reproducir sonido nativo sintetizado (cero peticiones de red / conforme con CSP)
+      playNotificationSound()
 
       // 📳 Vibración (Haptic feedback para móviles)
       if ('vibrate' in navigator) {

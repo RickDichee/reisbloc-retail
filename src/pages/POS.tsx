@@ -21,6 +21,7 @@ import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { useTenantTheme } from '@/hooks/useTenantTheme'
 import { sanitizeHTML } from '@/utils/sanitize'
+import { playCashRegisterSound } from '@/utils/audioAlerts'
 import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag, ChevronUp, ChevronDown } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 
@@ -70,7 +71,6 @@ export default function POS() {
 
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
-  const cashRegisterAudioRef = useRef<HTMLAudioElement | null>(null)
   const [receiptModal, setReceiptModal] = useState<{
     isOpen: boolean;
     html: string;
@@ -466,7 +466,6 @@ export default function POS() {
   }, [organizationSettings?.localSyncServerIp])
 
   useEffect(() => {
-    cashRegisterAudioRef.current = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU7/3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/9//3//3/w==')
     loadProducts()
     checkShift()
 
@@ -1096,7 +1095,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       setSelectedClient(null)
       clearDraftForTable(tableNumber)
       setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })
-      cashRegisterAudioRef.current?.play().catch(() => { })
+      playCashRegisterSound()
     } catch (error: any) {
       logger.error('pos', 'Error recording sale', error)
       alert(`Error: ${error.message}`)
