@@ -244,6 +244,7 @@ export default function App() {
                 organizationId: user.organizationId,
                 expiresAt: (session.expires_at || 0) * 1000
               }))
+              localStorage.setItem('current_org_id', user.organizationId)
 
               // 🛡️ Pre-cargar configuración de la organización para el Layout
               try {

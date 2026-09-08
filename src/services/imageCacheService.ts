@@ -21,15 +21,26 @@ class ImageCacheService {
   private initDB(): Promise<IDBDatabase | null> {
     return new Promise((resolve) => {
       try {
+        const timer = setTimeout(() => resolve(null), 1500)
         const request = indexedDB.open(DB_NAME, DB_VERSION)
+        request.onblocked = () => {
+          clearTimeout(timer)
+          resolve(null)
+        }
         request.onupgradeneeded = (e: any) => {
           const db = e.target.result
           if (!db.objectStoreNames.contains(STORE_PRODUCTS)) {
             db.createObjectStore(STORE_PRODUCTS, { keyPath: 'id' })
           }
         }
-        request.onsuccess = (e: any) => resolve(e.target.result)
-        request.onerror = () => resolve(null)
+        request.onsuccess = (e: any) => {
+          clearTimeout(timer)
+          resolve(e.target.result)
+        }
+        request.onerror = () => {
+          clearTimeout(timer)
+          resolve(null)
+        }
       } catch (err) {
         resolve(null)
       }
@@ -101,20 +112,26 @@ class ImageCacheService {
    * Obtiene los productos cacheados localmente si no hay conexión o mientras carga Supabase.
    */
   async getCachedProducts(): Promise<any[]> {
-    // 1. Intentar desde IndexedDB
+    // 1. Intentar desde IndexedDB con timeout de seguridad (600ms)
     try {
-      const db = await this.dbPromise
-      if (db && db.objectStoreNames.contains(STORE_PRODUCTS)) {
-        const tx = db.transaction(STORE_PRODUCTS, 'readonly')
-        const store = tx.objectStore(STORE_PRODUCTS)
-        const all = await new Promise<any[]>((resolve) => {
-          const req = store.getAll()
-          req.onsuccess = () => resolve(req.result || [])
-          req.onerror = () => resolve([])
-        })
+      const idbPromise = (async () => {
+        const db = await this.dbPromise
+        if (db && db.objectStoreNames.contains(STORE_PRODUCTS)) {
+          const tx = db.transaction(STORE_PRODUCTS, 'readonly')
+          const store = tx.objectStore(STORE_PRODUCTS)
+          return await new Promise<any[]>((resolve) => {
+            const req = store.getAll()
+            req.onsuccess = () => resolve(req.result || [])
+            req.onerror = () => resolve([])
+          })
+        }
+        return []
+      })()
 
-        if (all && all.length > 0) return all
-      }
+      const timeoutPromise = new Promise<any[]>((resolve) => setTimeout(() => resolve([]), 600))
+      const all = await Promise.race([idbPromise, timeoutPromise])
+
+      if (all && all.length > 0) return all
     } catch (e) {}
 
     // 2. Fallback a localStorage

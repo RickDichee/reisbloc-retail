@@ -597,6 +597,11 @@ export default function POS() {
   }
 
   const loadProducts = async () => {
+    // 0. Failsafe: nunca permitir que la pantalla de carga se quede congelada más de 2.5 segundos
+    const failsafeTimeout = setTimeout(() => {
+      setLoading(false)
+    }, 2500)
+
     // 1. Cargar instantáneamente desde caché local (IndexedDB/localStorage) a 0ms
     try {
       const cached = await imageCacheService.getCachedProducts()
@@ -604,15 +609,24 @@ export default function POS() {
         setProducts(cached)
         setLoading(false)
       } else {
-        setLoading(true)
+        // Fallback secundario directo a localStorage por si acaso
+        const raw = localStorage.getItem('cached_retail_products')
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          if (parsed && parsed.length > 0) {
+            setProducts(parsed)
+            setLoading(false)
+          }
+        }
       }
     } catch (e) {
-      setLoading(true)
+      // Ignorar error de lectura de caché
     }
 
     // 2. Sincronizar catálogo actualizado desde Supabase en segundo plano
     try {
-      const prods = await supabaseService.getAllRetailProducts()
+      const orgId = currentUser?.organizationId || supabaseService.getCurrentOrgId()
+      const prods = await supabaseService.getAllRetailProducts(orgId)
       if (prods && prods.length > 0) {
         setProducts(prods)
         imageCacheService.saveCachedProducts(prods).catch(console.error)
@@ -620,6 +634,7 @@ export default function POS() {
     } catch (error) {
       logger.error('pos', 'Error loading retail products', error as any)
     } finally {
+      clearTimeout(failsafeTimeout)
       setLoading(false)
     }
   }
@@ -1105,9 +1120,16 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
   if (loading && products.length === 0) {
     return (
       <DashboardLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 text-[#D4386C] animate-spin mb-3" />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+          <Loader2 className="w-8 h-8 text-[#D4386C] animate-spin mb-1" />
           <p className="text-slate-500 font-bold text-sm">Cargando catálogo de productos...</p>
+          <button
+            type="button"
+            onClick={() => setLoading(false)}
+            className="mt-2 text-xs text-slate-400 hover:text-slate-600 underline font-medium cursor-pointer"
+          >
+            Continuar a caja sin esperar
+          </button>
         </div>
       </DashboardLayout>
     )

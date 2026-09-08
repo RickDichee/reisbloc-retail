@@ -7,15 +7,15 @@ CREATE OR REPLACE FUNCTION "public"."on_new_order_notification"() RETURNS "trigg
 BEGIN
   INSERT INTO public.notifications (user_id, organization_id, title, body, type, priority, data)
   SELECT id, NEW.organization_id,
-         '🍳 Nueva Comanda: Mesa ' || COALESCE(NEW.table_number, 1), 
-         'Hay ' || COALESCE(jsonb_array_length(NEW.items), 0) || ' productos nuevos.', 
+         '🛍️ Nuevo Pedido: Ticket #' || COALESCE(NEW.table_number, 1), 
+         'Hay ' || COALESCE(jsonb_array_length(NEW.items), 0) || ' artículos en el pedido.', 
          'order',
          'high',
-         jsonb_build_object('order_id', NEW.id, 'table', COALESCE(NEW.table_number, 1))
+         jsonb_build_object('order_id', NEW.id, 'ticket', COALESCE(NEW.table_number, 1))
   FROM public.users 
   WHERE active = true 
     AND (organization_id = NEW.organization_id OR organization_id IS NULL)
-    AND (role IN ('cocina', 'bar', 'admin', 'owner', 'manager') OR role IS NULL)
+    AND (role IN ('admin', 'manager', 'supervisor', 'cashier', 'employee', 'cocina', 'bar') OR role IS NULL)
     AND id != COALESCE(NEW.created_by, '00000000-0000-0000-0000-000000000000'::uuid);
   RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
@@ -36,11 +36,11 @@ BEGIN
       VALUES (
         NEW.created_by,
         NEW.organization_id,
-        '✅ Orden Lista: Ticket #' || COALESCE(NEW.table_number, 1),
-        'La orden ya está lista para entrega.',
+        '✅ Pedido Listo: Ticket #' || COALESCE(NEW.table_number, 1),
+        'El pedido ya está listo para entrega.',
         'ready',
         'normal',
-        jsonb_build_object('order_id', NEW.id, 'table', COALESCE(NEW.table_number, 1))
+        jsonb_build_object('order_id', NEW.id, 'ticket', COALESCE(NEW.table_number, 1))
       );
     END IF;
   END IF;

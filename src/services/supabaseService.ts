@@ -2007,15 +2007,23 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
   // ==================== RETAIL ====================
 
-  async getAllRetailProducts(): Promise<Product[]> {
+  async getAllRetailProducts(targetOrgId?: string): Promise<Product[]> {
+    const orgId = targetOrgId || this.getCurrentOrgId()
     return this.withRetry(async () => {
-      const { data, error } = await withOrg(
+      const query = withOrg(
         supabase.from('retail_products').select('*'),
-        this.getCurrentOrgId()
+        orgId
       )
         .eq('active', true)
         .order('category', { ascending: true })
         .order('name', { ascending: true })
+
+      // Failsafe timeout de 7 segundos para evitar que bloquee indefinidamente
+      const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout fetching retail products')), 7000)
+      )
+
+      const { data, error } = await Promise.race([query, timeoutPromise])
 
       if (error) throw error
       return (data || []).map((p: any) => {
@@ -2242,15 +2250,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
   async createRetailSale(sale: any, items: any[]): Promise<string> {
     try {
       const orgId = this.getCurrentOrgId()
-      
-      // Dynamic column check for client_id
-      let hasClientIdColumn = false
-      try {
-        const { error } = await supabase.from('retail_sales').select('client_id').limit(1)
-        if (!error) {
-          hasClientIdColumn = true
-        }
-      } catch (err) {}
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
       const saleNotes = sale.clientName
         ? `${sale.notes || ''}\n[Cliente: ${sale.clientName} ${sale.clientPhone ? `(Tel: ${sale.clientPhone})` : ''}]`.trim()
@@ -2270,7 +2270,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         notes: saleNotes
       }
 
-      if (hasClientIdColumn && sale.clientId) {
+      if (sale.clientId && uuidRegex.test(sale.clientId)) {
         insertPayload.client_id = sale.clientId
       }
 
@@ -2283,21 +2283,30 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if (saleError) throw saleError
 
-      // 2. Create sale items
-      const itemsPayload = items.map(item => ({
-        sale_id: saleData.id,
-        product_id: item.productId,
-        product_name: item.productName,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total_price: item.unitPrice * item.quantity
-      }))
+      // 2. Create sale items (sanitizing product_id so manual items don't trigger UUID error)
+      const itemsPayload = items.map(item => {
+        const rawProductId = item.productId || item.id || ''
+        const isValidUuid = uuidRegex.test(rawProductId)
+        const unitPrice = Number(item.unitPrice) || 0
+        const quantity = Number(item.quantity) || 1
+        return {
+          sale_id: saleData.id,
+          product_id: isValidUuid ? rawProductId : null,
+          product_name: item.productName || item.name || 'Artículo manual',
+          quantity: quantity,
+          unit_price: unitPrice,
+          total_price: unitPrice * quantity
+        }
+      })
 
       const { error: itemsError } = await supabase.from('retail_sale_items').insert(itemsPayload)
-      if (itemsError) throw itemsError
+      if (itemsError) {
+        logger.error('supabase', 'Error inserting retail_sale_items', itemsError as any)
+        throw itemsError
+      }
 
       // 3. Update client total spent if associated
-      if (sale.clientId) {
+      if (sale.clientId && uuidRegex.test(sale.clientId)) {
         try {
           const { data: clientData } = await supabase
             .from('clients')
@@ -2321,9 +2330,10 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       // 4. Update stock for items that have inventory
       const aggregatedStock: Record<string, number> = {}
       items.forEach(item => {
-        if (!item.productId || item.productId.toLowerCase().startsWith('manual-') || item.id.toLowerCase().startsWith('manual-')) return
-        const targetId = item.parentId || item.productId
-        const qtyToDeduct = item.quantity * (item.packQuantity || 1)
+        const rawProductId = item.productId || item.id || ''
+        if (!rawProductId || rawProductId.toLowerCase().startsWith('manual-') || !uuidRegex.test(rawProductId)) return
+        const targetId = (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : rawProductId
+        const qtyToDeduct = (Number(item.quantity) || 1) * (item.packQuantity || 1)
         aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct
       })
 
@@ -2346,14 +2356,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
   async createPendingRetailSale(sale: any, items: any[]): Promise<string> {
     try {
       const orgId = this.getCurrentOrgId()
-
-      let hasClientIdColumn = false
-      try {
-        const { error } = await supabase.from('retail_sales').select('client_id').limit(1)
-        if (!error) {
-          hasClientIdColumn = true
-        }
-      } catch (err) {}
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
       const saleNotes = sale.clientName
         ? `${sale.notes || ''}\n[Cliente: ${sale.clientName} ${sale.clientPhone ? `(Tel: ${sale.clientPhone})` : ''}]`.trim()
@@ -2372,7 +2375,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         notes: saleNotes
       }
 
-      if (hasClientIdColumn && sale.clientId) {
+      if (sale.clientId && uuidRegex.test(sale.clientId)) {
         insertPayload.client_id = sale.clientId
       }
 
@@ -2384,14 +2387,20 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if (saleError) throw saleError
 
-      const itemsPayload = items.map(item => ({
-        sale_id: saleData.id,
-        product_id: item.productId,
-        product_name: item.productName,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total_price: item.unitPrice * item.quantity
-      }))
+      const itemsPayload = items.map(item => {
+        const rawProductId = item.productId || item.id || ''
+        const isValidUuid = uuidRegex.test(rawProductId)
+        const unitPrice = Number(item.unitPrice) || 0
+        const quantity = Number(item.quantity) || 1
+        return {
+          sale_id: saleData.id,
+          product_id: isValidUuid ? rawProductId : null,
+          product_name: item.productName || item.name || 'Artículo manual',
+          quantity: quantity,
+          unit_price: unitPrice,
+          total_price: unitPrice * quantity
+        }
+      })
 
       const { error: itemsError } = await supabase.from('retail_sale_items').insert(itemsPayload)
       if (itemsError) throw itemsError
