@@ -21,6 +21,9 @@ export interface TicketData {
   phone?: string;
   cashier?: string;
   date?: Date;
+  imageUrl?: string;
+  clientName?: string;
+  clientPhone?: string;
   // Legacy
   tableNumber?: number;
 }
@@ -128,6 +131,70 @@ export const ticketService = {
     }
   },
 
+  async uploadImage(blob: Blob, filename: string): Promise<string> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'public';
+      const timestamp = Date.now();
+      const path = `images/${userId}/${timestamp}-${filename}`;
+
+      const { error } = await supabase.storage
+        .from('tickets')
+        .upload(path, blob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+
+      if (error) {
+        console.warn('⚠️ Error subiendo imagen a storage:', error.message);
+        return '';
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('tickets')
+        .getPublicUrl(path);
+
+      return urlData.publicUrl;
+    } catch (err) {
+      console.warn('⚠️ Error subiendo imagen de ticket a storage:', err);
+      return '';
+    }
+  },
+
+  async copyImageToClipboard(blob: Blob): Promise<boolean> {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+        let pngBlob = blob;
+        if (blob.type !== 'image/png') {
+          const img = new Image();
+          const url = URL.createObjectURL(blob);
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = url;
+          });
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0);
+          URL.revokeObjectURL(url);
+          pngBlob = await new Promise<Blob>((resolve) => {
+            canvas.toBlob((b) => resolve(b || blob), 'image/png');
+          });
+        }
+
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': pngBlob })
+        ]);
+        return true;
+      }
+    } catch (e) {
+      console.warn('⚠️ No se pudo copiar la imagen al portapapeles:', e);
+    }
+    return false;
+  },
+
   async shareByWhatsApp(
     phone: string,
     ticketHtml: string,
@@ -155,12 +222,16 @@ export const ticketService = {
       }
 
       // Fallback 100% resiliente: Abrir WhatsApp Web con el mensaje formateado
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(ticketText)}`;
+      const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const baseUrl = isMobile ? 'https://api.whatsapp.com/send' : 'https://web.whatsapp.com/send';
+      const whatsappUrl = `${baseUrl}?phone=${cleanPhone}&text=${encodeURIComponent(ticketText)}`;
       window.open(whatsappUrl, '_blank');
       return { success: true };
     } catch (error: any) {
       console.error('Error sharing ticket via WhatsApp:', error);
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(ticketText)}`;
+      const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const baseUrl = isMobile ? 'https://api.whatsapp.com/send' : 'https://web.whatsapp.com/send';
+      const whatsappUrl = `${baseUrl}?phone=${cleanPhone}&text=${encodeURIComponent(ticketText)}`;
       window.open(whatsappUrl, '_blank');
       return { success: true };
     }
@@ -217,6 +288,9 @@ export const ticketService = {
     text += `📍 ${addressStr}\n`;
     text += `🗓️ ${date} hrs\n`;
     text += `🏷️ Folio: #${folio}\n`;
+    if (data.clientName) {
+      text += `👤 Cliente: ${data.clientName}\n`;
+    }
     text += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     data.items.forEach(item => {
@@ -232,6 +306,9 @@ export const ticketService = {
     text += `━━━━━━━━━━━━━━━━━━━━\n`;
     text += `💳 Forma de pago: ${data.paymentMethod}\n`;
     text += `📦 Caja: ${data.ticketNumber || 1}\n\n`;
+    if (data.imageUrl) {
+      text += `🖼️ *Ver Ticket Digital (Imagen HD):*\n${data.imageUrl}\n\n`;
+    }
     text += `¡Muchas gracias por su compra! ✨\n`;
     text += `_Conserve este comprobante para cualquier duda._\n`;
     text += `*NO HAY CAMBIOS NI DEVOLUCIONES*\n`;

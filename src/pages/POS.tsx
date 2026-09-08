@@ -78,6 +78,8 @@ export default function POS() {
     items: any[];
     orderId: string;
     paymentMethod: string;
+    clientPhone?: string;
+    clientName?: string;
   } | null>(null)
 
   const [paymentPanel, setPaymentPanel] = useState<{
@@ -1082,7 +1084,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           total: result.total,
           items: allItems,
           orderId: saleId,
-          paymentMethod: mappedMethod
+          paymentMethod: mappedMethod,
+          clientName: selectedClient?.name,
+          clientPhone: selectedClient?.phone
         })
       } catch (printErr) {
         logger.warn('pos', 'No se pudo generar ticket', printErr as any)
@@ -1727,7 +1731,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               paymentMethod: receiptModal.paymentMethod,
               ticketNumber: tableNumber,  // Legacy: tableNumber → ticketNumber
               businessName: currentBusinessTitle,
-              cashier: currentUser?.username
+              cashier: currentUser?.username,
+              clientName: receiptModal.clientName || selectedClient?.name,
+              clientPhone: receiptModal.clientPhone || selectedClient?.phone
             }}
           />
         )}

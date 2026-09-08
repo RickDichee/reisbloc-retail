@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X, MessageCircle, Mail, Loader2, Check, AlertCircle, FileText, Image as ImageIcon, Copy } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, MessageCircle, Mail, Loader2, Check, AlertCircle, FileText, Image as ImageIcon, Copy, User } from 'lucide-react'
 import { ticketService, TicketData } from '@/services/ticketService'
 import { whatsappService } from '@/services/whatsappService'
 
@@ -14,14 +14,33 @@ type ShareMethod = 'whatsapp' | 'email'
 type SendStatus = 'idle' | 'sending' | 'success' | 'error'
 
 export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketData }: TicketShareModalProps) {
+  const getInitialPhone = () => {
+    if (!ticketData.clientPhone) return ''
+    const clean = ticketData.clientPhone.replace(/\D/g, '')
+    if (clean.length === 12 && clean.startsWith('52')) {
+      return clean.slice(2)
+    }
+    return clean.slice(0, 10)
+  }
+
   const [shareMethod, setShareMethod] = useState<ShareMethod>('whatsapp')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(getInitialPhone)
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<SendStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [downloadingFormat, setDownloadingFormat] = useState<'jpg' | 'pdf' | null>(null)
   const [copiedText, setCopiedText] = useState(false)
   const [whatsappConfigured] = useState(whatsappService.isConfigured())
+
+  // Sincronizar automáticamente el teléfono si el ticket trae datos de cliente
+  useEffect(() => {
+    if (ticketData.clientPhone) {
+      const clean = ticketData.clientPhone.replace(/\D/g, '')
+      const tenDigits = (clean.length === 12 && clean.startsWith('52')) ? clean.slice(2) : clean.slice(0, 10)
+      setPhone(tenDigits)
+    }
+  }, [ticketData.clientPhone, isOpen])
 
   if (!isOpen) return null
 
@@ -34,6 +53,7 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
   const handleShare = async () => {
     setStatus('sending')
     setErrorMessage('')
+    setSuccessMessage('')
 
     try {
       if (shareMethod === 'whatsapp') {
@@ -44,7 +64,6 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
         }
 
         const formattedPhone = ticketService.formatPhoneNumber(phone)
-        const ticketText = ticketService.formatTicketAsText(ticketData)
         const folio = (ticketData.orderId || '').slice(0, 8).toUpperCase()
         const fileName = `Ticket_${folio || 'VENTA'}.jpg`
 
@@ -57,6 +76,31 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
           console.warn('⚠️ No se pudo renderizar imagen canvas:', e)
         }
 
+        // 2. Subir imagen a Supabase Storage (bucket público tickets) para enlace HD
+        let imageUrl = ''
+        if (imageBlob) {
+          try {
+            imageUrl = await ticketService.uploadImage(imageBlob, fileName)
+          } catch (uploadErr) {
+            console.warn('⚠️ No se pudo subir imagen a Storage:', uploadErr)
+          }
+        }
+
+        // 3. Preparar datos y texto del ticket (incluyendo enlace a imagen HD y nombre del cliente)
+        const ticketDataWithDetails: TicketData = {
+          ...ticketData,
+          imageUrl: imageUrl || ticketData.imageUrl,
+          clientPhone: phone
+        }
+        const ticketText = ticketService.formatTicketAsText(ticketDataWithDetails)
+
+        // 4. Copiar imagen al portapapeles del sistema (Ctrl+V en WhatsApp para pegarla directamente)
+        let imageCopied = false
+        if (imageBlob) {
+          imageCopied = await ticketService.copyImageToClipboard(imageBlob)
+        }
+
+        // 5. Intentar compartir vía Web Share API nativa (móviles)
         let sharedNatively = false
         if (imageBlob && typeof navigator !== 'undefined' && navigator.canShare) {
           try {
@@ -78,31 +122,32 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
         }
 
         if (!sharedNatively) {
-          // Descargar la imagen del ticket automáticamente
+          // Descargar la imagen del ticket automáticamente como respaldo
           if (imageBlob) {
             ticketService.downloadBlob(imageBlob, fileName)
           }
 
-          // Copiar el texto completo al portapapeles
-          try {
-            if (navigator.clipboard) {
-              await navigator.clipboard.writeText(ticketText)
-              setCopiedText(true)
-            }
-          } catch (e) {}
-
-          // Abrir WhatsApp Web / App
-          const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(ticketText)}`
+          // Detección Desktop vs Mobile para evitar error de protocolo whatsapp:// en navegadores de escritorio
+          const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+          const baseUrl = isMobile ? 'https://api.whatsapp.com/send' : 'https://web.whatsapp.com/send'
+          const whatsappUrl = `${baseUrl}?phone=${formattedPhone}&text=${encodeURIComponent(ticketText)}`
           window.open(whatsappUrl, '_blank')
         }
 
         setStatus('success')
+        setSuccessMessage(
+          imageCopied
+            ? '¡Listo! Imagen copiada al portapapeles (Ctrl + V en WhatsApp para pegarla) y JPG descargado.'
+            : '¡Listo! Enlace con imagen HD adjunto en el mensaje de WhatsApp y JPG descargado.'
+        )
+
         setTimeout(() => {
           onClose()
           setStatus('idle')
           setPhone('')
           setCopiedText(false)
-        }, 1800)
+          setSuccessMessage('')
+        }, 2800)
       } else {
         if (!email) {
           setStatus('error')
@@ -112,11 +157,13 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
         const result = await ticketService.shareByEmail(email, ticketHtml, ticketData)
         if (result.success) {
           setStatus('success')
+          setSuccessMessage('¡Ticket enviado por correo exitosamente!')
           setTimeout(() => {
             onClose()
             setStatus('idle')
             setEmail('')
-          }, 1500)
+            setSuccessMessage('')
+          }, 1800)
         } else {
           setStatus('error')
           setErrorMessage(result.error || 'Error al enviar por email')
@@ -272,30 +319,44 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
 
           {/* WhatsApp Form */}
           {shareMethod === 'whatsapp' ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-tight">
-                  Número de WhatsApp
-                </label>
-                <span className={`text-[11px] font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-slate-400'}`}>
-                  {isPhoneValid ? '✓ 10 dígitos listo' : `${phone.length}/10 dígitos`}
-                </span>
+            <div className="space-y-3">
+              {ticketData.clientName && (
+                <div className="flex items-center justify-between p-2.5 bg-emerald-50/80 border border-emerald-200/80 rounded-xl">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
+                    <User size={14} className="text-emerald-600 shrink-0" />
+                    <span>Cliente: {ticketData.clientName}</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-black tracking-wider bg-emerald-200/70 text-emerald-800 px-2 py-0.5 rounded-full">
+                    Auto-completado
+                  </span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-tight">
+                    Número de WhatsApp
+                  </label>
+                  <span className={`text-[11px] font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {isPhoneValid ? '✓ 10 dígitos listo' : `${phone.length}/10 dígitos`}
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3 text-sm font-bold text-slate-400">🇲🇽 +52</span>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    maxLength={10}
+                    placeholder="5512345678"
+                    className="w-full pl-16 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-600 outline-none font-mono font-bold text-slate-900"
+                    disabled={status === 'sending'}
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  📸 Se copiará la <b>imagen HD</b> al portapapeles para pegar con <kbd className="bg-slate-100 px-1 py-0.5 rounded text-[10px] font-mono border border-slate-200 font-bold">Ctrl + V</kbd> en WhatsApp, se descargará el archivo JPG y se incluirá el enlace directo al ticket.
+                </p>
               </div>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3 text-sm font-bold text-slate-400">🇲🇽 +52</span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  maxLength={10}
-                  placeholder="5512345678"
-                  className="w-full pl-16 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-600 outline-none font-mono font-bold text-slate-900"
-                  disabled={status === 'sending'}
-                />
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Se generará el ticket en imagen JPG y se abrirá WhatsApp con el cliente para enviárselo.
-              </p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -325,9 +386,11 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
           )}
 
           {status === 'success' && (
-            <div className="flex items-center gap-2 p-3 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold animate-fadeIn">
-              <Check size={16} className="shrink-0" />
-              <span>¡Ticket preparado y compartido exitosamente!</span>
+            <div className="flex items-start gap-2.5 p-3.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200/60 animate-fadeIn">
+              <Check size={18} className="shrink-0 text-emerald-600 mt-0.5" />
+              <div className="leading-snug">
+                {successMessage || '¡Ticket preparado y compartido exitosamente!'}
+              </div>
             </div>
           )}
         </div>
