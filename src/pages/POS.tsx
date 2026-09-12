@@ -109,8 +109,14 @@ export default function POS() {
   const [showMobileCartDrawer, setShowMobileCartDrawer] = useState(false)
 
   const [selectedTicketWidth, setSelectedTicketWidth] = useState<number>(() => {
-    return organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '58') || 58) : 58) || 58
+    return organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
   })
+
+  useEffect(() => {
+    if (organizationSettings?.ticketPrinterWidth) {
+      setSelectedTicketWidth(organizationSettings.ticketPrinterWidth)
+    }
+  }, [organizationSettings?.ticketPrinterWidth])
 
   const handleSelectTicketWidth = (newWidth: number) => {
     setSelectedTicketWidth(newWidth)
@@ -134,6 +140,7 @@ export default function POS() {
             businessName={currentBusinessTitle}
             clientName={receiptModal.clientName}
             clientPhone={receiptModal.clientPhone}
+            width={newWidth}
           />
         )
         setReceiptModal({
@@ -1059,6 +1066,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           businessName={currentBusinessTitle}
           clientName={selectedClient?.name}
           clientPhone={selectedClient?.phone}
+          width={selectedTicketWidth}
         />
       )
       await printService.printReceipt(ticketHTML, { title: 'Pre-cuenta', width: selectedTicketWidth })
@@ -1226,6 +1234,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             businessName={currentBusinessTitle}
             clientName={selectedClient?.name}
             clientPhone={selectedClient?.phone}
+            width={selectedTicketWidth}
           />
         )
         // Abrir modal ANTES de limpiar el borrador

@@ -173,7 +173,7 @@ export default function PendingOrdersModal({
       </body>
       </html>
     `
-    printService.printReceipt(html, { title: `Pedido_${ticketId}`, width: 58 })
+    printService.printReceipt(html, { title: `Pedido_${ticketId}` })
   }
 
   return (

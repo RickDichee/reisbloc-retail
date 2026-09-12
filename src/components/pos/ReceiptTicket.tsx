@@ -14,6 +14,7 @@ interface ReceiptTicketProps {
   phone?: string
   clientName?: string
   clientPhone?: string
+  width?: number
 }
 
 export default function ReceiptTicket({
@@ -27,6 +28,7 @@ export default function ReceiptTicket({
   phone = '',
   clientName = '',
   clientPhone = '',
+  width,
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { organizationSettings, currentUser } = useAppStore()
@@ -45,11 +47,11 @@ export default function ReceiptTicket({
 
   const ticketPhone = organizationSettings?.ticketPhone || phone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
-  const ticketWidth = organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '58') || 58) : 58) || 58
+  const ticketWidth = width || organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
 
-  // Ancho imprimible real: 80mm (70mm área neta) y 58mm (46mm área neta con 1mm de margen de seguridad)
+  // Ancho imprimible real: 80mm (72mm área neta) y 58mm (46mm área neta con 1mm de margen de seguridad)
   const is80mm = ticketWidth >= 70
-  const printableWidth = is80mm ? 70 : 46
+  const printableWidth = is80mm ? 72 : 46
 
   const registerName = (() => {
     const customNames = organizationSettings?.cashRegisters

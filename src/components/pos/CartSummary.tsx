@@ -96,7 +96,7 @@ export function CartSummary({ tableNumber, items, onSend, onClear, sending, prod
     `
 
     try {
-      await printService.printReceipt(html, { title: 'Cuenta', width: 58 })
+      await printService.printReceipt(html, { title: 'Cuenta' })
     } catch (e) {
       // noop: errores ya se loguean en printService
     }

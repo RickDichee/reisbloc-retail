@@ -118,7 +118,7 @@ export default function ClientHistoryModal({
       </body>
       </html>
     `
-    printService.printReceipt(html, { title: `Ticket_${folio}`, width: 58 })
+    printService.printReceipt(html, { title: `Ticket_${folio}` })
   }
 
   return (

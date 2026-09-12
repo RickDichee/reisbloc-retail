@@ -38,7 +38,7 @@ class PrintService {
         }
 
         const is80 = Number(width) >= 70
-        const printableMm = is80 ? 70 : 46
+        const printableMm = is80 ? 72 : 46
 
         const printHTML = `
           <!DOCTYPE html>
@@ -68,7 +68,7 @@ class PrintService {
                 color: #000 !important;
                 font-family: 'Consolas', 'Courier New', monospace, system-ui;
                 font-weight: 700;
-                font-size: ${is80 ? '11px' : '9.5px'};
+                font-size: ${is80 ? '11.5px' : '9.5px'};
                 line-height: 1.25;
                 text-align: left;
                 overflow: visible !important;
@@ -172,7 +172,7 @@ class PrintService {
     options: PrintOptions = {}
   ): Promise<void> {
     logger.info('print', 'Preparando impresión de ticket', {})
-    const preferredWidth = typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '58') || 58) : 58
+    const preferredWidth = typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80
     return this.printHTML(receiptHTML, {
       title: 'Ticket de Venta',
       width: options.width || preferredWidth,
