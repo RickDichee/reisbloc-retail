@@ -278,14 +278,15 @@ export const ticketService = {
 
   formatTicketAsText(data: TicketData): string {
     const date = data.date ? new Date(data.date).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
-    const addressStr = data.address || 'TEXTICUITZEO PASILLO 3 LOCAL 230';
-    const bizName = (data.businessName || 'MODA MIEL MX').toUpperCase();
+    const bizName = (data.businessName || 'REISBLOC STORE').toUpperCase();
     const folio = data.orderId ? data.orderId.slice(0, 8).toUpperCase() : 'VENTA';
 
     let text = `🧾 *TICKET DE COMPRA DIGITAL*\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n`;
     text += `✨ *${bizName}*\n`;
-    text += `📍 ${addressStr}\n`;
+    if (data.address && data.address.trim()) {
+      text += `📍 ${data.address.trim()}\n`;
+    }
     text += `🗓️ ${date} hrs\n`;
     text += `🏷️ Folio: #${folio}\n`;
     if (data.clientName) {

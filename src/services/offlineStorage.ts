@@ -37,14 +37,17 @@ interface ReisblocDB extends DBSchema {
     }
 }
 
-const DB_NAME = 'reisbloc_offline_db'
+import { useAppStore } from '@/store/appStore'
+
+const DB_BASE_NAME = 'reisbloc_offline_db'
 const DB_VERSION = 1
 
-let dbPromise: Promise<IDBPDatabase<ReisblocDB>> | null = null
+const dbPromises = new Map<string, Promise<IDBPDatabase<ReisblocDB>>>()
 
-export const initOfflineDB = () => {
-    if (!dbPromise) {
-        dbPromise = openDB<ReisblocDB>(DB_NAME, DB_VERSION, {
+export const initOfflineDB = (orgId?: string) => {
+    const dbName = orgId ? `${DB_BASE_NAME}_${orgId}` : DB_BASE_NAME
+    if (!dbPromises.has(dbName)) {
+        const promise = openDB<ReisblocDB>(dbName, DB_VERSION, {
             upgrade(db) {
                 // Products Store
                 if (!db.objectStoreNames.contains('products')) {
@@ -69,32 +72,47 @@ export const initOfflineDB = () => {
                 }
             },
         })
+        dbPromises.set(dbName, promise)
     }
-    return dbPromise
+    return dbPromises.get(dbName)!
 }
 
 class OfflineStorageService {
-    // === PRODUCTS ===
-    async saveProducts(products: Product[]): Promise<void> {
+    private resolveOrgId(explicitOrgId?: string): string {
+        if (explicitOrgId) return explicitOrgId
         try {
-            const db = await initOfflineDB()
+            return useAppStore.getState().currentUser?.organizationId || ''
+        } catch {
+            return ''
+        }
+    }
+
+    // === PRODUCTS ===
+    async saveProducts(products: Product[], explicitOrgId?: string): Promise<void> {
+        try {
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             const tx = db.transaction('products', 'readwrite')
             const now = Date.now()
+
+            // Limpiar productos previos de este tenant para evitar artefactos eliminados
+            await tx.store.clear()
 
             await Promise.all([
                 ...products.map(p => tx.store.put({ ...p, updated_at_local: now })),
                 tx.done
             ])
 
-            await this.setLastSync('products', now)
+            await this.setLastSync('products', now, orgId)
         } catch (error) {
             logger.error('offline', 'Error saving products to IDB', error)
         }
     }
 
-    async getProducts(): Promise<Product[]> {
+    async getProducts(explicitOrgId?: string): Promise<Product[]> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             return await db.getAll('products')
         } catch (error) {
             logger.error('offline', 'Error getting products from IDB', error)
@@ -103,26 +121,30 @@ class OfflineStorageService {
     }
 
     // === USERS ===
-    async saveUsers(users: User[]): Promise<void> {
+    async saveUsers(users: User[], explicitOrgId?: string): Promise<void> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             const tx = db.transaction('users', 'readwrite')
             const now = Date.now()
+
+            await tx.store.clear()
 
             await Promise.all([
                 ...users.map(u => tx.store.put({ ...u, updated_at_local: now })),
                 tx.done
             ])
 
-            await this.setLastSync('users', now)
+            await this.setLastSync('users', now, orgId)
         } catch (error) {
             logger.error('offline', 'Error saving users to IDB', error)
         }
     }
 
-    async getUsers(): Promise<User[]> {
+    async getUsers(explicitOrgId?: string): Promise<User[]> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             return await db.getAll('users')
         } catch (error) {
             logger.error('offline', 'Error getting users from IDB', error)
@@ -131,9 +153,10 @@ class OfflineStorageService {
     }
 
     // === SYNC QUEUE ===
-    async addToSyncQueue(operation: Omit<SyncOperation, 'id' | 'timestamp' | 'status' | 'retryCount'>): Promise<string> {
+    async addToSyncQueue(operation: Omit<SyncOperation, 'id' | 'timestamp' | 'status' | 'retryCount'>, explicitOrgId?: string): Promise<string> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             const id = crypto.randomUUID()
             const syncOp: SyncOperation = {
                 ...operation,
@@ -157,9 +180,10 @@ class OfflineStorageService {
         }
     }
 
-    async getPendingSyncOperations(): Promise<SyncOperation[]> {
+    async getPendingSyncOperations(explicitOrgId?: string): Promise<SyncOperation[]> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             return await db.getAllFromIndex('sync_queue', 'by-status', 'pending')
         } catch (error) {
             logger.error('offline', 'Error getting sync queue', error)
@@ -167,9 +191,10 @@ class OfflineStorageService {
         }
     }
 
-    async updateSyncOperation(id: string, updates: Partial<SyncOperation>): Promise<void> {
+    async updateSyncOperation(id: string, updates: Partial<SyncOperation>, explicitOrgId?: string): Promise<void> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             const tx = db.transaction('sync_queue', 'readwrite')
             const item = await tx.store.get(id)
 
@@ -182,9 +207,10 @@ class OfflineStorageService {
         }
     }
 
-    async removeSyncOperation(id: string): Promise<void> {
+    async removeSyncOperation(id: string, explicitOrgId?: string): Promise<void> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             await db.delete('sync_queue', id)
         } catch (error) {
             logger.error('offline', 'Error removing sync operation', error)
@@ -192,18 +218,20 @@ class OfflineStorageService {
     }
 
     // === METADATA ===
-    async setLastSync(entity: string, timestamp: number): Promise<void> {
+    async setLastSync(entity: string, timestamp: number, explicitOrgId?: string): Promise<void> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             await db.put('metadata', { id: `last_sync_${entity}`, lastSync: timestamp })
         } catch (error) {
             console.warn('Could not save sync metadata', error)
         }
     }
 
-    async getLastSync(entity: string): Promise<number | null> {
+    async getLastSync(entity: string, explicitOrgId?: string): Promise<number | null> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
             const data = await db.get('metadata', `last_sync_${entity}`)
             return data ? data.lastSync : null
         } catch (error) {
@@ -211,17 +239,38 @@ class OfflineStorageService {
         }
     }
 
-    async clearAllData(): Promise<void> {
+    async clearAllData(explicitOrgId?: string): Promise<void> {
         try {
-            const db = await initOfflineDB()
+            const orgId = this.resolveOrgId(explicitOrgId)
+            
+            // 1. Limpiar base de datos del tenant actual
+            const db = await initOfflineDB(orgId)
             const tx = db.transaction(['products', 'users', 'metadata', 'sync_queue'], 'readwrite')
             await Promise.all([
                 tx.objectStore('products').clear(),
                 tx.objectStore('users').clear(),
                 tx.objectStore('metadata').clear(),
-                // No borramos el sync_queue a menos que sea un log-out completo
+                tx.objectStore('sync_queue').clear(),
                 tx.done
             ])
+
+            // 2. Limpiar base de datos legacy general si existe
+            if (orgId) {
+                try {
+                    const legacyDb = await initOfflineDB('')
+                    const legacyTx = legacyDb.transaction(['products', 'users', 'metadata', 'sync_queue'], 'readwrite')
+                    await Promise.all([
+                        legacyTx.objectStore('products').clear(),
+                        legacyTx.objectStore('users').clear(),
+                        legacyTx.objectStore('metadata').clear(),
+                        legacyTx.objectStore('sync_queue').clear(),
+                        legacyTx.done
+                    ])
+                } catch (e) {}
+            }
+
+            // 3. Resetear mapa de promesas de DBs
+            dbPromises.clear()
         } catch (error) {
             logger.error('offline', 'Error clearing offline data', error)
         }

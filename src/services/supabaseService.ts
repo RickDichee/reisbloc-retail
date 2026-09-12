@@ -43,9 +43,20 @@ class SupabaseService {
     }
   }
 
+  // Helper para claves de almacenamiento local aisladas por organización
+  public getLocalOrdersKey(explicitOrgId?: string): string {
+    const org = explicitOrgId || this.getCurrentOrgId()
+    return org ? `local_pending_orders_${org}` : 'local_pending_orders'
+  }
+
+  public getCrmClientsKey(explicitOrgId?: string): string {
+    const org = explicitOrgId || this.getCurrentOrgId()
+    return org ? `cached_crm_clients_${org}` : 'cached_crm_clients'
+  }
+
   // Helper para obtener el ID de organización actual
   public getCurrentOrgId(): string {
-    // 1. Intentar obtener del store global en memoria (siempre fresco)
+    // 1. Intentar obtener del store global en memoria (fuente de verdad inmediata)
     try {
       const storeState = useAppStore.getState()
       if (storeState?.currentUser?.organizationId) {
@@ -53,26 +64,13 @@ class SupabaseService {
       }
     } catch (e) {}
 
-    // 2. Intentar obtener de los datos del token en localStorage
+    // 2. Intentar obtener de los datos del token en memoria / storage autenticado
     const token = getStoredToken()
     if (token && token.organizationId) {
       return token.organizationId
     }
 
-    // 3. Fallback directo a localStorage
-    try {
-      const appStoreRaw = localStorage.getItem('app-store')
-      if (appStoreRaw) {
-        const parsed = JSON.parse(appStoreRaw)
-        if (parsed?.state?.currentUser?.organizationId) {
-          return parsed.state.currentUser.organizationId
-        }
-      }
-      const directOrg = localStorage.getItem('current_org_id')
-      if (directOrg) return directOrg
-    } catch (e) {}
-
-    logger.warn('supabase', '⚠️ No organization ID found in token or store')
+    logger.warn('supabase', '⚠️ No organization ID found in authenticated store or token')
     return ''
   }
 
@@ -241,9 +239,10 @@ class SupabaseService {
       }
 
       // Validar organization_id
-      let finalOrgId = this.getCurrentOrgId()
+      const finalOrgId = this.getCurrentOrgId()
       if (!finalOrgId || !uuidRegex.test(finalOrgId)) {
-        finalOrgId = localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001'
+        logger.warn('supabase', '⚠️ No valid organization ID available for audit log; skipping insert')
+        return
       }
 
       const { error } = await supabase
@@ -845,7 +844,8 @@ class SupabaseService {
       const currentOrgId = this.getCurrentOrgId()
       if (!currentOrgId || !navigator.onLine) return
 
-      const localOrders: any[] = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+      const ordersKey = this.getLocalOrdersKey(currentOrgId)
+      const localOrders: any[] = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       if (localOrders.length === 0) return
 
       const unsynced = localOrders.filter(o => typeof o.id === 'string' && o.id.startsWith('ord-') && (o.syncAttempts || 0) < 3)
@@ -874,9 +874,9 @@ class SupabaseService {
 
           const { data, error } = await supabase.from('orders').insert([payload]).select('id').single()
           if (!error && data) {
-            const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+            const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
             const updated = existing.map((o: any) => o.id === order.id ? { ...o, id: data.id, organizationId: currentOrgId } : o)
-            localStorage.setItem('local_pending_orders', JSON.stringify(updated))
+            localStorage.setItem(ordersKey, JSON.stringify(updated))
             logger.info('supabase', `⚡ Pedido local #${order.id} sincronizado exitosamente a Supabase remoto como #${data.id}`)
           } else if (error) {
             logger.warn('supabase', `⚠️ Fallo sincronización de pedido ${order.id}:`, error.message)
@@ -890,12 +890,12 @@ class SupabaseService {
       }
 
       try {
-        const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+        const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
         const updated = existing.map((o: any) => {
           const matched = unsynced.find(u => u.id === o.id)
           return matched ? { ...o, syncAttempts: matched.syncAttempts } : o
         })
-        localStorage.setItem('local_pending_orders', JSON.stringify(updated))
+        localStorage.setItem(ordersKey, JSON.stringify(updated))
       } catch (e) {}
 
     } catch (e) {} finally {
@@ -922,10 +922,11 @@ class SupabaseService {
         createdAt: o.created_at || o.createdAt || new Date()
       }))
 
-      // Merge con órdenes respaldadas en caché local (filtradas estrictamente por organización)
+      // Merge con órdenes respaldadas en caché local aisladas por organización
       let localOrders: any[] = []
       try {
-        localOrders = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+        const ordersKey = this.getLocalOrdersKey(currentOrgId)
+        localOrders = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       } catch (e) {}
 
       const remoteIds = new Set(normalizedRemote.map(o => o.id))
@@ -941,7 +942,8 @@ class SupabaseService {
       logger.error('supabase', 'Error getting active orders', error as any)
       try {
         const currentOrgId = this.getCurrentOrgId()
-        const local = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+        const ordersKey = this.getLocalOrdersKey(currentOrgId)
+        const local = JSON.parse(localStorage.getItem(ordersKey) || '[]')
         return local.filter((l: any) => !l.organizationId || !currentOrgId || l.organizationId === currentOrgId) as Order[]
       } catch (e) {
         return []
@@ -967,7 +969,10 @@ class SupabaseService {
 
   async createOrder(order: Omit<Order, 'id'>): Promise<string> {
     try {
-      const orgId = (order as any).organizationId || (order as any).organization_id || this.getCurrentOrgId() || localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001'
+      const orgId = (order as any).organizationId || (order as any).organization_id || this.getCurrentOrgId()
+      if (!orgId) {
+        throw new Error('Organization ID requerido para crear pedido')
+      }
       const payload = this.buildOrderPayload({ ...order, createdAt: (order as any).createdAt || new Date() })
       payload.organization_id = orgId
 
@@ -1011,14 +1016,15 @@ class SupabaseService {
   saveLocalPendingOrder(order: any) {
     try {
       const orgId = order.organizationId || order.organization_id || this.getCurrentOrgId()
-      const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+      const ordersKey = this.getLocalOrdersKey(orgId)
+      const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       const filtered = existing.filter((o: any) => o.id !== order.id)
       filtered.unshift({
         ...order,
         organizationId: orgId,
         createdAt: order.createdAt || new Date().toISOString()
       })
-      localStorage.setItem('local_pending_orders', JSON.stringify(filtered))
+      localStorage.setItem(ordersKey, JSON.stringify(filtered))
     } catch (e) {}
   }
 
@@ -1048,14 +1054,15 @@ class SupabaseService {
 
   updateLocalPendingOrder(orderId: string, updates: Partial<Order>) {
     try {
-      const existing = JSON.parse(localStorage.getItem('local_pending_orders') || '[]')
+      const ordersKey = this.getLocalOrdersKey()
+      const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       const updated = existing.map((o: any) => {
         if (o.id === orderId) {
           return { ...o, ...updates }
         }
         return o
       })
-      localStorage.setItem('local_pending_orders', JSON.stringify(updated))
+      localStorage.setItem(ordersKey, JSON.stringify(updated))
     } catch (e) {}
   }
 
@@ -2415,24 +2422,31 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
   // ==================== CRM CLIENTS & ADEUDOS ====================
 
   async getAllClients(): Promise<any[]> {
+    const currentOrgId = this.getCurrentOrgId()
+    const crmKey = this.getCrmClientsKey(currentOrgId)
     try {
       const { data, error } = await withOrg(
         supabase.from('clients').select('*'),
-        this.getCurrentOrgId()
+        currentOrgId
       ).order('name', { ascending: true })
 
       if (error || !data) {
-        return JSON.parse(localStorage.getItem('cached_crm_clients') || '[]')
+        return JSON.parse(localStorage.getItem(crmKey) || '[]')
       }
 
-      localStorage.setItem('cached_crm_clients', JSON.stringify(data))
+      localStorage.setItem(crmKey, JSON.stringify(data))
       return data
     } catch (e) {
-      return JSON.parse(localStorage.getItem('cached_crm_clients') || '[]')
+      return JSON.parse(localStorage.getItem(crmKey) || '[]')
     }
   }
 
   async createClientWithDuplicateCheck(clientData: { name: string; phone?: string; email?: string; notes?: string }, createdByUserId: string): Promise<any> {
+    const orgId = this.getCurrentOrgId()
+    if (!orgId) {
+      throw new Error('Organization ID requerido para registrar cliente')
+    }
+
     const existing = await this.getAllClients()
     const cleanPhone = (clientData.phone || '').trim().replace(/\D/g, '')
     const cleanName = (clientData.name || '').trim().toLowerCase()
@@ -2451,7 +2465,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     }
 
     const payload: any = {
-      organization_id: this.getCurrentOrgId() || localStorage.getItem('current_org_id') || '00000000-0000-0000-0000-000000000001',
+      organization_id: orgId,
       name: clientData.name.trim(),
       phone: clientData.phone ? clientData.phone.trim() : null,
       email: clientData.email ? clientData.email.trim() : null,
@@ -2481,9 +2495,10 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     } catch (e: any) {
       logger.warn('supabase', 'RLS o fallback en creación de cliente CRM:', e?.message)
       createdClient = { ...payload, id: `client-${Date.now()}` }
-      const cached = JSON.parse(localStorage.getItem('cached_crm_clients') || '[]')
+      const crmKey = this.getCrmClientsKey(orgId)
+      const cached = JSON.parse(localStorage.getItem(crmKey) || '[]')
       cached.unshift(createdClient)
-      localStorage.setItem('cached_crm_clients', JSON.stringify(cached))
+      localStorage.setItem(crmKey, JSON.stringify(cached))
     }
 
 

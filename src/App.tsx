@@ -8,7 +8,8 @@ import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { getStoredToken } from '@/services/jwtService'
 import OfflineIndicator from '@/components/common/OfflineIndicator'
-import { useTenantTheme } from '@/hooks/useTenantTheme'
+import { useTenantTheme, resetTenantTheme } from '@/hooks/useTenantTheme'
+import { authLogout } from '@/services/authService'
 
 // 🚀 Code Splitting: Carga diferida de páginas para optimización de bundle
 const LandingPage = lazy(() => import('@/pages/LandingPage'))
@@ -249,7 +250,7 @@ export default function App() {
               // 🛡️ Pre-cargar configuración de la organización para el Layout
               try {
                 const org = await supabaseService.getOrganizationById(user.organizationId)
-                if (org) {
+                if (org && org.id === user.organizationId) {
                   const mergedSettings = {
                     ...(org.settings || {}),
                     id: org.id,
@@ -268,16 +269,42 @@ export default function App() {
                 console.warn('⚠️ No se pudo cargar la configuración de la organización:', orgError)
               }
             }
+          } else {
+            // Usuario sin registro en public.users
+            useAppStore.getState().logout()
+            resetTenantTheme()
           }
+        } else {
+          // 🛡️ AISLAMIENTO: Sin sesión activa en Supabase -> purgar cualquier estado residual
+          useAppStore.getState().logout()
+          resetTenantTheme()
         }
       } catch (globalError) {
         console.error('❌ Error crítico en restoreSession:', globalError)
+        useAppStore.getState().logout()
+        resetTenantTheme()
       } finally {
         setInitializing(false)
       }
     }
 
     restoreSession()
+
+    // 🛡️ Sincronización reactiva del estado de autenticación
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        await authLogout()
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        const currentStoredUser = useAppStore.getState().currentUser
+        if (currentStoredUser?.id !== session.user.id) {
+          await restoreSession()
+        }
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [setCurrentUser, setAuthenticated, setInitializing])
 
   if (isInitializing) {

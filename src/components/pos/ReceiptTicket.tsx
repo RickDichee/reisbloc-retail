@@ -23,7 +23,7 @@ export default function ReceiptTicket({
   paymentMethod,
   tableNumber,
   businessName,
-  address = 'TEXTICUITZEO PASILLO 3 LOCAL 230',
+  address = '',
   phone = '',
   clientName = '',
   clientPhone = '',
@@ -32,15 +32,16 @@ export default function ReceiptTicket({
   const { organizationSettings, currentUser } = useAppStore()
   
   const isMM = Boolean(
-    organizationSettings?.slug?.includes('modamiel') ||
-    organizationSettings?.name?.toLowerCase().includes('moda miel') ||
-    currentUser?.organizationId === '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+    currentUser?.organizationId === '1b498fa6-aca5-428c-9bdd-01e6fea30316' ||
+    organizationSettings?.slug === 'modamiel' ||
+    organizationSettings?.name?.toLowerCase().includes('moda miel')
   )
 
   const defaultName = isMM ? 'MODA MIEL MX' : (organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'REISBLOC STORE')
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
   const ticketBusinessName = (organizationSettings?.ticketBusinessName || businessName || defaultName).toUpperCase()
-  const ticketAddress = organizationSettings?.ticketAddress || address || 'TEXTICUITZEO PASILLO 3 LOCAL 230'
+  const defaultAddress = isMM ? 'TEXTICUITZEO PASILLO 3 LOCAL 230' : ''
+  const ticketAddress = organizationSettings?.ticketAddress || address || defaultAddress
 
   const ticketPhone = organizationSettings?.ticketPhone || phone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'

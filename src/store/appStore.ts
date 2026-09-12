@@ -110,9 +110,51 @@ export const useAppStore = create<AppStore>()(
       // Auth state
       setInitializing: (status: boolean) => set({ isInitializing: status }),
       setAuthenticated: (status: boolean) => set({ isAuthenticated: status }),
-      setCurrentUser: (user: User | null) => set({ currentUser: user }),
+      setCurrentUser: (user: User | null) => {
+        if (!user) {
+          set({ currentUser: null, isAuthenticated: false })
+          return
+        }
+        const prevOrgId = get().currentUser?.organizationId
+        const newOrgId = user.organizationId
+        if (prevOrgId && newOrgId && prevOrgId !== newOrgId) {
+          // 🛡️ AISLAMIENTO MULTI-TENANT ESTRICTO:
+          // El usuario pertenece a una organización diferente a la almacenada previamente.
+          // Purgar inmediatamente drafts, productos, usuarios y configuración del tenant anterior.
+          set({
+            currentUser: user,
+            isAuthenticated: true,
+            organizationSettings: null,
+            products: [],
+            users: [],
+            draftOrders: {},
+            orgPlan: 'free',
+            orgPlanNote: null,
+            currentTicketNumber: 1
+          })
+        } else {
+          set({ currentUser: user, isAuthenticated: true })
+        }
+      },
       setCurrentDevice: (device: Device | null) => set({ currentDevice: device }),
-      logout: () => set({ ...initialState }),
+      logout: () => {
+        set({
+          ...initialState,
+          isInitializing: false,
+          draftOrders: {},
+          products: [],
+          users: [],
+          organizationSettings: null
+        })
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('app-store')
+            localStorage.removeItem('current_org_id')
+            localStorage.removeItem('reisbloc_auth_token')
+            localStorage.removeItem('current_branch_id')
+          }
+        } catch (e) {}
+      },
 
       // Tickets (números de orden)
       setTickets: (tickets: number[]) => set({ tickets }),

@@ -14,6 +14,8 @@ import { clearAuthToken, getStoredToken } from './jwtService'
 import supabaseService from './supabaseService'
 import deviceService from './deviceService'
 import { useAppStore } from '@/store/appStore'
+import { offlineStorage } from './offlineStorage'
+import { resetTenantTheme } from '@/hooks/useTenantTheme'
 
 import logger from '@/utils/logger'
 import { User } from '@/types/index'
@@ -108,23 +110,57 @@ export async function authLogout(): Promise<void> {
   try {
     clearAuthToken() // Limpiar token local
 
-    // BARRIDO EXTREMO: Destruir todas las sesiones de Supabase en LocalStorage 
-    // manualmente para evitar que reviva en el próximo refresco si la red falla.
+    // 1. Purgar caché offline IndexedDB
+    try {
+      await offlineStorage.clearAllData()
+      logger.info('auth', '🗑️ Caché offline de IndexedDB purgada')
+    } catch (dbErr) {
+      logger.warn('auth', 'Error limpiando IndexedDB en logout', dbErr)
+    }
+
+    // 2. Resetear store global en memoria y persistencia
+    try {
+      useAppStore.getState().logout()
+      logger.info('auth', '🗑️ Estado global useAppStore reseteado a initialState')
+    } catch (storeErr) {
+      logger.warn('auth', 'Error reseteando store en logout', storeErr)
+    }
+
+    // 3. Restaurar tema por defecto en DOM y eliminar cualquier clase de marca residual
+    try {
+      resetTenantTheme()
+      logger.info('auth', '🎨 Tema visual reseteado a DEFAULT_THEME en DOM')
+    } catch (themeErr) {
+      logger.warn('auth', 'Error reseteando tema en logout', themeErr)
+    }
+
+    // 4. BARRIDO TOTAL: Destruir todas las sesiones, tokens, catálogos y órdenes en LocalStorage
     if (typeof localStorage !== 'undefined') {
-      const keysToRemove = []
+      const keysToRemove: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
-        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token'))) {
+        if (!key) continue
+        if (
+          key.startsWith('sb-') ||
+          key.includes('supabase') ||
+          key.startsWith('local_pending_orders') ||
+          key.startsWith('cached_crm_clients') ||
+          key === 'app-store' ||
+          key === 'current_org_id' ||
+          key === 'reisbloc_auth_token' ||
+          key === 'current_branch_id' ||
+          key === 'device_fingerprint'
+        ) {
           keysToRemove.push(key)
         }
       }
       keysToRemove.forEach(k => localStorage.removeItem(k))
-      logger.info('auth', `🗑️ ${keysToRemove.length} tokens de Supabase eliminados manualmente`)
+      logger.info('auth', `🗑️ ${keysToRemove.length} llaves de almacenamiento local eliminadas manualmente`)
     }
 
     logger.info('auth', '🗑️ Token local eliminado')
 
-    // Intentar logout de Supabase, pero no bloquear si falla
+    // 5. Intentar logout de Supabase, pero no bloquear si falla
     supabase.auth.signOut().catch(err => {
       logger.warn('auth', 'Supabase signOut warning (Ignorado por barrido local)', err)
     })

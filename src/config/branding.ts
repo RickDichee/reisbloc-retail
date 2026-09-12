@@ -1,22 +1,50 @@
 export const checkIsModaMiel = (hostname?: string, search?: string, hash?: string, orgSlug?: string): boolean => {
-  const host = (hostname || (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
-  const query = (search || (typeof window !== 'undefined' ? window.location.search : '')).toLowerCase()
-  const fragment = (hash || (typeof window !== 'undefined' ? window.location.hash : '')).toLowerCase()
-  const slug = (orgSlug || '').toLowerCase()
-  
+  // 🛡️ AISLAMIENTO ESTRICTO: Si se provee orgSlug / orgId específico, evaluar ÚNICAMENTE la organización
+  if (typeof orgSlug === 'string' && orgSlug.trim() !== '') {
+    const slug = orgSlug.toLowerCase()
+    return (
+      slug === 'modamiel' ||
+      slug === 'moda-miel' ||
+      slug === 'moda miel' ||
+      slug.includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
+    )
+  }
+
+  // Si no hay organización (usuario público o en login), evaluar exclusivamente la URL
+  const host = (hostname !== undefined ? hostname : (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
+  const query = (search !== undefined ? search : (typeof window !== 'undefined' ? window.location.search : '')).toLowerCase()
+  const fragment = (hash !== undefined ? hash : (typeof window !== 'undefined' ? window.location.hash : '')).toLowerCase()
+
   return (
     host.includes('modamiel') ||
     host.includes('moda-miel') ||
     query.includes('brand=modamiel') ||
-    fragment.includes('brand=modamiel') ||
-    slug.includes('modamiel') ||
-    slug.includes('moda-miel') ||
-    slug.includes('moda miel') ||
-    slug.includes('1b498fa6')
+    fragment.includes('brand=modamiel')
   )
 }
 
-const isModaMiel = checkIsModaMiel()
+export function getBranding(isMM: boolean = false, customSettings?: any) {
+  const theme = isMM ? MODA_MIEL_THEME : DEFAULT_THEME
+  const appName = isMM ? 'Moda Miel MX' : (customSettings?.businessName || customSettings?.name || 'Reisbloc Store')
+  const whiteLabel = isMM ? 'Moda Miel MX' : (customSettings?.businessName || 'Reisbloc')
+
+  return {
+    isModaMiel: isMM,
+    appName,
+    whiteLabelName: whiteLabel,
+    appWithBrand: isMM ? 'Moda Miel MX' : (customSettings?.businessName || 'Reisbloc Store'),
+    poweredBy: 'POWERED BY REISBLOC',
+    poweredByUrl: 'Visítanos en: reisbloc.store',
+    poweredByTagline: 'Integra el Poder de la IA en tu negocio',
+
+    logoUrl: isMM ? '/images/moda-miel-mx-logo.jpeg' : (customSettings?.logoUrl || '/icon.svg'),
+    bannerUrl: isMM ? '/images/moda-miel-mx-banner.jpeg' : undefined,
+    loginSubtitle: isMM ? 'Accede a tu sistema POS de Moda Miel MX' : 'Accede a tu punto de venta',
+    loadingTitle: isMM ? 'Moda Miel MX' : (customSettings?.businessName || 'Reisbloc Store'),
+    receiptTagline: isMM ? MODA_MIEL_THEME.tagline : (customSettings?.tagline || DEFAULT_THEME.tagline),
+    theme: isMM ? MODA_MIEL_THEME : DEFAULT_THEME
+  }
+}
 
 export interface TenantThemeConfig {
   id: string
@@ -81,21 +109,50 @@ export const DEFAULT_THEME: TenantThemeConfig = {
   tagline: 'Tu negocio, sin límites'
 }
 
+/**
+ * BRANDING dinámico: Usa getters para no quedar congelado estáticamente
+ * en el primer render y reflejar si la página o el contexto actual es Moda Miel o Default.
+ */
 export const BRANDING = {
-  isModaMiel,
-  appName: isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store',
-  whiteLabelName: isModaMiel ? 'Moda Miel MX' : 'Reisbloc',
-  appWithBrand: isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store',
-  poweredBy: 'POWERED BY REISBLOC',
-  poweredByUrl: 'Visítanos en: reisbloc.store',
-  poweredByTagline: 'Integra el Poder de la IA en tu negocio',
-
-  logoUrl: isModaMiel ? '/images/moda-miel-mx-logo.jpeg' : '/icon.svg',
-  bannerUrl: isModaMiel ? '/images/moda-miel-mx-banner.jpeg' : undefined,
-  loginSubtitle: isModaMiel ? 'Accede a tu sistema POS de Moda Miel MX' : 'Accede a tu punto de venta',
-  loadingTitle: isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store',
-  receiptTagline: isModaMiel ? MODA_MIEL_THEME.tagline : DEFAULT_THEME.tagline,
-  theme: isModaMiel ? MODA_MIEL_THEME : DEFAULT_THEME
-} as const
+  get isModaMiel() {
+    return checkIsModaMiel()
+  },
+  get appName() {
+    return checkIsModaMiel() ? 'Moda Miel MX' : 'Reisbloc Store'
+  },
+  get whiteLabelName() {
+    return checkIsModaMiel() ? 'Moda Miel MX' : 'Reisbloc'
+  },
+  get appWithBrand() {
+    return checkIsModaMiel() ? 'Moda Miel MX' : 'Reisbloc Store'
+  },
+  get poweredBy() {
+    return 'POWERED BY REISBLOC'
+  },
+  get poweredByUrl() {
+    return 'Visítanos en: reisbloc.store'
+  },
+  get poweredByTagline() {
+    return 'Integra el Poder de la IA en tu negocio'
+  },
+  get logoUrl() {
+    return checkIsModaMiel() ? '/images/moda-miel-mx-logo.jpeg' : '/icon.svg'
+  },
+  get bannerUrl() {
+    return checkIsModaMiel() ? '/images/moda-miel-mx-banner.jpeg' : undefined
+  },
+  get loginSubtitle() {
+    return checkIsModaMiel() ? 'Accede a tu sistema POS de Moda Miel MX' : 'Accede a tu punto de venta'
+  },
+  get loadingTitle() {
+    return checkIsModaMiel() ? 'Moda Miel MX' : 'Reisbloc Store'
+  },
+  get receiptTagline() {
+    return checkIsModaMiel() ? MODA_MIEL_THEME.tagline : DEFAULT_THEME.tagline
+  },
+  get theme() {
+    return checkIsModaMiel() ? MODA_MIEL_THEME : DEFAULT_THEME
+  }
+}
 
 

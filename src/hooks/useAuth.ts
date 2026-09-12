@@ -17,13 +17,11 @@ export function useAuth() {
     try {
       logger.info('auth', 'Iniciando proceso de logout...')
 
-      // 1. Limpiar sesión en servidor y local storage
+      // 1. Limpiar sesión en servidor, IndexedDB, tema y local storage
       await authLogout()
 
-      // 2. Limpiar usuario y dispositivo en estado global
-      store.setCurrentUser(null)
-      store.setCurrentDevice(null)
-      store.setAuthenticated(false)
+      // 2. Resetear estado global por completo
+      store.logout()
 
       logger.info('auth', 'Estado de sesión limpiado correctamente. Redirigiendo...')
       navigate('/')

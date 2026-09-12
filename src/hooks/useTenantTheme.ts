@@ -8,6 +8,33 @@ import {
   TenantThemeConfig
 } from '@/config/branding'
 
+export function resetTenantTheme() {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  const body = document.body
+  root.classList.remove('theme-modamiel')
+  body.classList.remove('theme-modamiel')
+
+  root.style.setProperty('--primary', DEFAULT_THEME.primaryColor)
+  root.style.setProperty('--primary-hover', DEFAULT_THEME.primaryHoverColor)
+  root.style.setProperty('--secondary', DEFAULT_THEME.secondaryColor)
+  root.style.setProperty('--accent', DEFAULT_THEME.accentColor)
+  root.style.setProperty('--bg-canvas', DEFAULT_THEME.bgCanvas)
+  root.style.setProperty('--bg-surface', DEFAULT_THEME.bgSurface)
+  root.style.setProperty('--text-main', DEFAULT_THEME.textMain)
+  root.style.setProperty('--text-secondary', DEFAULT_THEME.textSecondary)
+  root.style.setProperty('--border-light', DEFAULT_THEME.borderColor)
+  root.style.setProperty('--font-serif', DEFAULT_THEME.fontSerif)
+  root.style.setProperty('--font-script', DEFAULT_THEME.fontScript)
+  root.style.setProperty('--font-sans', DEFAULT_THEME.fontSans)
+
+  document.title = DEFAULT_THEME.name
+  const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
+  if (favicon) {
+    favicon.href = '/icon.svg'
+  }
+}
+
 export function useTenantTheme(): {
   isModaMiel: boolean
   theme: TenantThemeConfig
@@ -18,34 +45,43 @@ export function useTenantTheme(): {
   const [isModaMielActive, setIsModaMielActive] = useState<boolean>(false)
 
   useEffect(() => {
-    // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ROBUSTA:
+    // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ESTRICTA:
     // Si el usuario está autenticado (currentUser), su tema se define ESTRICTAMENTE por su propia Organización.
-    // Jamás imponer el tema de Moda Miel a un usuario de otra tienda (ej. Reisbloc Store) por el hostname.
+    // Jamás imponer el tema de Moda Miel a un usuario de otra tienda.
     let isMM = false
-    const userOrgSlug = organizationSettings?.slug || organizationSettings?.name || currentUser?.businessName || currentUser?.organizationId || ''
+
+    // Validar que organizationSettings coincida exactamente con currentUser.organizationId para evitar settings residuales
+    const isSettingsMatchingUser = Boolean(
+      currentUser &&
+      organizationSettings &&
+      (!organizationSettings.id || organizationSettings.id === currentUser.organizationId)
+    )
+    const validSettings = isSettingsMatchingUser ? organizationSettings : (currentUser ? null : organizationSettings)
 
     if (currentUser) {
-      // Usuario autenticado -> Evaluar únicamente si la organización del usuario es Moda Miel
-      isMM = checkIsModaMiel('', '', '', userOrgSlug) || currentUser?.organizationId === '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+      // Usuario autenticado -> Evaluar única y estrictamente los datos de la organización del usuario
+      const userOrgId = currentUser.organizationId || ''
+      const userOrgSlug = validSettings?.slug || validSettings?.name || ''
+      isMM = (userOrgId === '1b498fa6-aca5-428c-9bdd-01e6fea30316') ||
+             checkIsModaMiel('', '', '', userOrgSlug || userOrgId)
     } else {
-      // Visitante público no autenticado -> Evaluar por subdominio o parámetro
+      // Visitante público no autenticado -> Evaluar exclusivamente por hostname / query string
       isMM = checkIsModaMiel(
         window.location.hostname,
         location.search || window.location.search,
-        location.hash || window.location.hash,
-        userOrgSlug
+        location.hash || window.location.hash
       )
     }
 
-    // 🎨 Soporte para temas personalizados definidos en organizationSettings.theme
+    // 🎨 Soporte para temas personalizados definidos en validSettings.theme
     // Si la organización tiene colores / tipografías custom en BD, se aplican sobre el baseTheme.
     const baseTheme = isMM ? MODA_MIEL_THEME : DEFAULT_THEME
-    const customTheme = (organizationSettings?.theme as Partial<TenantThemeConfig>) || {}
+    const customTheme = (validSettings?.theme as Partial<TenantThemeConfig>) || {}
     const selectedTheme: TenantThemeConfig = {
       ...baseTheme,
       ...customTheme,
-      id: isMM ? 'modamiel' : (organizationSettings?.slug || customTheme.id || baseTheme.id),
-      name: organizationSettings?.businessName || customTheme.name || baseTheme.name
+      id: isMM ? 'modamiel' : (validSettings?.slug || customTheme.id || baseTheme.id),
+      name: validSettings?.businessName || customTheme.name || baseTheme.name
     }
 
     setActiveTheme(selectedTheme)
@@ -87,11 +123,11 @@ export function useTenantTheme(): {
     root.style.setProperty('--font-sans', selectedTheme.fontSans)
 
     // Favicon y Título dinámicos
-    const appTitle = isMM ? 'Moda Miel MX' : (organizationSettings?.businessName || currentUser?.businessName || 'Reisbloc Store')
+    const appTitle = isMM ? 'Moda Miel MX' : (validSettings?.businessName || currentUser?.businessName || 'Reisbloc Store')
     document.title = appTitle
     const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
     if (favicon) {
-      const customLogo = (organizationSettings as any)?.logo_url || currentUser?.avatar_url
+      const customLogo = (validSettings as any)?.logo_url || (validSettings as any)?.logoUrl || currentUser?.avatar_url
       favicon.href = isMM ? '/images/moda-miel-mx-logo.jpeg' : (customLogo || '/icon.svg')
     }
   }, [location.search, location.hash, location.pathname, organizationSettings, currentUser])
