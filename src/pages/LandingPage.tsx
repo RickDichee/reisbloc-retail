@@ -422,10 +422,10 @@ export default function LandingPage() {
       {/* SECCIÓN: CASO DE ÉXITO (MODA MIEL MX) */}
       {/* ========================================================================= */}
       <section id="custom-brands" className="py-16 bg-[#0B0F19] border-t border-slate-800/80">
-        <div className="max-w-6xl mx-auto px-6 space-y-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           
           <div className="text-center max-w-2xl mx-auto space-y-2">
-            <span className="px-3 py-1 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-bold uppercase tracking-widest">
+            <span className="inline-block px-3 py-1 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs font-bold uppercase tracking-widest">
               Caso de Éxito en Producción
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
@@ -436,26 +436,26 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 sm:p-8 border border-pink-500/30 grid md:grid-cols-12 gap-5 sm:gap-6 items-center">
-            <div className="md:col-span-8 space-y-3">
-              <div className="flex items-center gap-3">
+          <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 sm:p-8 border border-pink-500/30 grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-center min-w-0 overflow-hidden relative shadow-xl">
+            <div className="md:col-span-8 space-y-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 <span className="text-3xl flex-shrink-0">🐞</span>
-                <div className="min-w-0">
-                  <h3 className="text-lg sm:text-xl font-bold text-white truncate">Moda Miel MX</h3>
-                  <p className="text-[10px] text-pink-400 font-bold uppercase tracking-wider truncate">Tienda de Importación Mayorista · Pasillo 3 Local 230</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg sm:text-xl font-bold text-white break-words">Moda Miel MX</h3>
+                  <p className="text-[10px] sm:text-xs text-pink-400 font-bold uppercase tracking-wider leading-relaxed break-words">Tienda de Importación Mayorista · Pasillo 3 Local 230</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed break-words">
                 Personalización completa con catálogo digital en tiempo real de lotes por paquete, canal directo de pedidos hacia WhatsApp, sincronización de stock multi-caja y conciliación de ventas con terminales automáticas.
               </p>
             </div>
-            <div className="md:col-span-4 text-center md:text-right">
+            <div className="md:col-span-4 flex justify-center md:justify-end pt-2 md:pt-0">
               <Link
                 to="/login?brand=modamiel"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#D4386C] hover:bg-[#B52656] text-white font-bold px-5 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-105"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#D4386C] hover:bg-[#B52656] text-white font-bold px-6 py-3 rounded-xl text-xs sm:text-sm transition-all shadow-lg hover:scale-105 active:scale-95 text-center"
               >
                 <span>Ver Experiencia Moda Miel</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="flex-shrink-0" />
               </Link>
             </div>
           </div>
