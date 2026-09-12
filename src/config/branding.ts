@@ -34,7 +34,7 @@ export function getBranding(isMM: boolean = false, customSettings?: any) {
     whiteLabelName: whiteLabel,
     appWithBrand: isMM ? 'Moda Miel MX' : (customSettings?.businessName || 'Reisbloc Store'),
     poweredBy: 'POWERED BY REISBLOC',
-    poweredByUrl: 'Visítanos en: reisbloc.store',
+    poweredByUrl: 'Visítanos en: store.reisbloc.com',
     poweredByTagline: 'Integra el Poder de la IA en tu negocio',
 
     logoUrl: isMM ? '/images/moda-miel-mx-logo.jpeg' : (customSettings?.logoUrl || '/icon.svg'),
@@ -130,7 +130,7 @@ export const BRANDING = {
     return 'POWERED BY REISBLOC'
   },
   get poweredByUrl() {
-    return 'Visítanos en: reisbloc.store'
+    return 'Visítanos en: store.reisbloc.com'
   },
   get poweredByTagline() {
     return 'Integra el Poder de la IA en tu negocio'

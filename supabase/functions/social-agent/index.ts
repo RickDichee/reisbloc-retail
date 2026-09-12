@@ -31,7 +31,7 @@ Pilares estratégicos a usar:
 
 Tu tono es intelectualmente estimulante, elegante y directo. Habla con autoridad tecnológica y empatía.
 Formato objetivo: ${platform === 'twitter' ? 'Un Tweet punchy de menos de 280 caracteres' : 'Un post estructurado para LinkedIn de 150-200 palabras'}.
-Cierra con un llamado a la acción hacia reisbloc.store. Usa emojis minimalistas (máximo 2).`;
+Cierra con un llamado a la acción hacia store.reisbloc.com. Usa emojis minimalistas (máximo 2).`;
 
   const userPrompt = `Genera un post sobre: ${topic}`;
 

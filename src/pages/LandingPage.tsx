@@ -92,7 +92,7 @@ export default function LandingPage() {
                 REISBLOC <span className="text-teal-400 font-light">SYSTEMS</span>
               </span>
               <span className="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase">
-                reisbloc.com &middot; reisbloc.store
+                reisbloc.com &middot; store.reisbloc.com
               </span>
             </div>
           </Link>
@@ -157,7 +157,7 @@ export default function LandingPage() {
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               <span>PLATAFORMA SAAS &middot; RETAIL &middot; BOUTIQUE &middot; F&B</span>
-              <span className="text-amber-400">&middot; REISBLOC.STORE</span>
+              <span className="text-amber-400">&middot; STORE.REISBLOC.COM</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
@@ -345,7 +345,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-white">Dominio & Marca Propia</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Despliegue exclusivo bajo tu propio subdominio (<code className="text-teal-300">tu-negocio.reisbloc.store</code> o tu dominio <code class="text-teal-300">tu-tienda.com</code>) con tus logotipos, tipografías y catálogo público.
+                Despliegue exclusivo bajo tu propio subdominio (<code className="text-teal-300">tu-negocio.reisbloc.com</code> o tu dominio <code class="text-teal-300">tu-tienda.com</code>) con tus logotipos, tipografías y catálogo público.
               </p>
             </div>
 
@@ -512,7 +512,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <span className="font-black text-base text-white">REISBLOC <span className="text-teal-400 font-light">SYSTEMS</span></span>
             <span className="text-[10px] text-amber-400 font-mono bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/40">
-              reisbloc.com &middot; reisbloc.store
+              reisbloc.com &middot; store.reisbloc.com
             </span>
           </div>
 

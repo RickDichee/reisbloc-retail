@@ -119,9 +119,9 @@ serve(async (req) => {
         email: email || user.email
       },
       back_urls: {
-        success: `${Deno.env.get("VITE_APP_URL") || "https://reisbloc.store"}/settings?subscription=success`,
-        failure: `${Deno.env.get("VITE_APP_URL") || "https://reisbloc.store"}/settings?subscription=failed`,
-        pending: `${Deno.env.get("VITE_APP_URL") || "https://reisbloc.store"}/settings?subscription=pending`
+        success: `${Deno.env.get("VITE_APP_URL") || "https://store.reisbloc.com"}/settings?subscription=success`,
+        failure: `${Deno.env.get("VITE_APP_URL") || "https://store.reisbloc.com"}/settings?subscription=failed`,
+        pending: `${Deno.env.get("VITE_APP_URL") || "https://store.reisbloc.com"}/settings?subscription=pending`
       },
       external_reference: `${user.id}_${plan}`,
       notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercadopago-webhook`,

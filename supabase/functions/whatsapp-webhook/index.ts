@@ -97,7 +97,7 @@ async function handleMessages(supabase: any, value: any) {
 Un asesor te atenderá pronto. 😊
 
 Mientras tanto, puedes visitar nuestra tienda en línea:
-📱 www.reisbloc.store`
+📱 store.reisbloc.com`
     }
 
     await sendMessage(from, response)

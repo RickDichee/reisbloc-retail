@@ -39,7 +39,7 @@ export function PlanGate({ feature, children, showLocked = true, upgradeLabel }:
             {upgradeLabel || (planName === 'Esencial' ? 'Requiere Pro' : 'Requiere Enterprise')}
           </div>
           <p className="text-[9px] text-slate-500 font-medium mt-0.5">
-            reisbloc.store/upgrade
+            store.reisbloc.com/upgrade
           </p>
         </div>
       </div>

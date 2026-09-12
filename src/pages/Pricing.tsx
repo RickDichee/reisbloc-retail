@@ -140,7 +140,7 @@ export default function Pricing() {
     }
 
     if (planId === 'enterprise') {
-      window.open('mailto:ventas@reisbloc.store?subject=Interés%20en%20Reisbloc%20Enterprise', '_blank')
+      window.open('mailto:ventas@reisbloc.com?subject=Interés%20en%20Reisbloc%20Enterprise', '_blank')
       return
     }
 
@@ -336,7 +336,7 @@ export default function Pricing() {
               </div>
             </div>
             <button
-              onClick={() => window.open('mailto:ventas@reisbloc.store?subject=Interés%20en%20Reisbloc%20Enterprise', '_blank')}
+              onClick={() => window.open('mailto:ventas@reisbloc.com?subject=Interés%20en%20Reisbloc%20Enterprise', '_blank')}
               className="px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition-colors whitespace-nowrap"
             >
               Contactar ventas

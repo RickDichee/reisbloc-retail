@@ -35,6 +35,6 @@ Aplica a todo el software, bases de datos, microservicios, personal de ingenier�
 ## 4. Respuesta a Incidentes de Seguridad
 
 En caso de sospecha o confirmación de un incidente de seguridad (e.g. intento de intrusión, comportamiento anómalo en webhooks):
-1. **Notificación:** Notificar inmediatamente a `security@reisbloc.store`.
+1. **Notificación:** Notificar inmediatamente a `security@reisbloc.com`.
 2. **Contención:** Inactivar la API Key o sesión afectada en Supabase Dashboard / Vercel.
 3. **Análisis y Corrección:** Realizar trazabilidad mediante logs de auditoría en Edge Functions y aplicar el parche de seguridad correspondiente en un plazo no mayor a 24 horas.
