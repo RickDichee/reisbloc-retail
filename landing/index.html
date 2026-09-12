@@ -98,13 +98,13 @@
   <!-- ========================================================================= -->
   <!-- NAVBAR -->
   <!-- ========================================================================= -->
-  <nav class="sticky top-0 z-40 bg-[#0B0F19]/90 backdrop-blur-xl border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+  <nav class="sticky top-0 z-40 bg-[#0B0F19]/95 backdrop-blur-xl border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
       
       <!-- Brand Logo -->
-      <a href="https://store.reisbloc.com" class="flex items-center gap-3 group">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-teal-900/40 group-hover:scale-105 transition-transform p-2">
-          <svg width="24" height="24" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <a href="https://store.reisbloc.com" class="flex items-center gap-2.5 sm:gap-3 min-w-0 group flex-shrink">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex-shrink-0 flex items-center justify-center text-white shadow-lg shadow-teal-900/40 group-hover:scale-105 transition-transform p-1.5 sm:p-2">
+          <svg class="w-full h-full" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="512" height="512" rx="120" fill="#0F172A"/>
             <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#0B0F19"/>
             <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" stroke-width="18" stroke-linejoin="round"/>
@@ -112,12 +112,12 @@
             <circle cx="256" cy="256" r="28" fill="#00F5FF"/>
           </svg>
         </div>
-        <div>
-          <span class="font-black text-xl tracking-tight text-white block leading-none">
+        <div class="min-w-0">
+          <span class="font-black text-sm sm:text-xl tracking-tight text-white block leading-none truncate">
             REISBLOC <span class="text-teal-400 font-light">SYSTEMS</span>
           </span>
-          <span class="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase">
-            reisbloc.com &middot; store.reisbloc.com
+          <span class="text-[8px] sm:text-[10px] font-extrabold tracking-wider sm:tracking-widest text-amber-400 uppercase block truncate mt-0.5">
+            <span class="hidden sm:inline">reisbloc.com &middot; </span>store.reisbloc.com
           </span>
         </div>
       </a>
@@ -143,20 +143,20 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         <button
           onclick="openContactModal()"
-          class="hidden sm:inline-flex px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-teal-300 border border-teal-500/30 text-xs font-black transition-all hover:scale-105 shadow-sm"
+          class="hidden md:inline-flex px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-teal-300 border border-teal-500/30 text-xs font-black transition-all hover:scale-105 shadow-sm"
         >
           Diseñar Solución
         </button>
 
         <a
           href="https://store.reisbloc.com/login"
-          class="btn-gradient-primary px-5 py-2.5 rounded-xl text-slate-950 font-black text-xs flex items-center gap-2"
+          class="btn-gradient-primary px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 flex-shrink-0 shadow-lg shadow-teal-900/30 transition-all hover:scale-105 whitespace-nowrap"
         >
           <span>Acceso al POS</span>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
         </a>
       </div>
 
@@ -166,71 +166,71 @@
   <!-- ========================================================================= -->
   <!-- HERO SECTION -->
   <!-- ========================================================================= -->
-  <header class="relative hero-glow overflow-hidden pt-14 pb-20 md:py-24 border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12 items-center">
+  <header class="relative hero-glow overflow-hidden pt-8 sm:pt-14 pb-14 sm:pb-20 md:py-24 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
       
       <!-- Text Column -->
-      <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+      <div class="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
         
         <!-- Trust Badge -->
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div class="inline-flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-[10px] sm:text-xs font-bold max-w-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
           <span>PLATAFORMA SAAS &middot; RETAIL &middot; BOUTIQUE &middot; F&B</span>
-          <span class="text-amber-400">&middot; STORE.REISBLOC.COM</span>
+          <span class="text-amber-400 font-mono">&middot; STORE.REISBLOC.COM</span>
         </div>
 
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
+        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
           Software POS Inteligente <br/>
           <span class="bg-gradient-to-r from-teal-400 via-cyan-400 to-amber-400 bg-clip-text text-transparent">
             100% Personalizado a tu Medida
           </span>
         </h1>
 
-        <p class="text-slate-300 text-base sm:text-lg leading-relaxed font-normal max-w-2xl mx-auto lg:mx-0">
+        <p class="text-slate-300 text-sm sm:text-lg leading-relaxed font-normal max-w-2xl mx-auto lg:mx-0">
           Sin planes rígidos ni suscripciones infladas con funciones que nunca vas a usar. Diseñamos la infraestructura tecnológica exacta de tu negocio (Retail, Mayoreo, Boutiques o Gastronomía) con integración a <strong>Terminal Clip Total 3</strong>, Agentes de IA, Facturación CFDI 4.0 y Modo Offline-First.
         </p>
 
         <!-- CTAs -->
-        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
           <button
             onclick="openContactModal()"
-            class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-slate-950 font-black text-sm shadow-xl shadow-teal-900/40 hover:scale-105 transition-all flex items-center justify-center gap-3"
+            class="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-teal-900/40 hover:scale-105 transition-all flex items-center justify-center gap-2 sm:gap-3"
           >
-            <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
+            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
             <span>Diseñar Mi Solución a la Medida</span>
           </button>
 
           <button
             onclick="openVideoModal()"
-            class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-extrabold text-sm transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/10 hover:scale-105"
+            class="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 hover:scale-105"
           >
-            <div class="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/40">
-              <svg class="w-3 h-3 fill-amber-400 text-amber-400 ml-0.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/40 flex-shrink-0">
+              <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-amber-400 text-amber-400 ml-0.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </div>
             <span>Ver Video Demostración</span>
           </button>
 
           <a
             href="https://store.reisbloc.com/login"
-            class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-sm transition-all text-center"
+            class="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs sm:text-sm transition-all text-center"
           >
             Entrar a store.reisbloc.com &rarr;
           </a>
         </div>
 
         <!-- Quick Badges -->
-        <div class="pt-6 grid grid-cols-3 gap-4 border-t border-slate-800/80 max-w-lg mx-auto lg:mx-0">
+        <div class="pt-6 grid grid-cols-3 gap-2 sm:gap-4 border-t border-slate-800/80 max-w-lg mx-auto lg:mx-0 text-center sm:text-left">
           <div>
-            <span class="block text-xl font-black text-amber-400">0%</span>
-            <span class="text-xs text-slate-400 font-medium">Precios Rígidos</span>
+            <span class="block text-lg sm:text-xl font-black text-amber-400">0%</span>
+            <span class="text-[10px] sm:text-xs text-slate-400 font-medium">Precios Rígidos</span>
           </div>
           <div>
-            <span class="block text-xl font-black text-teal-400">Clip Total 3</span>
-            <span class="text-xs text-slate-400 font-medium">Auto-Charge API</span>
+            <span class="block text-lg sm:text-xl font-black text-teal-400">Clip Total 3</span>
+            <span class="text-[10px] sm:text-xs text-slate-400 font-medium">Auto-Charge API</span>
           </div>
           <div>
-            <span class="block text-xl font-black text-emerald-400">PCI-DSS SAQ A</span>
-            <span class="text-xs text-slate-400 font-medium">Infraestructura Auditada</span>
+            <span class="block text-lg sm:text-xl font-black text-emerald-400">PCI-DSS</span>
+            <span class="text-[10px] sm:text-xs text-slate-400 font-medium">Auditado SAQ A</span>
           </div>
         </div>
 
@@ -240,66 +240,66 @@
       <div class="lg:col-span-5 space-y-6">
         
         <!-- CARD 1: CLIP TOTAL 3 HARDWARE INTEGRATION -->
-        <div id="clip" class="glass-card rounded-3xl p-6 border border-slate-800 space-y-5 shadow-2xl relative overflow-hidden">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <div id="clip" class="glass-card rounded-3xl p-4 sm:p-6 border border-slate-800 space-y-4 sm:space-y-5 shadow-2xl relative overflow-hidden">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 sm:pb-4 gap-2">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
               </div>
-              <div>
-                <h3 class="font-extrabold text-white text-sm">Clip Total 3 + POS Reisbloc</h3>
-                <p class="text-xs text-slate-400">Cobro Automático sin Digitación Manual</p>
+              <div class="min-w-0">
+                <h3 class="font-extrabold text-white text-xs sm:text-sm truncate">Clip Total 3 + POS Reisbloc</h3>
+                <p class="text-[10px] sm:text-xs text-slate-400 truncate">Cobro Automático sin Digitación</p>
               </div>
             </div>
-            <span class="px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-black uppercase tracking-wider">
+            <span class="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex-shrink-0">
               En Línea
             </span>
           </div>
 
           <!-- Sample Live Ticket Calculation -->
-          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800/90 space-y-2.5">
-            <div class="flex justify-between text-xs text-slate-400 font-medium">
+          <div class="bg-slate-950 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-800/90 space-y-2">
+            <div class="flex justify-between text-[11px] sm:text-xs text-slate-400 font-medium">
               <span>Subtotal Productos / Consumo:</span>
               <span class="text-slate-200 font-bold">$1,250.00 MXN</span>
             </div>
-            <div class="flex justify-between text-xs text-amber-400 font-semibold">
+            <div class="flex justify-between text-[11px] sm:text-xs text-amber-400 font-semibold">
               <span>Comisión de Terminal Transparente:</span>
               <span>+$38.50 MXN</span>
             </div>
-            <div class="flex justify-between text-sm font-black text-white pt-2 border-t border-slate-800">
-              <span>Monto Enviado a Pantalla Clip:</span>
-              <span class="text-amber-400 text-base font-extrabold">$1,288.50 MXN</span>
+            <div class="flex justify-between text-xs sm:text-sm font-black text-white pt-2 border-t border-slate-800">
+              <span>Monto Enviado a Clip:</span>
+              <span class="text-amber-400 text-sm sm:text-base font-extrabold">$1,288.50 MXN</span>
             </div>
           </div>
 
-          <div class="space-y-2 text-xs text-slate-300 font-medium">
+          <div class="space-y-2 text-[11px] sm:text-xs text-slate-300 font-medium">
             <div class="flex items-center gap-2 text-emerald-400">
-              <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-              <span>Transmisión instantánea a la terminal al presionar "Cobrar".</span>
+              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <span>Transmisión instantánea al presionar "Cobrar".</span>
             </div>
             <div class="flex items-center gap-2 text-emerald-400">
-              <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
               <span>Cero errores de captura humana por el cajero.</span>
             </div>
             <div class="flex items-center gap-2 text-emerald-400">
-              <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-              <span>Descuento de stock en tiempo real e impresión de ticket térmico.</span>
+              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <span>Descuento de stock en tiempo real y voucher.</span>
             </div>
           </div>
         </div>
 
         <!-- CARD 2: AI AGENT & OFFLINE ENGINE -->
-        <div class="glass-card rounded-3xl p-5 border border-slate-800 space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="text-xl">🤖</span>
-              <span class="text-xs font-bold text-cyan-300">Agente de Inteligencia Artificial Activo</span>
+        <div class="glass-card rounded-3xl p-4 sm:p-5 border border-slate-800 space-y-2.5 sm:space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-lg sm:text-xl flex-shrink-0">🤖</span>
+              <span class="text-xs font-bold text-cyan-300 truncate">Agente de IA Activo</span>
             </div>
-            <span class="text-[10px] text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
+            <span class="text-[9px] sm:text-[10px] text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800 flex-shrink-0">
               Offline-First Ready
             </span>
           </div>
-          <p class="text-xs text-slate-300 italic bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+          <p class="text-[11px] sm:text-xs text-slate-300 italic bg-slate-950/80 p-2.5 sm:p-3 rounded-xl border border-slate-800 leading-relaxed">
             "Sugerencia predictiva: La tasa de rotación en paquetes mayoreo aumentó un 24%. Se recomienda lanzar campaña por WhatsApp."
           </p>
         </div>
@@ -452,13 +452,13 @@
         </p>
       </div>
 
-      <div class="glass-card rounded-3xl p-6 sm:p-8 border border-pink-500/30 grid md:grid-cols-12 gap-6 items-center">
+      <div class="glass-card rounded-3xl p-5 sm:p-8 border border-pink-500/30 grid md:grid-cols-12 gap-5 sm:gap-6 items-center">
         <div class="md:col-span-8 space-y-3">
           <div class="flex items-center gap-3">
-            <span class="text-3xl">🐞</span>
-            <div>
-              <h3 class="text-xl font-bold text-white">Moda Miel MX</h3>
-              <p class="text-[10px] text-pink-400 font-bold uppercase tracking-wider">Tienda de Importación Mayorista · Pasillo 3 Local 230</p>
+            <span class="text-3xl flex-shrink-0">🐞</span>
+            <div class="min-w-0">
+              <h3 class="text-lg sm:text-xl font-bold text-white truncate">Moda Miel MX</h3>
+              <p class="text-[10px] text-pink-400 font-bold uppercase tracking-wider truncate">Tienda de Importación Mayorista · Pasillo 3 Local 230</p>
             </div>
           </div>
           <p class="text-xs text-slate-300 leading-relaxed">
@@ -468,7 +468,7 @@
         <div class="md:col-span-4 text-center md:text-right">
           <a
             href="https://store.reisbloc.com/login?brand=modamiel"
-            class="inline-flex items-center gap-2 bg-[#D4386C] hover:bg-[#B52656] text-white font-bold px-5 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-105"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#D4386C] hover:bg-[#B52656] text-white font-bold px-5 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-105"
           >
             <span>Ver Experiencia Moda Miel</span>
             <span>&rarr;</span>
@@ -546,32 +546,32 @@
   <!-- ========================================================================= -->
   <!-- MODAL: COTIZACIÓN Y DISEÑO A LA MEDIDA -->
   <!-- ========================================================================= -->
-  <div id="contactModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl text-white relative animate-fadeIn">
-      <button onclick="closeContactModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+  <div id="contactModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-8 space-y-4 sm:space-y-5 shadow-2xl text-white relative animate-fadeIn max-h-[92vh] overflow-y-auto my-auto">
+      <button onclick="closeContactModal()" class="absolute top-4 right-4 sm:top-5 sm:right-5 text-slate-400 hover:text-white text-xl">
         &times;
       </button>
 
       <div id="contactFormContainer">
         <div class="space-y-1">
-          <h3 class="text-2xl font-black text-white">Diseñar Mi Solución a la Medida</h3>
+          <h3 class="text-xl sm:text-2xl font-black text-white">Diseñar Mi Solución a la Medida</h3>
           <p class="text-xs text-slate-400">Cuéntanos sobre tu negocio para generar una propuesta personalizada sin costo.</p>
         </div>
 
-        <form id="contactForm" onsubmit="handleContactSubmit(event)" class="space-y-4 pt-3">
+        <form id="contactForm" onsubmit="handleContactSubmit(event)" class="space-y-3.5 sm:space-y-4 pt-2 sm:pt-3">
           <div>
             <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Nombre de tu Negocio *</label>
-            <input id="formBusinessName" required type="text" placeholder="Ej: Boutique Central o Restaurante El Farol" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none" />
+            <input id="formBusinessName" required type="text" placeholder="Ej: Boutique Central o Restaurante El Farol" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm text-white focus:border-teal-400 focus:outline-none" />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Tu Nombre *</label>
-              <input id="formContactName" required type="text" placeholder="Tu nombre" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none" />
+              <input id="formContactName" required type="text" placeholder="Tu nombre" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm text-white focus:border-teal-400 focus:outline-none" />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">WhatsApp / Teléfono *</label>
-              <input id="formPhone" required type="tel" placeholder="10 dígitos" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none" />
+              <input id="formPhone" required type="tel" placeholder="10 dígitos" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm text-white focus:border-teal-400 focus:outline-none" />
             </div>
           </div>
 

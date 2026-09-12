@@ -79,20 +79,20 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           
           {/* Brand Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-teal-900/40 group-hover:scale-105 transition-transform p-2">
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3 min-w-0 group flex-shrink">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex-shrink-0 flex items-center justify-center text-white shadow-lg shadow-teal-900/40 group-hover:scale-105 transition-transform p-1.5 sm:p-2">
               <img
                 src={BRANDING.logoUrl || '/icon.svg'}
                 alt={BRANDING.whiteLabelName}
                 className="w-full h-full object-contain"
               />
             </div>
-            <div>
-              <span className="font-black text-xl tracking-tight text-white block leading-none">
+            <div className="min-w-0">
+              <span className="font-black text-sm sm:text-xl tracking-tight text-white block leading-none truncate">
                 REISBLOC <span className="text-teal-400 font-light">SYSTEMS</span>
               </span>
-              <span className="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase">
-                reisbloc.com &middot; store.reisbloc.com
+              <span className="text-[8px] sm:text-[10px] font-extrabold tracking-wider sm:tracking-widest text-amber-400 uppercase block truncate mt-0.5">
+                <span className="hidden sm:inline">reisbloc.com &middot; </span>store.reisbloc.com
               </span>
             </div>
           </Link>
@@ -121,23 +121,23 @@ export default function LandingPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={() => {
                 setContactSubmitted(false)
                 setShowContactModal(true)
               }}
-              className="hidden sm:inline-flex px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-teal-300 border border-teal-500/30 text-xs font-black transition-all hover:scale-105 shadow-sm"
+              className="hidden md:inline-flex px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-teal-300 border border-teal-500/30 text-xs font-black transition-all hover:scale-105 shadow-sm"
             >
               Diseñar Solución
             </button>
 
             <Link
               to="/login"
-              className="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 px-5 py-2.5 rounded-xl text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-teal-900/30 transition-all hover:scale-105"
+              className="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 flex-shrink-0 shadow-lg shadow-teal-900/30 transition-all hover:scale-105 whitespace-nowrap"
             >
               <span>Acceso POS</span>
-              <ChevronRight size={16} />
+              <ChevronRight size={16} className="flex-shrink-0" />
             </Link>
           </div>
 
@@ -147,48 +147,48 @@ export default function LandingPage() {
       {/* ========================================================================= */}
       {/* HERO SECTION */}
       {/* ========================================================================= */}
-      <header className="relative overflow-hidden pt-14 pb-20 md:py-24 border-b border-slate-800/80 bg-[radial-gradient(circle_at_50%_0%,rgba(20,184,166,0.15)_0%,rgba(0,245,255,0.05)_35%,rgba(11,15,25,0)_70%)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12 items-center">
+      <header className="relative overflow-hidden pt-8 sm:pt-14 pb-14 sm:pb-20 md:py-24 border-b border-slate-800/80 bg-[radial-gradient(circle_at_50%_0%,rgba(20,184,166,0.15)_0%,rgba(0,245,255,0.05)_35%,rgba(11,15,25,0)_70%)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Text Column */}
-          <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+          <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-center lg:text-left">
             
             {/* Trust Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-xs font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div className="inline-flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-[10px] sm:text-xs font-bold max-w-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
               <span>PLATAFORMA SAAS &middot; RETAIL &middot; BOUTIQUE &middot; F&B</span>
-              <span className="text-amber-400">&middot; STORE.REISBLOC.COM</span>
+              <span className="text-amber-400 font-mono">&middot; STORE.REISBLOC.COM</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
               Software POS Inteligente <br/>
               <span className="bg-gradient-to-r from-teal-400 via-cyan-400 to-amber-400 bg-clip-text text-transparent">
                 100% Personalizado a tu Medida
               </span>
             </h1>
 
-            <p className="text-slate-300 text-base sm:text-lg leading-relaxed font-normal max-w-2xl mx-auto lg:mx-0">
+            <p className="text-slate-300 text-sm sm:text-lg leading-relaxed font-normal max-w-2xl mx-auto lg:mx-0">
               Sin planes rígidos ni suscripciones infladas con funciones que nunca vas a usar. Diseñamos la infraestructura tecnológica exacta de tu negocio (Retail, Mayoreo, Boutiques o Gastronomía) con integración a <strong>Terminal Clip Total 3</strong>, Agentes de IA, Facturación CFDI 4.0 y Modo Offline-First.
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-2">
               <button
                 onClick={() => {
                   setContactSubmitted(false)
                   setShowContactModal(true)
                 }}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-slate-950 font-black text-sm shadow-xl shadow-teal-900/40 hover:scale-105 transition-all flex items-center justify-center gap-3"
+                class="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-teal-900/40 hover:scale-105 transition-all flex items-center justify-center gap-2 sm:gap-3"
               >
-                <Sliders size={18} />
+                <Sliders size={18} className="flex-shrink-0" />
                 <span>Diseñar Mi Solución a la Medida</span>
               </button>
 
               <button
                 onClick={() => setShowVideoModal(true)}
-                className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-extrabold text-sm transition-all flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/10 hover:scale-105"
+                className="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 hover:scale-105"
               >
-                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/40">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/40 flex-shrink-0">
                   <Play size={12} className="fill-amber-400 text-amber-400 ml-0.5" />
                 </div>
                 <span>Ver Video Demostración</span>
@@ -196,25 +196,25 @@ export default function LandingPage() {
 
               <Link
                 to="/login"
-                className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-sm transition-all text-center"
+                className="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs sm:text-sm transition-all text-center"
               >
                 Entrar al Sistema &rarr;
               </Link>
             </div>
 
             {/* Quick Badges */}
-            <div className="pt-6 grid grid-cols-3 gap-4 border-t border-slate-800/80 max-w-lg mx-auto lg:mx-0">
+            <div className="pt-6 grid grid-cols-3 gap-2 sm:gap-4 border-t border-slate-800/80 max-w-lg mx-auto lg:mx-0 text-center sm:text-left">
               <div>
-                <span className="block text-xl font-black text-amber-400">0%</span>
-                <span className="text-xs text-slate-400 font-medium">Precios Rígidos</span>
+                <span className="block text-lg sm:text-xl font-black text-amber-400">0%</span>
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium">Precios Rígidos</span>
               </div>
               <div>
-                <span className="block text-xl font-black text-teal-400">Clip Total 3</span>
-                <span className="text-xs text-slate-400 font-medium">Auto-Charge API</span>
+                <span className="block text-lg sm:text-xl font-black text-teal-400">Clip Total 3</span>
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium">Auto-Charge API</span>
               </div>
               <div>
-                <span className="block text-xl font-black text-emerald-400">PCI-DSS SAQ A</span>
-                <span className="text-xs text-slate-400 font-medium">Infraestructura Auditada</span>
+                <span className="block text-lg sm:text-xl font-black text-emerald-400">PCI-DSS</span>
+                <span className="text-[10px] sm:text-xs text-slate-400 font-medium">Auditado SAQ A</span>
               </div>
             </div>
 
@@ -224,42 +224,42 @@ export default function LandingPage() {
           <div className="lg:col-span-5 space-y-6">
             
             {/* CARD 1: CLIP TOTAL 3 HARDWARE INTEGRATION */}
-            <div id="clip" className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-6 border border-slate-800 space-y-5 shadow-2xl relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div id="clip" className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-800 space-y-4 sm:space-y-5 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3 sm:pb-4 gap-2">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
                     <Smartphone size={20} />
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-white text-sm">Clip Total 3 + POS Reisbloc</h3>
-                    <p className="text-xs text-slate-400">Cobro Automático sin Digitación Manual</p>
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-white text-xs sm:text-sm truncate">Clip Total 3 + POS Reisbloc</h3>
+                    <p className="text-[10px] sm:text-xs text-slate-400 truncate">Cobro Automático sin Digitación</p>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-black uppercase tracking-wider">
+                <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex-shrink-0">
                   En Línea
                 </span>
               </div>
 
               {/* Sample Live Ticket Calculation */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/90 space-y-2.5">
-                <div className="flex justify-between text-xs text-slate-400 font-medium">
+              <div className="bg-slate-950 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-800/90 space-y-2">
+                <div className="flex justify-between text-[11px] sm:text-xs text-slate-400 font-medium">
                   <span>Subtotal Productos / Consumo:</span>
                   <span className="text-slate-200 font-bold">$1,250.00 MXN</span>
                 </div>
-                <div className="flex justify-between text-xs text-amber-400 font-semibold">
+                <div className="flex justify-between text-[11px] sm:text-xs text-amber-400 font-semibold">
                   <span>Comisión de Terminal Transparente:</span>
                   <span>+$38.50 MXN</span>
                 </div>
-                <div className="flex justify-between text-sm font-black text-white pt-2 border-t border-slate-800">
-                  <span>Monto Enviado a Pantalla Clip:</span>
-                  <span className="text-amber-400 text-base font-extrabold">$1,288.50 MXN</span>
+                <div className="flex justify-between text-xs sm:text-sm font-black text-white pt-2 border-t border-slate-800">
+                  <span>Monto Enviado a Clip:</span>
+                  <span className="text-amber-400 text-sm sm:text-base font-extrabold">$1,288.50 MXN</span>
                 </div>
               </div>
 
-              <div className="space-y-2 text-xs text-slate-300 font-medium">
+              <div className="space-y-2 text-[11px] sm:text-xs text-slate-300 font-medium">
                 <div className="flex items-center gap-2 text-emerald-400">
                   <CheckCircle2 size={16} className="flex-shrink-0" />
-                  <span>Transmisión instantánea a la terminal al presionar "Cobrar".</span>
+                  <span>Transmisión instantánea al presionar "Cobrar".</span>
                 </div>
                 <div className="flex items-center gap-2 text-emerald-400">
                   <CheckCircle2 size={16} className="flex-shrink-0" />
@@ -267,23 +267,23 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center gap-2 text-emerald-400">
                   <CheckCircle2 size={16} className="flex-shrink-0" />
-                  <span>Descuento de stock en tiempo real e impresión de ticket térmico.</span>
+                  <span>Descuento de stock en tiempo real y voucher.</span>
                 </div>
               </div>
             </div>
 
             {/* CARD 2: AI AGENT & OFFLINE ENGINE */}
-            <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">🤖</span>
-                  <span className="text-xs font-bold text-cyan-300">Agente de Inteligencia Artificial Activo</span>
+            <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-slate-800 space-y-2.5 sm:space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-lg sm:text-xl flex-shrink-0">🤖</span>
+                  <span className="text-xs font-bold text-cyan-300 truncate">Agente de IA Activo</span>
                 </div>
-                <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
+                <span className="text-[9px] sm:text-[10px] text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800 flex-shrink-0">
                   Offline-First Ready
                 </span>
               </div>
-              <p className="text-xs text-slate-300 italic bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+              <p className="text-[11px] sm:text-xs text-slate-300 italic bg-slate-950/80 p-2.5 sm:p-3 rounded-xl border border-slate-800 leading-relaxed">
                 "Sugerencia predictiva: La tasa de rotación en paquetes mayoreo aumentó un 24%. Se recomienda lanzar campaña por WhatsApp."
               </p>
             </div>
@@ -436,13 +436,13 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-pink-500/30 grid md:grid-cols-12 gap-6 items-center">
+          <div className="bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 sm:p-8 border border-pink-500/30 grid md:grid-cols-12 gap-5 sm:gap-6 items-center">
             <div className="md:col-span-8 space-y-3">
               <div className="flex items-center gap-3">
-                <span className="text-3xl">🐞</span>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Moda Miel MX</h3>
-                  <p className="text-[10px] text-pink-400 font-bold uppercase tracking-wider">Tienda de Importación Mayorista · Pasillo 3 Local 230</p>
+                <span className="text-3xl flex-shrink-0">🐞</span>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-bold text-white truncate">Moda Miel MX</h3>
+                  <p className="text-[10px] text-pink-400 font-bold uppercase tracking-wider truncate">Tienda de Importación Mayorista · Pasillo 3 Local 230</p>
                 </div>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -452,7 +452,7 @@ export default function LandingPage() {
             <div className="md:col-span-4 text-center md:text-right">
               <Link
                 to="/login?brand=modamiel"
-                className="inline-flex items-center gap-2 bg-[#D4386C] hover:bg-[#B52656] text-white font-bold px-5 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-105"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#D4386C] hover:bg-[#B52656] text-white font-bold px-5 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-105"
               >
                 <span>Ver Experiencia Moda Miel</span>
                 <ArrowRight size={16} />
@@ -533,11 +533,11 @@ export default function LandingPage() {
       {/* MODAL: COTIZACIÓN Y DISEÑO A LA MEDIDA */}
       {/* ========================================================================= */}
       {showContactModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl text-white relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-8 space-y-4 sm:space-y-5 shadow-2xl text-white relative max-h-[92vh] overflow-y-auto my-auto">
             <button
               onClick={() => setShowContactModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white text-xl"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 text-slate-400 hover:text-white text-xl"
             >
               <X size={20} />
             </button>
@@ -545,11 +545,11 @@ export default function LandingPage() {
             {!contactSubmitted ? (
               <div>
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-white">Diseñar Mi Solución a la Medida</h3>
+                  <h3 className="text-xl sm:text-2xl font-black text-white">Diseñar Mi Solución a la Medida</h3>
                   <p className="text-xs text-slate-400">Cuéntanos sobre tu negocio para generar una propuesta personalizada sin costo.</p>
                 </div>
 
-                <form onSubmit={handleContactSubmit} className="space-y-4 pt-4">
+                <form onSubmit={handleContactSubmit} className="space-y-3.5 sm:space-y-4 pt-2 sm:pt-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Nombre de tu Negocio *</label>
                     <input
@@ -558,11 +558,11 @@ export default function LandingPage() {
                       placeholder="Ej: Boutique Central o Restaurante El Farol"
                       value={formData.businessName}
                       onChange={e => setFormData({ ...formData, businessName: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">Tu Nombre *</label>
                       <input
@@ -571,7 +571,7 @@ export default function LandingPage() {
                         placeholder="Tu nombre"
                         value={formData.contactName}
                         onChange={e => setFormData({ ...formData, contactName: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
                       />
                     </div>
                     <div>
@@ -582,7 +582,7 @@ export default function LandingPage() {
                         placeholder="10 dígitos"
                         value={formData.phone}
                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm text-white focus:border-teal-400 focus:outline-none"
                       />
                     </div>
                   </div>
