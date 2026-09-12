@@ -108,6 +108,44 @@ export default function POS() {
   const [showPendingOrdersModal, setShowPendingOrdersModal] = useState(false)
   const [showMobileCartDrawer, setShowMobileCartDrawer] = useState(false)
 
+  const [selectedTicketWidth, setSelectedTicketWidth] = useState<number>(() => {
+    return organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '58') || 58) : 58) || 58
+  })
+
+  const handleSelectTicketWidth = (newWidth: number) => {
+    setSelectedTicketWidth(newWidth)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('preferred_ticket_width', String(newWidth))
+    }
+    const updated = { ...(organizationSettings || {}), ticketPrinterWidth: newWidth }
+    setOrganizationSettings(updated)
+    if (currentUser?.organizationId && currentUser?.role === 'admin') {
+      supabase.from('organizations').update({ settings: updated }).eq('id', currentUser.organizationId).then().catch(console.error)
+    }
+    if (receiptModal) {
+      try {
+        const reRendered = renderToStaticMarkup(
+          <ReceiptTicket
+            order={{ id: 'Venta', items: receiptModal.items, status: 'completed', total: receiptModal.total } as any}
+            products={products}
+            saleTotal={receiptModal.total}
+            paymentMethod={receiptModal.paymentMethod}
+            tableNumber={tableNumber}
+            businessName={currentBusinessTitle}
+            clientName={receiptModal.clientName}
+            clientPhone={receiptModal.clientPhone}
+          />
+        )
+        setReceiptModal({
+          ...receiptModal,
+          html: reRendered
+        })
+      } catch (e) {
+        console.warn('Error re-rendering ticket with new width:', e)
+      }
+    }
+  }
+
   // CRM Clients state & loading
   const [clients, setClients] = useState<any[]>([])
   const [selectedClient, setSelectedClient] = useState<any>(null)
@@ -1023,7 +1061,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           clientPhone={selectedClient?.phone}
         />
       )
-      await printService.printReceipt(ticketHTML, { title: 'Pre-cuenta', width: 58 })
+      await printService.printReceipt(ticketHTML, { title: 'Pre-cuenta', width: selectedTicketWidth })
     } catch (error) {
       logger.error('pos', 'Error printing account', error as any)
       alert('Error al imprimir cuenta')
@@ -1820,6 +1858,26 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 <span className="text-2xl font-black text-emerald-600">${receiptModal.total.toFixed(2)}</span>
               </div>
 
+              <div className="flex items-center justify-between bg-slate-100 p-2 rounded-xl text-xs font-bold">
+                <span className="text-slate-600">Formato Papel:</span>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTicketWidth(58)}
+                    className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${selectedTicketWidth < 70 ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
+                  >
+                    58mm (Estándar)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTicketWidth(80)}
+                    className={`px-3 py-1 rounded-lg text-xs font-black transition-all ${selectedTicketWidth >= 70 ? 'bg-slate-900 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-200'}`}
+                  >
+                    80mm (Grande)
+                  </button>
+                </div>
+              </div>
+
               <div
                 className="bg-slate-50 rounded-xl p-3 max-h-64 overflow-y-auto text-xs font-mono border border-slate-200"
                 dangerouslySetInnerHTML={{ __html: sanitizeHTML(receiptModal.html) }}
@@ -1828,9 +1886,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               <div className="flex gap-3">
                 <button
                   onClick={() => {
-                    printService.printReceipt(receiptModal.html, { title: 'Ticket', width: 58 })
+                    printService.printReceipt(receiptModal.html, { title: 'Ticket', width: selectedTicketWidth })
                   }}
-                  className="flex-1 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-700 transition-all flex items-center justify-center gap-2 shadow-lg hover:scale-102"
                 >
                   <Printer size={18} />
                   Imprimir

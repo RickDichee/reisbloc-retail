@@ -37,6 +37,9 @@ class PrintService {
           return
         }
 
+        const is80 = Number(width) >= 70
+        const printableMm = is80 ? 70 : 46
+
         const printHTML = `
           <!DOCTYPE html>
           <html>
@@ -44,21 +47,55 @@ class PrintService {
             <meta charset="UTF-8">
             <title>${title}</title>
             <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; color: #000 !important; }
-              body {
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              @page {
+                size: auto;
+                margin: 0mm !important;
+              }
+              html, body {
+                width: 100% !important;
+                max-width: ${printableMm}mm !important;
+                margin: 0 auto !important;
+                padding: 0 1mm !important;
+                background: #fff !important;
+                color: #000 !important;
                 font-family: 'Consolas', 'Courier New', monospace, system-ui;
                 font-weight: 700;
-                font-size: 11px;
+                font-size: ${is80 ? '11px' : '9.5px'};
                 line-height: 1.25;
-                width: ${width === 58 ? 48 : (width === 80 ? 72 : width)}mm;
-                margin: 0 auto;
-                padding: 1mm 0;
-                background: white;
-                color: black;
+                text-align: left;
+                overflow: visible !important;
+              }
+              .receipt-ticket {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              img {
+                max-width: 100% !important;
               }
               @media print {
-                body { width: ${width === 58 ? 48 : (width === 80 ? 72 : width)}mm; margin: 0 auto; }
-                @page { size: ${width}mm auto; margin: 0; }
+                html, body {
+                  width: 100% !important;
+                  max-width: ${printableMm}mm !important;
+                  margin: 0 auto !important;
+                  padding: 0 1mm !important;
+                }
+                .receipt-ticket {
+                  width: 100% !important;
+                  max-width: 100% !important;
+                }
               }
             </style>
           </head>
@@ -135,9 +172,10 @@ class PrintService {
     options: PrintOptions = {}
   ): Promise<void> {
     logger.info('print', 'Preparando impresión de ticket', {})
+    const preferredWidth = typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '58') || 58) : 58
     return this.printHTML(receiptHTML, {
       title: 'Ticket de Venta',
-      width: 58,
+      width: options.width || preferredWidth,
       ...options,
     })
   }
