@@ -249,6 +249,8 @@ export default defineConfig({
         ],
         navigateFallback: '/index.html', // SPA fallback for offline routing
         cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
       },
       manifest: {
         short_name: isModaMiel ? 'Moda Miel MX' : 'Reisbloc',

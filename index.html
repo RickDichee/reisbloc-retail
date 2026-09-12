@@ -24,6 +24,34 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Moda Miel MX" />
     <title>Moda Miel MX · Reisbloc Store</title>
+    <script>
+      // 🛡️ Auto-recuperación de caché: si un asset /assets/ falla por nueva versión o MIME type erróneo, purgar y recargar
+      window.addEventListener('error', function(e) {
+        var target = e.target;
+        if (target && (target.tagName === 'LINK' || target.tagName === 'SCRIPT')) {
+          var url = target.src || target.href || '';
+          if (url.indexOf('/assets/') !== -1) {
+            console.warn('⚠️ Asset desactualizado detectado:', url);
+            if ('caches' in window && !sessionStorage.getItem('pwa_cache_purged')) {
+              sessionStorage.setItem('pwa_cache_purged', '1');
+              caches.keys().then(function(names) {
+                return Promise.all(names.map(function(n) { return caches.delete(n); }));
+              }).then(function() {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    return Promise.all(regs.map(function(r) { return r.unregister(); }));
+                  }).then(function() {
+                    window.location.reload(true);
+                  });
+                } else {
+                  window.location.reload(true);
+                }
+              });
+            }
+          }
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>
