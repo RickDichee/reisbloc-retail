@@ -97,6 +97,11 @@ export function OrderPanel({
               <div className="flex items-start justify-between">
                 <div className="flex-1 pr-2 min-w-0">
                   <p className="text-xs font-black text-slate-900 truncate leading-tight">{item.productName}</p>
+                  {item.sku && (
+                    <p className="text-[10px] font-mono font-bold text-slate-400 truncate">
+                      SKU: {item.sku}
+                    </p>
+                  )}
                   {editingPriceId === item.id ? (
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-[10px] font-bold text-slate-400">$</span>

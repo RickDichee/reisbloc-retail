@@ -212,6 +212,7 @@ export const useAppStore = create<AppStore>()(
             canBeDeleted: true,
             parentId: product.parentId,
             packQuantity: product.packQuantity,
+            sku: product.sku || (product as any).barcode || '',
           }
 
           return {

@@ -66,6 +66,7 @@ export interface OrderItem {
   notes?: string;
   parentId?: string;
   packQuantity?: number;
+  sku?: string;
 }
 
 export interface Order {

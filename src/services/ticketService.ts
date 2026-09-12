@@ -10,6 +10,7 @@ export interface TicketData {
     name: string;
     quantity: number;
     price: number;
+    sku?: string;
   }>;
   subtotal: number;
   tax: number;
@@ -298,6 +299,9 @@ export const ticketService = {
       const qty = Number(item.quantity || 1);
       const price = Number(item.price || 0);
       text += `🛍️ *${item.name}*\n`;
+      if (item.sku) {
+        text += `   🏷️ SKU: ${item.sku}\n`;
+      }
       text += `   ${qty} pz × $${price.toFixed(2)} = *$${(qty * price).toFixed(2)}*\n\n`;
     });
 

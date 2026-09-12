@@ -941,14 +941,18 @@ export default function POS() {
       }
     }
 
-    const draftItems: OrderItem[] = order.items.map(item => ({
-      id: item.id || `order-item-${Math.random()}`,
-      productId: item.productId,
-      productName: item.productName,
-      unitPrice: item.unitPrice,
-      quantity: item.quantity,
-      packQuantity: 1
-    }))
+    const draftItems: OrderItem[] = order.items.map(item => {
+      const prod = products.find(p => p.id === item.productId)
+      return {
+        id: item.id || `order-item-${Math.random()}`,
+        productId: item.productId,
+        productName: item.productName,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        packQuantity: 1,
+        sku: (item as any).sku || prod?.sku || prod?.barcode || ''
+      }
+    })
 
     useAppStore.setState(state => ({
       draftOrders: {
@@ -1003,18 +1007,13 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
 
   const handlePrintAccount = async (tableNum: number) => {
     try {
-      const ordersToPrint = activeTableOrders
       const draftItems = draftOrders[tableNum] || []
-      const activeTotal = ordersToPrint.reduce((sum, o) => sum + (o.items?.reduce((s: number, i: any) => s + (i.unitPrice * i.quantity), 0) || 0), 0)
-      const draftTotal = draftItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
-      const total = activeTotal + draftTotal
+      const total = draftItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
       if (total === 0) return
-
-      const allItems = [...ordersToPrint.flatMap(o => o.items || []), ...draftItems]
 
       const ticketHTML = renderToStaticMarkup(
         <ReceiptTicket
-          order={{ id: 'Pre-cuenta', items: allItems, status: 'pending', total: total } as any}
+          order={{ id: 'Pre-cuenta', items: draftItems, status: 'pending', total: total } as any}
           products={products}
           saleTotal={total}
           paymentMethod="Pendiente"
@@ -1065,17 +1064,15 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
   }
 
   const confirmCheckout = () => {
-    const activeTotal = activeTableOrders.reduce((sum, o) => sum + (o.items?.reduce((s: number, i: any) => s + (i.unitPrice * i.quantity), 0) || 0), 0)
     const draftTotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
-    const finalTotal = activeTotal + draftTotal
 
-    if (finalTotal === 0) return
+    if (draftTotal === 0) return
 
     setPaymentPanel({
       isOpen: true,
       orderId: 'retail-direct',
-      orderTotal: finalTotal,
-      orderIds: activeTableOrders.map(o => o.id)
+      orderTotal: draftTotal,
+      orderIds: []
     })
   }
 
@@ -1084,7 +1081,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
 
     // 1. Stock Check 🛡️
     const formattedDraft = items.map(i => ({ ...i, productId: i.productId })) // Ensure shape
-    const stockIssues = checkStockAvailability(activeTableOrders, formattedDraft)
+    const stockIssues = checkStockAvailability([], formattedDraft)
 
     if (stockIssues.length > 0) {
       setStockWarning({ isOpen: true, items: stockIssues })
@@ -1863,11 +1860,15 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             ticketHtml={receiptModal.html}
             ticketData={{
               orderId: receiptModal.orderId,
-              items: receiptModal.items.map((item: any) => ({
-                name: item.productName || item.name || 'Producto',
-                quantity: item.quantity,
-                price: item.unitPrice || item.price
-              })),
+              items: receiptModal.items.map((item: any) => {
+                const prod = products.find(p => p.id === item.productId)
+                return {
+                  name: item.productName || item.name || 'Producto',
+                  quantity: item.quantity,
+                  price: item.unitPrice || item.price,
+                  sku: item.sku || prod?.sku || prod?.barcode || ''
+                }
+              }),
               subtotal: receiptModal.total / 1.16,
               tax: receiptModal.total - (receiptModal.total / 1.16),
               total: receiptModal.total,

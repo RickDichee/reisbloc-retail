@@ -63,8 +63,13 @@ export default function ReceiptTicket({
   const itemsByCategory = order.items.reduce((acc, item) => {
     const product = products.find(p => p.id === item.productId)
     const category = product?.category || 'General'
+    const itemSku = (item as any).sku || product?.sku || product?.barcode || (item as any).barcode || ''
     if (!acc[category]) acc[category] = []
-    acc[category].push({ ...item, productName: product?.name || item.name || 'Producto' })
+    acc[category].push({
+      ...item,
+      productName: product?.name || (item as any).name || item.productName || 'Producto',
+      sku: itemSku
+    })
     return acc
   }, {} as Record<string, any[]>)
 
@@ -186,13 +191,19 @@ export default function ReceiptTicket({
               const itemQty = Number(item.quantity || 1)
               const itemUnitPrice = Number(item.unitPrice || item.price || 0)
               const itemTotal = itemUnitPrice * itemQty
+              const sku = item.sku || ''
 
               return (
                 <div key={idx} style={{ marginBottom: '4px' }}>
                   <div style={{ fontWeight: 900, fontSize: is80mm ? '12.5px' : '10.5px', textTransform: 'uppercase', wordBreak: 'break-word', color: '#000' }}>
                     {item.productName}
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: is80mm ? '11.5px' : '10px', color: '#000' }}>
+                  {sku && (
+                    <div style={{ fontSize: is80mm ? '10px' : '9px', fontWeight: 800, color: '#333', letterSpacing: '0.4px', marginTop: '1px' }}>
+                      SKU: {sku}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: is80mm ? '11.5px' : '10px', color: '#000', marginTop: '1px' }}>
                     <span>{itemQty} pz x ${itemUnitPrice.toFixed(2)}</span>
                     <span style={{ fontWeight: 900 }}>${itemTotal.toFixed(2)}</span>
                   </div>
