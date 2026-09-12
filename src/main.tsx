@@ -19,11 +19,21 @@ import App from './App'
 import './styles/globals.css'
 import './i18n'
 
+// 🛡️ Auto-recuperación de chunks de Vite al desplegar nueva versión
+window.addEventListener('vite:preloadError', () => {
+  console.warn('🔄 Nueva versión detectada (chunk antiguo no encontrado). Recargando automáticamente...')
+  window.location.reload()
+})
+
 // Registrar Service Worker para PWA y soporte offline
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((registration) => {
       console.log('✅ Service Worker registrado exitosamente')
+
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+      }
       
       // Escuchar actualizaciones
       registration.addEventListener('updatefound', () => {
@@ -31,8 +41,8 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('🔄 Nueva versión disponible')
-              // Notificar al usuario sobre la actualización
+              console.log('🔄 Nueva versión disponible, activando...')
+              newWorker.postMessage({ type: 'SKIP_WAITING' })
               window.dispatchEvent(new Event('sw-update-available'))
             }
           })
@@ -40,6 +50,14 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       })
     }).catch((error) => {
       console.warn('⚠️ Error registrando Service Worker:', error)
+    })
+
+    let refreshing = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true
+        window.location.reload()
+      }
     })
   })
 }
