@@ -8,7 +8,7 @@ import { useAppStore } from '@/store/appStore'
 export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { isAuthenticated, isInitializing } = useAppStore()
+  const { isAuthenticated, currentUser, isInitializing } = useAppStore()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -20,27 +20,29 @@ export default function Login() {
   }, [])
 
   useEffect(() => {
-    const checkSession = async () => {
-      if (isInitializing) return
+    if (isInitializing) return
 
-      if (isAuthenticated) {
-        navigate('/admin')
-        return
+    if (isAuthenticated && currentUser) {
+      const adminRoles = ['admin', 'owner', 'superadmin', 'manager']
+      if (adminRoles.includes(currentUser.role)) {
+        navigate('/admin', { replace: true })
+      } else {
+        navigate('/pos', { replace: true })
       }
     }
-    checkSession()
-  }, [navigate, isAuthenticated, isInitializing])
+  }, [navigate, isAuthenticated, currentUser, isInitializing])
 
   const handleGoogleLogin = async () => {
     try {
       setError(null)
       setLoading(true)
 
-      await supabase.auth.signOut()
-
       const params = new URLSearchParams(window.location.search)
       const brandParam = params.get('brand')
-      const redirectUrl = window.location.origin + '/auth/callback' + (brandParam ? `?brand=${brandParam}` : '')
+      const errParam = params.get('error')
+      // Evitar re-enviar brand en el callback si vino de un error de aislamiento previo
+      const shouldPassBrand = brandParam && !errParam
+      const redirectUrl = window.location.origin + '/auth/callback' + (shouldPassBrand ? `?brand=${brandParam}` : '')
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

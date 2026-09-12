@@ -27,7 +27,8 @@ import {
   Activity,
   Coins,
   Crown,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import AdminCard from '@/components/common/AdminCard'
@@ -48,7 +49,7 @@ import PromotionsManager from '@/components/admin/PromotionsManager'
 type AdminTab = 'hub' | 'users' | 'inventory' | 'clients' | 'purchases' | 'llm' | 'marketing' | 'reports' | 'closing' | 'integrations' | 'promotions' | 'ecommerce' | 'support' | 'logs' | 'analytics'
 
 export default function Admin() {
-  const { currentUser, organizationSettings } = useAppStore()
+  const { currentUser, organizationSettings, isInitializing } = useAppStore()
   const navigate = useNavigate()
   const { canManageUsers, canManageInventory } = usePermissions()
   const { isPro, planName } = usePlanLimits()
@@ -97,8 +98,18 @@ export default function Admin() {
     }
   }, [activeTab, aiMetrics])
 
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+        <p className="text-white font-mono text-sm tracking-widest uppercase">Cargando Administrador...</p>
+      </div>
+    )
+  }
+
   if (!currentUser) return <Navigate to="/login" replace />
-  if (currentUser.role !== 'admin') return <Navigate to="/pos" replace />
+  const allowedAdminRoles = ['admin', 'owner', 'superadmin', 'manager']
+  if (!allowedAdminRoles.includes(currentUser.role)) return <Navigate to="/pos" replace />
 
   const tabs = [
     { id: 'analytics' as AdminTab, label: 'Analytics', icon: Activity, enabled: true },

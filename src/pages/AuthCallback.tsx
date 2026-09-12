@@ -43,24 +43,26 @@ export function AuthCallback() {
 
         const { data: existingUser } = await supabase
           .from('users')
-          .select('organization_id')
+          .select('id, organization_id, role, email')
           .eq('id', user.id)
           .maybeSingle()
 
-        const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
+        const hostname = (window.location.hostname || '').toLowerCase()
+        const isActualMMDomain = hostname.includes('modamiel') || hostname.includes('moda-miel')
 
         // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ESTRICTA:
-        // Si el login se realiza en el dominio/marca de Moda Miel MX, verificar que el usuario
+        // Si el login se realiza en el subdominio de Moda Miel MX, verificar que el usuario
         // esté registrado y que su organización pertenezca ESTRICTAMENTE a Moda Miel MX.
-        if (isMM) {
+        if (isActualMMDomain) {
           const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
           const mmOrgId = mmOrg?.id
 
           const isSuperAdmin = 
             user.email === 'rick.playacar@gmail.com' || 
             user.email === 'airproject360@gmail.com' ||
-            (existingUser as any)?.role === 'superadmin' ||
-            (existingUser as any)?.role === 'owner'
+            existingUser?.role === 'superadmin' ||
+            existingUser?.role === 'owner' ||
+            existingUser?.role === 'admin'
 
           let isAuthorized = isSuperAdmin
           if (!isAuthorized && existingUser?.organization_id) {
@@ -76,7 +78,7 @@ export function AuthCallback() {
             await supabase.auth.signOut()
             localStorage.removeItem('reisbloc_auth_token')
             useAppStore.getState().logout()
-            navigate('/login?brand=modamiel&error=unauthorized_collaborator', { replace: true })
+            navigate('/login?error=unauthorized_collaborator', { replace: true })
             return
           }
         }
@@ -84,7 +86,16 @@ export function AuthCallback() {
         if (existingUser?.organization_id) {
           setStatus('¡Organización encontrada!')
           await logSuccessfulLogin(existingUser.organization_id).catch(console.error)
-          setTimeout(() => navigate('/admin'), 500)
+          
+          const fullUser = await supabaseService.getUserById(user.id)
+          if (fullUser) {
+            useAppStore.getState().setCurrentUser(fullUser)
+            useAppStore.getState().setAuthenticated(true)
+          }
+
+          const adminRoles = ['admin', 'owner', 'superadmin', 'manager']
+          const destination = (fullUser && !adminRoles.includes(fullUser.role)) ? '/pos' : '/admin'
+          navigate(destination, { replace: true })
           return
         }
 
@@ -122,7 +133,12 @@ export function AuthCallback() {
               is_primary_admin: true,
               is_primary_user: true
             })
-            setTimeout(() => navigate('/admin'), 500)
+            const fullUser = await supabaseService.getUserById(user.id)
+            if (fullUser) {
+              useAppStore.getState().setCurrentUser(fullUser)
+              useAppStore.getState().setAuthenticated(true)
+            }
+            navigate('/admin', { replace: true })
             return
           }
         }
@@ -141,7 +157,12 @@ export function AuthCallback() {
 
         setStatus('Listo!')
         await logSuccessfulLogin(newOrg?.id).catch(console.error)
-        setTimeout(() => navigate('/admin'), 500)
+        const fullUser = await supabaseService.getUserById(user.id)
+        if (fullUser) {
+          useAppStore.getState().setCurrentUser(fullUser)
+          useAppStore.getState().setAuthenticated(true)
+        }
+        navigate('/admin', { replace: true })
 
       } catch (err: any) {
         console.error('Auth callback error:', err)

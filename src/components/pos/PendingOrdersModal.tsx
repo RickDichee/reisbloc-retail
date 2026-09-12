@@ -98,7 +98,19 @@ export default function PendingOrdersModal({
 
     setCancellingId(orderId)
     try {
-      await supabaseService.updateOrderStatus(orderId, 'cancelled')
+      const orderToCancel = orders.find(o => o.id === orderId)
+      if (orderToCancel && orderToCancel.items) {
+        const stockToRestore = orderToCancel.items
+          .filter(i => i.productId && !i.productId.toLowerCase().startsWith('manual-'))
+          .map(item => ({
+            productId: item.productId,
+            quantity: Number(item.quantity) || 1 // Positivo regresa el stock al inventario
+          }))
+        if (stockToRestore.length > 0) {
+          await supabaseService.updateRetailStockBatch(stockToRestore)
+        }
+      }
+      await supabaseService.cancelOrder(orderId, 'Cancelado desde modal de pedidos', currentUser?.id || 'system')
       alert('✅ Pedido cancelado y stock devuelto al inventario.')
       onRefresh()
     } catch (err: any) {

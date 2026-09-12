@@ -9,7 +9,6 @@ import supabaseService from '@/services/supabaseService'
 import { getStoredToken } from '@/services/jwtService'
 import OfflineIndicator from '@/components/common/OfflineIndicator'
 import { useTenantTheme, resetTenantTheme } from '@/hooks/useTenantTheme'
-import { authLogout } from '@/services/authService'
 
 // 🚀 Code Splitting: Carga diferida de páginas para optimización de bundle
 const LandingPage = lazy(() => import('@/pages/LandingPage'))
@@ -60,47 +59,6 @@ function AppLayout() {
   const { accessibility, currentUser, isAuthenticated, logout } = useAppStore()
   const { isModaMiel } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
 
-  // 🛡️ SEGURIDAD EN TIEMPO DE EJECUCIÓN MULTI-TENANT:
-  // Si la sesión activa pertenece a otra empresa (Org B) y el usuario intenta navegar en el dominio de Moda Miel MX,
-  // se cierra la sesión inmediatamente y se le redirige al login con la advertencia correspondiente.
-  useEffect(() => {
-    const enforceTenantIsolation = async () => {
-      if (!isAuthenticated || !currentUser) return
-
-      const isDomainMM = checkIsModaMiel(
-        window.location.hostname,
-        window.location.search,
-        window.location.hash
-      )
-
-      if (isDomainMM) {
-        const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
-        const mmOrgId = mmOrg?.id
-
-        const isSuperAdmin = 
-          currentUser.role === 'superadmin' || 
-          currentUser.role === 'owner' ||
-          currentUser.email === 'rick.playacar@gmail.com' ||
-          currentUser.email === 'airproject360@gmail.com'
-
-        const isUserMM = 
-          (mmOrgId && currentUser.organizationId === mmOrgId) ||
-          checkIsModaMiel('', '', '', currentUser.organizationId) ||
-          checkIsModaMiel('', '', '', (currentUser as any).businessName)
-
-        if (!isUserMM && !isSuperAdmin) {
-          console.warn('⛔ [Tenant Isolation] Usuario de otra empresa detectado en el subdominio de Moda Miel MX. Denegando acceso.')
-          await supabase.auth.signOut()
-          localStorage.removeItem('reisbloc_auth_token')
-          logout()
-          window.location.href = '/login?brand=modamiel&error=unauthorized_collaborator'
-        }
-      }
-    }
-
-    enforceTenantIsolation()
-  }, [pathname, isAuthenticated, currentUser, logout])
-
   // Ocultar NavBar en landing, login, registro, invitaciones, legales y portada de tienda
   const isPublicPage = 
     pathname === '/' || 
@@ -114,6 +72,48 @@ function AppLayout() {
     pathname === '/modamielmxn' || 
     pathname.startsWith('/p/')
   const hideNavBar = isPublicPage
+
+  // 🛡️ SEGURIDAD EN TIEMPO DE EJECUCIÓN MULTI-TENANT:
+  // Si la sesión activa pertenece a otra empresa (Org B) y el usuario intenta navegar en el dominio de Moda Miel MX,
+  // se cierra la sesión inmediatamente y se le redirige al login con la advertencia correspondiente.
+  useEffect(() => {
+    const enforceTenantIsolation = async () => {
+      // 🛡️ Nunca expulsar en páginas públicas / de autenticación
+      if (isPublicPage || !isAuthenticated || !currentUser) return
+
+      const hostname = (window.location.hostname || '').toLowerCase()
+      const isActualMMDomain = hostname.includes('modamiel') || hostname.includes('moda-miel')
+
+      // Solo aplicar restricción estricta de aislamiento si el host es efectivamente el dominio de Moda Miel
+      if (isActualMMDomain) {
+        const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
+        const mmOrgId = mmOrg?.id
+
+        const isSuperAdmin = 
+          currentUser.role === 'superadmin' || 
+          currentUser.role === 'owner' ||
+          currentUser.role === 'admin' ||
+          currentUser.email === 'rick.playacar@gmail.com' ||
+          currentUser.email === 'airproject360@gmail.com'
+
+        const isUserMM = 
+          (mmOrgId && currentUser.organizationId === mmOrgId) ||
+          checkIsModaMiel('', '', '', currentUser.organizationId) ||
+          checkIsModaMiel('', '', '', (currentUser as any).businessName)
+
+        if (!isUserMM && !isSuperAdmin) {
+          console.warn('⛔ [Tenant Isolation] Usuario de otra empresa detectado en el subdominio de Moda Miel MX. Denegando acceso.')
+          await supabase.auth.signOut()
+          localStorage.removeItem('reisbloc_auth_token')
+          logout()
+          resetTenantTheme()
+          window.location.href = '/login?error=unauthorized_collaborator'
+        }
+      }
+    }
+
+    enforceTenantIsolation()
+  }, [pathname, isAuthenticated, currentUser, logout, isPublicPage])
 
   // Aplicar clases de accesibilidad al body
   useEffect(() => {
@@ -292,11 +292,12 @@ export default function App() {
 
     // 🛡️ Sincronización reactiva del estado de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || !session?.user) {
-        await authLogout()
-      } else if (event === 'SIGNED_IN' && session?.user) {
+      if (event === 'SIGNED_OUT') {
+        useAppStore.getState().logout()
+        resetTenantTheme()
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
         const currentStoredUser = useAppStore.getState().currentUser
-        if (currentStoredUser?.id !== session.user.id) {
+        if (!currentStoredUser || currentStoredUser.id !== session.user.id) {
           await restoreSession()
         }
       }

@@ -738,79 +738,92 @@ class SupabaseService {
   }
 
   private buildOrderPayload(order: Partial<Order> & Record<string, any>, isUpdate: boolean = false) {
-    const payload: any = { ...order }
+    const payload: any = {}
 
     // En updates parciales, solo asignar table_number si viene especificado
-    if ('tableNumber' in order || !isUpdate) {
-      const rawTableNum = Number(order.tableNumber)
+    if ('tableNumber' in order || 'table_number' in order || !isUpdate) {
+      const rawTableNum = Number((order as any).table_number ?? order.tableNumber)
       payload.table_number = (!isNaN(rawTableNum) && rawTableNum > 0) ? rawTableNum : 1
     }
 
-    if ('waiterId' in order) payload.waiter_id = (order as any).waiterId
-    
-    // Solo enviar created_by si es un UUID estricto para evitar fallos de RLS o Foreign Key en Postgres
-    if ('createdBy' in order && order.createdBy) {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(order.createdBy))
+    if ('waiterId' in order || 'waiter_id' in order) {
+      payload.waiter_id = (order as any).waiter_id ?? (order as any).waiterId
+    }
+
+    const createdBy = (order as any).created_by ?? (order as any).createdBy
+    if (createdBy) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(createdBy))
       if (isUuid) {
-        payload.created_by = order.createdBy
+        payload.created_by = createdBy
       }
     }
 
-    if ('status' in order) payload.status = this.normalizeOrderStatus((order as any).status)
-
-    if ('createdAt' in order) {
-      payload.created_at = order.createdAt instanceof Date
-        ? order.createdAt.toISOString()
-        : order.createdAt
+    const orgId = (order as any).organization_id ?? (order as any).organizationId ?? this.getCurrentOrgId()
+    if (orgId) {
+      payload.organization_id = orgId
     }
 
-    if ('sentToKitchenAt' in order) {
-      payload.sent_to_kitchen_at = order.sentToKitchenAt instanceof Date
-        ? order.sentToKitchenAt.toISOString()
-        : order.sentToKitchenAt
+    if ('status' in order) {
+      payload.status = this.normalizeOrderStatus((order as any).status)
+    }
+
+    if ('notes' in order && order.notes !== undefined) {
+      payload.notes = order.notes
+    }
+
+    if ('createdAt' in order || 'created_at' in order) {
+      const rawDate = (order as any).created_at ?? order.createdAt
+      payload.created_at = rawDate instanceof Date ? rawDate.toISOString() : rawDate
+    }
+
+    if ('sentToKitchenAt' in order || 'sent_to_kitchen_at' in order) {
+      const rawDate = (order as any).sent_to_kitchen_at ?? (order as any).sentToKitchenAt
+      payload.sent_to_kitchen_at = rawDate instanceof Date ? rawDate.toISOString() : rawDate
+    }
+
+    if ('completedAt' in order || 'completed_at' in order) {
+      const rawDate = (order as any).completed_at ?? (order as any).completedAt
+      payload.completed_at = rawDate instanceof Date ? rawDate.toISOString() : rawDate
     }
 
     if ('items' in order) {
       payload.items = this.normalizeOrderItems(order.items as any[])
     }
 
-    if ('tipAmount' in order) payload.tip_amount = (order as any).tipAmount ?? 0
-    if ('tipPercentage' in order) payload.tip_percentage = (order as any).tipPercentage ?? 0
-    if ('paymentMethod' in order) payload.payment_method = (order as any).paymentMethod
+    if ('tipAmount' in order || 'tip_amount' in order) {
+      payload.tip_amount = (order as any).tip_amount ?? (order as any).tipAmount ?? 0
+    }
+    if ('tipPercentage' in order || 'tip_percentage' in order) {
+      payload.tip_percentage = (order as any).tip_percentage ?? (order as any).tipPercentage ?? 0
+    }
+    if ('paymentMethod' in order || 'payment_method' in order) {
+      payload.payment_method = (order as any).payment_method ?? (order as any).paymentMethod
+    }
 
     const calculatedSubtotal = Array.isArray(payload.items)
       ? payload.items.reduce((sum: number, item: any) => sum + (item.unitPrice || 0) * (item.quantity || 0), 0)
       : 0
 
     if (!isUpdate) {
-      if (!('subtotal' in payload)) payload.subtotal = (order as any).subtotal ?? calculatedSubtotal
-      if (!('total' in payload)) payload.total = (order as any).total ?? (payload.subtotal ?? calculatedSubtotal) + ((order as any).tipAmount ?? 0)
+      payload.subtotal = (order as any).subtotal ?? calculatedSubtotal
+      payload.total = (order as any).total ?? ((payload.subtotal ?? calculatedSubtotal) + (payload.tip_amount || 0))
     } else {
       if ('subtotal' in order) payload.subtotal = order.subtotal
       if ('total' in order) payload.total = order.total
     }
 
-    delete payload.tableNumber
-    delete payload.waiterId
-    delete payload.createdBy
-    delete payload.createdAt
-    delete payload.sentToKitchenAt
-    delete payload.tipAmount
-    delete payload.tipPercentage
-    delete payload.paymentMethod
-    delete payload.isCourtesy
-    delete payload.authorizedBy
-    delete payload.closedAt
-    delete payload.closedBy
-    delete payload.lastEditedAt
-    delete payload.lastEditedBy
-    delete payload.cancelledAt
-    delete payload.cancelledBy
-    delete payload.cancelReason
-    delete payload.paidAmount
-    delete payload.pendingBalance
-    delete payload.paymentStatus
-    delete payload.isPaid
+    if ('paidAmount' in order || 'paid_amount' in order) {
+      payload.paid_amount = Number((order as any).paid_amount ?? (order as any).paidAmount ?? 0)
+    }
+    if ('pendingBalance' in order || 'pending_balance' in order) {
+      payload.pending_balance = Number((order as any).pending_balance ?? (order as any).pendingBalance ?? 0)
+    }
+    if ('paymentStatus' in order || 'payment_status' in order) {
+      payload.payment_status = (order as any).payment_status ?? (order as any).paymentStatus ?? 'unpaid'
+    }
+    if ('isPaid' in order || 'is_paid' in order) {
+      payload.is_paid = Boolean((order as any).is_paid ?? (order as any).isPaid)
+    }
 
     return payload
   }
@@ -1037,10 +1050,6 @@ class SupabaseService {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       if (uuidRegex.test(orderId) && navigator.onLine) {
         const payload = this.buildOrderPayload(updates, true)
-        delete payload.paidAmount
-        delete payload.pendingBalance
-        delete payload.paymentStatus
-        delete payload.isPaid
 
         const { error } = await supabase.from('orders').update(payload).eq('id', orderId)
         if (error) {
@@ -1054,7 +1063,8 @@ class SupabaseService {
 
   updateLocalPendingOrder(orderId: string, updates: Partial<Order>) {
     try {
-      const ordersKey = this.getLocalOrdersKey()
+      const orgId = this.getCurrentOrgId()
+      const ordersKey = this.getLocalOrdersKey(orgId)
       const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       const updated = existing.map((o: any) => {
         if (o.id === orderId) {
@@ -1062,6 +1072,16 @@ class SupabaseService {
         }
         return o
       })
+      localStorage.setItem(ordersKey, JSON.stringify(updated))
+    } catch (e) {}
+  }
+
+  removeLocalPendingOrder(orderId: string) {
+    try {
+      const orgId = this.getCurrentOrgId()
+      const ordersKey = this.getLocalOrdersKey(orgId)
+      const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
+      const updated = existing.filter((o: any) => o.id !== orderId)
       localStorage.setItem(ordersKey, JSON.stringify(updated))
     } catch (e) {}
   }
@@ -2254,7 +2274,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     }
   }
 
-  async createRetailSale(sale: any, items: any[]): Promise<string> {
+  async createRetailSale(sale: any, items: any[], options?: { skipStockDeduction?: boolean }): Promise<string> {
     try {
       const orgId = this.getCurrentOrgId()
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -2315,13 +2335,13 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       // 3. Update client total spent if associated
       if (sale.clientId && uuidRegex.test(sale.clientId)) {
         try {
-          const { data: clientData } = await supabase
+          const { data: clientData, error: clientErr } = await supabase
             .from('clients')
             .select('total_spent')
             .eq('id', sale.clientId)
             .single()
           
-          if (clientData) {
+          if (!clientErr && clientData) {
             const currentSpent = parseFloat(clientData.total_spent || 0)
             const newSpent = currentSpent + parseFloat(sale.total)
             await supabase
@@ -2334,23 +2354,25 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         }
       }
 
-      // 4. Update stock for items that have inventory
-      const aggregatedStock: Record<string, number> = {}
-      items.forEach(item => {
-        const rawProductId = item.productId || item.id || ''
-        if (!rawProductId || rawProductId.toLowerCase().startsWith('manual-') || !uuidRegex.test(rawProductId)) return
-        const targetId = (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : rawProductId
-        const qtyToDeduct = (Number(item.quantity) || 1) * (item.packQuantity || 1)
-        aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct
-      })
+      // 4. Update stock for items that have inventory (skip if already deducted on order creation)
+      if (!options?.skipStockDeduction) {
+        const aggregatedStock: Record<string, number> = {}
+        items.forEach(item => {
+          const rawProductId = item.productId || item.id || ''
+          if (!rawProductId || rawProductId.toLowerCase().startsWith('manual-') || !uuidRegex.test(rawProductId)) return
+          const targetId = (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : rawProductId
+          const qtyToDeduct = (Number(item.quantity) || 1) * (item.packQuantity || 1)
+          aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct
+        })
 
-      const stockUpdates = Object.entries(aggregatedStock).map(([productId, quantity]) => ({
-        productId,
-        quantity // This is already negative
-      }))
+        const stockUpdates = Object.entries(aggregatedStock).map(([productId, quantity]) => ({
+          productId,
+          quantity // This is already negative
+        }))
 
-      if (stockUpdates.length > 0) {
-        await this.updateRetailStockBatch(stockUpdates)
+        if (stockUpdates.length > 0) {
+          await this.updateRetailStockBatch(stockUpdates)
+        }
       }
 
       return saleData.id
@@ -2561,9 +2583,45 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     if (!updates.length) return
     try {
       const { error } = await supabase.rpc('update_retail_stock_batch', { updates })
-      if (error) throw error
+      if (error) {
+        logger.warn('supabase', 'RPC update_retail_stock_batch failed, applying direct update fallback:', error)
+        for (const u of updates) {
+          const { data: prod } = await supabase
+            .from('retail_products')
+            .select('current_stock')
+            .eq('id', u.productId)
+            .single()
+          if (prod) {
+            const newStock = Math.max(0, (Number(prod.current_stock) || 0) + u.quantity)
+            await supabase
+              .from('retail_products')
+              .update({ current_stock: newStock, updated_at: new Date().toISOString() })
+              .eq('id', u.productId)
+          }
+        }
+      }
     } catch (error) {
       logger.error('supabase', 'Error updating retail stock batch', error as any)
+    }
+  }
+
+  async updateProductStock(productId: string, newStock: number): Promise<void> {
+    try {
+      const { error: retailErr } = await supabase
+        .from('retail_products')
+        .update({ current_stock: Math.max(0, newStock), updated_at: new Date().toISOString() })
+        .eq('id', productId)
+
+      if (retailErr) {
+        logger.warn('supabase', 'Note: product not in retail_products or failed:', retailErr.message)
+      }
+
+      await supabase
+        .from('products')
+        .update({ current_stock: Math.max(0, newStock), updated_at: new Date().toISOString() })
+        .eq('id', productId)
+    } catch (error) {
+      logger.error('supabase', 'Error updating product stock', error as any)
     }
   }
 

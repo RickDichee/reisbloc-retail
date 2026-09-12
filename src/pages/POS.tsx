@@ -496,6 +496,23 @@ export default function POS() {
         {
           event: '*',
           schema: 'public',
+          table: 'retail_products',
+          ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
+        },
+        async () => {
+          logger.info('pos', '⚡ Realtime update: Refrescando catálogo de productos...')
+          const prods = await supabaseService.getAllRetailProducts(orgId)
+          if (prods && prods.length > 0) {
+            setProducts(prods)
+            imageCacheService.saveCachedProducts(prods).catch(console.error)
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
           table: 'clients',
           ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
         },
@@ -834,16 +851,31 @@ export default function POS() {
         }
       })
 
-      // Reservar inventario (silencioso sin interrumpir si la RLS difiere)
-      for (const item of items) {
-        try {
-          const prod = products.find(p => p.id === item.productId)
-          if (prod && prod.hasInventory) {
-            const newStock = Math.max(0, (prod.currentStock || 0) - item.quantity)
-            await supabaseService.updateProductStock(prod.id, newStock)
-          }
-        } catch (e) {}
+      // Reservar inventario en DB (descontar de retail_products y products)
+      const stockToDeduct = items
+        .filter(i => i.productId && !i.productId.toLowerCase().startsWith('manual-'))
+        .map(i => ({
+          productId: i.productId,
+          quantity: -(Number(i.quantity) || 1) * (i.packQuantity || 1)
+        }))
+      if (stockToDeduct.length > 0) {
+        await supabaseService.updateRetailStockBatch(stockToDeduct)
       }
+
+      // Actualizar existencias en la UI local inmediatamente
+      const updatedProds = products.map(p => {
+        const itemMatch = items.find(i => (i.productId || i.id) === p.id)
+        if (itemMatch && p.hasInventory) {
+          const qty = (Number(itemMatch.quantity) || 1) * (itemMatch.packQuantity || 1)
+          return {
+            ...p,
+            currentStock: Math.max(0, (Number(p.currentStock) || 0) - qty)
+          }
+        }
+        return p
+      })
+      setProducts(updatedProds)
+      imageCacheService.saveCachedProducts(updatedProds).catch(console.error)
 
       clearDraftForTable(tableNumber)
       setSelectedClient(null)
@@ -879,7 +911,36 @@ export default function POS() {
     }
   }
 
-  const handleCheckoutPendingOrder = (order: Order) => {
+  const handleCheckoutPendingOrder = async (order: Order) => {
+    // 🔒 Concurrency check: Verificar en Supabase si este pedido ya fue cobrado o cancelado
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(order.id)) {
+      try {
+        const { data: remoteOrder, error } = await supabase
+          .from('orders')
+          .select('status, is_paid')
+          .eq('id', order.id)
+          .single()
+
+        if (!error && remoteOrder) {
+          if (remoteOrder.status === 'completed' || remoteOrder.is_paid) {
+            alert('⚠️ Este pedido ya fue cobrado y finalizado por otro usuario en otra caja.')
+            const updated = await supabaseService.getActiveOrders()
+            setActiveOrdersList(updated || [])
+            return
+          }
+          if (remoteOrder.status === 'cancelled') {
+            alert('⚠️ Este pedido fue cancelado.')
+            const updated = await supabaseService.getActiveOrders()
+            setActiveOrdersList(updated || [])
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Error checking order status before checkout:', e)
+      }
+    }
+
     const draftItems: OrderItem[] = order.items.map(item => ({
       id: item.id || `order-item-${Math.random()}`,
       productId: item.productId,
@@ -896,10 +957,14 @@ export default function POS() {
       }
     }))
 
+    const pendingBal = order.pendingBalance !== undefined && Number(order.pendingBalance) >= 0
+      ? Number(order.pendingBalance)
+      : (Number(order.total || 0) - Number(order.paidAmount || 0))
+
     setPaymentPanel({
       isOpen: true,
       orderId: order.id,
-      orderTotal: order.total,
+      orderTotal: pendingBal > 0 ? pendingBal : Number(order.total || 0),
       orderIds: [order.id]
     })
   }
@@ -1060,10 +1125,10 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
     try {
       const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'card_mercadopago' ? 'transferencia' : result.paymentMethod)
 
-      // Items del borrador activo + (órdenes activas si las hay)
       const { orderIds } = paymentPanel
-      const ordersToProcess = activeTableOrders.filter(o => (orderIds || []).includes(o.id))
-      const allItems = [...items, ...ordersToProcess.flatMap(o => o.items || [])]
+      const isCheckingOutPendingOrder = Boolean(orderIds && orderIds.length > 0)
+      const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
+      const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
       await supabaseService.createRetailSale({
         tableNumber,
@@ -1071,11 +1136,48 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         total: result.total,
         paymentMethod: mappedMethod,
         saleBy: currentUser.id,
-        notes: 'Venta Directa Retail',
+        notes: isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail',
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
         clientPhone: selectedClient?.phone
-      }, allItems)
+      }, allItems, { skipStockDeduction: isCheckingOutPendingOrder })
+
+      // Si proviene de órdenes pendientes, marcarlas como completadas y remover de caché local
+      if (orderIds && orderIds.length > 0) {
+        for (const oId of orderIds) {
+          try {
+            await supabaseService.updateOrder(oId, {
+              status: 'completed',
+              isPaid: true,
+              paymentStatus: 'paid',
+              pendingBalance: 0,
+              paidAmount: result.total
+            })
+            supabaseService.removeLocalPendingOrder(oId)
+          } catch (ordErr) {
+            logger.warn('pos', 'Error completing pending order in Supabase:', ordErr)
+          }
+        }
+        const refreshed = await supabaseService.getActiveOrders()
+        setActiveOrdersList(refreshed || [])
+      }
+
+      // Descontar inventario en memoria para actualización visual instantánea
+      if (!isCheckingOutPendingOrder) {
+        const updatedProds = products.map(p => {
+          const itemMatch = allItems.find(i => (i.productId || i.id) === p.id)
+          if (itemMatch && p.hasInventory) {
+            const qty = (Number(itemMatch.quantity) || 1) * (itemMatch.packQuantity || 1)
+            return {
+              ...p,
+              currentStock: Math.max(0, (Number(p.currentStock) || 0) - qty)
+            }
+          }
+          return p
+        })
+        setProducts(updatedProds)
+        imageCacheService.saveCachedProducts(updatedProds).catch(console.error)
+      }
 
       // Generar ticket y mostrar modal
       try {
