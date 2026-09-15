@@ -201,7 +201,16 @@ export function ProductGrid({
                   )}
 
                   <div className="p-2.5">
-                    <h3 className="font-extrabold text-slate-900 leading-tight truncate text-xs sm:text-sm">
+                    {/* SKU Tag destacado para identificar prendas con nombres similares */}
+                    {(product.sku || product.barcode) && (
+                      <div className="mb-1">
+                        <span className="inline-flex items-center text-[10px] font-mono font-black bg-slate-900 text-amber-300 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">
+                          SKU: {product.sku || product.barcode}
+                        </span>
+                      </div>
+                    )}
+
+                    <h3 className="font-extrabold text-slate-900 leading-tight line-clamp-2 text-xs sm:text-sm" title={product.name}>
                       {product.name}
                     </h3>
                     

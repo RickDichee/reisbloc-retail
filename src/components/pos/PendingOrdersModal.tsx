@@ -543,7 +543,7 @@ export default function PendingOrdersModal({
         <div style="font-weight:900; font-size:10px; margin-bottom:3px;">PRENDAS APARTADAS:</div>
         ${(order.items || []).map(item => `
           <div style="margin-bottom:3px;">
-            <div>${item.productName}</div>
+            <div>${(item.sku || (item as any).barcode) ? `[${item.sku || (item as any).barcode}] ` : ''}${item.productName}</div>
             <div style="display:flex; justify-content:space-between; font-size:10px;">
               <span>${item.quantity} x $${Number(item.unitPrice).toFixed(2)}</span>
               <span>$${(item.quantity * item.unitPrice).toFixed(2)}</span>
@@ -656,8 +656,15 @@ export default function PendingOrdersModal({
                           className="p-2.5 hover:bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-slate-100 transition-colors"
                         >
                           <div className="flex-1 min-w-0">
-                            <span className="font-black text-xs text-slate-900 block truncate">{prod.name}</span>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {(prod.sku || prod.barcode) && (
+                                <span className="bg-amber-100 text-amber-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shrink-0">
+                                  SKU: {prod.sku || prod.barcode}
+                                </span>
+                              )}
+                              <span className="font-black text-xs text-slate-900 truncate">{prod.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold mt-0.5">
                               <span>Stock: {prod.currentStock ?? 'N/A'}</span>
                               <span>•</span>
                               <span className="text-slate-600">Pza: ${pricing.unitPiecePrice.toFixed(2)}</span>
@@ -713,7 +720,14 @@ export default function PendingOrdersModal({
                       return (
                         <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {((item as any).sku || (item as any).barcode) && (
+                                <span className="bg-amber-200 text-slate-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shrink-0">
+                                  SKU: {(item as any).sku || (item as any).barcode}
+                                </span>
+                              )}
+                              <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
+                            </div>
                             
                             {/* Editor de Precio por Paquete/Unidad */}
                             <div className="flex items-center gap-1.5 mt-1">
@@ -888,8 +902,15 @@ export default function PendingOrdersModal({
                           className="p-2.5 hover:bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-slate-100 transition-colors"
                         >
                           <div className="flex-1 min-w-0">
-                            <span className="font-black text-xs text-slate-900 block truncate">{prod.name}</span>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {(prod.sku || prod.barcode) && (
+                                <span className="bg-amber-100 text-amber-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shrink-0">
+                                  SKU: {prod.sku || prod.barcode}
+                                </span>
+                              )}
+                              <span className="font-black text-xs text-slate-900 truncate">{prod.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold mt-0.5">
                               <span>Stock: {prod.currentStock ?? 'N/A'}</span>
                               <span>•</span>
                               <span>Pza: ${pricing.unitPiecePrice.toFixed(2)}</span>
@@ -938,7 +959,14 @@ export default function PendingOrdersModal({
                       return (
                         <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {((item as any).sku || (item as any).barcode) && (
+                                <span className="bg-amber-200 text-slate-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shrink-0">
+                                  SKU: {(item as any).sku || (item as any).barcode}
+                                </span>
+                              )}
+                              <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
+                            </div>
                             
                             <div className="flex items-center gap-1.5 mt-1">
                               <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
@@ -1213,12 +1241,22 @@ export default function PendingOrdersModal({
                       {/* Items List */}
                       <div className="space-y-1.5 bg-white p-3 rounded-2xl border border-slate-100">
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Prendas Apartadas ({(order.items || []).length}):</p>
-                        {(order.items || []).map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center text-xs font-bold text-slate-800">
-                            <span className="truncate pr-2">• {item.productName} ({item.quantity} {item.quantity === 1 ? 'pqt/pz' : 'pqts/pzs'})</span>
-                            <span className="font-mono text-slate-900 shrink-0">${((Number(item.quantity) || 1) * Number(item.unitPrice || 0)).toFixed(2)}</span>
-                          </div>
-                        ))}
+                        {(order.items || []).map((item, idx) => {
+                          const itemSku = (item as any).sku || (item as any).barcode;
+                          return (
+                            <div key={idx} className="flex justify-between items-center text-xs font-bold text-slate-800 gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {itemSku && (
+                                  <span className="bg-amber-100 text-amber-900 font-mono font-black text-[10px] px-1 py-0.5 rounded border border-amber-300 shrink-0">
+                                    SKU: {itemSku}
+                                  </span>
+                                )}
+                                <span className="truncate">• {item.productName} ({item.quantity} {item.quantity === 1 ? 'pqt/pz' : 'pqts/pzs'})</span>
+                              </div>
+                              <span className="font-mono text-slate-900 shrink-0">${((Number(item.quantity) || 1) * Number(item.unitPrice || 0)).toFixed(2)}</span>
+                            </div>
+                          )
+                        })}
                       </div>
 
                       {/* Total, Abonos & Action Buttons */}

@@ -102,7 +102,11 @@ export default function WholesaleCatalog() {
 
   const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))]
   const filtered = products.filter(p => {
-    const matchesSearch = !search || p.product_name.toLowerCase().includes(search.toLowerCase())
+    const searchLower = search.toLowerCase()
+    const matchesSearch = !search || 
+      p.product_name?.toLowerCase().includes(searchLower) ||
+      (p.sku && p.sku.toLowerCase().includes(searchLower)) ||
+      (p.barcode && p.barcode.toLowerCase().includes(searchLower))
     const matchesCategory = category === 'all' || p.category === category
     return matchesSearch && matchesCategory
   })
@@ -234,9 +238,16 @@ export default function WholesaleCatalog() {
                         />
                       )}
                       
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-bold text-lg">{product.product_name}</h3>
-                        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-lg">
+                      <div className="flex items-start justify-between mb-2 gap-2">
+                        <div>
+                          {(product.sku || (product as any).barcode) && (
+                            <span className="inline-block bg-amber-400 text-slate-950 font-mono font-black text-[10px] px-1.5 py-0.5 rounded mb-1">
+                              SKU: {product.sku || (product as any).barcode}
+                            </span>
+                          )}
+                          <h3 className="font-bold text-lg">{product.product_name}</h3>
+                        </div>
+                        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-lg shrink-0">
                           {product.category || 'Sin categoria'}
                         </span>
                       </div>

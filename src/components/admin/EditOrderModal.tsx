@@ -128,8 +128,15 @@ export default function EditOrderModal({ order, onClose, onSave, onCancel }: Edi
                   key={item.id}
                   className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
                 >
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{item.productName}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {((item as any).sku || (item as any).barcode) && (
+                        <span className="bg-amber-100 text-amber-900 font-mono font-bold text-xs px-1.5 py-0.5 rounded border border-amber-300">
+                          SKU: {(item as any).sku || (item as any).barcode}
+                        </span>
+                      )}
+                      <p className="font-medium text-gray-900 truncate">{item.productName}</p>
+                    </div>
                     <p className="text-sm text-gray-600">${item.unitPrice.toFixed(2)} c/u</p>
                   </div>
 

@@ -199,6 +199,14 @@ export default function Inventory() {
                   </div>
                 )}
 
+                {/* SKU Badge Prominente */}
+                {(product.sku || product.barcode) && (
+                  <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 font-mono font-black text-xs px-2.5 py-1 rounded-lg w-fit shadow-xs">
+                    <span>SKU:</span>
+                    <span>{product.sku || product.barcode}</span>
+                  </div>
+                )}
+
                 {/* 1. Product Name (Top Priority) */}
                 <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-2 uppercase tracking-tight leading-tight">
                   {product.name}
@@ -215,15 +223,15 @@ export default function Inventory() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {product.sku && (
-                      <div className="text-[10px] font-bold text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                      <div className="text-[11px] font-black text-amber-900 font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                         SKU: {product.sku}
                       </div>
                     )}
                     {product.barcode && (
-                      <div className="text-[10px] font-bold text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                        {product.barcode}
+                      <div className="text-[11px] font-bold text-slate-600 font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                        Cód: {product.barcode}
                       </div>
                     )}
                   </div>

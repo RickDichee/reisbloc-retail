@@ -2368,7 +2368,14 @@ function ManualAdjustModal({
             <div className="space-y-2">
               {adjustedItems.map(item => (
                 <div key={item.id} className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                  <p className="font-extrabold text-xs text-slate-900 truncate">{item.productName}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {((item as any).sku || (item as any).barcode) && (
+                      <span className="bg-amber-200 text-slate-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shrink-0">
+                        SKU: {(item as any).sku || (item as any).barcode}
+                      </span>
+                    )}
+                    <p className="font-extrabold text-xs text-slate-900 truncate">{item.productName}</p>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Piezas (Cantidad):</label>

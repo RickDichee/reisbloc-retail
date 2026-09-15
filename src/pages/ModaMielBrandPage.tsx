@@ -126,9 +126,12 @@ export default function ModaMielBrandPage() {
   const categories = ['Todos', ...Array.from(new Set(products.map(p => p.category || 'General')))]
 
   const filteredProducts = products.filter(p => {
+    const term = searchTerm.toLowerCase()
     const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      p.name.toLowerCase().includes(term) ||
+      (p.sku && p.sku.toLowerCase().includes(term)) ||
+      (p.barcode && p.barcode.toLowerCase().includes(term)) ||
+      (p.description && p.description.toLowerCase().includes(term))
     const matchesCat = selectedCategory === 'Todos' || p.category === selectedCategory
     return matchesSearch && matchesCat
   })
@@ -583,9 +586,16 @@ export default function ModaMielBrandPage() {
 
                     <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                       <div>
-                        <span className="text-[10px] font-bold text-[#E62E6B] uppercase tracking-wider">
-                          {product.category || 'Mayoreo'}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          {(product.sku || (product as any).barcode) && (
+                            <span className="bg-amber-100 text-amber-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shadow-xs">
+                              SKU: {product.sku || (product as any).barcode}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-[#E62E6B] uppercase tracking-wider">
+                            {product.category || 'Mayoreo'}
+                          </span>
+                        </div>
                         <h3 className="font-bold text-slate-900 text-base leading-tight mt-1">
                           {details.cleanName}
                         </h3>
@@ -739,9 +749,16 @@ export default function ModaMielBrandPage() {
                       className="flex items-center justify-between p-3.5 bg-pink-50/60 border border-pink-100 rounded-2xl"
                     >
                       <div className="flex-1 pr-3">
-                        <h4 className="font-bold text-slate-900 text-sm leading-tight">
-                          {details.cleanName}
-                        </h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {(item.product.sku || (item.product as any).barcode) && (
+                            <span className="bg-amber-200 text-slate-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300">
+                              SKU: {item.product.sku || (item.product as any).barcode}
+                            </span>
+                          )}
+                          <h4 className="font-bold text-slate-900 text-sm leading-tight">
+                            {details.cleanName}
+                          </h4>
+                        </div>
                         <div className="flex flex-col gap-0.5 mt-0.5">
                           <span className="text-xs text-[#E62E6B] font-black">
                             ${itemTotalPrice.toLocaleString()} MXN

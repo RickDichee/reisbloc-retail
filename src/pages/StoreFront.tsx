@@ -77,8 +77,11 @@ export default function StoreFront() {
             return matchesSearch && matchesCategory
         })
         : products.filter(p => {
-            const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+            const term = searchTerm.toLowerCase()
+            const matchesSearch = p.name.toLowerCase().includes(term) ||
+                (p.sku && p.sku.toLowerCase().includes(term)) ||
+                (p.barcode && p.barcode.toLowerCase().includes(term)) ||
+                (p.description && p.description.toLowerCase().includes(term))
             const matchesCategory = selectedCategory === 'Todos' || p.category === selectedCategory
             return matchesSearch && matchesCategory
         })
@@ -214,9 +217,9 @@ export default function StoreFront() {
                                         {product.description}
                                     </p>
                                 )}
-                                {product.sku && (
-                                    <div className="text-[10px] font-black text-slate-400 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100 uppercase tracking-widest mt-2">
-                                        SKU: {product.sku}
+                                {(product.sku || product.barcode) && (
+                                    <div className="text-[11px] font-black text-amber-900 bg-amber-100 inline-block px-2.5 py-0.5 rounded-lg border border-amber-300 font-mono tracking-wide mt-2">
+                                        SKU: {product.sku || product.barcode}
                                     </div>
                                 )}
                             </div>
