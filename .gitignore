@@ -103,3 +103,4 @@ MASTER_PLAN.md
 *REPORTE_TECNICO*.md
 .vercel
 my-agent/
+.env*
