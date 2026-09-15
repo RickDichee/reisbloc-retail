@@ -1,8 +1,8 @@
 import logger from '@/utils/logger'
 
 const CACHE_NAME = 'reisbloc-product-images-v1'
-const DB_NAME = 'reisbloc_image_cache_db'
-const DB_VERSION = 1
+const DB_NAME = 'reisbloc_offline_db'
+const DB_VERSION = 2
 const STORE_PRODUCTS = 'products_cache'
 
 /**

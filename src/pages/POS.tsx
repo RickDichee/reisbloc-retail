@@ -69,9 +69,6 @@ export default function POS() {
   const { isModaMiel } = useTenantTheme()
   const currentBusinessTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store')
 
-  const tableNumber = currentTicketNumber || 1
-  const items = draftOrders[tableNumber] || []
-
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
   const [receiptModal, setReceiptModal] = useState<{
@@ -390,6 +387,8 @@ export default function POS() {
     }
   }
 
+  const tableNumber = currentTicketNumber || 1
+  const items = draftOrders[tableNumber] || []
   const activeTableOrders = useMemo(() => {
     return activeOrdersList.filter(o => o.tableNumber === tableNumber || o.tableNumber === currentTicketNumber)
   }, [activeOrdersList, tableNumber, currentTicketNumber])

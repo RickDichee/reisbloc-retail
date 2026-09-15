@@ -71,42 +71,79 @@ export default function UpgradeModal({
             </div>
           )}
 
-          {/* Recommended Plan / Custom quote */}
-          <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-2xl p-6 text-white border border-slate-800">
+          {/* Recommended Plan */}
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white">
             <div className="flex items-center gap-2 mb-3">
-              <Zap size={20} className="text-amber-400" />
-              <span className="text-xs font-black uppercase tracking-widest text-amber-400">
-                Solución a la Medida
+              <Zap size={20} className="text-amber-300" />
+              <span className="text-xs font-black uppercase tracking-widest">
+                Plan Recomendado
               </span>
             </div>
             <h3 className="text-2xl font-black mb-1">
-              Desbloquea más capacidad
+              {getPlanDisplayName(recommendedPlan)}
             </h3>
-            <p className="text-sm text-slate-400 mb-6">
-              Amplía tu límite de productos, empleados, terminales de cobro o sucursales de acuerdo a las necesidades reales de tu tienda.
+            <p className="text-3xl font-black">
+              ${getPlanPrice(recommendedPlan)}
+              <span className="text-sm font-medium opacity-70">/mes</span>
             </p>
-
-            <a 
-              href="https://wa.me/5215665848231?text=Hola,%20requiero%20ampliar%20la%20capacidad%20de%20mi%20cuenta%20de%20Reisbloc%20Store"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full py-3.5 px-4 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-slate-950 font-black rounded-xl transition-all text-center mb-3 shadow-lg shadow-teal-900/30"
-            >
-              Contactar por WhatsApp (+52 56 6584 8231) →
-            </a>
-
+            <ul className="mt-4 space-y-2">
+              {Object.entries(PLANS[recommendedPlan])
+                .filter(([key]) => !['allowMultiStore', 'allowApiAccess', 'supportLevel'].includes(key))
+                .slice(0, 5)
+                .map(([key, value]) => (
+                  <li key={key} className="flex items-center gap-2 text-sm">
+                    <Check size={16} className="text-emerald-300 shrink-0" />
+                    <span>
+                      {formatPlanFeature(key, value as number)}
+                    </span>
+                  </li>
+                ))
+              }
+            </ul>
             <a 
               href="/pricing"
-              className="block w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-colors text-center text-xs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full mt-6 py-4 bg-white text-indigo-600 font-black rounded-xl hover:bg-indigo-50 transition-colors text-center"
             >
-              Ver información de planes
+              Hacer Upgrade Ahora →
             </a>
           </div>
 
+          {/* Other Plans */}
+          <div className="space-y-3">
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+              O explora otros planes
+            </p>
+            {(['starter', 'growth', 'scale'] as PlanType[])
+              .filter(p => p !== recommendedPlan)
+              .slice(0, 2)
+              .map(plan => (
+                <button 
+                  key={plan}
+                  className="w-full p-4 border border-slate-200 rounded-xl flex items-center justify-between hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+                >
+                  <div className="text-left">
+                    <p className="font-bold text-slate-900">
+                      {getPlanDisplayName(plan)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {getPlanDescription(plan)}
+                    </p>
+                  </div>
+                  <p className="font-black text-slate-900">
+                    ${getPlanPrice(plan)}
+                  </p>
+                </button>
+              ))
+            }
+          </div>
+
           {/* Free Tier Reminder */}
-          <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4">
-            <p className="text-xs text-emerald-400 font-medium">
-              💡 La prueba gratuita individual está diseñada para validar el sistema. Para operar en piso de venta con tu equipo o terminales Clip, configuramos tu entorno personalizado.
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+            <p className="text-sm text-emerald-800 font-medium">
+              💡 Recuerda: El plan Free incluye 100 productos, 3 empleados y 1 caja. 
+              Perfecto para empezar.
             </p>
           </div>
         </div>

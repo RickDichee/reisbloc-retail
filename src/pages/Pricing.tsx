@@ -1,284 +1,368 @@
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
+import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { useMercadoPagoSubscription } from '@/hooks/useMercadoPagoSubscription'
+import DashboardLayout from '@/components/layout/DashboardLayout'
 import {
   Check,
+  X,
+  Crown,
+  Sparkles,
+  Zap,
   Star,
   Building,
-  ShieldCheck,
-  MessageCircle,
-  Smartphone,
-  ArrowRight,
-  ArrowLeft,
-  Zap,
-  Printer,
   CreditCard,
-  Sparkles
+  Shield,
+  Loader2
 } from 'lucide-react'
+import { PlanType } from '@/config/plans'
+
+const PLAN_FEATURES = {
+  free: {
+    label: 'Libre',
+    description: 'Para probar sin costo',
+    icon: Star,
+    color: 'slate',
+    price: 0,
+    popular: false,
+    features: [
+      { text: 'Punto de Venta básico', included: true },
+      { text: '25 productos', included: true },
+      { text: '1 usuario', included: true },
+      { text: '1 caja', included: true },
+      { text: 'Reportes básicos', included: true },
+      { text: '10 queries AI/día', included: true },
+      { text: 'Inventario', included: true },
+      { text: '10 clientes', included: true },
+      { text: 'E-commerce', included: false },
+      { text: 'Facturación CFDI', included: false },
+      { text: 'API Access', included: false },
+      { text: 'Soporte prioritario', included: false },
+    ]
+  },
+  starter: {
+    label: 'Negocio',
+    description: 'Todo para tu negocio',
+    icon: Zap,
+    color: 'indigo',
+    price: 199,
+    popular: true,
+    features: [
+      { text: 'Punto de Venta completo', included: true },
+      { text: '100 productos', included: true },
+      { text: '2 usuarios', included: true },
+      { text: '1 caja', included: true },
+      { text: 'Reportes básicos', included: true },
+      { text: '30 queries AI/día', included: true },
+      { text: 'Inventario avanzado', included: true },
+      { text: '50 clientes', included: true },
+      { text: 'E-commerce básico', included: true },
+      { text: 'Facturación CFDI', included: false },
+      { text: 'API Access', included: false },
+      { text: 'Soporte por email', included: true },
+    ]
+  },
+  growth: {
+    label: 'Empresarial',
+    description: 'Para crecer sin límites',
+    icon: Sparkles,
+    color: 'emerald',
+    price: 599,
+    popular: false,
+    features: [
+      { text: 'Punto de Venta completo', included: true },
+      { text: '500 productos', included: true },
+      { text: '5 usuarios', included: true },
+      { text: '2 cajas', included: true },
+      { text: 'Reportes ilimitados', included: true },
+      { text: '100 queries AI/día', included: true },
+      { text: 'Inventario inteligente', included: true },
+      { text: '200 clientes', included: true },
+      { text: 'E-commerce completo', included: true },
+      { text: 'Facturación CFDI 4.0', included: true },
+      { text: 'Multi-sucursal', included: true },
+      { text: 'API Access', included: true },
+    ]
+  },
+  scale: {
+    label: 'Negocios',
+    description: 'Para múltiples ubicaciones',
+    icon: Crown,
+    color: 'amber',
+    price: 1499,
+    popular: false,
+    features: [
+      { text: 'Todo en Empresarial', included: true },
+      { text: '2,000 productos', included: true },
+      { text: '15 usuarios', included: true },
+      { text: '5 cajas', included: true },
+      { text: '300 queries AI/día', included: true },
+      { text: 'Multi-sucursal (3)', included: true },
+      { text: 'API Access', included: true },
+      { text: 'Soporte priority', included: true },
+      { text: 'Onboarding personalizado', included: true },
+    ]
+  },
+  enterprise: {
+    label: 'Corporativo',
+    description: 'Solución a medida',
+    icon: Building,
+    color: 'purple',
+    price: null,
+    popular: false,
+    features: [
+      { text: 'Todo ilimitado', included: true },
+      { text: 'Sucursales ilimitadas', included: true },
+      { text: 'White Label', included: true },
+      { text: 'Integraciones custom', included: true },
+      { text: 'SLA garantizado', included: true },
+      { text: 'Cuenta dedicada', included: true },
+      { text: 'Capacitación incluido', included: true },
+    ]
+  }
+}
 
 export default function Pricing() {
   const navigate = useNavigate()
   const { currentUser } = useAppStore()
+  const { plan } = usePlanLimits()
+  const { createSubscription, loading } = useMercadoPagoSubscription()
 
-  const waLink = 'https://wa.me/5215665848231?text=' + encodeURIComponent(
-    'Hola equipo Reisbloc 👋 Me interesa cotizar una solución personalizada para mi negocio.'
-  )
+  const handleSubscribe = async (planId: PlanType) => {
+    if (!currentUser) {
+      navigate('/register')
+      return
+    }
+
+    if (planId === 'free') {
+      navigate('/register')
+      return
+    }
+
+    if (planId === 'enterprise') {
+      window.open('mailto:ventas@reisbloc.com?subject=Interés%20en%20Reisbloc%20Enterprise', '_blank')
+      return
+    }
+
+    try {
+      const result = await createSubscription(planId)
+      if (result?.init_point) {
+        window.location.href = result.init_point
+      }
+    } catch (err) {
+      console.error('Error creating subscription:', err)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-[#F8FAFC] font-['Outfit',sans-serif]">
-      {/* Navigation */}
-      <nav className="border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur-xl sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-teal-900/40 p-2">
-              <img src="/icon.svg" alt="Reisbloc" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <span className="font-black text-xl tracking-tight text-white block leading-none">
-                REISBLOC <span className="text-teal-400 font-light">STORE</span>
-              </span>
-              <span className="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase block mt-0.5">
-                Planes & Soluciones
-              </span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            {currentUser ? (
-              <button
-                onClick={() => navigate('/admin')}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-2"
-              >
-                <ArrowLeft size={14} />
-                Volver al Panel
-              </button>
-            ) : (
-              <Link
-                to="/login"
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all"
-              >
-                Iniciar Sesión
-              </Link>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12 px-4">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal-500/10 border border-teal-500/30 rounded-full text-teal-400 text-xs font-bold uppercase tracking-wider mb-4">
-            <Sparkles size={14} />
-            Modelo Flexible y Transparente
+        <div className="max-w-7xl mx-auto text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-bold mb-6">
+            <Zap size={16} />
+            Launch Special - Precios de lanzamiento
           </div>
-          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight mb-4">
-            Comienza gratis. Crece a tu medida.
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">
+            Elige tu plan
           </h1>
-          <p className="text-slate-400 text-lg sm:text-xl leading-relaxed">
-            Una prueba individual gratuita para que valides el sistema hoy mismo, y soluciones de software + hardware personalizadas cuando tu operación lo requiera.
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+            Empieza gratis y escala cuando tu negocio lo requiera. Sin contratos, cancela cuando quieras.
           </p>
         </div>
 
-        {/* Pricing Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
-          
-          {/* Tier 1: Free Individual Trial */}
-          <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-8 sm:p-10 flex flex-col justify-between relative shadow-xl hover:border-slate-700 transition-all">
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
-                  <Star size={28} className="text-teal-400" />
+        {/* Pricing Cards */}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {/* Free */}
+            <div className={`bg-white rounded-3xl p-6 border-2 border-slate-200 shadow-sm`}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-slate-100 rounded-xl">
+                  <Star size={24} className="text-slate-600" />
                 </div>
-                <span className="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                  Para 1 Persona
-                </span>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Free</h3>
+                  <p className="text-sm text-slate-500">Para empezar</p>
+                </div>
               </div>
-
-              <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
-                Prueba Gratuita
-              </h2>
-              <p className="text-slate-400 text-sm mb-6">
-                Ideal para emprendedores y dueños de negocio que desean conocer la agilidad de nuestro punto de venta sin ningún compromiso.
-              </p>
-
-              <div className="flex items-baseline gap-2 mb-8">
-                <span className="text-5xl font-black text-white">$0</span>
-                <span className="text-slate-400 text-sm font-medium">MXN / Siempre gratis para probar</span>
+              <div className="mb-6">
+                <span className="text-4xl font-black text-slate-900">$0</span>
+                <span className="text-slate-500">/mes</span>
               </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3 text-sm text-slate-300">
-                  <Check size={18} className="text-teal-400 mt-0.5 shrink-0" />
-                  <span><strong>1 usuario</strong> y <strong>1 caja</strong> de cobro</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-300">
-                  <Check size={18} className="text-teal-400 mt-0.5 shrink-0" />
-                  <span>Punto de Venta veloz (PC, tablet o smartphone)</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-300">
-                  <Check size={18} className="text-teal-400 mt-0.5 shrink-0" />
-                  <span>Catálogo de productos y control de stock básico</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-300">
-                  <Check size={18} className="text-teal-400 mt-0.5 shrink-0" />
-                  <span>Registro de clientes y folios de venta digitales</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-300">
-                  <Check size={18} className="text-teal-400 mt-0.5 shrink-0" />
-                  <span>Sin necesidad de tarjeta de crédito</span>
-                </li>
+              <button
+                onClick={() => navigate('/register')}
+                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors mb-6"
+              >
+                Empezar gratis
+              </button>
+              <ul className="space-y-3">
+                {PLAN_FEATURES.free.features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    {f.included ? (
+                      <Check size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                    ) : (
+                      <X size={16} className="text-slate-300 mt-0.5 shrink-0" />
+                    )}
+                    <span className={f.included ? 'text-slate-700' : 'text-slate-400'}>{f.text}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            <button
-              onClick={() => navigate('/register')}
-              className="w-full py-4 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition-all flex items-center justify-center gap-2 group border border-slate-700 hover:border-slate-600"
-            >
-              <span>Comenzar Prueba Gratis</span>
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-
-          {/* Tier 2: Custom Enterprise Solution */}
-          <div className="bg-gradient-to-b from-slate-900 to-slate-950 rounded-3xl border-2 border-teal-500/50 p-8 sm:p-10 flex flex-col justify-between relative shadow-2xl shadow-teal-950/40">
-            <div className="absolute -top-3.5 right-8 px-4 py-1 rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 text-slate-950 text-xs font-black uppercase tracking-wider shadow-md">
-              Recomendado para Tiendas & Cadenas
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-teal-500/20 border border-teal-500/40 flex items-center justify-center">
-                  <Building size={28} className="text-teal-300" />
+            {/* Launch (Popular) */}
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 text-white relative shadow-xl shadow-indigo-500/20 transform scale-105">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-400 text-slate-900 text-xs font-black rounded-full uppercase tracking-wider">
+                Más Popular
+              </div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <Zap size={24} className="text-white" />
                 </div>
-                <span className="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                  A la Medida
-                </span>
+                <div>
+                  <h3 className="text-lg font-black">Launch</h3>
+                  <p className="text-sm text-indigo-200">Todo lo que necesitas</p>
+                </div>
               </div>
-
-              <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
-                Solución Personalizada
-              </h2>
-              <p className="text-slate-400 text-sm mb-6">
-                Para boutiques, comercios mayoristas y cadenas con múltiples empleados, pasillos o requerimientos de hardware físico.
-              </p>
-
-              <div className="flex items-baseline gap-2 mb-8">
-                <span className="text-3xl sm:text-4xl font-black text-white">Cotización Directa</span>
-                <span className="text-teal-400 text-xs font-bold uppercase tracking-wider">Adaptado a tu operación</span>
+              <div className="mb-6">
+                <span className="text-4xl font-black">$149</span>
+                <span className="text-indigo-200">/mes</span>
               </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3 text-sm text-slate-200">
-                  <Check size={18} className="text-emerald-400 mt-0.5 shrink-0" />
-                  <span><strong>Usuarios y cajeros ilimitados</strong> con roles y auditoría</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-200">
-                  <Check size={18} className="text-emerald-400 mt-0.5 shrink-0" />
-                  <span><strong>Integración Clip Total 3:</strong> sincronización automática con terminales</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-200">
-                  <Check size={18} className="text-emerald-400 mt-0.5 shrink-0" />
-                  <span><strong>Tickets térmicos de 80mm / 58mm</strong> y lector de código de barras</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-200">
-                  <Check size={18} className="text-emerald-400 mt-0.5 shrink-0" />
-                  <span><strong>White Label Completo:</strong> tu propio logo, colores de marca y subdominio</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-200">
-                  <Check size={18} className="text-emerald-400 mt-0.5 shrink-0" />
-                  <span><strong>Venta por menudeo y paquetes</strong> con inventario mayorista</span>
-                </li>
-                <li className="flex items-start gap-3 text-sm text-slate-200">
-                  <Check size={18} className="text-emerald-400 mt-0.5 shrink-0" />
-                  <span><strong>Acompañamiento VIP:</strong> alta de catálogo, capacitación presencial/remota y SLA</span>
-                </li>
+              <button
+                onClick={() => handleSubscribe('starter')}
+                disabled={loading || plan === 'starter'}
+                className="w-full py-3 px-4 bg-white text-indigo-600 hover:bg-indigo-50 font-bold rounded-xl transition-colors mb-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+                {plan === 'starter' ? 'Plan Actual' : 'Comenzar ahora'}
+              </button>
+              <ul className="space-y-3">
+                {PLAN_FEATURES.starter.features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    {f.included ? (
+                      <Check size={16} className="text-emerald-300 mt-0.5 shrink-0" />
+                    ) : (
+                      <X size={16} className="text-indigo-400 mt-0.5 shrink-0" />
+                    )}
+                    <span className={f.included ? 'text-white' : 'text-indigo-300'}>{f.text}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-slate-950 font-black transition-all flex items-center justify-center gap-2 group shadow-lg shadow-teal-900/30"
-            >
-              <MessageCircle size={20} className="fill-current" />
-              <span>Cotizar Solución por WhatsApp</span>
-              <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </a>
-          </div>
-
-        </div>
-
-        {/* Feature Highlights Grid */}
-        <div className="border-t border-slate-800/80 pt-16">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h3 className="text-2xl sm:text-3xl font-black text-white mb-3">
-              ¿Por qué vendemos de forma personalizada?
-            </h3>
-            <p className="text-slate-400 text-sm sm:text-base">
-              Cada negocio físico tiene dinámicas únicas. En lugar de ofrecer paquetes rígidos que no se ajustan a tu día a día, configuramos exactamente lo que tu comercio necesita.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-              <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center mb-4 text-teal-400">
-                <Smartphone size={24} />
+            {/* Growth */}
+            <div className="bg-white rounded-3xl p-6 border-2 border-emerald-200 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-emerald-100 rounded-xl">
+                  <Sparkles size={24} className="text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Growth</h3>
+                  <p className="text-sm text-slate-500">Para crecer</p>
+                </div>
               </div>
-              <h4 className="text-lg font-bold text-white mb-2">Hardware Conectado</h4>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Conectamos terminales bancarias Clip, lectores de código de barras y cajones de dinero para que no tengas descuadres al cobrar.
-              </p>
+              <div className="mb-6">
+                <span className="text-4xl font-black text-slate-900">$399</span>
+                <span className="text-slate-500">/mes</span>
+              </div>
+              <button
+                onClick={() => handleSubscribe('growth')}
+                disabled={loading || plan === 'growth'}
+                className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors mb-6 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+                {plan === 'growth' ? 'Plan Actual' : 'Elegir Growth'}
+              </button>
+              <ul className="space-y-3">
+                {PLAN_FEATURES.growth.features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    {f.included ? (
+                      <Check size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                    ) : (
+                      <X size={16} className="text-slate-300 mt-0.5 shrink-0" />
+                    )}
+                    <span className={f.included ? 'text-slate-700' : 'text-slate-400'}>{f.text}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4 text-amber-400">
-                <Printer size={24} />
+            {/* Scale */}
+            <div className="bg-white rounded-3xl p-6 border-2 border-amber-200 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-amber-100 rounded-xl">
+                  <Crown size={24} className="text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Scale</h3>
+                  <p className="text-sm text-slate-500">Paquete completo</p>
+                </div>
               </div>
-              <h4 className="text-lg font-bold text-white mb-2">Tickets Profesionales</h4>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Tickets térmicos de 80mm con tu logotipo, política de cambios, dirección y códigos de barras listos para entregarse al cliente.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-4 text-emerald-400">
-                <ShieldCheck size={24} />
+              <div className="mb-6">
+                <span className="text-4xl font-black text-slate-900">$799</span>
+                <span className="text-slate-500">/mes</span>
               </div>
-              <h4 className="text-lg font-bold text-white mb-2">Aislamiento Total</h4>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Base de datos privada, roles restringidos para colaboradores y seguridad de nivel bancario respaldada por Supabase en la nube.
-              </p>
+              <button
+                onClick={() => handleSubscribe('scale')}
+                disabled={loading || plan === 'scale'}
+                className="w-full py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors mb-6 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+                {plan === 'scale' ? 'Plan Actual' : 'Elegir Scale'}
+              </button>
+              <ul className="space-y-3">
+                {PLAN_FEATURES.scale.features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    {f.included ? (
+                      <Check size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                    ) : (
+                      <X size={16} className="text-slate-300 mt-0.5 shrink-0" />
+                    )}
+                    <span className={f.included ? 'text-slate-700' : 'text-slate-400'}>{f.text}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        </div>
 
-        {/* Bottom CTA Banner */}
-        <div className="mt-16 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-8 sm:p-12 text-center max-w-4xl mx-auto">
-          <h3 className="text-2xl sm:text-3xl font-black text-white mb-3">
-            ¿Listo para llevar el control de tu tienda al siguiente nivel?
-          </h3>
-          <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto mb-8">
-            Ponte en contacto directo con nuestro equipo fundador para agendar una demostración en vivo o resolver cualquier duda.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-all flex items-center justify-center gap-2"
-            >
-              <MessageCircle size={20} className="fill-current" />
-              <span>Chatear por WhatsApp (+52 56 6584 8231)</span>
-            </a>
+          {/* Enterprise CTA */}
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-purple-500/20 rounded-2xl">
+                <Building size={32} className="text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black">¿Necesitas una solución a medida?</h3>
+                <p className="text-slate-400">Enterprise con funcionalidades custom, integraciones y soporte dedicado.</p>
+              </div>
+            </div>
             <button
-              onClick={() => navigate('/register')}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition-all border border-slate-700"
+              onClick={() => window.open('mailto:ventas@reisbloc.com?subject=Interés%20en%20Reisbloc%20Enterprise', '_blank')}
+              className="px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition-colors whitespace-nowrap"
             >
-              Probar 1 Persona Gratis
+              Contactar ventas
             </button>
           </div>
+
+          {/* FAQ / Trust */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div className="p-6 bg-white rounded-2xl border border-slate-100">
+              <CreditCard size={32} className="mx-auto text-indigo-600 mb-3" />
+              <h4 className="font-bold text-slate-900 mb-2">Pagos seguros</h4>
+              <p className="text-sm text-slate-500">Procesamos tus pagos con MercadoPago, el método más seguro en México.</p>
+            </div>
+            <div className="p-6 bg-white rounded-2xl border border-slate-100">
+              <Shield size={32} className="mx-auto text-emerald-600 mb-3" />
+              <h4 className="font-bold text-slate-900 mb-2">Sin compromiso</h4>
+              <p className="text-sm text-slate-500">Cancela cuando quieras. Sin contratos ni penalizaciones.</p>
+            </div>
+            <div className="p-6 bg-white rounded-2xl border border-slate-100">
+              <Sparkles size={32} className="mx-auto text-amber-500 mb-3" />
+              <h4 className="font-bold text-slate-900 mb-2">Setup en minutos</h4>
+              <p className="text-sm text-slate-500">Crea tu cuenta y empieza a vender en menos de 5 minutos.</p>
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }

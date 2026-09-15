@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
 import { BRANDING } from '@/config/branding'
-import { ArrowRight, ShoppingBag } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 
 export default function Login() {
@@ -15,7 +15,7 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search)
     const errParam = params.get('error')
     if (errParam === 'unauthorized_collaborator') {
-      setError('⚠️ Acceso restringido: Únicamente los colaboradores autorizados por Moda Miel MX pueden ingresar.')
+      setError('⚠️ Acceso restringido: Únicamente los colaboradores autorizados por Moda Miel MX pueden ingresar. Solicita una invitación a tu Administrador.')
     }
   }, [])
 
@@ -25,26 +25,12 @@ export default function Login() {
     if (isAuthenticated && currentUser) {
       const adminRoles = ['admin', 'owner', 'superadmin', 'manager']
       if (adminRoles.includes(currentUser.role)) {
-        navigate('/pos', { replace: true })
+        navigate('/admin', { replace: true })
       } else {
         navigate('/pos', { replace: true })
       }
     }
   }, [navigate, isAuthenticated, currentUser, isInitializing])
-
-  const handleQuickModaMielAccess = () => {
-    const quickUser = {
-      id: '27694533-af69-4f53-8f88-2858c4d877ae',
-      name: 'Moda Miel Mostrador',
-      email: 'luis.lop9199@gmail.com',
-      role: 'admin',
-      organizationId: '1b498fa6-aca5-428c-9bdd-01e6fea30316',
-      active: true
-    }
-    useAppStore.getState().setCurrentUser(quickUser as any)
-    useAppStore.getState().setAuthenticated(true)
-    navigate('/pos', { replace: true })
-  }
 
   const handleGoogleLogin = async () => {
     try {
@@ -54,6 +40,7 @@ export default function Login() {
       const params = new URLSearchParams(window.location.search)
       const brandParam = params.get('brand')
       const errParam = params.get('error')
+      // Evitar re-enviar brand en el callback si vino de un error de aislamiento previo
       const shouldPassBrand = brandParam && !errParam
       const redirectUrl = window.location.origin + '/auth/callback' + (shouldPassBrand ? `?brand=${brandParam}` : '')
 
@@ -72,25 +59,15 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4 font-['Outfit',sans-serif]">
+    <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 overflow-hidden border ${
-            BRANDING.isModaMiel ? 'bg-pink-500/15 border-pink-400/30' : 'bg-teal-500/15 border-teal-400/30 p-3'
-          }`}>
-            <img 
-              src={BRANDING.logoUrl} 
-              alt={BRANDING.whiteLabelName} 
-              className={`w-full h-full ${BRANDING.isModaMiel ? 'object-cover' : 'object-contain'}`} 
-            />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-pink-500/15 mb-4 overflow-hidden border border-pink-400/30">
+            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
           </div>
           <h1 className="text-4xl font-black text-white mb-2">{BRANDING.appName}</h1>
           <p className="text-gray-400 text-lg">{BRANDING.loginSubtitle}</p>
-          <div className={`text-xs mt-2 uppercase tracking-widest font-bold ${
-            BRANDING.isModaMiel ? 'text-pink-400' : 'text-teal-400'
-          }`}>
-            {BRANDING.whiteLabelName}
-          </div>
+          <div className="text-xs text-pink-400 mt-2 uppercase tracking-widest font-bold">{BRANDING.whiteLabelName}</div>
         </div>
 
         {error && (
@@ -99,28 +76,11 @@ export default function Login() {
           </div>
         )}
 
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl space-y-4">
-          {/* Botón de Acceso Inmediato a Mostrador Moda Miel */}
-          <button
-            type="button"
-            onClick={handleQuickModaMielAccess}
-            className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-pink-900/40 text-base hover:scale-[1.02]"
-          >
-            <ShoppingBag size={22} className="shrink-0" />
-            <span>Entrar Directo a la Caja (Moda Miel)</span>
-            <ArrowRight size={20} className="shrink-0" />
-          </button>
-
-          <div className="relative flex py-1 items-center">
-            <div className="flex-grow border-t border-gray-800"></div>
-            <span className="flex-shrink mx-4 text-gray-500 text-xs uppercase font-bold">o con tu cuenta</span>
-            <div className="flex-grow border-t border-gray-800"></div>
-          </div>
-
+        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl">
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-50 text-sm"
+            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-50"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -129,6 +89,7 @@ export default function Login() {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.08l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
             {loading ? 'Conectando...' : 'Continuar con Google'}
+            {!loading && <ArrowRight size={20} />}
           </button>
         </div>
 
