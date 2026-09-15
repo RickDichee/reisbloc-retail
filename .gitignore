@@ -73,6 +73,8 @@ SHARED_DB_PROTOCOL.md
 *.deb
 
 # --- Scripts & configs (local only) ---
+scripts/migrate*.js
+scripts/seed*.ts
 fixnpm.sh
 .pre-commit.sh
 .check-env.sh
