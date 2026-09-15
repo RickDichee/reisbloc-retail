@@ -15,11 +15,15 @@ const FALLBACK_SUPABASE_URL = 'https://nmovxyaibnixvxtepbod.supabase.co'
 const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_99WitkcTh0U8rQ1qt3sgGQ_2uDwzz_D'
 
 // Variables de entorno con fallback inmediato
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
+const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
+const rawAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
 
-const validUrl = supabaseUrl || FALLBACK_SUPABASE_URL
-const validKey = supabaseAnonKey || FALLBACK_SUPABASE_ANON_KEY
+// 🛡️ REGLA CRÍTICA: Supabase deshabilitó las llaves JWT Legacy (eyJhbGciOi...).
+// Si en Vercel o local viene una llave legacy deshabilitada, forzar la nueva Publishable Key activa.
+const isLegacyDisabledKey = !rawAnonKey || rawAnonKey.startsWith('eyJ')
+
+const validUrl = rawUrl || FALLBACK_SUPABASE_URL
+const validKey = isLegacyDisabledKey ? FALLBACK_SUPABASE_ANON_KEY : rawAnonKey
 
 if (!validUrl || !validKey) {
   console.error('❌ CRÍTICO: No se encontraron credenciales de Supabase configuradas.')

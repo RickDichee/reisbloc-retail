@@ -39,7 +39,7 @@ interface ReisblocDB extends DBSchema {
 
 import { useAppStore } from '@/store/appStore'
 
-const DB_BASE_NAME = 'reisbloc_offline_db'
+const DB_BASE_NAME = 'reisbloc_sync_queue_db'
 const DB_VERSION = 1
 
 const dbPromises = new Map<string, Promise<IDBPDatabase<ReisblocDB>>>()
@@ -71,6 +71,19 @@ export const initOfflineDB = (orgId?: string) => {
                     db.createObjectStore('metadata', { keyPath: 'id' })
                 }
             },
+            blocked() {
+                console.warn(`IndexedDB ${dbName} blocked, waiting...`)
+            },
+            blocking() {
+                console.warn(`IndexedDB ${dbName} blocking another version`)
+            },
+            terminated() {
+                dbPromises.delete(dbName)
+            }
+        }).catch(err => {
+            console.warn(`IndexedDB ${dbName} init error:`, err)
+            dbPromises.delete(dbName)
+            throw err
         })
         dbPromises.set(dbName, promise)
     }

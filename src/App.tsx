@@ -205,6 +205,15 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    // 🛡️ Si el navegador llega con tokens de OAuth en cualquier ruta (ej. / o /#access_token=...),
+    // redirigir de inmediato a /auth/callback para procesar la sesión y navegar al POS/Admin.
+    if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
+      if (!window.location.pathname.startsWith('/auth/callback')) {
+        window.location.replace('/auth/callback' + window.location.hash)
+        return
+      }
+    }
+
     const restoreSession = async () => {
       try {
         const { data: { session: supabaseSession }, error: sessionError } = await supabase.auth.getSession()
