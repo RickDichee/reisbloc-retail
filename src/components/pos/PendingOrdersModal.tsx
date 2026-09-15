@@ -3,11 +3,12 @@ import { Order, OrderItem, Product } from '@/types/index'
 import { 
   X, Clock, User, DollarSign, Printer, Trash2, Package, ShoppingBag, 
   AlertTriangle, Truck, CheckCircle2, CreditCard, Pencil, Plus, Minus, 
-  Search, ArrowLeft, Save, Check
+  Search, ArrowLeft, Save, Check, Tag
 } from 'lucide-react'
 import printService from '@/services/printService'
 import supabaseService from '@/services/supabaseService'
 import { useAppStore } from '@/store/appStore'
+import { parseProductDescription } from '@/utils/priceParser'
 
 interface PendingOrdersModalProps {
   isOpen: boolean
@@ -24,6 +25,52 @@ const statusWorkflow: { id: Order['status']; label: string; icon: any; color: st
   { id: 'pendiente_entrega', label: '3. En Tránsito', icon: Truck, color: 'bg-purple-100 text-purple-900 border-purple-300' },
   { id: 'entregado', label: '4. Entregado', icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-900 border-emerald-300' }
 ]
+
+/**
+ * 🏷️ Extrae la información de precios de Moda Miel / Retail:
+ * Prioriza el Precio por Paquete Completo (el que más se utiliza en Moda Miel MX),
+ * el precio por pieza en paquete y la cantidad de piezas por lote.
+ */
+export function getProductPricing(product: Product) {
+  const parsedDesc = parseProductDescription(product.description || '')
+  const rawPrice = Number(product.price || 0)
+  const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 0)
+  const packQty = explicitPackQty > 1 ? explicitPackQty : 10
+
+  let extractedPriceFromName: number | null = null
+  const nameStr = product.name || ''
+  if (nameStr.includes('$')) {
+    const afterDollar = nameStr.split('$')[1] || ''
+    const pNum = parseFloat(afterDollar)
+    if (!isNaN(pNum) && pNum > 0) extractedPriceFromName = pNum
+  }
+
+  const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+  const rawPackPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+
+  // Precio unitario por pieza
+  let unitPiecePrice = rawPrice
+  if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
+    unitPiecePrice = extractedPriceFromName
+  } else if (rawPackPrice > 0) {
+    unitPiecePrice = rawPackPrice > rawPrice * 2 && explicitPackQty > 1 ? rawPackPrice / packQty : rawPackPrice
+  } else if (wholesalePrice > 0) {
+    unitPiecePrice = wholesalePrice
+  }
+
+  // 📦 PRECIO POR PAQUETE COMPLETO (El más usado en Moda Miel)
+  let fullPackagePrice = rawPackPrice > 0 ? rawPackPrice : Math.round(unitPiecePrice * packQty)
+  if (rawPrice > 200 && rawPrice > unitPiecePrice * 2) {
+    fullPackagePrice = Math.round(rawPrice)
+  }
+
+  return {
+    unitPiecePrice,
+    fullPackagePrice,
+    packQty,
+    hasExplicitPack: explicitPackQty > 1 || rawPackPrice > 0
+  }
+}
 
 export default function PendingOrdersModal({
   isOpen,
@@ -190,25 +237,39 @@ export default function PendingOrdersModal({
     }))
   }
 
+  const updateEditItemPrice = (itemId: string, newPrice: number) => {
+    setEditItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        return { ...item, unitPrice: Math.max(0, newPrice) }
+      }
+      return item
+    }))
+  }
+
   const removeEditItem = (itemId: string) => {
     setEditItems(prev => prev.filter(item => item.id !== itemId))
   }
 
-  const addProductToEdit = (product: Product) => {
-    const existing = editItems.find(i => i.productId === product.id)
+  // 📦 Agregar producto a pedido existente: por defecto con PRECIO POR PAQUETE
+  const addProductToEdit = (product: Product, useFullPackage: boolean = true) => {
+    const pricing = getProductPricing(product)
+    const assignedPrice = useFullPackage ? pricing.fullPackagePrice : pricing.unitPiecePrice
+    const itemLabel = useFullPackage ? `${product.name} (Paquete ${pricing.packQty} pzs)` : product.name
+
+    const existing = editItems.find(i => i.productId === product.id && i.unitPrice === assignedPrice)
     if (existing) {
       updateEditItemQty(existing.id, 1)
     } else {
       const newItem: OrderItem = {
         id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         productId: product.id,
-        productName: product.name,
+        productName: itemLabel,
         quantity: 1,
-        unitPrice: Number(product.price) || 0,
+        unitPrice: assignedPrice,
         addedAt: new Date(),
         addedBy: currentUser?.id || 'system',
         canBeDeleted: true,
-        packQuantity: product.packQuantity || 1,
+        packQuantity: useFullPackage ? pricing.packQty : 1,
         sku: product.sku || product.barcode || ''
       }
       setEditItems(prev => [...prev, newItem])
@@ -316,8 +377,12 @@ export default function PendingOrdersModal({
     setNewOrderProductSearch('')
   }
 
-  const addProductToNewOrder = (product: Product) => {
-    const existing = newOrderItems.find(i => i.productId === product.id)
+  const addProductToNewOrder = (product: Product, useFullPackage: boolean = true) => {
+    const pricing = getProductPricing(product)
+    const assignedPrice = useFullPackage ? pricing.fullPackagePrice : pricing.unitPiecePrice
+    const itemLabel = useFullPackage ? `${product.name} (Paquete ${pricing.packQty} pzs)` : product.name
+
+    const existing = newOrderItems.find(i => i.productId === product.id && i.unitPrice === assignedPrice)
     if (existing) {
       setNewOrderItems(prev => prev.map(item => {
         if (item.id === existing.id) {
@@ -329,13 +394,13 @@ export default function PendingOrdersModal({
       const newItem: OrderItem = {
         id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         productId: product.id,
-        productName: product.name,
+        productName: itemLabel,
         quantity: 1,
-        unitPrice: Number(product.price) || 0,
+        unitPrice: assignedPrice,
         addedAt: new Date(),
         addedBy: currentUser?.id || 'system',
         canBeDeleted: true,
-        packQuantity: product.packQuantity || 1,
+        packQuantity: useFullPackage ? pricing.packQty : 1,
         sku: product.sku || product.barcode || ''
       }
       setNewOrderItems(prev => [...prev, newItem])
@@ -348,6 +413,15 @@ export default function PendingOrdersModal({
       if (item.id === itemId) {
         const newQty = Math.max(1, (Number(item.quantity) || 1) + delta)
         return { ...item, quantity: newQty }
+      }
+      return item
+    }))
+  }
+
+  const updateNewOrderItemPrice = (itemId: string, newPrice: number) => {
+    setNewOrderItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        return { ...item, unitPrice: Math.max(0, newPrice) }
       }
       return item
     }))
@@ -471,7 +545,7 @@ export default function PendingOrdersModal({
           <div style="margin-bottom:3px;">
             <div>${item.productName}</div>
             <div style="display:flex; justify-content:space-between; font-size:10px;">
-              <span>${item.quantity} pz x $${Number(item.unitPrice).toFixed(2)}</span>
+              <span>${item.quantity} x $${Number(item.unitPrice).toFixed(2)}</span>
               <span>$${(item.quantity * item.unitPrice).toFixed(2)}</span>
             </div>
           </div>
@@ -488,7 +562,7 @@ export default function PendingOrdersModal({
     printService.printReceipt(html, { title: `Pedido_${ticketId}` })
   }
 
-  // Filtrado de productos para agregar
+  // Filtrado de productos para agregar (muestra precio por paquete destacado)
   const filteredProductsForEdit = editProductSearch.trim() === '' ? [] : availableProducts.filter(p => 
     p.active !== false && (
       p.name.toLowerCase().includes(editProductSearch.toLowerCase()) ||
@@ -529,7 +603,7 @@ export default function PendingOrdersModal({
                     <Pencil size={18} className="text-indigo-600" />
                     <span>Modificar Pedido #{(editingOrder.id || '').slice(0, 8).toUpperCase()}</span>
                   </h2>
-                  <p className="text-xs text-slate-500 font-medium">Ajusta productos, cantidades o notas del cliente</p>
+                  <p className="text-xs text-slate-500 font-medium">Ajusta precios por paquete, cantidades o notas del cliente</p>
                 </div>
               </div>
               <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 font-bold rounded-xl hover:bg-slate-100">
@@ -552,47 +626,84 @@ export default function PendingOrdersModal({
                 />
               </div>
 
-              {/* Buscar y Agregar Producto */}
+              {/* Buscar y Agregar Producto (Con Precio Paquete) */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">
-                  + Agregar Producto al Pedido:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">
+                    + Agregar Producto al Pedido:
+                  </label>
+                  <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
+                    📦 Prioriza Precio por Paquete
+                  </span>
+                </div>
                 <div className="relative">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={editProductSearch}
                     onChange={e => setEditProductSearch(e.target.value)}
-                    placeholder="Buscar por nombre, código o SKU..."
+                    placeholder="Buscar producto en catálogo por nombre o código..."
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 {filteredProductsForEdit.length > 0 && (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-lg space-y-1 mt-1">
-                    {filteredProductsForEdit.map(prod => (
-                      <button
-                        key={prod.id}
-                        type="button"
-                        onClick={() => addProductToEdit(prod)}
-                        className="w-full p-2 hover:bg-indigo-50 rounded-xl text-left flex justify-between items-center text-xs font-bold text-slate-800 transition-colors"
-                      >
-                        <span className="truncate">{prod.name}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-indigo-600 font-mono font-black">${Number(prod.price).toFixed(2)}</span>
-                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg">Stock: {prod.currentStock ?? 'N/A'}</span>
-                          <span className="text-emerald-600 font-black">+ Agregar</span>
+                  <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-lg space-y-1.5 mt-1">
+                    {filteredProductsForEdit.map(prod => {
+                      const pricing = getProductPricing(prod)
+                      return (
+                        <div
+                          key={prod.id}
+                          className="p-2.5 hover:bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-slate-100 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span className="font-black text-xs text-slate-900 block truncate">{prod.name}</span>
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
+                              <span>Stock: {prod.currentStock ?? 'N/A'}</span>
+                              <span>•</span>
+                              <span className="text-slate-600">Pza: ${pricing.unitPiecePrice.toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Botón Principal: Agregar por Paquete Completo */}
+                            <button
+                              type="button"
+                              onClick={() => addProductToEdit(prod, true)}
+                              className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                              title={`Agregar paquete de ${pricing.packQty} pzas`}
+                            >
+                              <Package size={13} />
+                              <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
+                            </button>
+
+                            {/* Botón Secundario: Agregar por Pieza */}
+                            <button
+                              type="button"
+                              onClick={() => addProductToEdit(prod, false)}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                              title="Agregar 1 pieza individual"
+                            >
+                              Pieza (${pricing.unitPiecePrice.toFixed(2)})
+                            </button>
+                          </div>
                         </div>
-                      </button>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
 
-              {/* Lista de Items Actuales */}
+              {/* Lista de Items Actuales con edición de precio */}
               <div className="space-y-2">
-                <p className="text-xs font-black text-slate-700 uppercase tracking-wider">
-                  Prendas en el Pedido ({editItems.length}):
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                    Prendas en el Pedido ({editItems.length}):
+                  </p>
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Puedes ajustar el precio por paquete y la cantidad directamente
+                  </span>
+                </div>
+
                 {editItems.length === 0 ? (
                   <p className="text-xs text-red-500 italic py-2">No hay prendas seleccionadas</p>
                 ) : (
@@ -600,13 +711,29 @@ export default function PendingOrdersModal({
                     {editItems.map(item => {
                       const itemSubtotal = (Number(item.quantity) || 1) * (Number(item.unitPrice) || 0)
                       return (
-                        <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-3">
+                        <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
-                            <p className="text-[11px] font-bold text-slate-500 font-mono">${Number(item.unitPrice).toFixed(2)} c/u</p>
+                            
+                            {/* Editor de Precio por Paquete/Unidad */}
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                                <Tag size={12} className="text-amber-600" />
+                                <span>Precio Paquete/Unit: $</span>
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={item.unitPrice}
+                                onChange={e => updateEditItemPrice(item.id, parseFloat(e.target.value) || 0)}
+                                className="w-24 px-2 py-0.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-black text-slate-900 outline-none focus:ring-1 focus:ring-indigo-500"
+                                title="Modifica el precio por paquete de esta prenda"
+                              />
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                             <button
                               type="button"
                               onClick={() => updateEditItemQty(item.id, -1)}
@@ -625,7 +752,7 @@ export default function PendingOrdersModal({
                               <Plus size={14} />
                             </button>
 
-                            <span className="w-20 text-right text-xs font-black text-slate-900 font-mono">
+                            <span className="w-24 text-right text-xs font-black text-slate-900 font-mono">
                               ${itemSubtotal.toFixed(2)}
                             </span>
 
@@ -708,7 +835,7 @@ export default function PendingOrdersModal({
                     <Plus size={18} className="text-emerald-600" />
                     <span>Crear Nuevo Pedido / Apartado</span>
                   </h2>
-                  <p className="text-xs text-slate-500 font-medium">Reserva existencias y genera un folio de pedido</p>
+                  <p className="text-xs text-slate-500 font-medium">Usa precio por paquete y reserva existencias</p>
                 </div>
               </div>
               <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 font-bold rounded-xl hover:bg-slate-100">
@@ -733,36 +860,64 @@ export default function PendingOrdersModal({
 
               {/* Buscar y Agregar Producto */}
               <div className="space-y-1.5">
-                <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">
-                  Buscar Productos para Apartar:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">
+                    Buscar Productos para Apartar:
+                  </label>
+                  <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
+                    📦 Prioriza Precio por Paquete
+                  </span>
+                </div>
                 <div className="relative">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={newOrderProductSearch}
                     onChange={e => setNewOrderProductSearch(e.target.value)}
-                    placeholder="Buscar por nombre, código o SKU..."
+                    placeholder="Buscar producto por nombre o código..."
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
                 {filteredProductsForNew.length > 0 && (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-lg space-y-1 mt-1">
-                    {filteredProductsForNew.map(prod => (
-                      <button
-                        key={prod.id}
-                        type="button"
-                        onClick={() => addProductToNewOrder(prod)}
-                        className="w-full p-2 hover:bg-emerald-50 rounded-xl text-left flex justify-between items-center text-xs font-bold text-slate-800 transition-colors"
-                      >
-                        <span className="truncate">{prod.name}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-emerald-600 font-mono font-black">${Number(prod.price).toFixed(2)}</span>
-                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg">Stock: {prod.currentStock ?? 'N/A'}</span>
-                          <span className="text-indigo-600 font-black">+ Agregar</span>
+                  <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-lg space-y-1.5 mt-1">
+                    {filteredProductsForNew.map(prod => {
+                      const pricing = getProductPricing(prod)
+                      return (
+                        <div
+                          key={prod.id}
+                          className="p-2.5 hover:bg-slate-50 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-slate-100 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <span className="font-black text-xs text-slate-900 block truncate">{prod.name}</span>
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold">
+                              <span>Stock: {prod.currentStock ?? 'N/A'}</span>
+                              <span>•</span>
+                              <span>Pza: ${pricing.unitPiecePrice.toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => addProductToNewOrder(prod, true)}
+                              className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                              title={`Agregar paquete de ${pricing.packQty} pzas`}
+                            >
+                              <Package size={13} />
+                              <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => addProductToNewOrder(prod, false)}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                            >
+                              Pieza (${pricing.unitPiecePrice.toFixed(2)})
+                            </button>
+                          </div>
                         </div>
-                      </button>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -774,20 +929,34 @@ export default function PendingOrdersModal({
                 </p>
                 {newOrderItems.length === 0 ? (
                   <div className="py-6 text-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-semibold">
-                    Usa el buscador para agregar las prendas de este apartado
+                    Usa el buscador arriba para agregar las prendas a este pedido
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {newOrderItems.map(item => {
                       const itemSubtotal = (Number(item.quantity) || 1) * (Number(item.unitPrice) || 0)
                       return (
-                        <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between gap-3">
+                        <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
-                            <p className="text-[11px] font-bold text-slate-500 font-mono">${Number(item.unitPrice).toFixed(2)} c/u</p>
+                            
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                                <Tag size={12} className="text-amber-600" />
+                                <span>Precio Paquete/Unit: $</span>
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={item.unitPrice}
+                                onChange={e => updateNewOrderItemPrice(item.id, parseFloat(e.target.value) || 0)}
+                                className="w-24 px-2 py-0.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-black text-slate-900 outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                             <button
                               type="button"
                               onClick={() => updateNewOrderItemQty(item.id, -1)}
@@ -806,7 +975,7 @@ export default function PendingOrdersModal({
                               <Plus size={14} />
                             </button>
 
-                            <span className="w-20 text-right text-xs font-black text-slate-900 font-mono">
+                            <span className="w-24 text-right text-xs font-black text-slate-900 font-mono">
                               ${itemSubtotal.toFixed(2)}
                             </span>
 
@@ -950,10 +1119,11 @@ export default function PendingOrdersModal({
                   const paidAmount = Number(order.paidAmount || 0)
                   const pendingBalance = Math.max(0, totalAmount - paidAmount)
 
-                  // ⚠️ Cálculo de Alerta por tiempo sin cobrar (si tiene más de 2 horas)
+                  // ⏱️ TIMEFRAME DE ALERTA: 5 DÍAS EXACTOS antes de detonar alerta de venta/apartado sin cobrar
                   const createdDate = new Date(order.createdAt || Date.now())
                   const diffHours = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60)
-                  const isOldUnpaidAlert = diffHours >= 2 && pendingBalance > 0
+                  const diffDays = diffHours / 24
+                  const isOldUnpaidAlert = diffDays >= 5 && pendingBalance > 0
 
                   const currentStatus = order.status || 'pending_surtir'
 
@@ -961,17 +1131,17 @@ export default function PendingOrdersModal({
                     <div
                       key={order.id}
                       className={`bg-slate-50 border rounded-3xl p-4 sm:p-5 transition-all space-y-3 relative group ${
-                        isOldUnpaidAlert ? 'border-red-300 bg-red-50/20 shadow-md' : 'border-slate-200 hover:border-indigo-300'
+                        isOldUnpaidAlert ? 'border-red-400 bg-red-50/30 shadow-md' : 'border-slate-200 hover:border-indigo-300'
                       }`}
                     >
-                      {/* ALERTA DE PEDIDO ANTIGUO SIN COBRAR */}
+                      {/* ⚠️ ALERTA DE PEDIDO CON MÁS DE 5 DÍAS SIN LIQUIDAR */}
                       {isOldUnpaidAlert && (
-                        <div className="bg-red-500 text-white font-black text-[10px] uppercase px-3 py-1.5 rounded-xl flex items-center justify-between animate-pulse shadow-sm">
-                          <span className="flex items-center gap-1">
-                            <AlertTriangle size={14} />
-                            <span>⚠️ ALERTA AUDITORÍA: PEDIDO HACE {Math.floor(diffHours)} HORAS SIN COBRAR TOTALMENTE</span>
+                        <div className="bg-red-600 text-white font-black text-[10.5px] uppercase px-3.5 py-2 rounded-xl flex items-center justify-between animate-pulse shadow-md">
+                          <span className="flex items-center gap-1.5">
+                            <AlertTriangle size={16} className="text-amber-300 shrink-0" />
+                            <span>⚠️ ALERTA: PEDIDO CON {Math.floor(diffDays)} DÍAS SIN LIQUIDAR (LÍMITE DE APARTADO: 5 DÍAS)</span>
                           </span>
-                          <span className="font-mono">PENDIENTE: ${pendingBalance.toFixed(2)}</span>
+                          <span className="font-mono font-black bg-red-700/60 px-2.5 py-0.5 rounded-lg">PENDIENTE: ${pendingBalance.toFixed(2)}</span>
                         </div>
                       )}
 
@@ -983,6 +1153,9 @@ export default function PendingOrdersModal({
                           <span className="text-xs font-black text-slate-800 flex items-center gap-1">
                             <Clock size={13} className="text-slate-400" />
                             <span>{createdDate.toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              ({diffDays >= 1 ? `hace ${Math.floor(diffDays)} día${Math.floor(diffDays) !== 1 ? 's' : ''}` : 'hoy'})
+                            </span>
                           </span>
                         </div>
 
@@ -1042,7 +1215,7 @@ export default function PendingOrdersModal({
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Prendas Apartadas ({(order.items || []).length}):</p>
                         {(order.items || []).map((item, idx) => (
                           <div key={idx} className="flex justify-between items-center text-xs font-bold text-slate-800">
-                            <span className="truncate pr-2">• {item.productName} ({item.quantity} pzs)</span>
+                            <span className="truncate pr-2">• {item.productName} ({item.quantity} {item.quantity === 1 ? 'pqt/pz' : 'pqts/pzs'})</span>
                             <span className="font-mono text-slate-900 shrink-0">${((Number(item.quantity) || 1) * Number(item.unitPrice || 0)).toFixed(2)}</span>
                           </div>
                         ))}
@@ -1066,7 +1239,7 @@ export default function PendingOrdersModal({
                             type="button"
                             onClick={() => startEditOrder(order)}
                             className="px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-2xl text-xs font-black transition-all shadow-sm flex items-center gap-1.5 uppercase"
-                            title="Modificar prendas, cantidades o notas"
+                            title="Modificar prendas, precio por paquete o cantidades"
                           >
                             <Pencil size={15} />
                             <span>Modificar</span>
