@@ -16,6 +16,8 @@ export default function Login() {
     const errParam = params.get('error')
     if (errParam === 'unauthorized_collaborator') {
       setError('⚠️ Acceso restringido: Únicamente los colaboradores autorizados por Moda Miel MX pueden ingresar. Solicita una invitación a tu Administrador.')
+    } else if (errParam === 'auth_failed') {
+      setError('⚠️ No se pudo completar el inicio de sesión. Por favor intenta de nuevo.')
     }
   }, [])
 

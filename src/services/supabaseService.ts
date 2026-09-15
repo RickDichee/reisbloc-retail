@@ -99,7 +99,7 @@ class SupabaseService {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .or(`id.eq.${userId},auth_uid.eq.${userId}`)
         .maybeSingle()
 
       if (error) throw error

@@ -21,9 +21,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-// Fallback de seguridad si el entorno de despliegue (ej. Vercel) no tiene inyectadas las variables en build time
-const FALLBACK_SUPABASE_URL = 'https://jnyyaclrelqcqzjummwe.supabase.co'
-const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpueXlhY2xyZWxxY3F6anVtbXdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NzAyOTEsImV4cCI6MjA4NjI0NjI5MX0.s4ICD7RoQECq3MWTcA1iEcVqG4W8sB3rkm6kKyb29h8'
+// Fallback de seguridad para producción
+const FALLBACK_SUPABASE_URL = 'https://nmovxyaibnixvxtepbod.supabase.co'
+const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_99WitkcTh0U8rQ1qt3sgGQ_2uDwzz_D'
 
 const validUrl = supabaseUrl || FALLBACK_SUPABASE_URL
 const validKey = supabaseAnonKey || FALLBACK_SUPABASE_ANON_KEY

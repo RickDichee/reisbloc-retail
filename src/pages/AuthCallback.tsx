@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
 import { logSuccessfulLogin } from '@/services/authService'
@@ -18,6 +18,7 @@ export function AuthCallback() {
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tipIndex, setTipIndex] = useState(0)
+  const executedRef = useRef(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -27,35 +28,110 @@ export function AuthCallback() {
   }, [])
 
   useEffect(() => {
+    if (executedRef.current) return
+    executedRef.current = true
+
     const handleAuthCallback = async () => {
       try {
         setStatus('Iniciando sesión...')
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        if (sessionError || !session?.user) {
-          console.error('Error en callback:', sessionError)
-          navigate('/login?error=auth_failed')
+        let session: any = null
+
+        // 1. Extraer tokens si vienen en el hash del URL (#access_token=...&refresh_token=...)
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          try {
+            const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+            const accessToken = hashParams.get('access_token')
+            const refreshToken = hashParams.get('refresh_token')
+            if (accessToken) {
+              const { data, error: setErr } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || ''
+              })
+              if (!setErr && data?.session) {
+                session = data.session
+              }
+            }
+          } catch (hashErr) {
+            console.warn('Error parsing hash tokens:', hashErr)
+          }
+        }
+
+        // 2. Extraer código si viene en el search (?code=...)
+        if (!session && window.location.search && window.location.search.includes('code=')) {
+          try {
+            const searchParams = new URLSearchParams(window.location.search)
+            const code = searchParams.get('code')
+            if (code) {
+              const { data, error: codeErr } = await supabase.auth.exchangeCodeForSession(code)
+              if (!codeErr && data?.session) {
+                session = data.session
+              }
+            }
+          } catch (codeErr) {
+            console.warn('Error exchanging code:', codeErr)
+          }
+        }
+
+        // 3. Consultar sesión actual en Supabase
+        if (!session) {
+          const { data, error: sessionError } = await supabase.auth.getSession()
+          if (!sessionError && data?.session?.user) {
+            session = data.session
+          }
+        }
+
+        // 4. Fallback reactivo con onAuthStateChange (espera máx 3 segundos)
+        if (!session) {
+          session = await new Promise<any>((resolve) => {
+            const timer = setTimeout(() => {
+              subscription?.unsubscribe()
+              resolve(null)
+            }, 3000)
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+              if (newSession?.user) {
+                clearTimeout(timer)
+                subscription?.unsubscribe()
+                resolve(newSession)
+              }
+            })
+          })
+        }
+
+        if (!session?.user) {
+          console.error('Error en callback: No se detectó ninguna sesión activa')
+          navigate('/login?error=auth_failed', { replace: true })
           return
         }
 
         const user = session.user
         setStatus('Verificando organización y permisos...')
 
-        const { data: existingUser } = await supabase
+        if (session.access_token) {
+          window.localStorage.setItem('sb-access-token', session.access_token)
+        }
+
+        // Buscar al colaborador por id, auth_uid o email
+        const { data: existingUser, error: userQueryError } = await supabase
           .from('users')
-          .select('id, organization_id, role, email')
-          .eq('id', user.id)
+          .select('id, organization_id, role, email, auth_uid, name')
+          .or(`id.eq.${user.id},auth_uid.eq.${user.id},email.ilike.${user.email}`)
           .maybeSingle()
+
+        if (userQueryError) {
+          console.warn('Advertencia consultando tabla users:', userQueryError)
+        }
 
         const hostname = (window.location.hostname || '').toLowerCase()
         const isActualMMDomain = hostname.includes('modamiel') || hostname.includes('moda-miel')
+        const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
 
         // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ESTRICTA:
-        // Si el login se realiza en el subdominio de Moda Miel MX, verificar que el usuario
-        // esté registrado y que su organización pertenezca ESTRICTAMENTE a Moda Miel MX.
+        // Si el login se realiza en el subdominio de Moda Miel MX:
+        // El usuario DEBE estar registrado en el sistema y pertenecer a Moda Miel MX (o ser superadmin global).
         if (isActualMMDomain) {
           const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
-          const mmOrgId = mmOrg?.id
+          const mmOrgId = mmOrg?.id || mmDefaultOrgId
 
           const isSuperAdmin = 
             user.email === 'rick.playacar@gmail.com' || 
@@ -66,14 +142,11 @@ export function AuthCallback() {
 
           let isAuthorized = isSuperAdmin
           if (!isAuthorized && existingUser?.organization_id) {
-            if (mmOrgId) {
-              isAuthorized = existingUser.organization_id === mmOrgId
-            } else {
-              isAuthorized = checkIsModaMiel('', '', '', existingUser.organization_id)
-            }
+            isAuthorized = existingUser.organization_id === mmOrgId || checkIsModaMiel('', '', '', existingUser.organization_id)
           }
 
-          if (!isAuthorized) {
+          // Si el usuario no existe en la base de datos o no pertenece a Moda Miel MX: RECHAZAR
+          if (!existingUser || !isAuthorized) {
             console.warn('⛔ Acceso rechazado: El usuario no pertenece a la organización Moda Miel MX')
             await supabase.auth.signOut()
             localStorage.removeItem('reisbloc_auth_token')
@@ -83,14 +156,52 @@ export function AuthCallback() {
           }
         }
 
+        // Si el usuario ya existe en la base de datos
         if (existingUser?.organization_id) {
+          // Enlazar auth_uid si no está asignado o es diferente
+          if (existingUser.auth_uid !== user.id) {
+            await supabase
+              .from('users')
+              .update({ auth_uid: user.id })
+              .eq('id', existingUser.id)
+              .catch(console.error)
+          }
+
           setStatus('¡Organización encontrada!')
           await logSuccessfulLogin(existingUser.organization_id).catch(console.error)
-          
-          const fullUser = await supabaseService.getUserById(user.id)
+
+          // Cargar datos completos del usuario
+          const fullUser = await supabaseService.getUserById(existingUser.id) || await supabaseService.getUserById(user.id)
           if (fullUser) {
             useAppStore.getState().setCurrentUser(fullUser)
             useAppStore.getState().setAuthenticated(true)
+          }
+
+          // Guardar tokens de autenticación para servicios y persistencia
+          localStorage.setItem('reisbloc_auth_token', JSON.stringify({
+            accessToken: session.access_token,
+            userId: existingUser.id,
+            organizationId: existingUser.organization_id,
+            expiresAt: (session.expires_at || 0) * 1000
+          }))
+          localStorage.setItem('current_org_id', existingUser.organization_id)
+
+          // Pre-cargar configuración de organización
+          try {
+            const org = await supabaseService.getOrganizationById(existingUser.organization_id)
+            if (org) {
+              const mergedSettings = {
+                ...(org.settings || {}),
+                id: org.id,
+                name: org.name,
+                businessName: org.settings?.businessName || org.name,
+                slug: org.slug,
+                logoUrl: org.logo_url
+              }
+              useAppStore.getState().setOrganizationSettings(mergedSettings)
+            }
+          } catch (e) {
+            console.warn('No se pudieron cargar settings de la org:', e)
           }
 
           const adminRoles = ['admin', 'owner', 'superadmin', 'manager']
@@ -99,7 +210,8 @@ export function AuthCallback() {
           return
         }
 
-        setStatus('Creando organizacion...')
+        // Si NO existe usuario y NO estamos en dominio de Moda Miel (registro de nuevo tenant SaaS)
+        setStatus('Creando organización...')
         
         const orgName = user.user_metadata?.full_name 
           ? `Negocio de ${user.user_metadata.full_name}` 
@@ -115,7 +227,8 @@ export function AuthCallback() {
           .select('id')
           .single()
 
-        if (orgError) {
+        const orgIdToUse = newOrg?.id
+        if (orgError || !orgIdToUse) {
           console.error('Error creando org:', orgError)
           const { data: existingOrg } = await supabase
             .from('organizations')
@@ -131,7 +244,8 @@ export function AuthCallback() {
               active: true,
               organization_id: existingOrg.id,
               is_primary_admin: true,
-              is_primary_user: true
+              is_primary_user: true,
+              auth_uid: user.id
             })
             const fullUser = await supabaseService.getUserById(user.id)
             if (fullUser) {
@@ -143,20 +257,23 @@ export function AuthCallback() {
           }
         }
 
-        if (newOrg) {
+        if (orgIdToUse) {
           await supabase.from('users').insert({
             id: user.id,
             name: user.user_metadata?.full_name || user.email,
             role: 'admin',
             active: true,
-            organization_id: newOrg.id,
+            organization_id: orgIdToUse,
             is_primary_admin: true,
-            is_primary_user: true
+            is_primary_user: true,
+            auth_uid: user.id
           })
         }
 
-        setStatus('Listo!')
-        await logSuccessfulLogin(newOrg?.id).catch(console.error)
+        setStatus('¡Listo!')
+        if (orgIdToUse) {
+          await logSuccessfulLogin(orgIdToUse).catch(console.error)
+        }
         const fullUser = await supabaseService.getUserById(user.id)
         if (fullUser) {
           useAppStore.getState().setCurrentUser(fullUser)
@@ -166,8 +283,8 @@ export function AuthCallback() {
 
       } catch (err: any) {
         console.error('Auth callback error:', err)
-        setError(err.message || 'Error al iniciar sesion')
-        setTimeout(() => navigate('/login?error=auth_failed'), 2000)
+        setError(err.message || 'Error al iniciar sesión')
+        setTimeout(() => navigate('/login?error=auth_failed', { replace: true }), 2500)
       }
     }
 
@@ -181,7 +298,7 @@ export function AuthCallback() {
           <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">⚠️</span>
           </div>
-          <h2 className="text-xl font-bold text-red-400 mb-2">Error</h2>
+          <h2 className="text-xl font-bold text-red-400 mb-2">Error de Autenticación</h2>
           <p className="text-gray-400">{error}</p>
         </div>
       </div>
@@ -197,7 +314,7 @@ export function AuthCallback() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-2xl font-bold text-white">Bienvenido!</h2>
+          <h2 className="text-2xl font-bold text-white">¡Bienvenido!</h2>
           <p className="text-gray-400 animate-pulse font-mono text-sm">
             {status || LOADING_TIPS[tipIndex]}
           </p>
