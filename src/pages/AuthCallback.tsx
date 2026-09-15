@@ -181,6 +181,7 @@ export function AuthCallback() {
           // Guardar tokens de autenticación para servicios y persistencia
           localStorage.setItem('reisbloc_auth_token', JSON.stringify({
             accessToken: session.access_token,
+            refreshToken: session.refresh_token || undefined,
             userId: existingUser.id,
             organizationId: existingUser.organization_id,
             expiresAt: (session.expires_at || 0) * 1000

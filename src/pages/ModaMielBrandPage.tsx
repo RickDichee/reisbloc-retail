@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Shield,
   Scale,
@@ -31,6 +31,16 @@ interface CartItem {
 
 export default function ModaMielBrandPage() {
   const { currentUser } = useAppStore()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (currentUser) {
+      const adminRoles = ['admin', 'owner', 'superadmin', 'manager']
+      const target = adminRoles.includes(currentUser.role) ? '/admin' : '/pos'
+      navigate(target, { replace: true })
+    }
+  }, [currentUser, navigate])
+
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')

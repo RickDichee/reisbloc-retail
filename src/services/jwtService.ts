@@ -2,6 +2,7 @@ import logger from '@/utils/logger'
 
 interface TokenResponse {
   accessToken: string
+  refreshToken?: string
   userId: string
   userRole: string
   username: string

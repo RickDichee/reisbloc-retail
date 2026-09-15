@@ -25,9 +25,23 @@ window.addEventListener('vite:preloadError', () => {
   window.location.reload()
 })
 
-// Registrar Service Worker para PWA y soporte offline
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// En apps nativas compiladas con Capacitor (Android / iOS), los Service Workers causan bucles de recarga
+// y bloquean la carga de assets locales empaquetados en el APK.
+const isCapacitor = typeof (window as any).Capacitor !== 'undefined' || !!(window as any).Capacitor?.isNativePlatform?.()
+
+if (isCapacitor) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister()
+      }
+    })
+  }
+} else if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
+    // Verificar si ya teníamos un controlador previo antes de instalar
+    let hadController = !!navigator.serviceWorker.controller
+
     navigator.serviceWorker.register('/sw.js').then((registration) => {
       console.log('✅ Service Worker registrado exitosamente')
 
@@ -54,6 +68,20 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
     let refreshing = false
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // 🛡️ REGLA CRÍTICA:
+      // 1. Si NO había controlador previo, es la primera instalación: jamás reiniciar abruptamente al usuario.
+      // 2. Si estamos en proceso de callback de OAuth o en el POS activo, no interrumpir la sesión.
+      if (!hadController) {
+        hadController = true
+        return
+      }
+
+      const pathname = window.location.pathname
+      if (pathname.startsWith('/auth/callback') || pathname.startsWith('/pos')) {
+        console.log('🔄 SW actualizado en segundo plano, no se reinicia para no interrumpir operación activa.')
+        return
+      }
+
       if (!refreshing) {
         refreshing = true
         window.location.reload()

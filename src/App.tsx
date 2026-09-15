@@ -130,13 +130,28 @@ function AppLayout() {
     }
   }, [accessibility.largeText, accessibility.highContrast])
 
+  const isCapacitor = typeof (window as any).Capacitor !== 'undefined' || !!(window as any).Capacitor?.isNativePlatform?.()
+  const adminRoles = ['admin', 'owner', 'superadmin', 'manager']
+  const homeTarget = currentUser ? (adminRoles.includes(currentUser.role) ? '/admin' : '/pos') : '/login'
+
   return (
     <>
       {!hideNavBar && <NavBar />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* 🌐 Rutas Públicas */}
-          <Route path="/" element={isModaMiel ? <ModaMielBrandPage /> : <LandingPage />} />
+          <Route 
+            path="/" 
+            element={
+              isCapacitor ? (
+                <Navigate to={homeTarget} replace />
+              ) : isModaMiel ? (
+                <ModaMielBrandPage />
+              ) : (
+                <LandingPage />
+              )
+            } 
+          />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
@@ -215,83 +230,99 @@ export default function App() {
     }
 
     const restoreSession = async () => {
-      try {
-        const { data: { session: supabaseSession }, error: sessionError } = await supabase.auth.getSession()
-        let session = supabaseSession
+      const runRestore = async () => {
+        try {
+          const { data: { session: supabaseSession }, error: sessionError } = await supabase.auth.getSession()
+          let session = supabaseSession
 
-        if (sessionError) {
-          console.error('❌ Error obteniendo sesión de Supabase:', sessionError)
-        }
-
-        if (!session) {
-          const tokenData = getStoredToken()
-          if (tokenData && tokenData.accessToken) {
-            // Restaurar sesión sin refresh_token (no disponible en JWT local).
-            // Usar solo access_token para autenticar requests inmediatos.
-            // El refresh se manejará cuando Supabase lo necesite vía su propio flujo.
-            const { data, error: setSessionError } = await supabase.auth.setSession({
-              access_token: tokenData.accessToken,
-              refresh_token: tokenData.accessToken
-            })
-            if (setSessionError) {
-              // Si falla setSession, forzar header manualmente
-              forceAuthHeader(tokenData.accessToken)
-            } else {
-              session = data.session
-            }
+          if (sessionError) {
+            console.error('❌ Error obteniendo sesión de Supabase:', sessionError)
           }
-        }
 
-        if (session?.user) {
-          const user = await supabaseService.getUserById(session.user.id)
-          if (user) {
-            setCurrentUser(user)
-            setAuthenticated(true)
-            if (user.organizationId) {
-              localStorage.setItem('reisbloc_auth_token', JSON.stringify({
-                accessToken: session.access_token,
-                userId: user.id,
-                organizationId: user.organizationId,
-                expiresAt: (session.expires_at || 0) * 1000
-              }))
-              localStorage.setItem('current_org_id', user.organizationId)
-
-              // 🛡️ Pre-cargar configuración de la organización para el Layout
-              try {
-                const org = await supabaseService.getOrganizationById(user.organizationId)
-                if (org && org.id === user.organizationId) {
-                  const mergedSettings = {
-                    ...(org.settings || {}),
-                    id: org.id,
-                    name: org.name,
-                    businessName: org.settings?.businessName || org.name,
-                    slug: org.slug,
-                    logoUrl: org.logo_url
+          if (!session) {
+            const tokenData = getStoredToken()
+            if (tokenData && tokenData.accessToken) {
+              if (tokenData.refreshToken) {
+                try {
+                  const { data, error: setSessionError } = await supabase.auth.setSession({
+                    access_token: tokenData.accessToken,
+                    refresh_token: tokenData.refreshToken
+                  })
+                  if (!setSessionError && data?.session) {
+                    session = data.session
                   }
-                  useAppStore.getState().setOrganizationSettings(mergedSettings)
+                } catch (err) {
+                  console.warn('Error restaurando sesión con refreshToken:', err)
                 }
-                // Cargar plan y plan_note al store global
-                if (org?.plan) {
-                  useAppStore.getState().setOrgPlan(org.plan, org.plan_note ?? null)
-                }
-              } catch (orgError) {
-                console.warn('⚠️ No se pudo cargar la configuración de la organización:', orgError)
+              }
+              if (!session) {
+                forceAuthHeader(tokenData.accessToken)
               }
             }
-          } else {
-            // Usuario sin registro en public.users
-            useAppStore.getState().logout()
-            resetTenantTheme()
           }
-        } else {
-          // 🛡️ AISLAMIENTO: Sin sesión activa en Supabase -> purgar cualquier estado residual
-          useAppStore.getState().logout()
-          resetTenantTheme()
+
+          if (session?.user) {
+            const user = await supabaseService.getUserById(session.user.id)
+            if (user) {
+              setCurrentUser(user)
+              setAuthenticated(true)
+              if (user.organizationId) {
+                localStorage.setItem('reisbloc_auth_token', JSON.stringify({
+                  accessToken: session.access_token,
+                  refreshToken: session.refresh_token || undefined,
+                  userId: user.id,
+                  organizationId: user.organizationId,
+                  expiresAt: (session.expires_at || 0) * 1000
+                }))
+                localStorage.setItem('current_org_id', user.organizationId)
+
+                // 🛡️ Pre-cargar configuración de la organización para el Layout
+                try {
+                  const org = await supabaseService.getOrganizationById(user.organizationId)
+                  if (org && org.id === user.organizationId) {
+                    const mergedSettings = {
+                      ...(org.settings || {}),
+                      id: org.id,
+                      name: org.name,
+                      businessName: org.settings?.businessName || org.name,
+                      slug: org.slug,
+                      logoUrl: org.logo_url
+                    }
+                    useAppStore.getState().setOrganizationSettings(mergedSettings)
+                  }
+                  // Cargar plan y plan_note al store global
+                  if (org?.plan) {
+                    useAppStore.getState().setOrgPlan(org.plan, org.plan_note ?? null)
+                  }
+                } catch (orgError) {
+                  console.warn('⚠️ No se pudo cargar la configuración de la organización:', orgError)
+                }
+              }
+            } else {
+              // Usuario sin registro en public.users
+              useAppStore.getState().logout()
+              resetTenantTheme()
+            }
+          } else {
+            // Si no hay sesión activa en Supabase pero tenemos un usuario persistido localmente y token válido (offline mode)
+            const tokenData = getStoredToken()
+            const currentStoreUser = useAppStore.getState().currentUser
+            if (currentStoreUser && tokenData && (!tokenData.expiresAt || tokenData.expiresAt > Date.now())) {
+              setAuthenticated(true)
+            } else {
+              // 🛡️ AISLAMIENTO: Sin sesión activa ni token válido -> purgar
+              useAppStore.getState().logout()
+              resetTenantTheme()
+            }
+          }
+        } catch (globalError) {
+          console.error('❌ Error crítico en restoreSession:', globalError)
         }
-      } catch (globalError) {
-        console.error('❌ Error crítico en restoreSession:', globalError)
-        useAppStore.getState().logout()
-        resetTenantTheme()
+      }
+
+      const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 3500))
+      try {
+        await Promise.race([runRestore(), timeoutPromise])
       } finally {
         setInitializing(false)
       }
