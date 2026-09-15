@@ -47,11 +47,15 @@ lib-cov/
 *.code-workspace
 .gemini/
 
-# --- Mobile build artifacts ---
+# --- Mobile build artifacts & Keystores ---
 *.apk
+*.aab
 *.aar
 *.ipa
 *.hprof
+*.jks
+*.keystore
+local.properties
 .gradle/
 
 # --- Supabase ---

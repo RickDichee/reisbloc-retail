@@ -12,7 +12,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.reisbloclab.pos',
-  appName: 'Reisbloc POS',
+  appName: 'Reisbloc Store',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
