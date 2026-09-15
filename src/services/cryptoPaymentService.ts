@@ -105,7 +105,7 @@ class CryptoPaymentService {
     try {
       const { error } = await supabase
         .from('organizations')
-        .update({ plan, plan_note: 'crypto_payment' })
+        .update({ plan })
         .eq('owner_user_id', userId)
 
       if (error) throw error

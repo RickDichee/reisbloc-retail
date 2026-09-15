@@ -292,7 +292,7 @@ export default function App() {
                   }
                   // Cargar plan y plan_note al store global
                   if (org?.plan) {
-                    useAppStore.getState().setOrgPlan(org.plan, org.plan_note ?? null)
+                    useAppStore.getState().setOrgPlan(org.plan, org.settings?.plan_note ?? null)
                   }
                 } catch (orgError) {
                   console.warn('⚠️ No se pudo cargar la configuración de la organización:', orgError)
