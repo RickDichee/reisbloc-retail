@@ -86,28 +86,28 @@ const Register = () => {
           </button>
         </div>
 
-        <div className="mt-8 grid grid-cols-3 gap-3">
-          {availablePlans.map((plan) => (
-            <button
-              key={plan}
-              onClick={() => {
-                const params = new URLSearchParams();
-                if (plan !== 'free') params.set('plan', plan);
-                if (referralCode) params.set('ref', referralCode);
-                navigate('/register' + (params.toString() ? '?' + params.toString() : ''))
-              }}
-              className={`p-4 rounded-2xl border transition-all text-center ${
-                selectedPlan === plan
-                  ? 'bg-emerald-500/20 border-emerald-500/50'
-                  : 'bg-gray-900 border-gray-800 hover:border-gray-700'
-              }`}
-            >
-              <p className="text-gray-400 text-xs uppercase mb-1">{getPlanDisplayName(plan)}</p>
-              <p className="text-white font-bold text-lg">
-                ${planPrices[plan] === 0 ? 'Gratis' : `$${planPrices[plan]}`}
-              </p>
-            </button>
-          ))}
+        {/* 🌟 Plan Info: Free 1-person trial & Custom enterprise */}
+        <div className="mt-6 p-4 rounded-2xl bg-gray-900 border border-gray-800 text-center space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-xs font-bold">
+            <Sparkles size={14} />
+            <span>Prueba Gratuita para 1 Persona</span>
+          </div>
+          <p className="text-gray-400 text-xs leading-relaxed">
+            Acceso sin costo para probar el Punto de Venta e inventario básico.
+          </p>
+          <div className="pt-2 border-t border-gray-800/80">
+            <p className="text-gray-400 text-xs">
+              ¿Requieres solución a la medida para tu equipo o boutique?{' '}
+              <a 
+                href="https://wa.me/5215665848231?text=Hola,%20me%20interesa%20una%20solución%20personalizada%20de%20Reisbloc%20Store"
+                target="_blank"
+                rel="noreferrer"
+                className="text-amber-400 font-bold hover:underline inline-flex items-center gap-1"
+              >
+                Cotizar Personalizado ➔
+              </a>
+            </p>
+          </div>
         </div>
 
         <p className="mt-8 text-center text-gray-500 text-sm">

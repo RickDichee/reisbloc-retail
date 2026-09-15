@@ -62,12 +62,22 @@ export default function Login() {
     <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-pink-500/15 mb-4 overflow-hidden border border-pink-400/30">
-            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
+          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 overflow-hidden border ${
+            BRANDING.isModaMiel ? 'bg-pink-500/15 border-pink-400/30' : 'bg-teal-500/15 border-teal-400/30 p-3'
+          }`}>
+            <img 
+              src={BRANDING.logoUrl} 
+              alt={BRANDING.whiteLabelName} 
+              className={`w-full h-full ${BRANDING.isModaMiel ? 'object-cover' : 'object-contain'}`} 
+            />
           </div>
           <h1 className="text-4xl font-black text-white mb-2">{BRANDING.appName}</h1>
           <p className="text-gray-400 text-lg">{BRANDING.loginSubtitle}</p>
-          <div className="text-xs text-pink-400 mt-2 uppercase tracking-widest font-bold">{BRANDING.whiteLabelName}</div>
+          <div className={`text-xs mt-2 uppercase tracking-widest font-bold ${
+            BRANDING.isModaMiel ? 'text-pink-400' : 'text-teal-400'
+          }`}>
+            {BRANDING.whiteLabelName}
+          </div>
         </div>
 
         {error && (

@@ -15,14 +15,10 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
     )
   }
 
-  // Si no hay organización (usuario público o en login), evaluar URL y variables de entorno
+  // Si no hay organización (usuario público o en login), evaluar URL
   const host = (hostname !== undefined ? hostname : (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
   const query = (search !== undefined ? search : (typeof window !== 'undefined' ? window.location.search : '')).toLowerCase()
   const fragment = (hash !== undefined ? hash : (typeof window !== 'undefined' ? window.location.hash : '')).toLowerCase()
-
-  const envBrand = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_BRAND)
-    ? String(import.meta.env.VITE_APP_BRAND).toLowerCase()
-    : ''
 
   return (
     host.includes('modamiel') ||
@@ -30,8 +26,7 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
     query.includes('brand=modamiel') ||
     query.includes('brand=modamielmx') ||
     fragment.includes('brand=modamiel') ||
-    fragment.includes('brand=modamielmx') ||
-    envBrand.includes('modamiel')
+    fragment.includes('brand=modamielmx')
   )
 }
 
