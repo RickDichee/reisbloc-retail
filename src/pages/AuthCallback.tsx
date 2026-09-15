@@ -59,6 +59,7 @@ export function AuthCallback() {
 
           const isSuperAdmin = 
             user.email === 'luis.lop9199@gmail.com' || 
+            user.email === 'rick.playacar@gmail.com' ||
             user.email === 'airproject360@gmail.com' ||
             existingUser?.role === 'superadmin' ||
             existingUser?.role === 'owner' ||

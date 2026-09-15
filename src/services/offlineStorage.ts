@@ -40,7 +40,7 @@ interface ReisblocDB extends DBSchema {
 import { useAppStore } from '@/store/appStore'
 
 const DB_BASE_NAME = 'reisbloc_offline_db'
-const DB_VERSION = 1
+const DB_VERSION = 3
 
 const dbPromises = new Map<string, Promise<IDBPDatabase<ReisblocDB>>>()
 
