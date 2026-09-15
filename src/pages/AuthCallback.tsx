@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
-import { logSuccessfulLogin } from '@/services/authService'
 import { ShieldCheck } from 'lucide-react'
-import { checkIsModaMiel } from '@/config/branding'
-import supabaseService from '@/services/supabaseService'
 import { useAppStore } from '@/store/appStore'
 
 const LOADING_TIPS = [
@@ -32,7 +29,6 @@ export function AuthCallback() {
       try {
         setStatus('Intercambiando credenciales de acceso...')
         
-        // 1. Manejo explícito de PKCE (Exchange authorization code for session)
         const searchParams = new URLSearchParams(window.location.search)
         const code = searchParams.get('code')
         const authError = searchParams.get('error_description') || searchParams.get('error')
@@ -44,51 +40,50 @@ export function AuthCallback() {
 
         let session = null
 
-        if (code) {
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-          if (!exchangeError && data?.session) {
-            session = data.session
-          } else if (exchangeError) {
-            console.warn('exchangeCodeForSession aviso:', exchangeError.message)
+        // 1. Checar si ya hay sesión activa
+        const { data: initialCheck } = await supabase.auth.getSession()
+        if (initialCheck?.session?.user) {
+          session = initialCheck.session
+        }
+
+        // 2. Si hay código PKCE y aún no hay sesión, intentar canjearlo
+        if (!session && code) {
+          try {
+            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+            if (!exchangeError && data?.session) {
+              session = data.session
+            }
+          } catch (e) {
+            console.warn('exchangeCodeForSession aviso:', e)
           }
         }
 
-        // 2. Manejo de tokens en hash (#access_token=...&refresh_token=...)
+        // 3. Manejo de tokens en hash (#access_token=...&refresh_token=...)
         if (!session && window.location.hash) {
           const hashParams = new URLSearchParams(window.location.hash.substring(1))
           const accessToken = hashParams.get('access_token')
           const refreshToken = hashParams.get('refresh_token')
           if (accessToken && refreshToken) {
-            const { data, error: setSessionError } = await supabase.auth.setSession({
+            const { data } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken
             })
-            if (!setSessionError && data?.session) {
+            if (data?.session) {
               session = data.session
             }
           }
         }
 
-        // 3. Fallback directo a getSession()
-        if (!session) {
-          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
-          if (!sessionError && currentSession?.user) {
-            session = currentSession
+        // 4. Polling seguro de hasta 4 segundos para esperar al cliente Supabase
+        let attempts = 0
+        while (!session?.user && attempts < 8) {
+          await new Promise((r) => setTimeout(r, 500))
+          const { data } = await supabase.auth.getSession()
+          if (data?.session?.user) {
+            session = data.session
+            break
           }
-        }
-
-        // 4. Esperar brevemente a onAuthStateChange si el token aún se está guardando
-        if (!session) {
-          session = await new Promise((resolve) => {
-            const timer = setTimeout(() => resolve(null), 2500)
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-              if (newSession?.user) {
-                clearTimeout(timer)
-                subscription.unsubscribe()
-                resolve(newSession)
-              }
-            })
-          })
+          attempts++
         }
 
         if (!session?.user) {
@@ -98,127 +93,50 @@ export function AuthCallback() {
         }
 
         const user = session.user
-        setStatus('Verificando acceso a Moda Miel MX...')
+        setStatus('Cargando Moda Miel MX...')
 
-        const hostname = (window.location.hostname || '').toLowerCase()
-        const isActualMMDomain = hostname.includes('modamiel') || hostname.includes('moda-miel')
+        const mmOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
 
-        // Buscar en public.users por id o por email
+        // Buscar en public.users por auth_uid, id o email
         let { data: existingUser } = await supabase
           .from('users')
-          .select('id, organization_id, role, email')
-          .eq('id', user.id)
+          .select('*')
+          .or(`id.eq.${user.id},auth_uid.eq.${user.id},email.eq.${user.email}`)
           .maybeSingle()
 
-        if (!existingUser && user.email) {
-          const { data: byEmail } = await supabase
-            .from('users')
-            .select('id, organization_id, role, email')
-            .eq('email', user.email)
-            .maybeSingle()
-          if (byEmail) {
-            existingUser = byEmail
+        if (existingUser) {
+          if (!existingUser.auth_uid) {
+            await supabase.from('users').update({ auth_uid: user.id }).eq('id', existingUser.id).catch(console.warn)
           }
+        } else {
+          // Crear usuario directamente en Moda Miel
+          const { data: newUser } = await supabase.from('users').insert({
+            id: user.id,
+            auth_uid: user.id,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin',
+            email: user.email,
+            role: 'admin',
+            active: true,
+            organization_id: mmOrgId,
+            is_primary_admin: true
+          }).select().single()
+          existingUser = newUser
         }
 
-        // Obtener organización Moda Miel
-        const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
-        const mmOrgId = mmOrg?.id || '1b498fa6-aca5-428c-9bdd-01e6fea30316'
-
-        // 🌸 PRIORIDAD MÁXIMA MODA MIEL:
-        // Si el usuario entra por el dominio de Moda Miel o tiene cuenta autorizada
-        if (isActualMMDomain) {
-          const isSuperAdmin = 
-            user.email === 'luis.lop9199@gmail.com' || 
-            user.email === 'rick.playacar@gmail.com' ||
-            user.email === 'lu.velazquezz@gmail.com' ||
-            user.email === 'modamielmx@gmail.com' ||
-            user.email === 'colab1modamielmx@gmail.com' ||
-            user.email === 'colab2modamielmx@gmail.com' ||
-            user.email === 'airproject360@gmail.com' ||
-            existingUser?.role === 'superadmin' ||
-            existingUser?.role === 'owner' ||
-            existingUser?.role === 'admin' ||
-            existingUser?.organization_id === mmOrgId
-
-          if (!existingUser) {
-            // Crear o vincular usuario directamente a Moda Miel MX
-            await supabase.from('users').insert({
-              id: user.id,
-              name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Colaborador Moda Miel',
-              email: user.email,
-              role: isSuperAdmin ? 'admin' : 'employee',
-              active: true,
-              organization_id: mmOrgId,
-              is_primary_admin: isSuperAdmin
-            })
-          } else if (existingUser.organization_id !== mmOrgId) {
-            // Asegurar que quede vinculado a Moda Miel
-            await supabase.from('users').update({ organization_id: mmOrgId }).eq('id', existingUser.id)
-          }
-
-          setStatus('¡Bienvenido a Moda Miel MX!')
-          await logSuccessfulLogin(mmOrgId).catch(console.error)
-
-          const fullUser = await supabaseService.getUserById(user.id) || existingUser
-          if (fullUser) {
-            useAppStore.getState().setCurrentUser(fullUser as any)
-            useAppStore.getState().setAuthenticated(true)
-          }
-
-          // Ir directo al POS de Moda Miel
-          navigate('/pos', { replace: true })
-          return
-        }
-
-        // Flujo estándar para Reisbloc Store (no Moda Miel)
-        if (existingUser?.organization_id) {
-          setStatus('¡Organización encontrada!')
-          await logSuccessfulLogin(existingUser.organization_id).catch(console.error)
-          
-          const fullUser = await supabaseService.getUserById(user.id)
-          if (fullUser) {
-            useAppStore.getState().setCurrentUser(fullUser)
-            useAppStore.getState().setAuthenticated(true)
-          }
-
-          const adminRoles = ['admin', 'owner', 'superadmin', 'manager']
-          const destination = (fullUser && !adminRoles.includes(fullUser.role)) ? '/pos' : '/admin'
-          navigate(destination, { replace: true })
-          return
-        }
-
-        // Si es una cuenta nueva fuera de Moda Miel, crear org
-        setStatus('Configurando tu espacio...')
-        const orgName = user.user_metadata?.full_name 
-          ? `Negocio de ${user.user_metadata.full_name}` 
-          : 'Mi Negocio'
-
-        const { data: newOrg } = await supabase
-          .from('organizations')
-          .insert({ name: orgName, plan: 'free', active: true })
-          .select('id')
-          .single()
-
-        const assignedOrgId = newOrg?.id || mmOrgId
-
-        await supabase.from('users').insert({
+        setStatus('¡Bienvenido a Moda Miel MX!')
+        useAppStore.getState().setCurrentUser(existingUser || {
           id: user.id,
           name: user.user_metadata?.full_name || user.email,
           email: user.email,
           role: 'admin',
-          active: true,
-          organization_id: assignedOrgId,
-          is_primary_admin: true,
-          is_primary_user: true
-        })
+          organizationId: mmOrgId,
+          active: true
+        } as any)
+        useAppStore.getState().setAuthenticated(true)
 
-        const fullUser = await supabaseService.getUserById(user.id)
-        if (fullUser) {
-          useAppStore.getState().setCurrentUser(fullUser)
-          useAppStore.getState().setAuthenticated(true)
-        }
-        navigate('/pos', { replace: true })
+        // Limpiar URL y navegar directo al POS de Moda Miel
+        window.location.href = '/pos'
+        return
 
       } catch (err: any) {
         console.error('Auth callback error:', err)
@@ -232,7 +150,7 @@ export function AuthCallback() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0B0B] text-white p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0B0B0B] text-white p-4 font-['Outfit',sans-serif]">
         <div className="text-center max-w-sm">
           <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">⚠️</span>
