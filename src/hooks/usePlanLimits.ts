@@ -24,10 +24,10 @@ export type PlanFeature =
 export type PlanResource = 'products' | 'employees' | 'registers'
 
 const PLAN_LIMITS: Record<PlanType, Record<PlanResource, number>> = {
-  free:       { products: 100,  employees: 3,  registers: 1 },
-  starter:    { products: 500,  employees: 5,  registers: 3 },
-  growth:     { products: 2000, employees: 15, registers: 5 },
-  scale:      { products: -1,   employees: -1, registers: -1 },
+  free:       { products: 30,   employees: 1,  registers: 1 },
+  starter:    { products: 200,  employees: 3,  registers: 2 },
+  growth:     { products: 1000, employees: 10, registers: 5 },
+  scale:      { products: 5000, employees: 25, registers: 10 },
   enterprise: { products: -1,   employees: -1, registers: -1 },
 }
 

@@ -26,40 +26,40 @@ export interface PlanLimits {
 
 export const PLANS: Record<PlanType, PlanLimits> = {
   free: {
-    products: 25,               // Reducido para evitar DB costs
+    products: 30,               // Perfecto para micro-negocio / tiendita
     employees: 1,
     registers: 1,
-    storageMB: 50,              // Muy limitado
-    aiTokensPerDay: 10,        // CRÍTICO: 10/día max
-    aiTokensPerMonth: 50,      // 50/month - casi nada
-    clients: 10,
+    storageMB: 50,
+    aiTokensPerDay: 0,         // Sin recarga diaria gratis para no quemar APIs
+    aiTokensPerMonth: 10,      // 10 tokens únicos de bienvenida para probar
+    clients: 15,
     purchases: 5,
     reportsPerMonth: 3,
     ecommerceProducts: 10,
     branches: 1,
     allowMultiStore: false,
     allowApiAccess: false,
-    allowEcommerce: false,      // NO incluir en free
-    allowFacturation: false,     // NO incluir en free
+    allowEcommerce: false,
+    allowFacturation: false,
     supportLevel: 'community',
     maxTokensPerFeature: {
-      ai_chat: 5,              // 5 consultas/día max
-      ai_insights: 2,
-      post_generation: 0,        // NO permitido en free
-      report_pdf: 1,
+      ai_chat: 5,
+      ai_insights: 3,
+      post_generation: 0,
+      report_pdf: 2,
     }
   },
   starter: {
-    products: 100,
-    employees: 2,
-    registers: 1,
-    storageMB: 500,
-    aiTokensPerDay: 30,
-    aiTokensPerMonth: 300,
-    clients: 50,
-    purchases: 20,
-    reportsPerMonth: 20,
-    ecommerceProducts: 50,
+    products: 200,             // Boutique en crecimiento
+    employees: 3,
+    registers: 2,
+    storageMB: 1024,
+    aiTokensPerDay: 10,
+    aiTokensPerMonth: 50,      // Gemini 1.5 Flash (costo < $2 MXN/mes)
+    clients: 100,
+    purchases: 50,
+    reportsPerMonth: 50,
+    ecommerceProducts: 100,
     branches: 1,
     allowMultiStore: false,
     allowApiAccess: false,
@@ -67,67 +67,67 @@ export const PLANS: Record<PlanType, PlanLimits> = {
     allowFacturation: false,
     supportLevel: 'email',
     maxTokensPerFeature: {
-      ai_chat: 20,
-      ai_insights: 10,
-      post_generation: 5,
+      ai_chat: 25,
+      ai_insights: 15,
+      post_generation: 10,
       report_pdf: 10,
     }
   },
   growth: {
-    products: 500,
-    employees: 5,
-    registers: 2,
-    storageMB: 2048,
-    aiTokensPerDay: 100,
-    aiTokensPerMonth: 1500,
-    clients: 200,
-    purchases: 100,
-    reportsPerMonth: 100,
-    ecommerceProducts: 200,
-    branches: 1,
-    allowMultiStore: false,
+    products: 1000,
+    employees: 10,
+    registers: 5,
+    storageMB: 4096,
+    aiTokensPerDay: 50,
+    aiTokensPerMonth: 200,
+    clients: 500,
+    purchases: 250,
+    reportsPerMonth: 250,
+    ecommerceProducts: 500,
+    branches: 2,
+    allowMultiStore: true,
     allowApiAccess: false,
     allowEcommerce: true,
-    allowFacturation: true,      // Facturación incluida
+    allowFacturation: true,      // Facturación CFDI incluida
     supportLevel: 'email',
     maxTokensPerFeature: {
-      ai_chat: 50,
-      ai_insights: 25,
-      post_generation: 20,
-      report_pdf: 30,
+      ai_chat: 100,
+      ai_insights: 50,
+      post_generation: 50,
+      report_pdf: 50,
     }
   },
   scale: {
-    products: 2000,
-    employees: 15,
-    registers: 5,
-    storageMB: 5120,
-    aiTokensPerDay: 300,
-    aiTokensPerMonth: 5000,
-    clients: 1000,
-    purchases: 500,
-    reportsPerMonth: 500,
-    ecommerceProducts: 1000,
-    branches: 3,
+    products: 5000,
+    employees: 25,
+    registers: 10,
+    storageMB: 10240,
+    aiTokensPerDay: 150,
+    aiTokensPerMonth: 1000,
+    clients: 2000,
+    purchases: 1000,
+    reportsPerMonth: 1000,
+    ecommerceProducts: 2000,
+    branches: 5,
     allowMultiStore: true,
     allowApiAccess: true,
     allowEcommerce: true,
     allowFacturation: true,
     supportLevel: 'priority',
     maxTokensPerFeature: {
-      ai_chat: 150,
-      ai_insights: 50,
-      post_generation: 50,
-      report_pdf: 100,
+      ai_chat: 300,
+      ai_insights: 150,
+      post_generation: 100,
+      report_pdf: 150,
     }
   },
   enterprise: {
     products: -1,
     employees: -1,
     registers: -1,
-    storageMB: 20480,
+    storageMB: 51200,
     aiTokensPerDay: 1000,
-    aiTokensPerMonth: 20000,
+    aiTokensPerMonth: 10000,
     clients: -1,
     purchases: -1,
     reportsPerMonth: -1,
@@ -139,7 +139,7 @@ export const PLANS: Record<PlanType, PlanLimits> = {
     allowFacturation: true,
     supportLevel: 'dedicated',
     maxTokensPerFeature: {
-      ai_chat: -1,              // Ilimitado
+      ai_chat: -1,
       ai_insights: -1,
       post_generation: -1,
       report_pdf: -1,
@@ -169,10 +169,10 @@ export function getPlanDisplayName(plan: PlanType): string {
 export function getPlanPrice(plan: PlanType): number {
   const prices: Record<PlanType, number> = {
     free: 0,
-    starter: 499,      // $499 MXN - para empezar
-    growth: 999,      // $999 MXN - crecimiento
-    scale: 2499,      // $2499 MXN - multi-sucursal
-    enterprise: 4999, // $4999 MXN - corporativo
+    starter: 199,     // $199 MXN/mes
+    growth: 499,      // $499 MXN/mes
+    scale: 1299,      // $1299 MXN/mes
+    enterprise: 2999, // $2999 MXN/mes
   }
   return prices[plan] || 0
 }
