@@ -102,12 +102,12 @@ function AppLayout() {
           checkIsModaMiel('', '', '', (currentUser as any).businessName)
 
         if (!isUserMM && !isSuperAdmin) {
-          console.warn('⛔ [Tenant Isolation] Usuario de otra empresa detectado en el subdominio de Moda Miel MX. Denegando acceso.')
+          console.warn('⛔ [Tenant Isolation] Usuario de otra empresa detectado en el subdominio de Moda Miel MX. Redirigiendo a store.reisbloc.com...')
           await supabase.auth.signOut()
           localStorage.removeItem('reisbloc_auth_token')
           logout()
           resetTenantTheme()
-          window.location.href = '/login?error=unauthorized_collaborator'
+          window.location.href = 'https://store.reisbloc.com?redirect_from=modamiel'
         }
       }
     }

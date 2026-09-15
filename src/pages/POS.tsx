@@ -389,6 +389,7 @@ export default function POS() {
 
   const tableNumber = currentTicketNumber || 1
   const items = draftOrders[tableNumber] || []
+  const currentTotal = items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
   const activeTableOrders = useMemo(() => {
     return activeOrdersList.filter(o => o.tableNumber === tableNumber || o.tableNumber === currentTicketNumber)
   }, [activeOrdersList, tableNumber, currentTicketNumber])
@@ -634,21 +635,7 @@ export default function POS() {
     handleAddProduct(matchedProduct, isPackModeActive)
   })
 
-
-  if (isInitializing || (loading && !currentUser)) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
-        <p className="text-white font-mono text-sm tracking-widest uppercase">Cargando Punto de Venta...</p>
-      </div>
-    )
-  }
-
-  if (!currentUser) {
-    return <Navigate to="/login" replace />
-  }
-
-  const checkShift = async () => {
+  async function checkShift() {
     if (!currentUser) return
     try {
       const shift = await shiftService.getActiveShift(currentUser.id)
@@ -658,7 +645,7 @@ export default function POS() {
     }
   }
 
-  const loadProducts = async () => {
+  async function loadProducts() {
     // 0. Failsafe: nunca permitir que la pantalla de carga se quede congelada más de 2.5 segundos
     const failsafeTimeout = setTimeout(() => {
       setLoading(false)
@@ -730,7 +717,7 @@ export default function POS() {
     });
   }
 
-  const handleAddProduct = (product: Product, isPackageMode: boolean = false) => {
+  function handleAddProduct(product: Product, isPackageMode: boolean = false) {
     if (!currentUser || isReadOnly) return
     
     const parsedDesc = parseProductDescription(product.description || '')
@@ -1263,6 +1250,19 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
     }
   }
 
+  if (isInitializing || (loading && !currentUser)) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+        <p className="text-white font-mono text-sm tracking-widest uppercase">Cargando Punto de Venta...</p>
+      </div>
+    )
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/login" replace />
+  }
+
   if (loading && products.length === 0) {
     return (
       <DashboardLayout>
@@ -1280,8 +1280,6 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       </DashboardLayout>
     )
   }
-
-  const currentTotal = items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
 
   return (
     <DashboardLayout>

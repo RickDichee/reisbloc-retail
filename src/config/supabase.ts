@@ -10,23 +10,20 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-// Variables de entorno
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ CRÍTICO: Faltan variables de entorno VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY.')
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    console.warn('⚠️ Estás en localhost: Asegúrate de tener el archivo .env.local con las credenciales de Supabase.')
-  }
-}
-
-// Fallback de seguridad para producción
+// Fallback de seguridad para producción (Reisbloc PROD)
 const FALLBACK_SUPABASE_URL = 'https://nmovxyaibnixvxtepbod.supabase.co'
 const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_99WitkcTh0U8rQ1qt3sgGQ_2uDwzz_D'
 
+// Variables de entorno con fallback inmediato
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
+
 const validUrl = supabaseUrl || FALLBACK_SUPABASE_URL
 const validKey = supabaseAnonKey || FALLBACK_SUPABASE_ANON_KEY
+
+if (!validUrl || !validKey) {
+  console.error('❌ CRÍTICO: No se encontraron credenciales de Supabase configuradas.')
+}
 
 // Cliente principal de Supabase
 export const supabase = createClient(validUrl, validKey, {

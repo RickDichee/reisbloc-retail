@@ -145,13 +145,14 @@ export function AuthCallback() {
             isAuthorized = existingUser.organization_id === mmOrgId || checkIsModaMiel('', '', '', existingUser.organization_id)
           }
 
-          // Si el usuario no existe en la base de datos o no pertenece a Moda Miel MX: RECHAZAR
+          // Si el usuario no existe en la base de datos o no pertenece a Moda Miel MX:
+          // Redirigir a la plataforma pública store.reisbloc.com
           if (!existingUser || !isAuthorized) {
-            console.warn('⛔ Acceso rechazado: El usuario no pertenece a la organización Moda Miel MX')
+            console.warn('⛔ Acceso restringido: El usuario no pertenece a la organización Moda Miel MX. Redirigiendo a store.reisbloc.com...')
             await supabase.auth.signOut()
             localStorage.removeItem('reisbloc_auth_token')
             useAppStore.getState().logout()
-            navigate('/login?error=unauthorized_collaborator', { replace: true })
+            window.location.href = 'https://store.reisbloc.com?redirect_from=modamiel'
             return
           }
         }
