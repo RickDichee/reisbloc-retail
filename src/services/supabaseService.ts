@@ -861,7 +861,7 @@ class SupabaseService {
       const localOrders: any[] = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       if (localOrders.length === 0) return
 
-      const unsynced = localOrders.filter(o => typeof o.id === 'string' && o.id.startsWith('ord-') && (o.syncAttempts || 0) < 3)
+      const unsynced = localOrders.filter(o => typeof o.id === 'string' && o.id.startsWith('ord-') && o.status !== 'cancelled' && (o.syncAttempts || 0) < 3)
       if (unsynced.length === 0) return
 
       this.isSyncingOfflineOrders = true
@@ -922,12 +922,18 @@ class SupabaseService {
     return this.withRetry(async () => {
       logger.info('supabase', '🔍 Getting active orders...')
       const currentOrgId = this.getCurrentOrgId()
+      const ACTIVE_ORDER_STATUSES = ['sent', 'preparing', 'ready', 'served', 'pending', 'apartado', 'pending_surtir', 'listo_entrega', 'pendiente_entrega', 'entregado']
+
       const { data, error } = await withOrg(
         supabase.from('orders').select('*'),
         currentOrgId
       )
-        .in('status', ['sent', 'preparing', 'ready', 'served', 'pending', 'apartado', 'pending_surtir', 'listo_entrega', 'pendiente_entrega', 'entregado'])
+        .in('status', ACTIVE_ORDER_STATUSES)
         .order('created_at', { ascending: false })
+
+      if (error) {
+        logger.warn('supabase', 'Error query active orders:', error.message)
+      }
 
       const normalizedRemote = (data || []).map((o: any) => ({
         ...o,
@@ -942,8 +948,10 @@ class SupabaseService {
         localOrders = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       } catch (e) {}
 
-      const remoteIds = new Set(normalizedRemote.map(o => o.id))
-      const validLocal = localOrders.filter(l => 
+      const remoteIds = new Set(normalizedRemote.map((o: any) => o.id))
+      // 🛡️ FILTRO ESTRICTO: Solo incluir órdenes locales con status activo y que no estén ya en remoto
+      const validLocal = localOrders.filter((l: any) => 
+        ACTIVE_ORDER_STATUSES.includes(l.status) &&
         !remoteIds.has(l.id) && 
         (!l.organizationId || !currentOrgId || l.organizationId === currentOrgId)
       )
@@ -957,7 +965,11 @@ class SupabaseService {
         const currentOrgId = this.getCurrentOrgId()
         const ordersKey = this.getLocalOrdersKey(currentOrgId)
         const local = JSON.parse(localStorage.getItem(ordersKey) || '[]')
-        return local.filter((l: any) => !l.organizationId || !currentOrgId || l.organizationId === currentOrgId) as Order[]
+        const ACTIVE_ORDER_STATUSES = ['sent', 'preparing', 'ready', 'served', 'pending', 'apartado', 'pending_surtir', 'listo_entrega', 'pendiente_entrega', 'entregado']
+        return local.filter((l: any) => 
+          ACTIVE_ORDER_STATUSES.includes(l.status) &&
+          (!l.organizationId || !currentOrgId || l.organizationId === currentOrgId)
+        ) as Order[]
       } catch (e) {
         return []
       }
@@ -1093,13 +1105,10 @@ class SupabaseService {
 
   async cancelOrder(orderId: string, reason: string, userId: string): Promise<void> {
     try {
-      // 1. Actualizar estado localmente
-      this.updateLocalPendingOrder(orderId, {
-        status: 'cancelled',
-        notes: reason ? `Cancelado: ${reason}` : 'Cancelado por el usuario'
-      })
+      // 1. Siempre remover de las órdenes pendientes locales activas
+      this.removeLocalPendingOrder(orderId)
 
-      // 2. Si es UUID, actualizar en Supabase remoto
+      // 2. Si es UUID, actualizar en Supabase remoto a status cancelled
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       if (uuidRegex.test(orderId) && navigator.onLine) {
         await supabase
@@ -1124,19 +1133,35 @@ class SupabaseService {
       logger.info('supabase', `🛑 Order ${orderId} cancelled. Reason: ${reason}`)
     } catch (error) {
       logger.warn('supabase', 'Error en cancelOrder (silencioso local):', error as any)
+      this.removeLocalPendingOrder(orderId)
     }
   }
 
   async deleteOrder(orderId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderId)
+      // 1. Siempre remover de la caché local de órdenes pendientes
+      this.removeLocalPendingOrder(orderId)
 
-      if (error) throw error
+      // 2. Si es UUID y está online, intentar eliminar físicamente de Supabase
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (uuidRegex.test(orderId) && navigator.onLine) {
+        const { error } = await supabase
+          .from('orders')
+          .delete()
+          .eq('id', orderId)
+
+        if (error) {
+          logger.warn('supabase', 'Aviso al eliminar físicamente orden de Supabase (RLS/FK), aplicando soft-cancel:', error.message)
+          await supabase
+            .from('orders')
+            .update({ status: 'cancelled', notes: 'Eliminado por el usuario' })
+            .eq('id', orderId)
+        }
+      }
+      logger.info('supabase', `🗑️ Order ${orderId} eliminada exitosamente.`)
     } catch (error) {
-      logger.error('supabase', 'Error deleting order', error as any)
+      logger.error('supabase', 'Error deleting order:', error as any)
+      this.removeLocalPendingOrder(orderId)
       throw error
     }
   }

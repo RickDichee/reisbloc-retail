@@ -2244,10 +2244,20 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             isOpen={showPendingOrdersModal}
             onClose={() => setShowPendingOrdersModal(false)}
             orders={activeOrdersList}
+            products={products}
             onCheckoutOrder={handleCheckoutPendingOrder}
             onRefresh={async () => {
               const active = await supabaseService.getActiveOrders()
               setActiveOrdersList(active || [])
+              try {
+                const orgId = currentUser?.organizationId || supabaseService.getCurrentOrgId()
+                const prods = await supabaseService.getAllRetailProducts(orgId)
+                if (prods && prods.length > 0) {
+                  setProducts(prods)
+                }
+              } catch (e) {
+                console.warn('Error refreshing products:', e)
+              }
             }}
           />
         )}
