@@ -31,7 +31,7 @@ export const PLANS: Record<PlanType, PlanLimits> = {
     registers: 1,
     storageMB: 50,
     aiTokensPerDay: 0,         // Sin recarga diaria gratis para no quemar APIs
-    aiTokensPerMonth: 10,      // 10 tokens únicos de bienvenida para probar
+    aiTokensPerMonth: 25,      // 25 tokens únicos de bienvenida para probar
     clients: 15,
     purchases: 5,
     reportsPerMonth: 3,
@@ -43,10 +43,10 @@ export const PLANS: Record<PlanType, PlanLimits> = {
     allowFacturation: false,
     supportLevel: 'community',
     maxTokensPerFeature: {
-      ai_chat: 5,
-      ai_insights: 3,
-      post_generation: 0,
-      report_pdf: 2,
+      ai_chat: 10,             // 10 consultas de chat
+      ai_insights: 5,          // Análisis de ventas
+      post_generation: 5,      // 1 post de marketing
+      report_pdf: 10,          // 1 reporte ejecutivo en PDF
     }
   },
   starter: {

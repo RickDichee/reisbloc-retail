@@ -31,7 +31,7 @@ const PLAN_FEATURES = {
       { text: '1 usuario', included: true },
       { text: '1 caja / terminal', included: true },
       { text: 'Tickets y ventas offline', included: true },
-      { text: '10 consultas AI (Demo)', included: true },
+      { text: '25 tokens AI (Demo de bienvenida)', included: true },
       { text: 'Inventario básico', included: true },
       { text: '15 clientes', included: true },
       { text: 'E-commerce catálogo', included: false },

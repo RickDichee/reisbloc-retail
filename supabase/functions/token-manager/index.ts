@@ -138,8 +138,8 @@ serve(async (req) => {
       }
 
       case 'add_bonus': {
-        // Enforce one-time welcome bonus (fixed 5 tokens) to prevent arbitrary credit minting
-        const BONUS_AMOUNT = 5
+        // Enforce one-time welcome bonus (fixed 25 tokens) to prevent arbitrary credit minting
+        const BONUS_AMOUNT = 25
         const { data: existingBonus } = await supabaseAdmin
           .from('token_transactions')
           .select('id')

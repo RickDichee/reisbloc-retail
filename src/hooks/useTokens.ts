@@ -27,6 +27,24 @@ export function useTokens() {
   const [packages, setPackages] = useState<TokenPackage[]>([])
   const { currentUser } = useAppStore()
 
+  const claimWelcomeBonus = useCallback(async () => {
+    if (!currentUser) return
+    try {
+      const token = await getAuthToken()
+      if (token) forceAuthHeader(token)
+      
+      const { data } = await supabase.functions.invoke('token-manager', {
+        body: { action: 'add_bonus' },
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      if (data?.success && data?.newBalance !== undefined) {
+        setBalance(data.newBalance)
+      }
+    } catch (err) {
+      console.warn('Welcome bonus check:', err)
+    }
+  }, [currentUser])
+
   const fetchBalance = useCallback(async () => {
     if (!currentUser) return
     
@@ -40,6 +58,17 @@ export function useTokens() {
       })
       
       if (!error && data?.balance !== undefined) {
+        if (data.balance === 0) {
+          // Si el balance es 0, intentar reclamar el bono de bienvenida único (25 tokens)
+          const { data: bonusData } = await supabase.functions.invoke('token-manager', {
+            body: { action: 'add_bonus' },
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          })
+          if (bonusData?.success && bonusData?.newBalance !== undefined) {
+            setBalance(bonusData.newBalance)
+            return
+          }
+        }
         setBalance(data.balance)
       }
     } catch (err) {
@@ -159,6 +188,7 @@ export function useTokens() {
     deductTokens,
     checkCost,
     hasEnoughTokens,
+    claimWelcomeBonus,
   }
 }
 
