@@ -24,6 +24,8 @@ import { sanitizeHTML } from '@/utils/sanitize'
 import { playCashRegisterSound } from '@/utils/audioAlerts'
 import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag, ChevronUp, ChevronDown } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
+import { useTerminalSession } from '@/hooks/useTerminalSession'
+import { TerminalLockModal } from '@/components/pos/TerminalLockModal'
 
 function parseProductDescription(descriptionText: string | null) {
   if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 6, bulkQty: 12 }
@@ -68,6 +70,15 @@ export default function POS() {
 
   const { isModaMiel } = useTenantTheme()
   const currentBusinessTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store')
+
+  // 🛡️ MECANISMO A: Monitoreo en tiempo real de terminales de cobro activas concurrentes
+  const {
+    isLocked: isTerminalLocked,
+    planName: terminalPlanName,
+    maxRegisters: terminalMaxRegisters,
+    competingTerminal,
+    claimControl: handleClaimTerminalControl
+  } = useTerminalSession()
 
   const [loading, setLoading] = useState(true)
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
@@ -2259,6 +2270,15 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             }}
           />
         )}
+
+        {/* 🛡️ MECANISMO A: Modal de bloqueo por concurrencia de terminales */}
+        <TerminalLockModal
+          isOpen={isTerminalLocked}
+          planName={terminalPlanName}
+          maxRegisters={terminalMaxRegisters}
+          competingTerminal={competingTerminal}
+          onClaimControl={handleClaimTerminalControl}
+        />
 
       </div>
     </DashboardLayout>
