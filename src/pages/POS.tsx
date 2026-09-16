@@ -1617,7 +1617,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
           {/* Catalog Panel (Left - Maximized) */}
           <div className="flex-[7.5] flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-0 p-3 sm:p-4 pb-28 lg:pb-4 overflow-y-auto custom-scrollbar">
               <ProductGrid 
                 products={filteredProducts} 
                 onAdd={handleAddProduct} 
@@ -1729,7 +1729,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         </div>
 
         {/* 📱 Mobile & Tablet Floating Ticket Bar (< lg screens) */}
-        <div className="lg:hidden fixed bottom-3 left-3 right-3 z-40 bg-slate-900 text-white rounded-2xl shadow-2xl p-3 border border-slate-800 flex items-center justify-between animate-fadeIn">
+        <div className="lg:hidden fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-40 bg-slate-900 text-white rounded-2xl shadow-2xl p-3 border border-slate-800 flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">
@@ -1761,7 +1761,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         {/* 📱 Mobile & Tablet Slide-Up Ticket Drawer Sheet (< lg screens) */}
         {showMobileCartDrawer && (
           <div className="fixed inset-0 z-[9999] lg:hidden bg-slate-900/60 backdrop-blur-sm flex flex-col justify-end p-0 sm:p-4">
-            <div className="bg-slate-50 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-slideUp border border-slate-200">
+            <div className="bg-slate-50 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-h-[92dvh] flex flex-col overflow-hidden animate-slideUp border border-slate-200">
               {/* Header Drawer */}
               <div className="bg-slate-900 text-white p-4 flex justify-between items-center shrink-0">
                 <div className="flex items-center gap-2">
@@ -1793,7 +1793,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               </div>
 
               {/* Checkout Region in Drawer */}
-              <div className="p-4 bg-white border-t border-slate-200 space-y-3 shrink-0">
+              <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] bg-white border-t border-slate-200 space-y-3 shrink-0">
                 {/* CRM Client */}
                 <div>
                   {selectedClient ? (

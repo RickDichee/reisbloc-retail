@@ -1,6 +1,6 @@
 {
   "name": "reisbloc-pos",
-  "version": "3.7.4",
+  "version": "1.0.4",
   "description": "Reisbloc Store - Software Retail Multitenant SaaS",
   "type": "module",
   "scripts": {
@@ -22,6 +22,7 @@
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.93.1",
     "@types/dompurify": "^3.0.5",
+    "@vercel/analytics": "^2.0.1",
     "axios": "^1.8.2",
     "chart.js": "^4.4.8",
     "date-fns": "^3.6.0",

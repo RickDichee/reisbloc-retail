@@ -108,7 +108,7 @@ export default function NavBar() {
 
   return (
     <nav
-      className="text-white shadow-lg fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500"
+      className="text-white shadow-lg fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500 pt-[env(safe-area-inset-top,0px)]"
       style={{
         background: 'var(--primary, #E62E6B)',
         borderBottomColor: 'var(--secondary, #FF7597)',

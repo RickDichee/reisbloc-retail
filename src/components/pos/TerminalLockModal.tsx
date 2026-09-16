@@ -24,7 +24,7 @@ export const TerminalLockModal: React.FC<TerminalLockModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/60 rounded-3xl p-6 sm:p-8 text-white shadow-2xl shadow-indigo-500/10">
+      <div className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-slate-900 border border-slate-700/60 rounded-3xl p-6 sm:p-8 text-white shadow-2xl shadow-indigo-500/10 custom-scrollbar">
         
         {/* Glow de fondo */}
         <div className="absolute -top-10 -left-10 w-36 h-36 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />

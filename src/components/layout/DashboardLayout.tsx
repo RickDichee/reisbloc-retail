@@ -115,7 +115,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     };
 
     return (
-        <div className="flex h-dvh bg-[var(--bg-canvas)] overflow-hidden transition-colors duration-200 pt-12 lg:pt-16">
+        <div className="flex h-dvh bg-[var(--bg-canvas)] overflow-hidden transition-colors duration-200 pt-[calc(3.25rem+env(safe-area-inset-top,0px))] sm:pt-[calc(4rem+env(safe-area-inset-top,0px))]">
             {/* Sidebar Overlay for Mobile */}
             <div
                 className={`fixed inset-0 z-20 bg-gray-900/50 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
@@ -124,7 +124,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
             {/* Sidebar */}
             <aside
-                className={`fixed md:static z-30 inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col pt-12 md:pt-0 ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
+                className={`fixed md:static z-30 inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200 transition-all duration-300 ease-in-out flex flex-col pt-[calc(3.25rem+env(safe-area-inset-top,0px))] md:pt-0 ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full md:translate-x-0'
                     } ${isMini ? 'md:w-20' : 'md:w-72'}`}
             >
                 {/* Logo Area */}
@@ -199,6 +199,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                     {isPro && <Zap size={10} className="fill-indigo-600 text-indigo-600" />}
                                     {planName === 'Launch' ? 'Plan Launch' : `Plan ${planName}`}
                                 </div>
+                                <span className="text-[9px] font-mono font-bold text-slate-400 block pt-0.5">v1.0.4</span>
                             </div>
                         )}
                     </div>
@@ -230,7 +231,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                 </div>
 
                 {/* Mobile Bottom Navigation */}
-                <div className="md:hidden bg-white border-t border-slate-200 flex items-center justify-around py-1 safe-bottom w-full overflow-hidden">
+                <div className="md:hidden bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around py-1 safe-bottom w-full overflow-hidden shrink-0 z-30 shadow-lg">
                     {finalMenuItems.filter(item => !item.isHeader && ['Punto de Venta', 'Inventario'].includes(item.label)).map((item) => {
                         const Icon = item.icon!;
                         const isActive = location.pathname === item.path;
@@ -238,19 +239,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             <button
                                 key={item.path}
                                 onClick={() => item.path && navigate(item.path)}
-                                className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2 min-w-[60px] min-h-[48px] rounded-xl transition-all ${isActive ? 'text-slate-900' : 'text-slate-400'}`}
+                                className={`flex flex-col items-center justify-center gap-0.5 px-3 py-2 min-w-[64px] min-h-[48px] rounded-xl transition-all active:scale-95 ${isActive ? 'text-[#D4386C] font-black' : 'text-slate-400 font-semibold'}`}
                             >
-                                <Icon size={20} className={isActive ? 'text-slate-900' : 'text-slate-400'} />
-                                <span className="text-[9px] font-black uppercase tracking-tight text-center">{item.label.split(' ').pop()}</span>
+                                <Icon size={20} className={isActive ? 'text-[#D4386C]' : 'text-slate-400'} />
+                                <span className="text-[9.5px] uppercase tracking-tight text-center">{item.label.split(' ').pop()}</span>
                             </button>
                         );
                     })}
                     <button
                         onClick={() => setIsSidebarOpen(true)}
-                        className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 min-w-[60px] min-h-[48px] text-slate-400"
+                        className="flex flex-col items-center justify-center gap-0.5 px-3 py-2 min-w-[64px] min-h-[48px] text-slate-400 font-semibold active:scale-95"
                     >
                         <Menu size={20} />
-                        <span className="text-[9px] font-black uppercase tracking-tight">Más</span>
+                        <span className="text-[9.5px] uppercase tracking-tight">Más</span>
                     </button>
                 </div>
             </main>
