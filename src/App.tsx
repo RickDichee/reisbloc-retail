@@ -73,47 +73,6 @@ function AppLayout() {
     pathname.startsWith('/p/')
   const hideNavBar = isPublicPage
 
-  // 🛡️ SEGURIDAD EN TIEMPO DE EJECUCIÓN MULTI-TENANT:
-  // Si la sesión activa pertenece a otra empresa (Org B) y el usuario intenta navegar en el dominio de Moda Miel MX,
-  // se cierra la sesión inmediatamente y se le redirige al login con la advertencia correspondiente.
-  useEffect(() => {
-    const enforceTenantIsolation = async () => {
-      // 🛡️ Nunca expulsar en páginas públicas / de autenticación
-      if (isPublicPage || !isAuthenticated || !currentUser) return
-
-      const hostname = (window.location.hostname || '').toLowerCase()
-      const isActualMMDomain = hostname.includes('modamiel') || hostname.includes('moda-miel')
-
-      // Solo aplicar restricción estricta de aislamiento si el host es efectivamente el dominio de Moda Miel
-      if (isActualMMDomain) {
-        const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
-        const mmOrgId = mmOrg?.id
-
-        const isSuperAdmin = 
-          currentUser.role === 'superadmin' || 
-          currentUser.role === 'owner' ||
-          currentUser.role === 'admin' ||
-          currentUser.email === 'rick.playacar@gmail.com' ||
-          currentUser.email === 'airproject360@gmail.com'
-
-        const isUserMM = 
-          (mmOrgId && currentUser.organizationId === mmOrgId) ||
-          checkIsModaMiel('', '', '', currentUser.organizationId) ||
-          checkIsModaMiel('', '', '', (currentUser as any).businessName)
-
-        if (!isUserMM && !isSuperAdmin) {
-          console.warn('⛔ [Tenant Isolation] Usuario de otra empresa detectado en el subdominio de Moda Miel MX. Redirigiendo a store.reisbloc.com...')
-          await supabase.auth.signOut()
-          localStorage.removeItem('reisbloc_auth_token')
-          logout()
-          resetTenantTheme()
-          window.location.href = 'https://store.reisbloc.com?redirect_from=modamiel'
-        }
-      }
-    }
-
-    enforceTenantIsolation()
-  }, [pathname, isAuthenticated, currentUser, logout, isPublicPage])
 
   // Aplicar clases de accesibilidad al body
   useEffect(() => {
@@ -262,7 +221,50 @@ export default function App() {
           }
 
           if (session?.user) {
-            const user = await supabaseService.getUserById(session.user.id)
+            let user = await supabaseService.getUserById(session.user.id)
+
+            // Fallback 1: Buscar por email si no se encontró por ID
+            if (!user && session.user.email) {
+              try {
+                const { data: userByEmail } = await supabase
+                  .from('users')
+                  .select('*')
+                  .ilike('email', session.user.email)
+                  .maybeSingle()
+
+                if (userByEmail) {
+                  // Sincronizar auth_uid para futuros accesos directos
+                  await supabase.from('users').update({ auth_uid: session.user.id }).eq('id', userByEmail.id).catch(console.error)
+                  user = {
+                    ...userByEmail,
+                    username: userByEmail.name,
+                    organizationId: userByEmail.organization_id
+                  } as any
+                }
+              } catch (lookupErr) {
+                console.warn('Error buscando usuario por email en restoreSession:', lookupErr)
+              }
+            }
+
+            // Fallback 2: Si es Lu Velázquez o Rick, asegurar perfil con rol admin en Moda Miel MX
+            const emailLower = (session.user.email || '').toLowerCase()
+            const isLu = emailLower === 'lu.velazquezz@gmail.com'
+            const isRick = emailLower === 'rick.playacar@gmail.com'
+            const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+
+            if (!user && (isLu || isRick)) {
+              user = {
+                id: session.user.id,
+                username: isLu ? 'Lu Velázquez' : 'Rick',
+                name: isLu ? 'Lu Velázquez' : 'Rick',
+                email: session.user.email || '',
+                role: 'admin',
+                organizationId: mmDefaultOrgId,
+                active: true,
+                createdAt: new Date().toISOString()
+              } as any
+            }
+
             if (user) {
               setCurrentUser(user)
               setAuthenticated(true)
@@ -299,9 +301,15 @@ export default function App() {
                 }
               }
             } else {
-              // Usuario sin registro en public.users
-              useAppStore.getState().logout()
-              resetTenantTheme()
+              // Resiliencia: si ya teníamos un usuario en el store que coincide, conservarlo
+              const persistedUser = useAppStore.getState().currentUser
+              if (persistedUser && (persistedUser.email === session.user.email || persistedUser.id === session.user.id)) {
+                setAuthenticated(true)
+              } else {
+                // Usuario sin registro en public.users
+                useAppStore.getState().logout()
+                resetTenantTheme()
+              }
             }
           } else {
             // Si no hay sesión activa en Supabase pero tenemos un usuario persistido localmente y token válido (offline mode)

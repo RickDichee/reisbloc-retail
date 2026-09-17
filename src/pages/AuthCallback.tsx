@@ -112,7 +112,7 @@ export function AuthCallback() {
         }
 
         // Buscar al colaborador por id, auth_uid o email
-        const { data: existingUser, error: userQueryError } = await supabase
+        let { data: existingUser, error: userQueryError } = await supabase
           .from('users')
           .select('id, organization_id, role, email, auth_uid, name')
           .or(`id.eq.${user.id},auth_uid.eq.${user.id},email.ilike.${user.email}`)
@@ -122,38 +122,59 @@ export function AuthCallback() {
           console.warn('Advertencia consultando tabla users:', userQueryError)
         }
 
+        const userEmail = (user.email || '').toLowerCase().trim()
+        const isLu = userEmail.includes('lu.velazquez') || userEmail.includes('lu.velazquezz')
+        const isRick = userEmail === 'rick.playacar@gmail.com' || userEmail === 'airproject360@gmail.com'
         const hostname = (window.location.hostname || '').toLowerCase()
-        const isActualMMDomain = hostname.includes('modamiel') || hostname.includes('moda-miel')
+        const isActualMMDomain = hostname.includes('modamiel') || hostname.includes('moda-miel') || checkIsModaMiel()
         const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
 
-        // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ESTRICTA:
-        // Si el login se realiza en el subdominio de Moda Miel MX:
-        // El usuario DEBE estar registrado en el sistema y pertenecer a Moda Miel MX (o ser superadmin global).
-        if (isActualMMDomain) {
-          const mmOrg = await supabaseService.getOrganizationBySlug('modamiel')
-          const mmOrgId = mmOrg?.id || mmDefaultOrgId
+        // 🛡️ Si el usuario pertenece a Moda Miel MX (Lu, Rick o ingresó por dominio Moda Miel)
+        if (isActualMMDomain || isLu || isRick) {
+          if (!existingUser) {
+            console.log('✨ Vinculando perfil de Moda Miel MX para:', user.email)
+            const roleToAssign = (isLu || isRick) ? 'admin' : 'cashier'
+            const { data: newUser, error: createErr } = await supabase
+              .from('users')
+              .upsert({
+                id: user.id,
+                auth_uid: user.id,
+                email: user.email,
+                name: user.user_metadata?.full_name || (isLu ? 'Lu Velázquez' : (user.email?.split('@')[0] || 'Usuario')),
+                role: roleToAssign,
+                organization_id: mmDefaultOrgId,
+                active: true,
+                is_primary_admin: (isLu || isRick),
+                is_primary_user: (isLu || isRick)
+              }, { onConflict: 'id' })
+              .select('id, organization_id, role, email, auth_uid, name')
+              .maybeSingle()
 
-          const isSuperAdmin = 
-            user.email === 'rick.playacar@gmail.com' || 
-            user.email === 'airproject360@gmail.com' ||
-            existingUser?.role === 'superadmin' ||
-            existingUser?.role === 'owner' ||
-            existingUser?.role === 'admin'
-
-          let isAuthorized = isSuperAdmin
-          if (!isAuthorized && existingUser?.organization_id) {
-            isAuthorized = existingUser.organization_id === mmOrgId || checkIsModaMiel('', '', '', existingUser.organization_id)
-          }
-
-          // Si el usuario no existe en la base de datos o no pertenece a Moda Miel MX:
-          // Redirigir a la plataforma pública store.reisbloc.com
-          if (!existingUser || !isAuthorized) {
-            console.warn('⛔ Acceso restringido: El usuario no pertenece a la organización Moda Miel MX. Redirigiendo a store.reisbloc.com...')
-            await supabase.auth.signOut()
-            localStorage.removeItem('reisbloc_auth_token')
-            useAppStore.getState().logout()
-            window.location.href = 'https://store.reisbloc.com?redirect_from=modamiel'
-            return
+            if (newUser) {
+              existingUser = newUser
+            } else {
+              if (createErr) console.warn('Advertencia creando perfil inicial:', createErr)
+              existingUser = {
+                id: user.id,
+                auth_uid: user.id,
+                email: user.email,
+                name: user.user_metadata?.full_name || (isLu ? 'Lu Velázquez' : 'Usuario'),
+                role: roleToAssign,
+                organization_id: mmDefaultOrgId,
+                active: true
+              } as any
+            }
+          } else if (isLu || isRick) {
+            // Asegurar que Lu y Rick tengan rol admin y organización Moda Miel asignada
+            if (existingUser.organization_id !== mmDefaultOrgId || existingUser.role !== 'admin') {
+              existingUser.organization_id = mmDefaultOrgId
+              existingUser.role = 'admin'
+              await supabase
+                .from('users')
+                .update({ organization_id: mmDefaultOrgId, role: 'admin', auth_uid: user.id, email: user.email })
+                .eq('id', existingUser.id)
+                .catch(console.error)
+            }
           }
         }
 
@@ -173,10 +194,18 @@ export function AuthCallback() {
 
           // Cargar datos completos del usuario
           const fullUser = await supabaseService.getUserById(existingUser.id) || await supabaseService.getUserById(user.id)
-          if (fullUser) {
-            useAppStore.getState().setCurrentUser(fullUser)
-            useAppStore.getState().setAuthenticated(true)
+          const finalUser: any = fullUser || {
+            id: existingUser.id,
+            username: existingUser.name || user.email?.split('@')[0] || 'Usuario',
+            name: existingUser.name || user.email?.split('@')[0] || 'Usuario',
+            email: existingUser.email || user.email,
+            role: existingUser.role || 'admin',
+            organizationId: existingUser.organization_id,
+            active: true,
+            createdAt: new Date().toISOString()
           }
+          useAppStore.getState().setCurrentUser(finalUser)
+          useAppStore.getState().setAuthenticated(true)
 
           // Guardar tokens de autenticación para servicios y persistencia
           localStorage.setItem('reisbloc_auth_token', JSON.stringify({
