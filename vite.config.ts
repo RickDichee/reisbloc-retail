@@ -285,6 +285,7 @@ export default defineConfig({
           }
         ],
         navigateFallback: '/index.html', // SPA fallback for offline routing
+        navigateFallbackDenylist: [/^\/auth/, /^\/api/],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
@@ -327,6 +328,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    modulePreload: false,
     sourcemap: process.env.NODE_ENV !== 'production',
     target: 'esnext',
     chunkSizeWarningLimit: 2000,
