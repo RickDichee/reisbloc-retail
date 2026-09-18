@@ -49,12 +49,21 @@ export default function Analytics() {
       // Load token transactions
       await fetchTransactions()
 
-      // Get product count
-      const { count: products } = await supabase
-        .from('products')
+      // Get product count (prioritizing retail_products)
+      const { count: retailProds } = await supabase
+        .from('retail_products')
         .select('*', { count: 'exact', head: true })
         .eq('organization_id', currentUser.organizationId)
-      setProductCount(products || 0)
+
+      if (retailProds !== null && retailProds > 0) {
+        setProductCount(retailProds)
+      } else {
+        const { count: legacyProds } = await supabase
+          .from('products')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', currentUser.organizationId)
+        setProductCount(legacyProds || 0)
+      }
 
       // Get employee count
       const { count: employees } = await supabase

@@ -17,6 +17,7 @@ import PendingOrdersModal from '@/components/pos/PendingOrdersModal'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Product, OrderItem, Order } from '@/types/index'
 import { shiftService } from '@/services/shiftService'
+import { syncService } from '@/services/syncService'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { useTenantTheme } from '@/hooks/useTenantTheme'
@@ -61,7 +62,7 @@ export default function POS() {
     decrementDraftItem,
     removeDraftItem,
     updateDraftItemPrice,
-    clearDraftForTable,
+    clearDraftForTicket,
     organizationSettings,
     setOrganizationSettings,
     users,
@@ -920,7 +921,7 @@ export default function POS() {
       setProducts(updatedProds)
       imageCacheService.saveCachedProducts(updatedProds).catch(console.error)
 
-      clearDraftForTable(tableNumber)
+      clearDraftForTicket(tableNumber)
       setSelectedClient(null)
 
       alert(`✅ Pedido/Apartado #${(orderId || '').slice(0, 8).toUpperCase()} creado por ${currentUser.username || 'Gerencia'} y registrado en Auditoría. Stock reservado.`)
@@ -945,7 +946,7 @@ export default function POS() {
         createdAt: new Date().toISOString()
       })
 
-      clearDraftForTable(tableNumber)
+      clearDraftForTicket(tableNumber)
       setSelectedClient(null)
 
       alert(`✅ Pedido/Apartado #${fallbackId.slice(0, 8).toUpperCase()} creado y respaldado con éxito. Stock reservado.`)
@@ -1171,7 +1172,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
-      await supabaseService.createRetailSale({
+      const salePayload = {
         tableNumber,
         subtotal: paymentPanel.orderTotal,
         total: result.total,
@@ -1181,7 +1182,27 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
         clientPhone: selectedClient?.phone
-      }, allItems, { skipStockDeduction: isCheckingOutPendingOrder })
+      }
+
+      if (navigator.onLine) {
+        try {
+          await supabaseService.createRetailSale(salePayload, allItems, { skipStockDeduction: isCheckingOutPendingOrder })
+        } catch (saleErr: any) {
+          logger.warn('pos', 'Error al procesar venta en línea, respaldando en cola offline:', saleErr)
+          await syncService.queueOperation('CREATE_RETAIL_SALE', {
+            sale: salePayload,
+            items: allItems,
+            options: { skipStockDeduction: isCheckingOutPendingOrder }
+          })
+        }
+      } else {
+        logger.info('pos', 'Dispositivo sin conexión, registrando venta en cola offline.')
+        await syncService.queueOperation('CREATE_RETAIL_SALE', {
+          sale: salePayload,
+          items: allItems,
+          options: { skipStockDeduction: isCheckingOutPendingOrder }
+        })
+      }
 
       // Si proviene de órdenes pendientes, marcarlas como completadas y remover de caché local
       if (orderIds && orderIds.length > 0) {
@@ -1252,7 +1273,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       }
 
       setSelectedClient(null)
-      clearDraftForTable(tableNumber)
+      clearDraftForTicket(tableNumber)
       setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })
       playCashRegisterSound()
     } catch (error: any) {
@@ -1639,7 +1660,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 onIncrement={(id) => incrementDraftItem(tableNumber, id)}
                 onDecrement={(id) => decrementDraftItem(tableNumber, id)}
                 onRemove={(id) => removeDraftItem(tableNumber, id)}
-                onClear={() => clearDraftForTable(tableNumber)}
+                onClear={() => clearDraftForTicket(tableNumber)}
                 onEditNote={(item) => setEditingItem(item)}
                 onUpdatePrice={(id, price) => handleUpdatePrice(id, price)}
               />
@@ -1786,7 +1807,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                   onIncrement={(id) => incrementDraftItem(tableNumber, id)}
                   onDecrement={(id) => decrementDraftItem(tableNumber, id)}
                   onRemove={(id) => removeDraftItem(tableNumber, id)}
-                  onClear={() => clearDraftForTable(tableNumber)}
+                  onClear={() => clearDraftForTicket(tableNumber)}
                   onEditNote={(item) => setEditingItem(item)}
                   onUpdatePrice={(id, price) => handleUpdatePrice(id, price)}
                 />

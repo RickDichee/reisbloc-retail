@@ -9,10 +9,10 @@ import logger from '@/utils/logger'
 
 export interface SyncOperation {
     id: string
-    action: 'CREATE_ORDER' | 'UPDATE_ORDER' | 'CLOSE_ORDER' | 'CANCEL_ORDER' | 'SYNC_PRODUCTS'
+    action: 'CREATE_RETAIL_SALE' | 'CREATE_ORDER' | 'UPDATE_ORDER' | 'CLOSE_ORDER' | 'CANCEL_ORDER' | 'SYNC_PRODUCTS'
     payload: any
     timestamp: number
-    status: 'pending' | 'failed'
+    status: 'pending' | 'syncing' | 'synced' | 'failed'
     retryCount: number
     error?: string
 }

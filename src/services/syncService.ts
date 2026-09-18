@@ -85,6 +85,12 @@ class SyncService {
      */
     private async executeOperation(op: SyncOperation): Promise<void> {
         switch (op.action) {
+            case 'CREATE_RETAIL_SALE':
+                await supabaseService.createRetailSale(op.payload.sale, op.payload.items, {
+                    ...op.payload.options,
+                    clientMutationId: op.id
+                })
+                break
             case 'CREATE_ORDER':
                 await supabaseService.createOrder(op.payload.order)
                 break

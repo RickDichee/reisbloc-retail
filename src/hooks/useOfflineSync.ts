@@ -1,181 +1,102 @@
 import { useState, useEffect, useCallback } from 'react'
-import offlineDBService from '@/services/offlineDBService'
-
+import { offlineStorage } from '@/services/offlineStorage'
+import { syncService } from '@/services/syncService'
 import logger from '@/utils/logger'
 
 export interface OfflineSyncState {
   isOnline: boolean
   isSyncing: boolean
-  pendingOrdersCount: number
-  pendingSalesCount: number
+  pendingOperationsCount: number
   lastSyncTime: Date | null
   syncError: string | null
 }
+
 /**
- * Hook para sincronización offline
- * - Detecta cambios de conexión
- * - Sincroniza datos pendientes
- * - Maneja errores de conexión
+ * Hook centralizado para sincronización offline
+ * - Monitorea conectividad de red
+ * - Reporta operaciones pendientes en la cola IndexedDB
+ * - Despacha la cola de operaciones vía syncService
  */
 export function useOfflineSync() {
   const [state, setState] = useState<OfflineSyncState>({
     isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
     isSyncing: false,
-    pendingOrdersCount: 0,
-    pendingSalesCount: 0,
+    pendingOperationsCount: 0,
     lastSyncTime: null,
     syncError: null
   })
 
-  // Detectar cambios de conexión
-  useEffect(() => {
-    const handleOnline = () => {
-      logger.info('offline-sync', 'Conexión restaurada')
-      setState(prev => ({ ...prev, isOnline: true, syncError: null }))
-      // Sincronizar datos pendientes cuando se restaura conexión
-      syncPendingData()
-    }
-
-    const handleOffline = () => {
-      logger.warn('offline-sync', 'Sin conexión')
-      setState(prev => ({ ...prev, isOnline: false }))
-    }
-
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
-
-  // Cargar datos pendientes al montar
-  useEffect(() => {
-    loadPendingCounts()
-  }, [])
-
-  /**
-   * Cargar contador de datos pendientes
-   */
   const loadPendingCounts = useCallback(async () => {
     try {
-      const pendingOrders = await offlineDBService.getPendingOrders()
-      const pendingSales = await offlineDBService.getPendingSales()
-
+      const pendingOps = await offlineStorage.getPendingSyncOperations()
       setState(prev => ({
         ...prev,
-        pendingOrdersCount: pendingOrders.length,
-        pendingSalesCount: pendingSales.length
+        pendingOperationsCount: pendingOps.length
       }))
     } catch (error) {
-      logger.error('offline-sync', 'Error loading pending counts', error as any)
+      logger.error('offline-sync', 'Error loading pending operations count', error as any)
     }
   }, [])
 
-  /**
-   * Sincronizar datos pendientes
-   */
   const syncPendingData = useCallback(async () => {
-    if (state.isSyncing || !state.isOnline) return
+    if (state.isSyncing || !navigator.onLine) return
 
     setState(prev => ({ ...prev, isSyncing: true, syncError: null }))
 
     try {
-      // Sincronizar órdenes
-      const pendingOrders = await offlineDBService.getPendingOrders()
-      const syncedOrders = 0
-      for (const order of pendingOrders) {
-        try {
-          // TODO: Implementar envío a supabaseService.createOrder() cuando esté listo
-          // Por ahora solo registramos que hay datos pendientes sin borrarlos
-          logger.info('offline-sync', `Orden pendiente encontrada: ${(order as any).id || 'sin-id'}`)
-        } catch (error) {
-          logger.error('offline-sync', 'Error syncing order', error as any)
-        }
-      }
-
-      // Sincronizar ventas
-      const pendingSales = await offlineDBService.getPendingSales()
-      const syncedSales = 0
-      for (const sale of pendingSales) {
-        try {
-          // TODO: Implementar envío a supabaseService.createRetailSale() cuando esté listo
-          // Por ahora solo registramos que hay datos pendientes sin borrarlos
-          logger.info('offline-sync', `Venta pendiente encontrada: ${(sale as any).id || 'sin-id'}`)
-        } catch (error) {
-          logger.error('offline-sync', 'Error syncing sale', error as any)
-        }
-      }
-
-      // CRÍTICO: Solo limpiar datos si realmente se sincronizaron exitosamente
-      // No borrar datos offline sin confirmar que se guardaron en Supabase
-      if (syncedOrders > 0 || syncedSales > 0) {
-        await offlineDBService.clearSyncedData()
-        logger.info('offline-sync', `Sincronizados: ${syncedOrders} órdenes, ${syncedSales} ventas`)
-      } else {
-        logger.info('offline-sync', 'No hay datos para sincronizar aún (funcionalidad pendiente de implementación)')
-      }
-
+      await syncService.processQueue()
+      await loadPendingCounts()
       setState(prev => ({
         ...prev,
         isSyncing: false,
-        pendingOrdersCount: 0,
-        pendingSalesCount: 0,
-        lastSyncTime: new Date()
+        lastSyncTime: new Date(),
+        syncError: null
       }))
-
-      logger.info('offline-sync', 'Sincronización completada')
-    } catch (error) {
+      logger.info('offline-sync', 'Sincronización completada con éxito')
+    } catch (error: any) {
       const errorMsg = error instanceof Error ? error.message : 'Error en sincronización'
       setState(prev => ({
         ...prev,
         isSyncing: false,
         syncError: errorMsg
       }))
-      logger.error('offline-sync', 'Sync error', error as any)
+      logger.error('offline-sync', 'Error en sincronización offline', error)
     }
-  }, [state.isSyncing, state.isOnline])
+  }, [state.isSyncing, loadPendingCounts])
 
-  /**
-   * Guardar orden offline
-   */
-  const saveOrderOffline = useCallback(async (order: any) => {
-    try {
-      await offlineDBService.saveOrderOffline({
-        ...order,
-        synced: false
-      })
-      await loadPendingCounts()
-      logger.info('offline-sync', 'Orden guardada offline')
-    } catch (error) {
-      logger.error('offline-sync', 'Error saving order offline', error as any)
-      throw error
+  // Detectar cambios de conexión y eventos de sincronización
+  useEffect(() => {
+    const handleOnline = () => {
+      logger.info('offline-sync', 'Conexión restaurada')
+      setState(prev => ({ ...prev, isOnline: true, syncError: null }))
+      syncPendingData()
     }
-  }, [loadPendingCounts])
 
-  /**
-   * Guardar venta offline
-   */
-  const saveSaleOffline = useCallback(async (sale: any) => {
-    try {
-      await offlineDBService.saveSaleOffline({
-        ...sale,
-        synced: false
-      })
-      await loadPendingCounts()
-      logger.info('offline-sync', 'Venta guardada offline')
-    } catch (error) {
-      logger.error('offline-sync', 'Error saving sale offline', error as any)
-      throw error
+    const handleOffline = () => {
+      logger.warn('offline-sync', 'Conexión perdida (modo offline activo)')
+      setState(prev => ({ ...prev, isOnline: false }))
     }
-  }, [loadPendingCounts])
+
+    const handleSyncCompleted = () => {
+      loadPendingCounts()
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    window.addEventListener('reisbloc-sync-completed', handleSyncCompleted)
+
+    loadPendingCounts()
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+      window.removeEventListener('reisbloc-sync-completed', handleSyncCompleted)
+    }
+  }, [syncPendingData, loadPendingCounts])
 
   return {
     ...state,
-    syncPendingData,
-    saveOrderOffline,
-    saveSaleOffline,
-    loadPendingCounts
+    loadPendingCounts,
+    syncPendingData
   }
 }
