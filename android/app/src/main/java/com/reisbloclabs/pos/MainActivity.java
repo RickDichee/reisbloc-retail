@@ -1,4 +1,4 @@
-package com.reisbloclab.pos;
+package com.reisbloclabs.pos;
 
 import com.getcapacitor.BridgeActivity;
 

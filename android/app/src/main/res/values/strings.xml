@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">Reisbloc Store</string>
     <string name="title_activity_main">Reisbloc Store</string>
-    <string name="package_name">com.reisbloclab.pos</string>
-    <string name="custom_url_scheme">com.reisbloclab.pos</string>
+    <string name="package_name">com.reisbloclabs.pos</string>
+    <string name="custom_url_scheme">com.reisbloclabs.pos</string>
     
     <!-- Privacy Policy and Terms URLs for App Store compliance -->
     <string name="privacy_policy_url">https://reisbloc.com/privacy</string>

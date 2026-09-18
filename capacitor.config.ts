@@ -11,7 +11,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.reisbloclab.pos',
+  appId: 'com.reisbloclabs.pos',
   appName: 'Reisbloc Store',
   webDir: 'dist',
   server: {
