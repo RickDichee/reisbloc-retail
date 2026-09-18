@@ -35,10 +35,8 @@ export interface PinpadStatusResponse {
 }
 
 class ClipPinpadService {
-  private defaultSerial = 'AA61B532642902383'
-
   public getSerialNumber(): string {
-    return localStorage.getItem('reisbloc_clip_serial') || this.defaultSerial
+    return (localStorage.getItem('reisbloc_clip_serial') || '').trim()
   }
 
   public setSerialNumber(serial: string) {
@@ -50,6 +48,9 @@ class ClipPinpadService {
    */
   public async createPayment(amount: number, reference?: string): Promise<PinpadPaymentResponse> {
     const serial = this.getSerialNumber()
+    if (!serial) {
+      throw new Error('No hay terminal Clip configurada. Configura el número de serie antes de cobrar.')
+    }
     const ref = reference || `REIS-${Date.now().toString().slice(-6)}`
 
     logger.info('clip-pinpad', `Enviando cobro de $${amount} a terminal Clip ${serial}...`)
@@ -170,7 +171,10 @@ class ClipPinpadService {
    * Consulta el estado en línea del lector Clip Total 3
    */
   public async getDeviceStatus(serial?: string): Promise<any> {
-    const s = serial || this.getSerialNumber()
+    const s = (serial || this.getSerialNumber()).trim()
+    if (!s) {
+      throw new Error('No hay terminal Clip configurada. Configura el número de serie para consultar estado.')
+    }
     try {
       const res = await fetch(`/api/clip-pinpad?action=devices_status&serialNumber=${encodeURIComponent(s)}`)
       if (!res.ok) return null

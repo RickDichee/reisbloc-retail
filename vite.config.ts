@@ -18,7 +18,35 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
+type ClipServerConfig = {
+  apiKey: string
+  apiSecret: string
+  defaultSerial: string
+  webhookUrl: string
+}
+
+function loadClipServerConfig(): { config: ClipServerConfig | null; missing: string[] } {
+  const required = ['CLIP_API_KEY', 'CLIP_API_SECRET', 'CLIP_PINPAD_SERIAL', 'CLIP_WEBHOOK_URL'] as const
+  const missing = required.filter((key) => !process.env[key] || !(process.env[key] as string).trim())
+
+  if (missing.length > 0) {
+    return { config: null, missing }
+  }
+
+  return {
+    config: {
+      apiKey: process.env.CLIP_API_KEY as string,
+      apiSecret: process.env.CLIP_API_SECRET as string,
+      defaultSerial: process.env.CLIP_PINPAD_SERIAL as string,
+      webhookUrl: process.env.CLIP_WEBHOOK_URL as string,
+    },
+    missing: [],
+  }
+}
+
 function clipPinpadDevPlugin(): Plugin {
+  const clipConfig = loadClipServerConfig()
+
   const handler: Connect.NextHandleFunction = async (req, res, next) => {
     if (!req.url || !req.url.startsWith('/api/clip-pinpad')) {
       return next()
@@ -37,9 +65,18 @@ function clipPinpadDevPlugin(): Plugin {
       return
     }
 
-    const apiKey = process.env.CLIP_API_KEY || '29e7fea7-bcfb-42cf-a8f2-67a0dd521a3b'
-    const apiSecret = process.env.CLIP_API_SECRET || 'e2be52d7-ef4a-4a80-9ba3-f07eee339176'
-    const defaultSerial = process.env.CLIP_PINPAD_SERIAL || 'AA61B532642902383'
+    if (!clipConfig.config) {
+      res.statusCode = 503
+      res.setHeader('Content-Type', 'application/json')
+      res.end(
+        JSON.stringify({
+          error: `Clip proxy is disabled: missing required server environment variables (${clipConfig.missing.join(', ')})`,
+        })
+      )
+      return
+    }
+
+    const { apiKey, apiSecret, defaultSerial, webhookUrl } = clipConfig.config
     const authHeader = `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`
 
     try {
@@ -118,7 +155,7 @@ function clipPinpadDevPlugin(): Plugin {
           tip_amount: tipAmount ? Number(tipAmount).toFixed(2) : undefined,
           reference: reference || `REIS-${Date.now().toString().slice(-6)}`,
           serial_number_pos: serialNumber || defaultSerial,
-          webhook_url: process.env.CLIP_WEBHOOK_URL || 'https://jnyyaclrelqcqzjummwe.supabase.co/functions/v1/clip-webhook',
+          webhook_url: webhookUrl,
           preferences: {
             is_auto_return_enabled: true,
             is_retry_enabled: true,

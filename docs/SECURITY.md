@@ -38,7 +38,7 @@ Esto permite desarrollo rápido pero **NO ES SEGURO** para producción.
 | VITE_SUPABASE_URL | localhost:54321 | staging-project.supabase.co | prod-project.supabase.co |
 | VITE_SUPABASE_DB_ENABLED | true | true | true |
 | VITE_SUPABASE_AUTH_ENABLED | true | true | true |
-| JWT_SECRET | dev-secret | ✅ Configurado | supabase secrets set |
+| JWT_SECRET | `<server-only-generated-secret>` | ✅ Configurado | supabase secrets set |
 
 ### Sobre la Anon Key
 La `VITE_SUPABASE_ANON_KEY` **no es una brecha de seguridad**. Es un identificador público necesario para que el cliente se comunique con la API. La seguridad real reside en:

@@ -64,6 +64,26 @@ export const shiftService = {
 
   async calculateExpectedAmount(orgId: string, startTime: string) {
     try {
+      // 1. Consultar retail_sales (modelo canónico de retail)
+      const { data: retailData, error: retailError } = await supabase
+        .from('retail_sales')
+        .select('total, tip, payment_method, tip_source')
+        .eq('organization_id', orgId)
+        .gte('created_at', startTime);
+
+      if (!retailError && retailData) {
+        return retailData.reduce((sum, sale) => {
+          let cashDelta = 0;
+          if (sale.payment_method === 'cash' || sale.payment_method === 'efectivo') {
+            cashDelta = Number(sale.total || 0);
+          } else if (sale.tip_source === 'cash') {
+            cashDelta = Number(sale.tip || 0);
+          }
+          return sum + cashDelta;
+        }, 0);
+      }
+
+      // 2. Fallback a tabla legacy 'sales'
       const { data, error } = await supabase
         .from('sales')
         .select('total, tip_amount, payment_method, tip_source')
@@ -78,7 +98,7 @@ export const shiftService = {
       return (data || []).reduce((sum, sale) => {
         let cashDelta = 0;
         // Si la venta fue en efectivo, el total ya incluye la propina
-        if (sale.payment_method === 'cash') {
+        if (sale.payment_method === 'cash' || sale.payment_method === 'efectivo') {
           cashDelta = Number(sale.total || 0);
         } 
         // Si la venta fue tarjeta pero la propina fue en efectivo, sumamos solo la propina

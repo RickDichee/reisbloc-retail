@@ -65,6 +65,7 @@ supabase/snippets/
 # --- SQL & database ---
 *.sql
 !supabase/migrations/*.sql
+!supabase/verification/*.sql
 !supabase/seed.sql
 MEMENTO*.sql
 SHARED_DB_PROTOCOL.md
