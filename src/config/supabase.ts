@@ -10,20 +10,43 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-// Fallback de seguridad para producción (Reisbloc PROD)
-const FALLBACK_SUPABASE_URL = 'https://nmovxyaibnixvxtepbod.supabase.co'
-const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_99WitkcTh0U8rQ1qt3sgGQ_2uDwzz_D'
+// Credenciales oficiales de Producción (Reisbloc PROD - nmovxyaibnixvxtepbod)
+const PROD_SUPABASE_URL = 'https://nmovxyaibnixvxtepbod.supabase.co'
+const PROD_PUBLISHABLE_KEY = 'sb_publishable_99WitkcTh0U8rQ1qt3sgGQ_2uDwzz_D'
 
-// Variables de entorno con fallback inmediato
+// Credenciales oficiales de Desarrollo (Reisbloc DEV - jnyyaclrelqcqzjummwe)
+const DEV_SUPABASE_URL = 'https://jnyyaclrelqcqzjummwe.supabase.co'
+const DEV_PUBLISHABLE_KEY = 'sb_publishable_5YHF5VWvNfoaYNXL-xGECw_J5IXdRAa'
+
+// Detección estricta de dominios de Producción
+const hostname = (typeof window !== 'undefined' ? window.location.hostname : '').toLowerCase()
+const isProductionDomain = 
+  hostname === 'store.reisbloc.com' ||
+  hostname === 'modamielmx.reisbloc.com' ||
+  hostname === 'modamiel.reisbloc.com' ||
+  (hostname.endsWith('.reisbloc.com') && !hostname.includes('dev'))
+
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
 const rawAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
 
-// 🛡️ REGLA CRÍTICA: Supabase deshabilitó las llaves JWT Legacy (eyJhbGciOi...).
-// Si en Vercel o local viene una llave legacy deshabilitada, forzar la nueva Publishable Key activa.
-const isLegacyDisabledKey = !rawAnonKey || rawAnonKey.startsWith('eyJ')
+let validUrl = PROD_SUPABASE_URL
+let validKey = PROD_PUBLISHABLE_KEY
 
-const validUrl = rawUrl || FALLBACK_SUPABASE_URL
-const validKey = isLegacyDisabledKey ? FALLBACK_SUPABASE_ANON_KEY : rawAnonKey
+if (isProductionDomain) {
+  // En dominios oficiales de producción forzar siempre el Supabase PROD y su Publishable Key correspondiente
+  validUrl = PROD_SUPABASE_URL
+  validKey = PROD_PUBLISHABLE_KEY
+} else if (rawUrl.includes('jnyyaclrelqcqzjummwe') || rawUrl.includes('dev')) {
+  // En ambiente DEV usar la URL de DEV y la Publishable Key de DEV correspondiente
+  validUrl = DEV_SUPABASE_URL
+  validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : DEV_PUBLISHABLE_KEY
+} else if (rawUrl.includes('nmovxyaibnixvxtepbod')) {
+  validUrl = PROD_SUPABASE_URL
+  validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : PROD_PUBLISHABLE_KEY
+} else if (rawUrl) {
+  validUrl = rawUrl
+  validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : PROD_PUBLISHABLE_KEY
+}
 
 if (!validUrl || !validKey) {
   console.error('❌ CRÍTICO: No se encontraron credenciales de Supabase configuradas.')

@@ -70,9 +70,13 @@ export function AuthCallback() {
         // 2. Extraer tokens si vienen en el hash (#access_token=...&refresh_token=...)
         if (!session && window.location.hash.includes('access_token')) {
           try {
-            const accessToken = hashParams.get('access_token')
+            let accessToken = hashParams.get('access_token')
             const refreshToken = hashParams.get('refresh_token')
             if (accessToken) {
+              accessToken = accessToken.trim()
+              if (accessToken.startsWith('.')) {
+                accessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' + accessToken
+              }
               const { data, error: setErr } = await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken || ''
