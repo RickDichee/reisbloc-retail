@@ -12,31 +12,14 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Reisbloc Store · Software POS Retail & Comercios a tu Medida" />
   <meta property="og:description" content="Reisbloc Store es una plataforma SaaS de punto de venta para comercios y tiendas con múltiples cajas o sucursales. Control de ventas, inventario, clientes, empleados y facturación electrónica CFDI 4.0." />
-  <meta property="og:image" content="/icon.svg" />
+  <meta property="og:image" content="./icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+  <link rel="alternate icon" href="./favicon.ico" />
 
   <title>Reisbloc Store · Plataforma POS Retail, Boutiques & Comercios</title>
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            outfit: ['Outfit', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              teal: '#14B8A6',
-              cyan: '#00F5FF',
-              emerald: '#10B981',
-              amber: '#F59E0B'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Production Precompiled Tailwind CSS -->
+  <link rel="stylesheet" href="./tailwind.min.css" />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -673,33 +656,58 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: VIDEO DEMOSTRACIÓN -->
+  <!-- MODAL: DEMOSTRACIÓN EN VIVO -->
   <!-- ========================================================================= -->
   <div id="videoModal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl text-white relative animate-fadeIn">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl text-white relative animate-fadeIn">
       <button onclick="closeVideoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl z-10">
         &times;
       </button>
       
-      <div class="mb-4">
-        <h4 class="text-lg font-black text-white flex items-center gap-2">
-          <span class="text-amber-400">▶</span> Demostración en Vivo: Reisbloc POS & Clip Total 3
+      <div class="mb-6 space-y-1">
+        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[11px] font-bold">
+          <span>▶ Flujo Operativo en Tiempo Real</span>
+        </div>
+        <h4 class="text-xl sm:text-2xl font-black text-white">
+          Demostración: Reisbloc Store & Clip Total 3
         </h4>
-        <p class="text-xs text-slate-400">Mira cómo fluye una venta real sin digitación manual.</p>
+        <p class="text-xs text-slate-400">Cómo fluye una venta de alto volumen sin digitación manual.</p>
       </div>
 
-      <div class="relative rounded-2xl overflow-hidden bg-black aspect-video border border-slate-800 flex items-center justify-center">
-        <!-- Video Player o Fallback Animado -->
-        <video id="demoVideoPlayer" controls class="w-full h-full object-cover">
-          <source src="/demo_video.mp4" type="video/mp4">
-          Tu navegador no soporta reproducción de video HTML5.
-        </video>
+      <!-- Interactive 3-Step Preview Card -->
+      <div class="space-y-3 bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800">
+        <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-xs flex-shrink-0">1</div>
+          <div>
+            <h5 class="text-xs font-bold text-white">Captura Ultra-rápida & Código de Barras</h5>
+            <p class="text-[11px] text-slate-400">Escaneo de artículos por pieza o paquete con descuento automático de promociones y mayoreo.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/80 border border-teal-500/30">
+          <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs flex-shrink-0">2</div>
+          <div>
+            <h5 class="text-xs font-bold text-amber-300">Cobro Automático con Terminal Clip Total 3</h5>
+            <p class="text-[11px] text-slate-400">El cajero presiona "Cobrar" y el monto exacto aparece en la terminal bancaria Clip al instante. Cero errores humanos.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+          <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs flex-shrink-0">3</div>
+          <div>
+            <h5 class="text-xs font-bold text-white">Ticket Fiscal, Inventario & Modo Offline-First</h5>
+            <p class="text-[11px] text-slate-400">Impresión térmica inmediata, timbrado CFDI 4.0 opcional y actualización de stock multi-caja en milisegundos.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="mt-4 flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
-        <span>¿Te interesa implementarlo en tu negocio?</span>
-        <button onclick="closeVideoModal(); openContactModal();" class="text-teal-400 font-bold hover:underline">
-          Solicitar Cotización &rarr;
+      <!-- Action Buttons -->
+      <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-800">
+        <a href="https://store.reisbloc.com/login" class="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-gradient-primary text-slate-950 font-black text-xs text-center">
+          Probar POS en Vivo &rarr;
+        </a>
+        <button onclick="closeVideoModal(); openContactModal();" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold text-xs text-center">
+          Agendar Demostración por WhatsApp
         </button>
       </div>
     </div>
@@ -722,15 +730,11 @@
     function openVideoModal() {
       const modal = document.getElementById('videoModal');
       modal.classList.remove('hidden');
-      const video = document.getElementById('demoVideoPlayer');
-      if (video) video.play().catch(() => {});
     }
 
     function closeVideoModal() {
       const modal = document.getElementById('videoModal');
       modal.classList.add('hidden');
-      const video = document.getElementById('demoVideoPlayer');
-      if (video) video.pause();
     }
 
     function handleContactSubmit(e) {

@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="100" fill="#1F293B"/>
+  
+  <!-- Main hexagon -->
+  <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#1F293B"/>
+  
+  <!-- Inner hexagon with stroke -->
+  <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" stroke-width="12" stroke-linejoin="round"/>
+  
+  <!-- Center dashed line -->
+  <path d="M256 110V402" stroke="#00F5FF" stroke-width="6" stroke-dasharray="8 8"/>
+  
+  <!-- Decorative lines -->
+  <path d="M256 150L342.66 200V312L256 362" stroke="#00F5FF" stroke-width="3" stroke-dasharray="4 6" opacity="0.4"/>
+  <path d="M256 150L169.34 200V312L256 362" stroke="#00F5FF" stroke-width="3" stroke-dasharray="4 6" opacity="0.4"/>
+  
+  <!-- Glow circle -->
+  <circle cx="256" cy="256" r="40" stroke="#00F5FF" stroke-width="2" opacity="0.3"/>
+  <circle cx="256" cy="256" r="20" fill="#00F5FF" opacity="0.15"/>
+</svg>

@@ -71,10 +71,11 @@ export default function PrivacyPolicy() {
                         </section>
 
                         <section className="pt-4 border-t border-slate-200">
-                            <h2 className="text-lg font-bold text-slate-900 mb-1">Contacto de Privacidad</h2>
+                            <h2 className="text-lg font-bold text-slate-900 mb-1">Contacto y Asistencia</h2>
                             <p className="text-sm">
                                 Reisbloc Store &middot; Reisbloc Lab<br />
-                                Correo: <a href="mailto:privacidad@reisbloc.com" className="text-teal-600 font-medium">privacidad@reisbloc.com</a> / <a href="mailto:soporte@reisbloc.com" className="text-teal-600 font-medium">soporte@reisbloc.com</a><br />
+                                Correo de Asistencia al Usuario: <a href="mailto:hunab.arredondo@gmail.com" className="text-teal-600 font-medium">hunab.arredondo@gmail.com</a><br />
+                                Privacidad y Legal: <a href="mailto:privacidad@reisbloc.com" className="text-teal-600 font-medium">privacidad@reisbloc.com</a><br />
                                 Moroleón, Guanajuato, México
                             </p>
                         </section>
