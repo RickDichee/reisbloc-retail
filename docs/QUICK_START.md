@@ -27,7 +27,7 @@ cp .env.example .env.local
 
 # Editar .env.local con tus credenciales:
 # - VITE_FIREBASE_* variables
-# - VITE_CLIP_* variables
+# - CLIP_* variables (solo servidor, nunca VITE_*)
 ```
 
 ### 2. Crear Colecciones en Firestore

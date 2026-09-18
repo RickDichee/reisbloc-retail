@@ -20,6 +20,7 @@ import { withOrg } from '@/utils/queryHelpers'
 import { getStoredToken } from './jwtService'
 import { offlineStorage } from './offlineStorage'
 import { syncService } from './syncService'
+import { isUuidIdentifier, normalizePublicTenantIdentifier } from './tenantValidation'
 import { useAppStore } from '@/store/appStore'
 import {
   User,
@@ -681,6 +682,7 @@ class SupabaseService {
         .from('products')
         .update(payload)
         .eq('id', productId)
+        .eq('organization_id', this.getCurrentOrgId())
 
       if (error) throw error
     } catch (error) {
@@ -709,6 +711,7 @@ class SupabaseService {
         .from('products')
         .update({ available: false })
         .eq('id', productId)
+        .eq('organization_id', this.getCurrentOrgId())
 
       if (error) throw error
     } catch (error) {
@@ -1714,29 +1717,22 @@ class SupabaseService {
 
   async getOrganizationBySlug(slug: string): Promise<any | null> {
     try {
-      const normalizedSlug = (slug || '').toLowerCase().trim()
+      const normalizedSlug = normalizePublicTenantIdentifier(slug)
+      if (!normalizedSlug) return null
+
+      if (isUuidIdentifier(normalizedSlug)) {
+        return this.getOrganizationById(normalizedSlug)
+      }
 
       const { data, error } = await supabase
         .from('organizations')
         .select('id, name, slug, logo_url, settings, plan')
+        .eq('slug', normalizedSlug)
         .eq('active', true)
+        .maybeSingle()
 
       if (error) throw error
-      if (!data || data.length === 0) return null
-
-      const match = data.find((org: any) => {
-        const s = (org.slug || '').toLowerCase()
-        const n = (org.name || '').toLowerCase()
-        const idStr = (org.id || '').toLowerCase()
-        return (
-          s === normalizedSlug ||
-          idStr === normalizedSlug ||
-          s === normalizedSlug.replace(/mx$/, '') ||
-          n.includes(normalizedSlug)
-        )
-      })
-
-      return match || data[0] || null
+      return data || null
     } catch (error) {
       logger.error('supabase', 'Error getting organization by slug', error as any)
       return null
@@ -1745,12 +1741,16 @@ class SupabaseService {
 
   async getPublicProducts(orgIdOrSlug?: string): Promise<Product[]> {
     try {
-      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
-      const targetSlug = (orgIdOrSlug || 'modamiel').trim()
+      const tenantIdentifier = normalizePublicTenantIdentifier(orgIdOrSlug)
+      if (!tenantIdentifier) return []
+      const organization = isUuidIdentifier(tenantIdentifier)
+        ? await this.getOrganizationById(tenantIdentifier)
+        : await this.getOrganizationBySlug(tenantIdentifier)
+      if (!organization?.id) return []
 
       // 1. Consultar la función RPC Gold Standard 'get_public_storefront_catalog'
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_storefront_catalog', {
-        p_slug: targetSlug
+        p_slug: organization.id
       })
 
       if (!rpcError && rpcData) {
@@ -1794,23 +1794,17 @@ class SupabaseService {
         }
       }
 
-      // 2. Solo si la RPC falla con error, ejecutar fallback secundario
-      let query = supabase.from('products').select('id, name, price, category, current_stock, available, active, created_at, organization_id')
-      if (isUUID(targetSlug)) {
-        query = query.eq('organization_id', targetSlug)
-      } else {
-        const { data: org } = await supabase.from('organizations').select('id').eq('slug', targetSlug).limit(1).maybeSingle()
-        if (org?.id) {
-          query = query.eq('organization_id', org.id)
-        }
+      if (rpcError) {
+        logger.warn('supabase', 'get_public_storefront_catalog RPC failed, using scoped fallback query', rpcError as any)
       }
-      
-      let { data } = await query.order('name', { ascending: true })
 
-      if (!data || data.length === 0) {
-        const fallbackRes = await supabase.from('products').select('id, name, price, category, current_stock, available, active, created_at, organization_id').limit(50)
-        data = fallbackRes.data || []
-      }
+      const { data } = await supabase
+        .from('retail_products')
+        .select('id, name, price, category, description, image, current_stock, minimum_stock, has_inventory, active, pack_quantity, sku, created_at, updated_at')
+        .eq('organization_id', organization.id)
+        .eq('active', true)
+        .or('has_inventory.eq.false,current_stock.gt.0')
+        .order('name', { ascending: true })
 
       return (data || []).map((p: any) => ({
         ...p,
@@ -1818,11 +1812,11 @@ class SupabaseService {
         name: p.name || 'Producto Sin Nombre',
         price: p.price || 0,
         category: p.category || 'General',
-        description: '',
+        description: p.description || '',
         imageUrl: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
         image: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-        isAvailable: p.available ?? p.active ?? true,
-        active: p.available ?? p.active ?? true,
+        isAvailable: true,
+        active: true,
         stock: p.stock ?? p.current_stock ?? 10,
         currentStock: p.current_stock ?? p.stock ?? 10,
         minimumStock: p.minimum_stock || 1,
@@ -2609,24 +2603,12 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     try {
       const { error } = await supabase.rpc('update_retail_stock_batch', { updates })
       if (error) {
-        logger.warn('supabase', 'RPC update_retail_stock_batch failed, applying direct update fallback:', error)
-        for (const u of updates) {
-          const { data: prod } = await supabase
-            .from('retail_products')
-            .select('current_stock')
-            .eq('id', u.productId)
-            .single()
-          if (prod) {
-            const newStock = Math.max(0, (Number(prod.current_stock) || 0) + u.quantity)
-            await supabase
-              .from('retail_products')
-              .update({ current_stock: newStock, updated_at: new Date().toISOString() })
-              .eq('id', u.productId)
-          }
-        }
+        logger.error('supabase', 'RPC update_retail_stock_batch failed', error as any)
+        throw error
       }
     } catch (error) {
       logger.error('supabase', 'Error updating retail stock batch', error as any)
+      throw error
     }
   }
 
@@ -2636,6 +2618,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         .from('retail_products')
         .update({ current_stock: Math.max(0, newStock), updated_at: new Date().toISOString() })
         .eq('id', productId)
+        .eq('organization_id', this.getCurrentOrgId())
 
       if (retailErr) {
         logger.warn('supabase', 'Note: product not in retail_products or failed:', retailErr.message)
@@ -2645,6 +2628,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         .from('products')
         .update({ current_stock: Math.max(0, newStock), updated_at: new Date().toISOString() })
         .eq('id', productId)
+        .eq('organization_id', this.getCurrentOrgId())
     } catch (error) {
       logger.error('supabase', 'Error updating product stock', error as any)
     }

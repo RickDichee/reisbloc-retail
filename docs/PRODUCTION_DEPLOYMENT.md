@@ -33,8 +33,13 @@ openssl rand -base64 32
 # Edit .env.production with production values
 VITE_SUPABASE_URL=https://your-prod-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-prod-anon-key-here
-VITE_SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
-VITE_JWT_SECRET=your-generated-32-char-secret
+# SERVER-ONLY (NO VITE_*)
+SUPABASE_SERVICE_ROLE_KEY=your-prod-service-role-key
+JWT_SECRET=your-generated-32-char-secret
+CLIP_API_KEY=your-prod-clip-api-key
+CLIP_API_SECRET=your-prod-clip-api-secret
+CLIP_PINPAD_SERIAL=your-prod-clip-terminal-serial
+CLIP_WEBHOOK_URL=https://your-prod-project.supabase.co/functions/v1/clip-webhook
 VITE_ENVIRONMENT=production
 ```
 
