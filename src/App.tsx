@@ -179,16 +179,29 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    // 🛡️ Si el navegador llega con tokens de OAuth en cualquier ruta (ej. / o /#access_token=...),
+    // 🛡️ Si el navegador llega con tokens de OAuth en cualquier ruta (ej. / o /#access_token=... o /?code=...),
     // redirigir de inmediato a /auth/callback para procesar la sesión y navegar al POS/Admin.
-    if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token')) {
-      if (!window.location.pathname.startsWith('/auth/callback')) {
-        window.location.replace('/auth/callback' + window.location.hash)
-        return
+    if (typeof window !== 'undefined') {
+      const isCallbackRoute = window.location.pathname.startsWith('/auth/callback')
+      if (!isCallbackRoute) {
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          window.location.replace('/auth/callback' + window.location.search + window.location.hash)
+          return
+        }
+        if (window.location.search && window.location.search.includes('code=')) {
+          window.location.replace('/auth/callback' + window.location.search + window.location.hash)
+          return
+        }
       }
     }
 
     const restoreSession = async () => {
+      // 🛡️ Si estamos en /auth/callback, dejar que AuthCallback maneje el handshake sin interferencia
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth/callback')) {
+        setInitializing(false)
+        return
+      }
+
       const runRestore = async () => {
         try {
           const { data: { session: supabaseSession }, error: sessionError } = await supabase.auth.getSession()
@@ -246,23 +259,29 @@ export default function App() {
               }
             }
 
-            // Fallback 2: Si es Lu Velázquez o Rick, asegurar perfil con rol admin en Moda Miel MX
-            const emailLower = (session.user.email || '').toLowerCase()
-            const isLu = emailLower === 'lu.velazquezz@gmail.com'
-            const isRick = emailLower === 'rick.playacar@gmail.com'
-            const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
-
-            if (!user && (isLu || isRick)) {
-              user = {
-                id: session.user.id,
-                username: isLu ? 'Lu Velázquez' : 'Rick',
-                name: isLu ? 'Lu Velázquez' : 'Rick',
-                email: session.user.email || '',
-                role: 'admin',
-                organizationId: mmDefaultOrgId,
-                active: true,
-                createdAt: new Date().toISOString()
-              } as any
+            // Fallback 2: Sincronización atómica backend con handle_auth_callback_sync
+            if (!user) {
+              try {
+                const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
+                const { data: rpcData } = await supabase.rpc('handle_auth_callback_sync', {
+                  p_auth_uid: session.user.id,
+                  p_email: (session.user.email || '').toLowerCase().trim(),
+                  p_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
+                  p_hostname: isMM ? 'modamiel' : window.location.hostname
+                })
+                if (rpcData?.success && rpcData?.user) {
+                  user = {
+                    ...rpcData.user,
+                    username: rpcData.user.name,
+                    organizationId: rpcData.user.organization_id || rpcData.user.organizationId,
+                    pin: '',
+                    active: rpcData.user.active ?? true,
+                    createdAt: new Date()
+                  } as any
+                }
+              } catch (rpcErr) {
+                console.warn('Error en fallback handle_auth_callback_sync en restoreSession:', rpcErr)
+              }
             }
 
             if (user) {
