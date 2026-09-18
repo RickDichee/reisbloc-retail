@@ -18,6 +18,8 @@ COMMENT ON POLICY "retail_products_public_read" ON public.retail_products
 -- -----------------------------------------------------------------------------
 -- 2) Harden public storefront RPC: exact slug/UUID only + explicit search_path
 -- -----------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_public_storefront_catalog(text);
+
 CREATE OR REPLACE FUNCTION public.get_public_storefront_catalog(p_slug text)
 RETURNS TABLE (
   id uuid,
