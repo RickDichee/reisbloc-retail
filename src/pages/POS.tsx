@@ -1005,9 +1005,12 @@ export default function POS() {
       }
     }))
 
-    const pendingBal = order.pendingBalance !== undefined && Number(order.pendingBalance) >= 0
-      ? Number(order.pendingBalance)
-      : (Number(order.total || 0) - Number(order.paidAmount || 0))
+    const paid = Number((order as any).paidAmount ?? (order as any).paid_amount ?? 0)
+    const pendingBal = (order as any).pendingBalance !== undefined && Number((order as any).pendingBalance) >= 0
+      ? Number((order as any).pendingBalance)
+      : ((order as any).pending_balance !== undefined && Number((order as any).pending_balance) >= 0
+        ? Number((order as any).pending_balance)
+        : Math.max(0, Number(order.total || 0) - paid))
 
     setPaymentPanel({
       isOpen: true,
@@ -1208,12 +1211,14 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       if (orderIds && orderIds.length > 0) {
         for (const oId of orderIds) {
           try {
+            const matchingOrder = ordersToProcess.find(o => o.id === oId)
+            const finalOrderTotal = Number(matchingOrder?.total || result.total)
             await supabaseService.updateOrder(oId, {
               status: 'completed',
               isPaid: true,
               paymentStatus: 'paid',
               pendingBalance: 0,
-              paidAmount: result.total
+              paidAmount: finalOrderTotal
             })
             supabaseService.removeLocalPendingOrder(oId)
           } catch (ordErr) {

@@ -104,14 +104,14 @@ export function ProductGrid({
       </div>
 
       {/* Category Tabs - Horizontal Scroll */}
-      <div className="shrink-0 p-3 border-b border-gray-100">
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+      <div className="shrink-0 p-2.5 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide -mx-1 px-1">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-md text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
               selectedCategory === null 
-                ? 'bg-indigo-600 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             Todo ({products.length})
@@ -122,10 +122,10 @@ export function ProductGrid({
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-md text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
                   selectedCategory === cat 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 {cat} ({count})
@@ -169,12 +169,12 @@ export function ProductGrid({
                   type="button"
                   onClick={() => !disabled && onAdd(product, isPackageMode)}
                   disabled={disabled}
-                  className={`group relative text-left rounded-2xl border overflow-hidden transition-all duration-200 active:scale-95 flex flex-col justify-between ${
+                  className={`group relative text-left rounded-lg border overflow-hidden transition-all duration-200 active:scale-[0.98] flex flex-col justify-between ${
                     disabled
                       ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
                       : isPackageMode
-                        ? 'border-amber-400 bg-amber-50/30 hover:border-amber-500 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md'
+                        ? 'border-amber-400 bg-amber-50/30 hover:border-amber-500 shadow-xs'
+                        : 'border-slate-200/90 bg-white hover:border-slate-400 hover:shadow-md'
                   }`}
                 >
                   {/* Badge de Paquete si está en modo paquete */}
@@ -186,25 +186,25 @@ export function ProductGrid({
 
                   {/* Product Image / Placeholder */}
                   {product.image ? (
-                    <div className="w-full h-20 sm:h-24 bg-slate-50 flex items-center justify-center p-1 border-b border-slate-100 overflow-hidden">
+                    <div className="w-full h-24 sm:h-28 bg-slate-50 flex items-center justify-center p-2 border-b border-slate-100 overflow-hidden">
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-full object-contain"
-                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.className = `w-full h-16 sm:h-20 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center` }}
+                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.className = `w-full h-20 sm:h-24 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center` }}
                       />
                     </div>
                   ) : (
-                    <div className={`w-full h-16 sm:h-20 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
-                      <Package size={20} className="text-white/80" />
+                    <div className={`w-full h-20 sm:h-24 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
+                      <Package size={22} className="text-white/80" />
                     </div>
                   )}
 
                   <div className="p-2.5">
-                    {/* SKU Tag destacado para identificar prendas con nombres similares */}
+                    {/* SKU Tag destacado */}
                     {(product.sku || product.barcode) && (
                       <div className="mb-1">
-                        <span className="inline-flex items-center text-[10px] font-mono font-black bg-slate-900 text-amber-300 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">
+                        <span className="inline-flex items-center text-[9.5px] font-mono font-black bg-slate-900 text-amber-300 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">
                           SKU: {product.sku || product.barcode}
                         </span>
                       </div>
@@ -214,12 +214,14 @@ export function ProductGrid({
                       {product.name}
                     </h3>
                     
-                    {/* Muestra únicamente el PRECIO POR PIEZA EN PAQUETE */}
+                    {/* Precio: regular o por pieza en paquete */}
                     <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-sm sm:text-base font-black text-indigo-600">
-                        {currency.format(unitPackPrice)}
+                      <span className="text-sm sm:text-base font-black text-slate-900">
+                        {currency.format(isPackageMode ? unitPackPrice : rawPrice)}
                       </span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
+                      {isPackageMode && (
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
+                      )}
                     </div>
 
 

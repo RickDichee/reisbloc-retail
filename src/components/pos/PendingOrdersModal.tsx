@@ -124,8 +124,12 @@ export default function PendingOrdersModal({
 
   const handleRegisterAbono = async (order: Order) => {
     const total = Number(order.total || 0)
-    const currentPaid = Number(order.paidAmount || 0)
-    const currentBalance = total - currentPaid
+    const currentPaid = Number((order as any).paidAmount ?? (order as any).paid_amount ?? 0)
+    const currentBalance = (order as any).pendingBalance !== undefined
+      ? Number((order as any).pendingBalance)
+      : ((order as any).pending_balance !== undefined
+        ? Number((order as any).pending_balance)
+        : Math.max(0, total - currentPaid))
 
     const input = prompt(`Monto del Abono / Pago Parcial para el cliente:\n(Saldo Restante Pendiente: $${currentBalance.toFixed(2)})`)
     if (!input) return
@@ -1144,8 +1148,12 @@ export default function PendingOrdersModal({
                 {activeOrders.map((order) => {
                   const folio = (order.id || '').replace('ticket-', '').slice(0, 8).toUpperCase()
                   const totalAmount = Number(order.total || 0)
-                  const paidAmount = Number(order.paidAmount || 0)
-                  const pendingBalance = Math.max(0, totalAmount - paidAmount)
+                  const paidAmount = Number((order as any).paidAmount ?? (order as any).paid_amount ?? 0)
+                  const pendingBalance = (order as any).pendingBalance !== undefined
+                    ? Number((order as any).pendingBalance)
+                    : ((order as any).pending_balance !== undefined
+                      ? Number((order as any).pending_balance)
+                      : Math.max(0, totalAmount - paidAmount))
 
                   // ⏱️ TIMEFRAME DE ALERTA: 5 DÍAS EXACTOS antes de detonar alerta de venta/apartado sin cobrar
                   const createdDate = new Date(order.createdAt || Date.now())

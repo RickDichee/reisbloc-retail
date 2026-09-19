@@ -938,11 +938,27 @@ class SupabaseService {
         logger.warn('supabase', 'Error query active orders:', error.message)
       }
 
-      const normalizedRemote = (data || []).map((o: any) => ({
-        ...o,
-        tableNumber: o.table_number ?? o.tableNumber ?? 0,
-        createdAt: o.created_at || o.createdAt || new Date()
-      }))
+      const normalizedRemote = (data || []).map((o: any) => {
+        const total = Number(o.total || 0)
+        const paid = Number(o.paid_amount ?? o.paidAmount ?? 0)
+        const pending = Number(o.pending_balance ?? o.pendingBalance ?? Math.max(0, total - paid))
+        const pStatus = o.payment_status ?? o.paymentStatus ?? (pending === 0 && total > 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid'))
+        const isPaid = Boolean(o.is_paid ?? o.isPaid ?? (pending === 0 && total > 0))
+
+        return {
+          ...o,
+          tableNumber: o.table_number ?? o.tableNumber ?? 0,
+          createdAt: o.created_at || o.createdAt || new Date(),
+          paidAmount: paid,
+          paid_amount: paid,
+          pendingBalance: pending,
+          pending_balance: pending,
+          paymentStatus: pStatus,
+          payment_status: pStatus,
+          isPaid: isPaid,
+          is_paid: isPaid
+        }
+      })
 
       // Merge con órdenes respaldadas en caché local aisladas por organización
       let localOrders: any[] = []
@@ -957,7 +973,26 @@ class SupabaseService {
         ACTIVE_ORDER_STATUSES.includes(l.status) &&
         !remoteIds.has(l.id) && 
         (!l.organizationId || !currentOrgId || l.organizationId === currentOrgId)
-      )
+      ).map((l: any) => {
+        const total = Number(l.total || 0)
+        const paid = Number(l.paid_amount ?? l.paidAmount ?? 0)
+        const pending = Number(l.pending_balance ?? l.pendingBalance ?? Math.max(0, total - paid))
+        const pStatus = l.payment_status ?? l.paymentStatus ?? (pending === 0 && total > 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid'))
+        const isPaid = Boolean(l.is_paid ?? l.isPaid ?? (pending === 0 && total > 0))
+        return {
+          ...l,
+          tableNumber: l.table_number ?? l.tableNumber ?? 0,
+          createdAt: l.created_at || l.createdAt || new Date(),
+          paidAmount: paid,
+          paid_amount: paid,
+          pendingBalance: pending,
+          pending_balance: pending,
+          paymentStatus: pStatus,
+          payment_status: pStatus,
+          isPaid: isPaid,
+          is_paid: isPaid
+        }
+      })
 
       const allOrders = [...validLocal, ...normalizedRemote]
       logger.info('supabase', `✅ Found ${allOrders.length} active pending/apartado orders`)
@@ -972,7 +1007,22 @@ class SupabaseService {
         return local.filter((l: any) => 
           ACTIVE_ORDER_STATUSES.includes(l.status) &&
           (!l.organizationId || !currentOrgId || l.organizationId === currentOrgId)
-        ) as Order[]
+        ).map((l: any) => {
+          const total = Number(l.total || 0)
+          const paid = Number(l.paid_amount ?? l.paidAmount ?? 0)
+          const pending = Number(l.pending_balance ?? l.pendingBalance ?? Math.max(0, total - paid))
+          return {
+            ...l,
+            tableNumber: l.table_number ?? l.tableNumber ?? 0,
+            createdAt: l.created_at || l.createdAt || new Date(),
+            paidAmount: paid,
+            paid_amount: paid,
+            pendingBalance: pending,
+            pending_balance: pending,
+            paymentStatus: l.payment_status ?? l.paymentStatus ?? (pending === 0 && total > 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid')),
+            isPaid: Boolean(l.is_paid ?? l.isPaid ?? (pending === 0 && total > 0))
+          }
+        }) as Order[]
       } catch (e) {
         return []
       }
@@ -988,7 +1038,21 @@ class SupabaseService {
         .single()
 
       if (error) throw error
-      return data as Order
+      if (!data) return null
+      const total = Number(data.total || 0)
+      const paid = Number(data.paid_amount ?? data.paidAmount ?? 0)
+      const pending = Number(data.pending_balance ?? data.pendingBalance ?? Math.max(0, total - paid))
+      return {
+        ...data,
+        tableNumber: data.table_number ?? data.tableNumber ?? 0,
+        createdAt: data.created_at || data.createdAt || new Date(),
+        paidAmount: paid,
+        paid_amount: paid,
+        pendingBalance: pending,
+        pending_balance: pending,
+        paymentStatus: data.payment_status ?? data.paymentStatus ?? (pending === 0 && total > 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid')),
+        isPaid: Boolean(data.is_paid ?? data.isPaid ?? (pending === 0 && total > 0))
+      } as Order
     } catch (error) {
       logger.error('supabase', 'Error getting order', error as any)
       return null
@@ -1047,10 +1111,21 @@ class SupabaseService {
       const ordersKey = this.getLocalOrdersKey(orgId)
       const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       const filtered = existing.filter((o: any) => o.id !== order.id)
+      const total = Number(order.total || 0)
+      const paid = Number(order.paidAmount ?? order.paid_amount ?? 0)
+      const pending = Number(order.pendingBalance ?? order.pending_balance ?? Math.max(0, total - paid))
       filtered.unshift({
         ...order,
         organizationId: orgId,
-        createdAt: order.createdAt || new Date().toISOString()
+        createdAt: order.createdAt || new Date().toISOString(),
+        paidAmount: paid,
+        paid_amount: paid,
+        pendingBalance: pending,
+        pending_balance: pending,
+        paymentStatus: order.paymentStatus ?? order.payment_status ?? (pending === 0 && total > 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid')),
+        payment_status: order.payment_status ?? order.paymentStatus ?? (pending === 0 && total > 0 ? 'paid' : (paid > 0 ? 'partial' : 'unpaid')),
+        isPaid: Boolean(order.isPaid ?? order.is_paid ?? (pending === 0 && total > 0)),
+        is_paid: Boolean(order.is_paid ?? order.isPaid ?? (pending === 0 && total > 0))
       })
       localStorage.setItem(ordersKey, JSON.stringify(filtered))
     } catch (e) {}
@@ -1083,7 +1158,16 @@ class SupabaseService {
       const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       const updated = existing.map((o: any) => {
         if (o.id === orderId) {
-          return { ...o, ...updates }
+          const merged = { ...o, ...updates }
+          if (updates.paidAmount !== undefined) merged.paid_amount = updates.paidAmount
+          if ((updates as any).paid_amount !== undefined) merged.paidAmount = (updates as any).paid_amount
+          if (updates.pendingBalance !== undefined) merged.pending_balance = updates.pendingBalance
+          if ((updates as any).pending_balance !== undefined) merged.pendingBalance = (updates as any).pending_balance
+          if (updates.paymentStatus !== undefined) merged.payment_status = updates.paymentStatus
+          if ((updates as any).payment_status !== undefined) merged.paymentStatus = (updates as any).payment_status
+          if (updates.isPaid !== undefined) merged.is_paid = updates.isPaid
+          if ((updates as any).is_paid !== undefined) merged.isPaid = (updates as any).is_paid
+          return merged
         }
         return o
       })

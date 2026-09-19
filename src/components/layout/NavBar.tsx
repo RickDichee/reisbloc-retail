@@ -31,8 +31,10 @@ import {
   Menu,
   X,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Building2
 } from 'lucide-react'
+import OrganizationSwitcherModal from './OrganizationSwitcherModal'
 
 export default function NavBar() {
   const location = useLocation()
@@ -43,6 +45,7 @@ export default function NavBar() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [supportsFullscreen, setSupportsFullscreen] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [showOrgSwitcher, setShowOrgSwitcher] = useState(false)
 
   const {
     notifications,
@@ -280,18 +283,26 @@ export default function NavBar() {
                 </button>
 
                 {/* Dropdown Menu Desktop */}
-                <div className="absolute right-0 mt-2 w-48 bg-[#0F172A] border border-slate-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-[60] overflow-hidden">
+                <div className="absolute right-0 mt-2 w-52 bg-[#0F172A] border border-slate-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-[60] overflow-hidden">
                   <div className="p-1.5 space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowOrgSwitcher(true)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-amber-300 hover:bg-slate-800 rounded-lg transition-colors text-left"
+                    >
+                      <Building2 size={15} className="text-amber-400 shrink-0" />
+                      <span>Cambiar de Negocio</span>
+                    </button>
                     <Link to="/settings" className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800 rounded-lg transition-colors">
-                      <Settings size={15} className="text-slate-400" />
+                      <Settings size={15} className="text-slate-400 shrink-0" />
                       <span>Configuración</span>
                     </Link>
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950/30 rounded-lg transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950/30 rounded-lg transition-colors text-left"
                     >
-                      <LogOut size={15} />
+                      <LogOut size={15} className="shrink-0" />
                       <span>Cerrar Sesión</span>
                     </button>
                   </div>
@@ -396,6 +407,18 @@ export default function NavBar() {
             <div className="p-3 border-t border-slate-800 bg-[#070A11] space-y-2 safe-bottom">
               <button
                 type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  setShowOrgSwitcher(true)
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-colors"
+              >
+                <Building2 size={16} />
+                <span>Cambiar de Negocio / Cliente</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-500/30 text-xs font-bold transition-colors"
               >
@@ -405,6 +428,14 @@ export default function NavBar() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal para cambiar de organización / negocio */}
+      {showOrgSwitcher && (
+        <OrganizationSwitcherModal
+          isOpen={showOrgSwitcher}
+          onClose={() => setShowOrgSwitcher(false)}
+        />
       )}
     </>
   )

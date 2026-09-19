@@ -181,8 +181,10 @@ export function AuthCallback() {
             .maybeSingle()
 
           const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+          const mgmtOrgId = '8fdd0efd-544a-4624-80a3-a6c26054f639'
           const isLu = userEmail.includes('lu.velazquez') || userEmail.includes('lu.velazquezz')
-          const isRick = userEmail === 'rick.playacar@gmail.com' || userEmail === 'airproject360@gmail.com'
+          const isRick = userEmail === 'rick.playacar@gmail.com'
+          const targetOrgId = isRick ? mgmtOrgId : (isMM || isLu ? mmDefaultOrgId : (existingUser?.organization_id || mgmtOrgId))
 
           if (isMM || isLu || isRick) {
             const roleToAssign = (isLu || isRick) ? 'admin' : 'cashier'
@@ -195,7 +197,7 @@ export function AuthCallback() {
                   email: userEmail,
                   name: userName,
                   role: roleToAssign,
-                  organization_id: mmDefaultOrgId,
+                  organization_id: targetOrgId,
                   active: true,
                   is_primary_admin: (isLu || isRick),
                   is_primary_user: (isLu || isRick)
@@ -209,7 +211,7 @@ export function AuthCallback() {
                 email: userEmail,
                 name: userName,
                 role: roleToAssign,
-                organization_id: mmDefaultOrgId,
+                organization_id: targetOrgId,
                 active: true
               }
             }
