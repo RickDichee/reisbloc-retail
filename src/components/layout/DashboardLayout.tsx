@@ -185,7 +185,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                         {isMini ? (
                                             <div className="h-px bg-slate-200 dark:bg-slate-800 w-full" />
                                         ) : (
-                                            <p className="text-[9.5px] font-black font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
+                                            <p className="text-[11px] font-bold font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider">{item.label}</p>
                                         )}
                                     </div>
                                 );
@@ -212,7 +212,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                             : isMM
                                                 ? 'text-slate-700 hover:bg-pink-50 hover:text-[#D4386C] border-transparent'
                                                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white border-transparent'
-                                    } ${isMini ? 'justify-center p-2' : 'p-2 gap-2.5'}`}
+                                    } ${isMini ? 'justify-center p-2' : 'p-2.5 gap-2.5'}`}
                                 >
                                     {item.icon && (
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
@@ -228,7 +228,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                     {!isMini && (
                                         <div className="flex-1 text-left min-w-0">
                                             <div className="flex items-center justify-between gap-1">
-                                                <span className={`text-xs font-black truncate leading-tight ${
+                                                <span className={`text-[13.5px] font-bold truncate leading-snug ${
                                                     isActive 
                                                         ? (isMM ? 'text-[#D4386C]' : 'text-teal-600 dark:text-teal-400')
                                                         : 'text-slate-800 dark:text-slate-200 group-hover:text-slate-950 dark:group-hover:text-white'
@@ -240,7 +240,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                                 )}
                                             </div>
                                             {(item as any).desc && (
-                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate leading-tight mt-0.5 font-medium">
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate leading-tight mt-0.5 font-medium">
                                                     {(item as any).desc}
                                                 </p>
                                             )}
@@ -263,10 +263,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         </div>
                         {!isMini && (
                             <div className="overflow-hidden animate-fadeIn min-w-0">
-                                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{currentUser?.username || 'Usuario'}</p>
+                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{currentUser?.username || 'Usuario'}</p>
                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                    <span className="text-[9px] text-slate-500 uppercase font-mono font-bold tracking-wider">{currentUser?.role || 'Staff'}</span>
-                                    <span className="text-[9px] font-mono text-slate-400">&middot; Plan {planName}</span>
+                                    <span className="text-[10px] text-slate-500 uppercase font-mono font-bold tracking-wider">{currentUser?.role || 'Staff'}</span>
+                                    <span className="text-[10.5px] font-mono text-slate-400">&middot; Plan {planName}</span>
                                 </div>
                             </div>
                         )}
@@ -309,7 +309,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             {/* Main Content */}
             <main className={`flex-1 flex flex-col h-full overflow-hidden relative ${accessibility.largeText ? 'text-lg' : ''} ${accessibility.highContrast ? 'high-contrast-mode' : ''}`}>
                 <div className={`flex-1 overflow-auto p-2 pb-20 md:pb-6 lg:p-6 ${accessibility.largeText ? 'text-lg' : ''}`}>
-                    <div className="max-w-7xl mx-auto h-full">
+                    <div className="w-full max-w-[1720px] mx-auto h-full">
                         {children}
                     </div>
                 </div>

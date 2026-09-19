@@ -367,7 +367,7 @@ export default function NavBar() {
 
                 return (
                   <div key={catIdx} className="space-y-1">
-                    <p className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 px-2 py-0.5 font-mono">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 py-0.5 font-mono">
                       {category.title}
                     </p>
                     <div className="space-y-1">
@@ -394,13 +394,13 @@ export default function NavBar() {
                                 <Icon size={16} />
                               </div>
                               <div className="min-w-0 text-left">
-                                <span className={`block font-black text-xs truncate leading-tight ${
+                                <span className={`block font-bold text-[13.5px] truncate leading-snug ${
                                   isActive ? 'text-teal-300' : 'text-slate-200'
                                 }`}>
                                   {item.label}
                                 </span>
                                 {(item as any).desc && (
-                                  <p className="text-[10px] text-slate-400 truncate leading-tight mt-0.5 font-medium">
+                                  <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5 font-medium">
                                     {(item as any).desc}
                                   </p>
                                 )}

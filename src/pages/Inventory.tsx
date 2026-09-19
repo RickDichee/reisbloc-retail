@@ -102,208 +102,212 @@ export default function Inventory() {
 
   return (
     <DashboardLayout>
-      <div className="relative space-y-8 p-4 sm:p-0">
-        {/* Header - Widget Premium Carbon Look */}
-        <div className="bg-slate-900 text-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/5 relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
-          <div className="px-6 py-6 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="p-4 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
-                <Package size={28} className="text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-0.5">Stock Central</p>
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase leading-none">Inventario</h1>
-                <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Gestión profesional de suministros y productos</p>
-              </div>
+      <div className="relative space-y-4 sm:space-y-5 p-2 sm:p-0">
+        {/* Header - Compact, Modern Fintech Look */}
+        <div className="bg-slate-900 text-white rounded-xl shadow-sm border border-slate-800 p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-lg border flex items-center justify-center shrink-0 ${
+              isModaMiel 
+                ? 'bg-[#D4386C]/15 border-[#D4386C]/30 text-[#D4386C]' 
+                : 'bg-teal-500/15 border-teal-500/30 text-teal-400'
+            }`}>
+              <Package size={20} />
             </div>
-            <div className="flex gap-2">
-              {canCreateProduct && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-8 py-4 rounded-2xl font-black flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_20px_rgba(16,185,129,0.3)] group"
-                >
-                  <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-                  NUEVO PRODUCTO
-                </button>
-              )}
-              {isAdminOrManager && (
-                <button
-                  onClick={() => setShowImportModal(true)}
-                  className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl font-black flex items-center gap-2 transition-all active:scale-95"
-                >
-                  IMPORTAR
-                </button>
-              )}
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-black tracking-tight text-white uppercase leading-none">Inventario</h1>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                  Stock Central
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium mt-1">Gestión de existencias, precios y códigos de barra</p>
             </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {canCreateProduct && (
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm ${
+                  isModaMiel 
+                    ? 'bg-[#D4386C] hover:bg-[#b82d5b] text-white' 
+                    : 'bg-teal-500 hover:bg-teal-400 text-slate-950 font-black'
+                }`}
+              >
+                <Plus size={16} />
+                <span>NUEVO PRODUCTO</span>
+              </button>
+            )}
+            {isAdminOrManager && (
+              <button
+                type="button"
+                onClick={() => setShowImportModal(true)}
+                className="px-3 py-2 rounded-lg font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center justify-center gap-1.5 transition-all"
+              >
+                IMPORTAR
+              </button>
+            )}
           </div>
         </div>
 
         {/* Search & Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-200 p-2 flex items-center gap-2">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={20} />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="flex-1 bg-white dark:bg-slate-900 rounded-lg shadow-2xs border border-slate-200 dark:border-slate-800 p-1 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
                 type="text"
                 placeholder="Buscar por Nombre, Categoría, SKU o Código..."
-                className="w-full pl-14 pr-6 py-3 bg-slate-50/50 border-none rounded-2xl focus:ring-0 outline-none font-bold text-slate-900"
+                className="w-full pl-9 pr-3 py-1.5 bg-transparent border-none rounded-md focus:ring-0 outline-none font-medium text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <button
+              type="button"
               onClick={() => setFilterLowStock(!filterLowStock)}
-              className={`p-4 rounded-2xl transition-all border flex items-center gap-2 font-bold text-xs ${filterLowStock
-                ? 'bg-red-50 border-red-200 text-red-600 shadow-inner'
-                : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50'
+              className={`px-2.5 py-1.5 rounded-md transition-all border flex items-center gap-1.5 font-bold text-xs shrink-0 ${filterLowStock
+                ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 text-rose-600 dark:text-rose-400 shadow-inner'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50'
                 }`}
             >
-              <AlertTriangle size={18} />
-              <span className="hidden sm:inline">STOCK BAJO</span>
+              <AlertTriangle size={14} />
+              <span className="hidden xs:inline">Stock Bajo</span>
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
-              <div className="text-3xl font-black text-slate-900">{filteredProducts.length}</div>
-            </div>
-            <div className="p-3 bg-slate-900 text-white rounded-2xl">
-              <Package size={20} />
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-2xs border border-slate-200 dark:border-slate-800 px-3.5 py-1.5 flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+            <span className="text-xs text-slate-500 font-medium">Total productos:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-black text-slate-900 dark:text-white font-mono leading-none">
+                {filteredProducts.length}
+              </span>
+              <Package size={15} className="text-slate-400" />
             </div>
           </div>
         </div>
 
         {/* Product Grid - Retail Optimized */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pb-20">
           {filteredProducts.map(product => (
             <div
               key={product.id}
-              className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group overflow-hidden flex flex-col"
+              className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 group overflow-hidden flex flex-col"
             >
-              <div className="p-5 flex-1 space-y-4">
+              <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
                 {/* Product Image */}
                 {product.image ? (
-                  <div className="w-full h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-50/80 border border-slate-100 flex items-center justify-center p-2">
+                  <div className="w-full h-36 sm:h-40 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-center p-1.5 relative">
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200 drop-shadow-xs"
                       onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
                     />
+                    {/* Floating Low Stock Badge */}
+                    {product.hasInventory && Number(product.currentStock) <= Number(product.minimumStock) && (
+                      <div className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[8.5px] font-black px-1.5 py-0.5 rounded shadow-xs flex items-center gap-0.5">
+                        <AlertTriangle size={9} />
+                        <span>BAJO</span>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="w-full h-24 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <Package size={32} className="text-slate-300" />
+                  <div className="w-full h-24 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Package size={24} className="text-slate-300 dark:text-slate-600" />
                   </div>
                 )}
 
-                {/* SKU Badge Prominente */}
-                {(product.sku || product.barcode) && (
-                  <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-900 border border-amber-300 font-mono font-black text-xs px-2.5 py-1 rounded-lg w-fit shadow-xs">
-                    <span>SKU:</span>
-                    <span>{product.sku || product.barcode}</span>
-                  </div>
-                )}
+                {/* SKU & Category Row */}
+                <div className="flex items-center justify-between gap-1 min-w-0">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate uppercase tracking-wider">
+                    {product.category || 'General'}
+                  </span>
+                  {(product.sku || product.barcode) && (
+                    <span className="inline-flex items-center font-mono font-bold text-[9.5px] bg-amber-500/10 text-amber-700 dark:text-amber-400 px-1.5 py-0.2 rounded border border-amber-500/20 truncate">
+                      {product.sku || product.barcode}
+                    </span>
+                  )}
+                </div>
 
-                {/* 1. Product Name (Top Priority) */}
-                <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-600 transition-colors line-clamp-2 uppercase tracking-tight leading-tight">
+                {/* Product Name */}
+                <h3 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors line-clamp-2 uppercase tracking-tight leading-tight min-h-[2rem]">
                   {product.name}
                 </h3>
 
-                {/* 2. Meta Info (Category, SKU, Stock Status) */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-indigo-600">
-                      {product.category || 'General'}
-                    </p>
-                    <div className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${product.hasInventory ? 'bg-slate-100 text-slate-600' : 'bg-slate-50 text-slate-400'}`}>
-                      {product.hasInventory ? 'Stock' : 'N/A'}
-                    </div>
-                  </div>
+                {/* Sizes pill if available */}
+                {(() => {
+                  if (!product.description) return null
+                  if (product.description.startsWith('{') && product.description.endsWith('}')) {
+                    try {
+                      const parsed = JSON.parse(product.description)
+                      if (parsed.sizes && Object.keys(parsed.sizes).length > 0) {
+                        const sizesText = Object.entries(parsed.sizes)
+                          .filter(([_, qty]) => (qty as number) > 0)
+                          .map(([sz, qty]) => `${sz}: ${qty}`)
+                          .join(' | ')
+                        if (!sizesText) return null
+                        return (
+                          <div className="text-[9px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate">
+                            {sizesText}
+                          </div>
+                        )
+                      }
+                    } catch (e) {}
+                  }
+                  return null
+                })()}
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {product.sku && (
-                      <div className="text-[11px] font-black text-amber-900 font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                        SKU: {product.sku}
-                      </div>
-                    )}
-                    {product.barcode && (
-                      <div className="text-[11px] font-bold text-slate-600 font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                        Cód: {product.barcode}
-                      </div>
-                    )}
-                  </div>
-                  {(() => {
-                    if (!product.description) return null
-                    if (product.description.startsWith('{') && product.description.endsWith('}')) {
-                      try {
-                        const parsed = JSON.parse(product.description)
-                        if (parsed.sizes && Object.keys(parsed.sizes).length > 0) {
-                          const sizesText = Object.entries(parsed.sizes)
-                            .filter(([_, qty]) => (qty as number) > 0)
-                            .map(([sz, qty]) => `${sz}: ${qty}`)
-                            .join(' | ')
-                          if (!sizesText) return null
-                          return (
-                            <div className="text-[9px] font-black text-indigo-950/80 bg-indigo-50 border border-indigo-100/50 px-2 py-1 rounded-xl flex items-center gap-1 mt-2">
-                              <span className="uppercase text-[8px] text-indigo-400 font-extrabold tracking-wider">Tallas:</span>
-                              <span className="font-mono">{sizesText}</span>
-                            </div>
-                          )
-                        }
-                      } catch (e) {}
-                    }
-                    return null
-                  })()}
-                </div>
-
-                <div className="flex items-end justify-between pt-2 border-t border-slate-50 mt-2">
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                      {isModaMiel ? 'Precio Paquete' : 'Precio'}
+                {/* Price & Stock Row */}
+                <div className="flex items-baseline justify-between pt-2 border-t border-slate-100 dark:border-slate-800 mt-auto">
+                  <div>
+                    <p className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">
+                      {isModaMiel ? 'Pqte' : 'Precio'}
                     </p>
-                    <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                    <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">
                       ${Number(product.packPrice || product.price || 0).toFixed(2)}
                     </div>
                   </div>
                   {product.hasInventory && (
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Existencia</p>
-                      <p className={`text-2xl font-black ${Number(product.currentStock) <= Number(product.minimumStock) ? 'text-red-500' : 'text-slate-950'}`}>
+                      <p className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">Stock</p>
+                      <p className={`text-base sm:text-lg font-black font-mono leading-none ${
+                        Number(product.currentStock) <= Number(product.minimumStock) 
+                          ? 'text-rose-500' 
+                          : 'text-slate-900 dark:text-white'
+                      }`}>
                         {product.currentStock}
                       </p>
-                      {Number(product.currentStock) <= Number(product.minimumStock) && (
-                        <div className="flex items-center gap-1 text-[8px] font-black text-red-500 uppercase mt-1 animate-pulse">
-                          <AlertTriangle size={8} /> Stock Bajo
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex gap-2">
+              {/* Action Buttons */}
+              <div className="px-2.5 py-2 bg-slate-50/80 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex gap-1.5">
                 <button
+                  type="button"
                   onClick={() => handlePrintLabel(product)}
-                  className="p-3 bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all rounded-xl shadow-sm text-xs font-black flex items-center justify-center group/print"
+                  className="p-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-all rounded-md text-xs font-bold flex items-center justify-center shrink-0 border border-purple-500/20"
                   title="Imprimir Etiqueta Térmica"
                 >
-                  <Printer size={16} className="group-hover/print:scale-110 transition-transform" />
+                  <Printer size={14} />
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleShareProduct(product)}
-                  className="flex-1 bg-white border border-slate-200 p-3 rounded-xl text-slate-600 hover:text-slate-900 hover:shadow-md transition-all flex items-center justify-center gap-2 text-xs font-black group/btn"
+                  className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-1.5 px-2 rounded-md text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-50 transition-all flex items-center justify-center gap-1 text-[11px] font-bold"
                 >
-                  <Share2 size={16} className="group-hover/btn:scale-110 transition-transform" />
-                  <span className="hidden xs:inline">SHARE</span>
+                  <Share2 size={13} />
+                  <span className="hidden xs:inline">Compartir</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setEditingProduct(product)}
-                  className="p-3 bg-slate-900 text-white rounded-xl hover:bg-emerald-500 hover:text-slate-950 transition-all shadow-lg shadow-slate-900/10 group/edit"
+                  className="p-1.5 bg-slate-900 dark:bg-slate-700 text-white rounded-md hover:bg-teal-500 hover:text-slate-950 transition-all text-xs font-bold flex items-center justify-center shrink-0"
+                  title="Editar Producto"
                 >
-                  <Edit2 size={16} className="group-edit:rotate-12 transition-transform" />
+                  <Edit2 size={14} />
                 </button>
               </div>
             </div>
