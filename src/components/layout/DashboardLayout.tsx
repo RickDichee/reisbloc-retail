@@ -21,10 +21,12 @@ import {
     Zap,
     Megaphone,
     Bot,
-    TrendingUp
+    TrendingUp,
+    Building2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import OrganizationSwitcherModal from './OrganizationSwitcherModal';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -37,6 +39,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const { logout } = useAuth();
     const { planName, isPro } = usePlanLimits();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [showOrgSwitcher, setShowOrgSwitcher] = useState(false);
     const [isMini, setIsMini] = useState(() => {
         const saved = localStorage.getItem('sidebar_mini');
         if (saved !== null) return saved === 'true';
@@ -54,45 +57,45 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
     const sections = [
         {
-            title: 'Sistema',
-            roles: ['admin'],
-            items: [
-                { label: 'Administración', icon: Shield, path: '/admin', roles: ['admin'] }
-            ]
-        },
-        {
-            title: 'IA & Marketing',
-            roles: ['admin', 'manager'],
-            items: [
-                { label: 'Marketing AI', icon: Megaphone, path: '/marketing', roles: ['admin', 'manager'] },
-                { label: 'IA Agent', icon: Bot, path: '/agent', roles: ['admin', 'manager'] },
-                { label: 'Analytics', icon: TrendingUp, path: '/analytics', roles: ['admin', 'manager'] }
-            ]
-        },
-        {
-            title: 'Operación',
+            title: 'Operación en Caja',
             roles: ['admin', 'manager', 'cashier', 'employee', 'supervisor'],
             items: [
-                { label: 'Punto de Venta', icon: Banknote, path: '/pos', roles: ['admin', 'manager', 'cashier', 'employee', 'supervisor'] },
-                { label: 'E-commerce', icon: Store, path: '/ecommerce', roles: ['admin', 'manager'] }
+                { label: 'Punto de Venta', desc: 'Cobro, tickets y apartados', icon: Banknote, path: '/pos', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', roles: ['admin', 'manager', 'cashier', 'employee', 'supervisor'] },
+                { label: 'Cierre de Caja', desc: 'Arqueo y balance de turno', icon: DollarSign, path: '/closing', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20', roles: ['admin', 'manager', 'cashier', 'supervisor'] },
+                { label: 'Tienda en Línea', desc: 'Catálogo y pedidos web', icon: Store, path: '/ecommerce', color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20', roles: ['admin', 'manager'] }
             ]
         },
         {
-            title: 'Gestión',
+            title: 'Inventario & Catálogo',
             roles: ['admin', 'manager', 'supervisor', 'cashier'],
             items: [
-                { label: 'Inventario', icon: Package, path: '/inventory', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-                { label: 'Clientes', icon: Users, path: '/clients', roles: ['admin', 'manager', 'supervisor'] },
-                { label: 'Reportes', icon: BarChart3, path: '/reports', roles: ['admin', 'manager', 'supervisor'] },
-                { label: 'Compras', icon: Coins, path: '/purchases', roles: ['admin', 'manager'] },
-                { label: 'Cierre de Caja', icon: DollarSign, path: '/closing', roles: ['admin', 'manager', 'cashier', 'supervisor'] }
+                { label: 'Inventario', desc: 'Stock y códigos de barra', icon: Package, path: '/inventory', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+                { label: 'Compras', desc: 'Entradas y proveedores', icon: Coins, path: '/purchases', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20', roles: ['admin', 'manager'] }
             ]
         },
         {
-            title: 'Configuración',
+            title: 'Clientes & Finanzas',
+            roles: ['admin', 'manager', 'supervisor'],
+            items: [
+                { label: 'Clientes', desc: 'Historial, saldos y crédito', icon: Users, path: '/clients', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20', roles: ['admin', 'manager', 'supervisor'] },
+                { label: 'Reportes', desc: 'Ventas y rendimiento', icon: BarChart3, path: '/reports', color: 'bg-teal-500/10 text-teal-500 border-teal-500/20', roles: ['admin', 'manager', 'supervisor'] }
+            ]
+        },
+        {
+            title: 'Inteligencia Artificial',
             roles: ['admin', 'manager'],
             items: [
-                { label: 'Accesibilidad y Diseño', icon: Settings, path: '/settings', roles: ['admin', 'manager'] }
+                { label: 'Marketing IA', desc: 'Promociones automáticas', icon: Megaphone, path: '/marketing', color: 'bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20', roles: ['admin', 'manager'] },
+                { label: 'Agente IA', desc: 'Asistente de negocio virtual', icon: Bot, path: '/agent', color: 'bg-sky-500/10 text-sky-500 border-sky-500/20', roles: ['admin', 'manager'] },
+                { label: 'Analytics', desc: 'Métricas predictivas', icon: TrendingUp, path: '/analytics', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', roles: ['admin', 'manager'] }
+            ]
+        },
+        {
+            title: 'Configuración & Sistema',
+            roles: ['admin', 'manager'],
+            items: [
+                { label: 'Administración', desc: 'Usuarios, roles y accesos', icon: Shield, path: '/admin', color: 'bg-rose-500/10 text-rose-500 border-rose-500/20', roles: ['admin'] },
+                { label: 'Configuración', desc: 'Ajustes de ticket y empresa', icon: Settings, path: '/settings', color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', roles: ['admin', 'manager'] }
             ]
         }
     ];
@@ -137,8 +140,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
             {/* Sidebar (Desktop static / Mobile slide-over drawer) */}
             <aside
                 className={`fixed md:static z-[70] inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200 dark:border-slate-800 transition-transform duration-300 ease-in-out flex flex-col pt-[calc(3.25rem+env(safe-area-inset-top,0px))] md:pt-0 ${
-                    isSidebarOpen ? 'translate-x-0 w-72 shadow-2xl' : '-translate-x-full md:translate-x-0'
-                } ${isMini ? 'md:w-20' : 'md:w-72'}`}
+                    isSidebarOpen ? 'translate-x-0 w-[290px] shadow-2xl' : '-translate-x-full md:translate-x-0'
+                } ${isMini ? 'md:w-20' : 'md:w-64'}`}
             >
                 {/* Logo Area / Mobile Header */}
                 <div className={`p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 ${isMini ? 'justify-center overflow-hidden' : ''}`}>
@@ -169,20 +172,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         className="md:hidden p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         aria-label="Cerrar barra lateral"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 </div>
 
-                <div className="p-3 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="p-2.5 overflow-y-auto flex-1 custom-scrollbar">
                     <nav className="space-y-1">
                         {finalMenuItems.map((item, idx) => {
                             if (item.isHeader) {
                                 return (
-                                    <div key={idx} className={`px-3 pt-5 pb-1.5 ${isMini ? 'flex justify-center' : ''}`}>
+                                    <div key={idx} className={`px-2 pt-4 pb-1 ${isMini ? 'flex justify-center' : ''}`}>
                                         {isMini ? (
                                             <div className="h-px bg-slate-200 dark:bg-slate-800 w-full" />
                                         ) : (
-                                            <p className="text-[10px] font-black font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
+                                            <p className="text-[9.5px] font-black font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
                                         )}
                                     </div>
                                 );
@@ -200,8 +203,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                             setIsSidebarOpen(false);
                                         }
                                     }}
-                                    title={isMini ? item.label : ''}
-                                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all duration-150 font-bold text-xs sm:text-sm group border ${
+                                    title={isMini ? `${item.label} - ${(item as any).desc || ''}` : ''}
+                                    className={`w-full flex items-center rounded-lg transition-all duration-150 group border ${
                                         isActive
                                             ? isMM
                                                 ? 'bg-pink-50 text-[#D4386C] border-pink-200 shadow-xs'
@@ -209,18 +212,40 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                                             : isMM
                                                 ? 'text-slate-700 hover:bg-pink-50 hover:text-[#D4386C] border-transparent'
                                                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white border-transparent'
-                                    } ${isMini ? 'justify-center gap-0' : 'gap-3'}`}
+                                    } ${isMini ? 'justify-center p-2' : 'p-2 gap-2.5'}`}
                                 >
                                     {item.icon && (
-                                        <item.icon
-                                            size={18}
-                                            className={isActive 
-                                                ? (isMM ? 'text-[#D4386C]' : 'text-teal-500 dark:text-teal-400') 
-                                                : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors'
-                                            }
-                                        />
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
+                                            isActive
+                                                ? isMM
+                                                    ? 'bg-[#D4386C] text-white border-[#D4386C] shadow-xs'
+                                                    : 'bg-teal-500 text-slate-950 border-teal-400 shadow-xs font-black'
+                                                : (item as any).color || 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                                        }`}>
+                                            <item.icon size={16} />
+                                        </div>
                                     )}
-                                    {!isMini && <span className="animate-fadeIn whitespace-nowrap">{item.label}</span>}
+                                    {!isMini && (
+                                        <div className="flex-1 text-left min-w-0">
+                                            <div className="flex items-center justify-between gap-1">
+                                                <span className={`text-xs font-black truncate leading-tight ${
+                                                    isActive 
+                                                        ? (isMM ? 'text-[#D4386C]' : 'text-teal-600 dark:text-teal-400')
+                                                        : 'text-slate-800 dark:text-slate-200 group-hover:text-slate-950 dark:group-hover:text-white'
+                                                }`}>
+                                                    {item.label}
+                                                </span>
+                                                {isActive && (
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse shrink-0" />
+                                                )}
+                                            </div>
+                                            {(item as any).desc && (
+                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate leading-tight mt-0.5 font-medium">
+                                                    {(item as any).desc}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </button>
                             );
                         })}
@@ -246,6 +271,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                             </div>
                         )}
                     </div>
+
+                    {!isMini && (
+                        <button
+                            type="button"
+                            onClick={() => setShowOrgSwitcher(true)}
+                            className="w-full flex items-center rounded-lg text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-all text-xs font-bold border border-amber-200 dark:border-amber-500/20 gap-2.5 px-3 py-2 mb-1.5"
+                        >
+                            <Building2 size={16} />
+                            <span className="truncate">Cambiar Negocio</span>
+                        </button>
+                    )}
 
                     <button
                         type="button"
@@ -309,6 +345,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     </button>
                 </div>
             </main>
+
+            {/* Modal para alternar organizaciones / negocios */}
+            {showOrgSwitcher && (
+                <OrganizationSwitcherModal
+                    isOpen={showOrgSwitcher}
+                    onClose={() => setShowOrgSwitcher(false)}
+                />
+            )}
         </div>
     );
 };

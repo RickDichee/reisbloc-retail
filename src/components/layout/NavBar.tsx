@@ -97,43 +97,43 @@ export default function NavBar() {
     {
       title: 'Operación Diaria',
       items: [
-        { path: '/pos', label: 'Punto de Venta', icon: ShoppingCart, roles: ['admin', 'manager', 'supervisor', 'cashier', 'employee'] },
-        { path: '/closing', label: 'Cierre de Caja', icon: DollarSign, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-        { path: '/ecommerce', label: 'Tienda en Línea', icon: ShoppingBag, roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/pos', label: 'Punto de Venta', desc: 'Caja rápida y tickets', icon: ShoppingCart, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier', 'employee'] },
+        { path: '/closing', label: 'Cierre de Caja', desc: 'Corte y arqueo de turno', icon: DollarSign, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/ecommerce', label: 'Tienda en Línea', desc: 'Catálogo y pedidos web', icon: ShoppingBag, color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20', roles: ['admin', 'manager', 'supervisor'] },
       ]
     },
     {
       title: 'Inventario y Catálogo',
       items: [
-        { path: '/inventory', label: 'Inventario', icon: Package, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-        { path: '/purchases', label: 'Compras', icon: ShoppingBag, roles: ['admin', 'manager'] },
-        { path: '/wholesale', label: 'Catálogo Mayorista', icon: Package, roles: ['admin', 'manager'] },
-        { path: '/wholesale-dashboard', label: 'Portal B2B', icon: Store, roles: ['admin', 'manager', 'wholesaler'] },
+        { path: '/inventory', label: 'Inventario', desc: 'Existencias y stock', icon: Package, color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/purchases', label: 'Compras', desc: 'Entradas y proveedores', icon: ShoppingBag, color: 'bg-orange-500/10 text-orange-400 border-orange-500/20', roles: ['admin', 'manager'] },
+        { path: '/wholesale', label: 'Catálogo Mayorista', desc: 'Precios por bulto y volumen', icon: Package, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', roles: ['admin', 'manager'] },
+        { path: '/wholesale-dashboard', label: 'Portal B2B', desc: 'Pedidos de clientes mayoristas', icon: Store, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', roles: ['admin', 'manager', 'wholesaler'] },
       ]
     },
     {
       title: 'Gestión Comercial',
       items: [
-        { path: '/clients', label: 'Clientes y Créditos', icon: Users, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-        { path: '/reports', label: 'Reportes Financieros', icon: BarChart3, roles: ['admin', 'manager', 'supervisor'] },
-        { path: '/invoicing', label: 'Facturación SAT CFDI', icon: Receipt, roles: ['admin'] },
+        { path: '/clients', label: 'Clientes & Créditos', desc: 'Historial y apartados', icon: Users, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/reports', label: 'Reportes Financieros', desc: 'Ventas y balance diario', icon: BarChart3, color: 'bg-teal-500/10 text-teal-400 border-teal-500/20', roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/invoicing', label: 'Facturación SAT', desc: 'Timbrado CFDI 4.0', icon: Receipt, color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', roles: ['admin'] },
       ]
     },
     {
       title: 'Inteligencia Artificial',
       items: [
-        { path: '/agent', label: 'Agente Copiloto IA', icon: Bot, roles: ['admin', 'manager', 'supervisor'] },
-        { path: '/marketing', label: 'Marketing WhatsApp', icon: Megaphone, roles: ['admin', 'manager'] },
-        { path: '/analytics', label: 'Analytics Predictivo', icon: TrendingUp, roles: ['admin', 'manager'] },
+        { path: '/agent', label: 'Agente Copiloto IA', desc: 'Asistente de negocio virtual', icon: Bot, color: 'bg-sky-500/10 text-sky-400 border-sky-500/20', roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/marketing', label: 'Marketing WhatsApp', desc: 'Campañas automáticas', icon: Megaphone, color: 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20', roles: ['admin', 'manager'] },
+        { path: '/analytics', label: 'Analytics Predictivo', desc: 'Tendencias y proyecciones', icon: TrendingUp, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', roles: ['admin', 'manager'] },
       ]
     },
     {
       title: 'Administración y Ajustes',
       items: [
-        { path: '/admin', label: 'Panel de Administración', icon: Shield, roles: ['admin'] },
-        { path: '/branches', label: 'Sucursales', icon: Store, roles: ['admin'] },
-        { path: '/settings', label: 'Configuración y Diseño', icon: Settings, roles: ['admin', 'manager'] },
-        { path: '/referral', label: 'Programa de Referidos', icon: Gift, roles: ['admin', 'manager'] },
+        { path: '/admin', label: 'Administración', desc: 'Control de usuarios y roles', icon: Shield, color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', roles: ['admin'] },
+        { path: '/branches', label: 'Sucursales', desc: 'Gestión multitienda', icon: Store, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', roles: ['admin'] },
+        { path: '/settings', label: 'Configuración', desc: 'Ajustes de ticket y empresa', icon: Settings, color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', roles: ['admin', 'manager'] },
+        { path: '/referral', label: 'Referidos', desc: 'Programa de recompensas', icon: Gift, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', roles: ['admin', 'manager'] },
       ]
     }
   ]
@@ -326,19 +326,19 @@ export default function NavBar() {
           />
 
           {/* Drawer Content */}
-          <div className="relative w-[86vw] max-w-sm bg-[#0B0F19] text-white border-r border-slate-800 flex flex-col h-full shadow-2xl z-10 animate-fadeIn">
+          <div className="relative w-[290px] max-w-[85vw] bg-[#0B0F19] text-white border-r border-slate-800 flex flex-col h-full shadow-2xl z-10 animate-fadeIn">
             {/* Drawer Header */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3 bg-[#0F172A]/80">
+            <div className="p-3.5 border-b border-slate-800 flex items-center justify-between gap-3 bg-[#0F172A]/90">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-lg overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0">
+                <div className="w-9 h-9 rounded-lg overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0">
                   <img src={BRANDING.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-black text-sm text-white truncate">
+                  <h3 className="font-black text-xs text-white truncate">
                     {organizationSettings?.businessName || BRANDING.appName}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] font-mono uppercase bg-teal-500/15 text-teal-400 px-1.5 py-0.2 rounded border border-teal-500/30 font-bold">
+                    <span className="text-[9px] font-mono uppercase bg-teal-500/15 text-teal-400 px-1.5 py-0.2 rounded border border-teal-500/30 font-bold">
                       {currentRole}
                     </span>
                     <span className="text-[10px] text-slate-400 truncate">
@@ -350,15 +350,15 @@ export default function NavBar() {
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                 aria-label="Cerrar menú"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Drawer Body (Navigation List) */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-2.5 space-y-3.5 custom-scrollbar">
               {allNavCategories.map((category, catIdx) => {
                 const userFilteredItems = category.items.filter(item => 
                   item.roles.includes(currentUser?.role || '')
@@ -367,10 +367,10 @@ export default function NavBar() {
 
                 return (
                   <div key={catIdx} className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 py-1 font-mono">
+                    <p className="text-[9.5px] font-black uppercase tracking-wider text-slate-400 px-2 py-0.5 font-mono">
                       {category.title}
                     </p>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       {userFilteredItems.map((item) => {
                         const Icon = item.icon
                         const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
@@ -379,20 +379,37 @@ export default function NavBar() {
                             key={item.path}
                             to={item.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                            className={`flex items-center justify-between p-2 rounded-lg transition-all border ${
                               isActive 
-                                ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30 font-black'
-                                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                                ? 'bg-teal-500/15 text-teal-300 border-teal-500/40 shadow-xs'
+                                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white border-transparent'
                             }`}
                           >
-                            <div className="flex items-center gap-2.5">
-                              <Icon size={16} className={isActive ? 'text-teal-400' : 'text-slate-400'} />
-                              <span>{item.label}</span>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
+                                isActive
+                                  ? 'bg-teal-500 text-slate-950 border-teal-400 shadow-xs font-black'
+                                  : (item as any).color || 'bg-slate-800 text-slate-400 border-slate-700'
+                              }`}>
+                                <Icon size={16} />
+                              </div>
+                              <div className="min-w-0 text-left">
+                                <span className={`block font-black text-xs truncate leading-tight ${
+                                  isActive ? 'text-teal-300' : 'text-slate-200'
+                                }`}>
+                                  {item.label}
+                                </span>
+                                {(item as any).desc && (
+                                  <p className="text-[10px] text-slate-400 truncate leading-tight mt-0.5 font-medium">
+                                    {(item as any).desc}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             {isActive ? (
-                              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shrink-0 ml-1" />
                             ) : (
-                              <ChevronRight size={14} className="text-slate-600" />
+                              <ChevronRight size={14} className="text-slate-600 shrink-0 ml-1" />
                             )}
                           </Link>
                         )
