@@ -49,7 +49,7 @@ export function getBranding(isMM: boolean = false, customSettings?: any) {
     poweredByUrl: 'Visítanos en: store.reisbloc.com',
     poweredByTagline: 'Integra el Poder de la IA en tu negocio',
 
-    logoUrl: isMM ? '/images/moda-miel-mx-logo.jpeg' : (customSettings?.logoUrl || '/icon.svg'),
+    logoUrl: isMM ? '/images/moda-miel-mx-logo.jpeg' : (customSettings?.logoUrl || '/images/logoNew.jpg'),
     bannerUrl: isMM ? '/images/moda-miel-mx-banner.jpeg' : undefined,
     loginSubtitle: isMM ? 'Accede a tu sistema POS de Moda Miel MX' : 'Accede a tu punto de venta',
     loadingTitle: isMM ? 'Moda Miel MX' : (customSettings?.businessName || 'Reisbloc Store'),
@@ -148,7 +148,7 @@ export const BRANDING = {
     return 'Integra el Poder de la IA en tu negocio'
   },
   get logoUrl() {
-    return checkIsModaMiel() ? '/images/moda-miel-mx-logo.jpeg' : '/icon.svg'
+    return checkIsModaMiel() ? '/images/moda-miel-mx-logo.jpeg' : '/images/logoNew.jpg'
   },
   get bannerUrl() {
     return checkIsModaMiel() ? '/images/moda-miel-mx-banner.jpeg' : undefined

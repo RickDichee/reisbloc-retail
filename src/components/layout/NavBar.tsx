@@ -27,7 +27,11 @@ import {
   TrendingUp,
   Receipt,
   Gift,
-  Store
+  Store,
+  Menu,
+  X,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react'
 
 export default function NavBar() {
@@ -38,6 +42,7 @@ export default function NavBar() {
   const { currentRole } = usePermissions()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [supportsFullscreen, setSupportsFullscreen] = useState(true)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const {
     notifications,
@@ -70,6 +75,11 @@ export default function NavBar() {
     return () => document.removeEventListener('fullscreenchange', handleFsChange)
   }, [])
 
+  // Cerrar menú móvil al cambiar de ruta
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [location.pathname])
+
   if (location.pathname === '/login' || !currentUser) {
     return null
   }
@@ -80,151 +90,322 @@ export default function NavBar() {
     }
   }
 
-  const navItems = [
-    { path: '/pos', label: 'Ventas', icon: ShoppingCart, roles: ['admin', 'manager', 'supervisor', 'cashier', 'employee'] },
-    { path: '/inventory', label: 'Inventario', icon: Package, roles: ['admin', 'manager', 'supervisor'] },
-    { path: '/reports', label: 'Reportes', icon: BarChart3, roles: ['admin', 'manager', 'supervisor'] },
-    { path: '/clients', label: 'Clientes', icon: Users, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-    { path: '/ecommerce', label: 'Tienda', icon: ShoppingBag, roles: ['admin', 'manager', 'supervisor'] },
-    { path: '/purchases', label: 'Compras', icon: ShoppingBag, roles: ['admin', 'manager'] },
-    { path: '/closing', label: 'Cierre', icon: DollarSign, roles: ['admin', 'manager'] },
-    { path: '/marketing', label: 'Marketing', icon: Megaphone, roles: ['admin'] },
-    { path: '/wholesale', label: 'Catálogo Mayorista', icon: Package, roles: ['admin', 'manager'] },
-    { path: '/wholesale-dashboard', label: 'Portal B2B', icon: Store, roles: ['admin', 'manager', 'wholesaler'] },
-    { path: '/agent', label: 'IA Agent', icon: Bot, roles: ['admin', 'manager', 'supervisor'] },
-    { path: '/analytics', label: 'Analytics', icon: TrendingUp, roles: ['admin', 'manager'] },
-    { path: '/invoicing', label: 'Facturas', icon: Receipt, roles: ['admin'] },
-    { path: '/referral', label: 'Referidos', icon: Gift, roles: ['admin', 'manager'] },
-    { path: '/admin', label: 'Admin', icon: Shield, roles: ['admin'] },
-    { path: '/settings', label: 'Ajustes', icon: Settings, roles: ['admin'] },
+  const allNavCategories = [
+    {
+      title: 'Operación Diaria',
+      items: [
+        { path: '/pos', label: 'Punto de Venta', icon: ShoppingCart, roles: ['admin', 'manager', 'supervisor', 'cashier', 'employee'] },
+        { path: '/closing', label: 'Cierre de Caja', icon: DollarSign, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/ecommerce', label: 'Tienda en Línea', icon: ShoppingBag, roles: ['admin', 'manager', 'supervisor'] },
+      ]
+    },
+    {
+      title: 'Inventario y Catálogo',
+      items: [
+        { path: '/inventory', label: 'Inventario', icon: Package, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/purchases', label: 'Compras', icon: ShoppingBag, roles: ['admin', 'manager'] },
+        { path: '/wholesale', label: 'Catálogo Mayorista', icon: Package, roles: ['admin', 'manager'] },
+        { path: '/wholesale-dashboard', label: 'Portal B2B', icon: Store, roles: ['admin', 'manager', 'wholesaler'] },
+      ]
+    },
+    {
+      title: 'Gestión Comercial',
+      items: [
+        { path: '/clients', label: 'Clientes y Créditos', icon: Users, roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/reports', label: 'Reportes Financieros', icon: BarChart3, roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/invoicing', label: 'Facturación SAT CFDI', icon: Receipt, roles: ['admin'] },
+      ]
+    },
+    {
+      title: 'Inteligencia Artificial',
+      items: [
+        { path: '/agent', label: 'Agente Copiloto IA', icon: Bot, roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/marketing', label: 'Marketing WhatsApp', icon: Megaphone, roles: ['admin', 'manager'] },
+        { path: '/analytics', label: 'Analytics Predictivo', icon: TrendingUp, roles: ['admin', 'manager'] },
+      ]
+    },
+    {
+      title: 'Administración y Ajustes',
+      items: [
+        { path: '/admin', label: 'Panel de Administración', icon: Shield, roles: ['admin'] },
+        { path: '/branches', label: 'Sucursales', icon: Store, roles: ['admin'] },
+        { path: '/settings', label: 'Configuración y Diseño', icon: Settings, roles: ['admin', 'manager'] },
+        { path: '/referral', label: 'Programa de Referidos', icon: Gift, roles: ['admin', 'manager'] },
+      ]
+    }
   ]
 
-  const visibleItems = navItems.filter(item => {
-    const hasRole = item.roles.includes(currentUser?.role || '')
-    if (!hasRole) return false
-    const favNavbar = organizationSettings?.favorites?.navbar || ['/pos', '/inventory', '/reports']
-    return favNavbar.includes(item.path)
-  })
+  const isMM = BRANDING.isModaMiel
+
+  // Desktop quick favorites
+  const favNavbar = organizationSettings?.favorites?.navbar || ['/pos', '/inventory', '/clients', '/reports', '/closing']
+  const desktopQuickItems = allNavCategories
+    .flatMap(cat => cat.items)
+    .filter(item => item.roles.includes(currentUser?.role || '') && favNavbar.includes(item.path))
 
   return (
-    <nav
-      className="text-white shadow-lg fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500 pt-[env(safe-area-inset-top,0px)]"
-      style={{
-        background: 'var(--primary, #E62E6B)',
-        borderBottomColor: 'var(--secondary, #FF7597)',
-        borderBottomWidth: '2px'
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-2 sm:px-4">
-        <div className="flex items-center justify-between min-h-[3.25rem] sm:min-h-[4rem] py-1 sm:py-0 gap-2">
-          <div className="flex items-center gap-2 shrink-0">
-            {currentUser?.avatar_url ? (
-              <img src={currentUser.avatar_url} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover shadow-md ring-2 ring-white/40" />
-            ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white text-[#E62E6B] rounded-xl flex items-center justify-center font-black text-lg sm:text-xl shadow-md ring-2 ring-white/40">
-                {currentUser?.businessName?.[0] || BRANDING.appName?.[0] || 'M'}
-              </div>
-            )}
-            <h1 className="font-black text-sm sm:text-lg tracking-tight hidden xs:block text-white drop-shadow-xs font-['Playfair_Display',serif]">
-              {currentUser?.businessName || BRANDING.appName}
-            </h1>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-1.5 flex-wrap py-1 flex-1 justify-start">
-            {visibleItems.map(item => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-extrabold transition-all whitespace-nowrap text-sm ${isActive
-                    ? 'bg-white text-[#E62E6B] shadow-md scale-105 border border-white'
-                    : 'text-white/90 hover:bg-white/20 hover:text-white'
-                    }`}
-                >
-                  <Icon size={18} className={`sm:w-5 sm:h-5 ${isActive ? 'text-[#E62E6B]' : 'text-white'}`} />
-                  <span className="hidden lg:inline">{item.label}</span>
-                </Link>
-              )
-            })}
-          </div>
-
-          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
-            <Link
-              to="/help"
-              className="p-2.5 text-white/90 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 border border-transparent hover:border-white/30"
-              title="Centro de Ayuda"
-            >
-              <LifeBuoy size={20} />
-            </Link>
-
-            {supportsFullscreen && (
+    <>
+      <nav
+        className="text-white shadow-md fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 pt-[env(safe-area-inset-top,0px)]"
+        style={{
+          background: isMM ? 'var(--primary, #D4386C)' : '#0B0F19',
+          borderBottomColor: isMM ? 'var(--secondary, #FF7597)' : 'rgba(255, 255, 255, 0.08)',
+          borderBottomWidth: '1px'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-2 sm:px-4">
+          <div className="flex items-center justify-between min-h-[3.25rem] sm:min-h-[3.75rem] py-1 sm:py-0 gap-2">
+            
+            {/* Left Section: Mobile Menu Trigger + Brand Logo */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {/* Mobile Hamburger Button */}
               <button
-                onClick={toggleFullScreen}
-                className="p-2.5 text-white/90 hover:text-white hover:bg-white/20 rounded-full transition-all duration-300 border border-transparent hover:border-white/30"
-                title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+                type="button"
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="lg:hidden p-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors active:scale-95"
+                title="Abrir menú de navegación"
+                aria-label="Abrir menú"
               >
-                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                <Menu size={22} />
               </button>
-            )}
 
-            <button
-              onClick={() => changeLanguage(i18n.language === 'es' ? 'en' : 'es')}
-              className="px-3 py-1.5 text-xs font-black bg-white/20 hover:bg-white/30 border border-white/30 rounded-full transition-all text-white"
-              title="Cambiar idioma"
-            >
-              {i18n.language === 'es' ? 'EN' : 'ES'}
-            </button>
-
-            <div className="relative">
-              <NotificationCenter
-                notifications={notifications}
-                unreadCount={unreadCount}
-                onMarkAsRead={markAsRead}
-                onMarkAllAsRead={markAllAsRead}
-              />
+              <Link to="/pos" className="flex items-center gap-2 group">
+                <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border ${
+                  isMM ? 'bg-white/15 border-white/30' : 'bg-slate-900 border-amber-500/30'
+                }`}>
+                  {currentUser?.avatar_url ? (
+                    <img src={currentUser.avatar_url} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <img src={BRANDING.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  )}
+                </div>
+                <div className="hidden xs:block">
+                  <h1 className="font-black text-xs sm:text-sm tracking-tight text-white leading-none truncate max-w-[130px] sm:max-w-[180px]">
+                    {organizationSettings?.businessName || currentUser?.businessName || BRANDING.appName}
+                  </h1>
+                  <span className={`text-[9px] font-mono font-bold block uppercase tracking-widest mt-0.5 ${
+                    isMM ? 'text-pink-200' : 'text-amber-400'
+                  }`}>
+                    {BRANDING.whiteLabelName}
+                  </span>
+                </div>
+              </Link>
             </div>
 
-            {/* User Profile Menu */}
-            <div className="relative group">
-              <button
-                onClick={() => navigate('/settings')}
-                className="flex items-center gap-2 p-1 pr-3 bg-white/20 hover:bg-white/30 rounded-full border border-white/30 backdrop-blur-sm transition-all duration-300 group-hover:border-white/60"
+            {/* Desktop Navigation Links */}
+            <div className="hidden lg:flex items-center gap-1.5 flex-1 justify-start ml-4">
+              {desktopQuickItems.map(item => {
+                const Icon = item.icon
+                const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap text-xs sm:text-sm border ${
+                      isActive
+                        ? isMM 
+                          ? 'bg-white text-[#D4386C] shadow-sm border-white' 
+                          : 'bg-teal-500/15 text-teal-300 border-teal-500/40 shadow-xs'
+                        : isMM
+                          ? 'text-white/90 hover:bg-white/15 hover:text-white border-transparent'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white border-transparent'
+                    }`}
+                  >
+                    <Icon size={16} className={isActive ? (isMM ? 'text-[#D4386C]' : 'text-teal-400') : 'opacity-80'} />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+
+            {/* Right Action Icons */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <Link
+                to="/help"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                title="Centro de Ayuda"
               >
-                <div className="w-8 h-8 rounded-full bg-white text-[#E62E6B] flex items-center justify-center shadow-sm font-black">
-                  <User size={16} className="text-[#E62E6B]" />
-                </div>
-                <div className="text-left hidden sm:block">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-white bg-black/20 px-1.5 py-0.5 rounded border border-white/20 leading-none mb-0.5 inline-block">
-                    {currentRole}
-                  </div>
-                  <div className="text-xs font-bold text-white leading-none truncate max-w-[80px]">
-                    {currentUser?.username}
-                  </div>
-                </div>
+                <LifeBuoy size={18} />
+              </Link>
+
+              {supportsFullscreen && (
+                <button
+                  type="button"
+                  onClick={toggleFullScreen}
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all hidden sm:flex"
+                  title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+                >
+                  {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => changeLanguage(i18n.language === 'es' ? 'en' : 'es')}
+                className="px-2.5 py-1 text-[11px] font-black bg-white/10 hover:bg-white/20 border border-white/20 rounded-md transition-all text-white font-mono"
+                title="Cambiar idioma"
+              >
+                {i18n.language === 'es' ? 'EN' : 'ES'}
               </button>
 
-              {/* Dropdown Menu (Hover based for quick access) */}
-              <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-[60] overflow-hidden">
-                <div className="p-2 space-y-1">
-                  <Link to="/settings" className="flex items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-white/5 rounded-xl transition-colors">
-                    <Settings size={16} className="text-gray-500" />
-                    <span>Configuración</span>
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
-                  >
-                    <LogOut size={16} />
-                    <span>Cerrar Sesión</span>
-                  </button>
+              <div className="relative">
+                <NotificationCenter
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                />
+              </div>
+
+              {/* User Profile Menu */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings')}
+                  className="flex items-center gap-1.5 p-1 sm:pr-2.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/15 transition-all"
+                >
+                  <div className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs ${
+                    isMM ? 'bg-white text-[#D4386C]' : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                  }`}>
+                    {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div className="text-left hidden md:block">
+                    <div className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-300 leading-none mb-0.5">
+                      {currentRole}
+                    </div>
+                    <div className="text-xs font-bold text-white leading-none truncate max-w-[90px]">
+                      {currentUser?.username}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Dropdown Menu Desktop */}
+                <div className="absolute right-0 mt-2 w-48 bg-[#0F172A] border border-slate-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-[60] overflow-hidden">
+                  <div className="p-1.5 space-y-0.5">
+                    <Link to="/settings" className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800 rounded-lg transition-colors">
+                      <Settings size={15} className="text-slate-400" />
+                      <span>Configuración</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950/30 rounded-lg transition-colors"
+                    >
+                      <LogOut size={15} />
+                      <span>Cerrar Sesión</span>
+                    </button>
+                  </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* ========================================================================= */}
+      {/* MOBILE NAVIGATION DRAWER (Slide-Over Sheet) */}
+      {/* ========================================================================= */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-[100] flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* Drawer Content */}
+          <div className="relative w-[86vw] max-w-sm bg-[#0B0F19] text-white border-r border-slate-800 flex flex-col h-full shadow-2xl z-10 animate-fadeIn">
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between gap-3 bg-[#0F172A]/80">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-lg overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0">
+                  <img src={BRANDING.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-black text-sm text-white truncate">
+                    {organizationSettings?.businessName || BRANDING.appName}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] font-mono uppercase bg-teal-500/15 text-teal-400 px-1.5 py-0.2 rounded border border-teal-500/30 font-bold">
+                      {currentRole}
+                    </span>
+                    <span className="text-[10px] text-slate-400 truncate">
+                      {currentUser?.username}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                aria-label="Cerrar menú"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Drawer Body (Navigation List) */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar">
+              {allNavCategories.map((category, catIdx) => {
+                const userFilteredItems = category.items.filter(item => 
+                  item.roles.includes(currentUser?.role || '')
+                )
+                if (userFilteredItems.length === 0) return null
+
+                return (
+                  <div key={catIdx} className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 py-1 font-mono">
+                      {category.title}
+                    </p>
+                    <div className="space-y-0.5">
+                      {userFilteredItems.map((item) => {
+                        const Icon = item.icon
+                        const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                              isActive 
+                                ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30 font-black'
+                                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <Icon size={16} className={isActive ? 'text-teal-400' : 'text-slate-400'} />
+                              <span>{item.label}</span>
+                            </div>
+                            {isActive ? (
+                              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+                            ) : (
+                              <ChevronRight size={14} className="text-slate-600" />
+                            )}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-3 border-t border-slate-800 bg-[#070A11] space-y-2 safe-bottom">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-500/30 text-xs font-bold transition-colors"
+              >
+                <LogOut size={16} />
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

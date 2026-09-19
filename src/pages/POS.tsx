@@ -1299,7 +1299,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-          <Loader2 className="w-8 h-8 text-[#D4386C] animate-spin mb-1" />
+          <Loader2 className="w-8 h-8 text-teal-500 animate-spin mb-1" />
           <p className="text-slate-500 font-bold text-sm">Cargando catálogo de productos...</p>
           <button
             type="button"
@@ -1315,7 +1315,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
 
   return (
     <DashboardLayout>
-      <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
+      <div className="min-h-full md:h-[calc(100vh-5rem)] flex flex-col gap-4">
         {/* Mobile Sticky Header Bar */}
         <div className="flex md:hidden items-center justify-between bg-white p-3 rounded-xl border border-gray-200 shadow-sm shrink-0">
           <div className="flex items-center gap-2">

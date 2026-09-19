@@ -61,28 +61,36 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#070A11] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-pink-500/15 mb-4 overflow-hidden border border-pink-400/30">
+          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-xl mb-4 overflow-hidden border shadow-xl ${
+            BRANDING.isModaMiel 
+              ? 'bg-pink-500/10 border-pink-500/30' 
+              : 'bg-slate-900 border-amber-500/30 shadow-amber-500/5'
+          }`}>
             <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-4xl font-black text-white mb-2">{BRANDING.appName}</h1>
-          <p className="text-gray-400 text-lg">{BRANDING.loginSubtitle}</p>
-          <div className="text-xs text-pink-400 mt-2 uppercase tracking-widest font-bold">{BRANDING.whiteLabelName}</div>
+          <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 tracking-tight">{BRANDING.appName}</h1>
+          <p className="text-slate-400 text-sm sm:text-base font-medium">{BRANDING.loginSubtitle}</p>
+          <div className={`text-xs mt-2 uppercase tracking-widest font-bold font-mono ${
+            BRANDING.isModaMiel ? 'text-pink-400' : 'text-amber-400'
+          }`}>
+            {BRANDING.whiteLabelName}
+          </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 rounded-2xl text-red-400 text-sm text-center">
+          <div className="mb-6 p-4 bg-red-950/40 border border-red-500/50 rounded-xl text-red-300 text-sm text-center">
             {error}
           </div>
         )}
 
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl">
+        <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-6 sm:p-8 shadow-2xl space-y-4">
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+            className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3.5 px-6 rounded-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-sm active:scale-[0.99]"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -90,14 +98,14 @@ export default function Login() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.08l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            {loading ? 'Conectando...' : 'Continuar con Google'}
-            {!loading && <ArrowRight size={20} />}
+            <span className="text-sm sm:text-base">{loading ? 'Conectando con Google...' : 'Continuar con Google'}</span>
+            {!loading && <ArrowRight size={18} />}
           </button>
         </div>
 
-        <p className="mt-8 text-center text-gray-500 text-sm">
+        <p className="mt-8 text-center text-slate-500 text-sm">
           ¿No tienes cuenta?{' '}
-          <button onClick={() => navigate('/register')} className="text-emerald-400 hover:underline">
+          <button onClick={() => navigate('/register')} className="text-teal-400 hover:text-teal-300 font-bold hover:underline">
             Regístrate gratis
           </button>
         </p>
