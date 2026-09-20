@@ -13,16 +13,22 @@ class SyncService {
     /**
      * Agrega una operación a la cola. Si hay internet, intenta sincronizar de inmediato.
      */
-    async queueOperation(action: SyncOperation['action'], payload: any): Promise<void> {
+    async queueOperation(
+        action: SyncOperation['action'],
+        payload: any,
+        options: { processImmediately?: boolean } = {}
+    ): Promise<string> {
         logger.info('sync', `[Offline Queue] Formando operación: ${action}`)
-        await offlineStorage.addToSyncQueue({
+        // Persist before a network attempt. This is the durable outbox: a browser
+        // crash or a lost HTTP response cannot make a confirmed sale disappear.
+        const operationId = await offlineStorage.addToSyncQueue({
             action,
             payload
         })
-
-        if (navigator.onLine) {
-            this.processQueue()
+        if (options.processImmediately !== false && navigator.onLine) {
+            void this.processQueue()
         }
+        return operationId
     }
 
     /**
@@ -88,7 +94,9 @@ class SyncService {
             case 'CREATE_RETAIL_SALE':
                 await supabaseService.createRetailSale(op.payload.sale, op.payload.items, {
                     ...op.payload.options,
-                    clientMutationId: op.id
+                    // The mutation id belongs to the business intent, not to a
+                    // particular sync attempt. Older queued records use op.id.
+                    clientMutationId: op.payload.sale?.clientMutationId || op.id
                 })
                 break
             case 'CREATE_ORDER':

@@ -5,6 +5,8 @@
 
 import logger from '@/utils/logger'
 
+const CLIP_PAYMENTS_ENABLED = false
+
 export interface PinpadPaymentResponse {
   pinpad_request_id?: string
   reference?: string
@@ -47,6 +49,9 @@ class ClipPinpadService {
    * Envía una intención de cobro a la terminal física Clip Total 3
    */
   public async createPayment(amount: number, reference?: string): Promise<PinpadPaymentResponse> {
+    if (!CLIP_PAYMENTS_ENABLED) {
+      throw new Error('Los cobros por Clip están temporalmente deshabilitados.')
+    }
     const serial = this.getSerialNumber()
     if (!serial) {
       throw new Error('No hay terminal Clip configurada. Configura el número de serie antes de cobrar.')

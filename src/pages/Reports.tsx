@@ -43,8 +43,9 @@ import AIInsightsWidget from '@/components/common/AIInsightsWidget'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useTokens } from '@/hooks/useTokens'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
+import SalesHistoryTab from '@/components/reports/SalesHistoryTab'
 
-type ReportTab = 'sales' | 'inventory' | 'employees' | 'goals' | 'purchases' | 'tokens'
+type ReportTab = 'sales' | 'tickets' | 'inventory' | 'employees' | 'goals' | 'purchases' | 'tokens'
 
 export default function Reports() {
   const { currentUser } = useAppStore()
@@ -237,6 +238,7 @@ export default function Reports() {
         <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
           {[
             { id: 'sales' as const, label: '📊 Ventas', enabled: canViewSalesReport },
+            { id: 'tickets' as const, label: '🧾 Historial Tickets', enabled: canViewSalesReport },
             { id: 'inventory' as const, label: '📦 Inventario', enabled: true },
             { id: 'employees' as const, label: '👥 Empleados', enabled: canViewEmployeeMetrics },
             { id: 'goals' as const, label: '🎯 Metas', enabled: true },
@@ -477,6 +479,11 @@ export default function Reports() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Tickets / Sales History Report */}
+        {activeTab === 'tickets' && canViewSalesReport && (
+          <SalesHistoryTab dateRange={dateRange} />
         )}
 
         {/* Inventory Report */}

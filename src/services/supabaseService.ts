@@ -1879,40 +1879,13 @@ class SupabaseService {
       }
 
       if (rpcError) {
-        logger.warn('supabase', 'get_public_storefront_catalog RPC failed, using scoped fallback query', rpcError as any)
+        logger.warn('supabase', 'get_public_storefront_catalog RPC failed; returning no catalog', rpcError as any)
       }
-
-      const { data } = await supabase
-        .from('retail_products')
-        .select('id, name, price, category, description, image, current_stock, minimum_stock, has_inventory, active, pack_quantity, sku, created_at, updated_at')
-        .eq('organization_id', organization.id)
-        .eq('active', true)
-        .or('has_inventory.eq.false,current_stock.gt.0')
-        .order('name', { ascending: true })
-
-      return (data || []).map((p: any) => ({
-        ...p,
-        id: p.id,
-        name: p.name || 'Producto Sin Nombre',
-        price: p.price || 0,
-        category: p.category || 'General',
-        description: p.description || '',
-        imageUrl: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-        image: p.image_url || p.image || 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
-        isAvailable: true,
-        active: true,
-        stock: p.stock ?? p.current_stock ?? 10,
-        currentStock: p.current_stock ?? p.stock ?? 10,
-        minimumStock: p.minimum_stock || 1,
-        hasInventory: p.has_inventory ?? true,
-        packQuantity: p.pack_quantity || 6,
-        packPrice: p.price || 0,
-        sku: p.sku || `MM-${p.id?.slice(0, 6)}`,
-        createdAt: new Date(p.created_at || Date.now()),
-        updatedAt: new Date(p.updated_at || Date.now())
-      })) as Product[]
+      // Public catalog access is fail-closed and RPC-only. A direct table
+      // fallback would make its RLS contract dependent on deployment state.
+      return []
     } catch (error) {
-      logger.error('getPublicProducts exception', error)
+      logger.error('supabase', 'getPublicProducts exception', error)
       return []
     }
   }
@@ -1942,13 +1915,13 @@ class SupabaseService {
         .order('name', { ascending: true })
 
       if (invError) {
-        logger.error('getStoreInventoryBySlug', invError)
+        logger.error('supabase', 'getStoreInventoryBySlug inventory query failed', invError)
         return { store, inventory: [] }
       }
 
       return { store, inventory: inventory || [] }
     } catch (error) {
-      logger.error('getStoreInventoryBySlug', error)
+      logger.error('supabase', 'getStoreInventoryBySlug failed', error)
       throw error
     }
   }
@@ -2421,97 +2394,20 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         }
       })
 
-      // 1. Procesamiento atómico transaccional vía PostgreSQL RPC (ACID)
-      try {
-        const { data: rpcData, error: rpcError } = await supabase.rpc('process_retail_sale_transaction', {
-          p_sale: insertPayload,
-          p_items: sanitizedItems,
-          p_options: {
-            skip_stock_deduction: Boolean(options?.skipStockDeduction),
-            client_mutation_id: insertPayload.client_mutation_id
-          }
-        })
-
-        if (!rpcError && rpcData?.sale_id) {
-          return rpcData.sale_id
+      // Confirmed retail sales are RPC-only. A sequential fallback would create
+      // partial sales when a later stock/client/audit step fails.
+      const { data: rpcData, error: rpcError } = await supabase.rpc('process_retail_sale_transaction', {
+        p_sale: insertPayload,
+        p_items: sanitizedItems,
+        p_options: {
+          skip_stock_deduction: Boolean(options?.skipStockDeduction),
+          client_mutation_id: insertPayload.client_mutation_id
         }
+      })
 
-        if (rpcError) {
-          logger.warn('supabase', 'RPC process_retail_sale_transaction error, attempting sequential fallback:', rpcError)
-        }
-      } catch (rpcErr) {
-        logger.warn('supabase', 'Exception calling process_retail_sale_transaction RPC:', rpcErr)
-      }
-
-      // 2. Fallback secuencial en caso de error o entorno legado
-      const { data: saleData, error: saleError } = await supabase
-        .from('retail_sales')
-        .insert([insertPayload])
-        .select('id')
-        .single()
-
-      if (saleError) throw saleError
-
-      // Create sale items
-      const itemsPayload = sanitizedItems.map(item => ({
-        sale_id: saleData.id,
-        product_id: item.productId,
-        product_name: item.productName,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total_price: item.totalPrice
-      }))
-
-      const { error: itemsError } = await supabase.from('retail_sale_items').insert(itemsPayload)
-      if (itemsError) {
-        logger.error('supabase', 'Error inserting retail_sale_items in fallback', itemsError as any)
-        throw itemsError
-      }
-
-      // Update client total spent if associated
-      if (sale.clientId && uuidRegex.test(sale.clientId)) {
-        try {
-          const { data: clientData, error: clientErr } = await supabase
-            .from('clients')
-            .select('total_spent')
-            .eq('id', sale.clientId)
-            .single()
-          
-          if (!clientErr && clientData) {
-            const currentSpent = parseFloat(clientData.total_spent || 0)
-            const newSpent = currentSpent + parseFloat(sale.total)
-            await supabase
-              .from('clients')
-              .update({ total_spent: newSpent })
-              .eq('id', sale.clientId)
-          }
-        } catch (clientErr) {
-          logger.warn('supabase', 'Error updating client spent in fallback', clientErr)
-        }
-      }
-
-      // Update stock for items that have inventory
-      if (!options?.skipStockDeduction) {
-        const aggregatedStock: Record<string, number> = {}
-        items.forEach(item => {
-          const rawProductId = item.productId || item.id || ''
-          if (!rawProductId || rawProductId.toLowerCase().startsWith('manual-') || !uuidRegex.test(rawProductId)) return
-          const targetId = (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : rawProductId
-          const qtyToDeduct = (Number(item.quantity) || 1) * (item.packQuantity || 1)
-          aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct
-        })
-
-        const stockUpdates = Object.entries(aggregatedStock).map(([productId, quantity]) => ({
-          productId,
-          quantity
-        }))
-
-        if (stockUpdates.length > 0) {
-          await this.updateRetailStockBatch(stockUpdates)
-        }
-      }
-
-      return saleData.id
+      if (rpcError) throw rpcError
+      if (!rpcData?.sale_id) throw new Error('La transacción de venta no devolvió un identificador de venta')
+      return rpcData.sale_id
     } catch (error) {
       logger.error('supabase', 'Error creating retail sale', error as any)
       throw error
@@ -2673,7 +2569,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
   }
 
   async getClientPurchaseHistory(clientId: string, clientName: string): Promise<{ sales: any[]; pendingOrders: any[]; totalDebt: number }> {
-    let sales: any[] = []
+    const sales: any[] = []
     let pendingOrders: any[] = []
     let totalDebt = 0
 

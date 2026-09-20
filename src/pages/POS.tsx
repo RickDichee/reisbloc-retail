@@ -18,6 +18,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { Product, OrderItem, Order } from '@/types/index'
 import { shiftService } from '@/services/shiftService'
 import { syncService } from '@/services/syncService'
+import { offlineStorage } from '@/services/offlineStorage'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { useTenantTheme } from '@/hooks/useTenantTheme'
@@ -600,7 +601,7 @@ export default function POS() {
     const scanned = code.trim().toLowerCase()
 
     let isPackScan = false
-    let matchedProduct = products.find(p => {
+    const matchedProduct = products.find(p => {
       const pPiece = (p.barcode || p.sku || '').trim().toLowerCase()
       const pPack = ((p as any).barcode_pack || (p as any).barcodePack || `${pPiece}-paq`).toLowerCase()
       
@@ -618,8 +619,8 @@ export default function POS() {
     const packQty = explicitPackQty > 1 ? explicitPackQty : 10
 
     const rawPrice = Number(matchedProduct.price || 0)
-    let wholesalePrice = Number(matchedProduct.wholesalePrice || (matchedProduct as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-    let packPrice = Number((matchedProduct as any).packPrice || (matchedProduct as any).pack_price || parsedDesc.packPrice || 0)
+    const wholesalePrice = Number(matchedProduct.wholesalePrice || (matchedProduct as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    const packPrice = Number((matchedProduct as any).packPrice || (matchedProduct as any).pack_price || parsedDesc.packPrice || 0)
 
     let extractedPriceFromName: number | null = null
     const nameStr = matchedProduct.name || ''
@@ -783,8 +784,8 @@ export default function POS() {
     const packQty = explicitPackQty > 1 ? explicitPackQty : 10
 
     const rawPrice = Number(product.price || 0)
-    let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-    let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+    const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
 
     let namePrice: number | null = null
     if (product.name && product.name.includes('$')) {
@@ -851,7 +852,7 @@ export default function POS() {
       return
     }
 
-    let clientInfo = selectedClient 
+    const clientInfo = selectedClient 
       ? `${selectedClient.name} ${selectedClient.phone ? `(Tel: ${selectedClient.phone})` : ''}`
       : prompt('Nombre / Datos del cliente para guardar este pedido/apartado:')
 
@@ -1175,7 +1176,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
-      const salePayload = {
+      const salePayload: any = {
         tableNumber,
         subtotal: paymentPanel.orderTotal,
         total: result.total,
@@ -1187,46 +1188,40 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         clientPhone: selectedClient?.phone
       }
 
-      if (navigator.onLine) {
-        try {
-          await supabaseService.createRetailSale(salePayload, allItems, { skipStockDeduction: isCheckingOutPendingOrder })
-        } catch (saleErr: any) {
-          logger.warn('pos', 'Error al procesar venta en línea, respaldando en cola offline:', saleErr)
-          await syncService.queueOperation('CREATE_RETAIL_SALE', {
-            sale: salePayload,
-            items: allItems,
-            options: { skipStockDeduction: isCheckingOutPendingOrder }
-          })
+      // Persist a single idempotency key before networking. The same intent is
+      // retried after an ambiguous timeout, so it can be confirmed once only.
+      const clientMutationId = crypto.randomUUID()
+      salePayload.clientMutationId = clientMutationId
+      const syncOperationId = await syncService.queueOperation('CREATE_RETAIL_SALE', {
+        sale: salePayload,
+        items: allItems,
+        options: {
+          skipStockDeduction: isCheckingOutPendingOrder,
+          reservedOrderIds: isCheckingOutPendingOrder ? orderIds : []
         }
-      } else {
-        logger.info('pos', 'Dispositivo sin conexión, registrando venta en cola offline.')
-        await syncService.queueOperation('CREATE_RETAIL_SALE', {
-          sale: salePayload,
-          items: allItems,
-          options: { skipStockDeduction: isCheckingOutPendingOrder }
-        })
+      }, { processImmediately: false })
+
+      if (navigator.onLine) {
+        await syncService.processQueue()
+      }
+
+      const pendingSaleOperation = await offlineStorage.getSyncOperation(syncOperationId)
+      const salePendingSync = Boolean(pendingSaleOperation)
+      if (salePendingSync) {
+        logger.warn('pos', 'Venta confirmada localmente y pendiente de sincronización', { clientMutationId })
+        alert('Venta registrada de forma segura en este dispositivo. Queda pendiente de sincronización y no debes cobrarla nuevamente.')
       }
 
       // Si proviene de órdenes pendientes, marcarlas como completadas y remover de caché local
-      if (orderIds && orderIds.length > 0) {
+      if (!salePendingSync && orderIds && orderIds.length > 0) {
         for (const oId of orderIds) {
-          try {
-            const matchingOrder = ordersToProcess.find(o => o.id === oId)
-            const finalOrderTotal = Number(matchingOrder?.total || result.total)
-            await supabaseService.updateOrder(oId, {
-              status: 'completed',
-              isPaid: true,
-              paymentStatus: 'paid',
-              pendingBalance: 0,
-              paidAmount: finalOrderTotal
-            })
-            supabaseService.removeLocalPendingOrder(oId)
-          } catch (ordErr) {
-            logger.warn('pos', 'Error completing pending order in Supabase:', ordErr)
-          }
+          // The RPC closes the reserved order in the same transaction as the sale.
+          supabaseService.removeLocalPendingOrder(oId)
         }
         const refreshed = await supabaseService.getActiveOrders()
         setActiveOrdersList(refreshed || [])
+      } else if (salePendingSync && orderIds && orderIds.length > 0) {
+        logger.info('pos', 'Pedido pendiente se conserva abierto hasta confirmar la venta sincronizada.')
       }
 
       // Descontar inventario en memoria para actualización visual instantánea
