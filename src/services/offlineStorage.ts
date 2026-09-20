@@ -204,6 +204,17 @@ class OfflineStorageService {
         }
     }
 
+    async getSyncOperation(id: string, explicitOrgId?: string): Promise<SyncOperation | undefined> {
+        try {
+            const orgId = this.resolveOrgId(explicitOrgId)
+            const db = await initOfflineDB(orgId)
+            return await db.get('sync_queue', id)
+        } catch (error) {
+            logger.error('offline', 'Error getting sync operation from IDB', error)
+            return undefined
+        }
+    }
+
     async updateSyncOperation(id: string, updates: Partial<SyncOperation>, explicitOrgId?: string): Promise<void> {
         try {
             const orgId = this.resolveOrgId(explicitOrgId)

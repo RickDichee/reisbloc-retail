@@ -21,6 +21,7 @@ export default function OrganizationSwitcherModal({ isOpen, onClose }: Organizat
   const [organizations, setOrganizations] = useState<OrgItem[]>([])
   const [loading, setLoading] = useState(true)
   const [switchingId, setSwitchingId] = useState<string | null>(null)
+  const [isSupportUser, setIsSupportUser] = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
@@ -29,6 +30,15 @@ export default function OrganizationSwitcherModal({ isOpen, onClose }: Organizat
     async function loadOrgs() {
       try {
         setLoading(true)
+        const { data: hasSupportAccess, error: supportError } = await supabase.rpc('is_platform_support')
+        if (supportError || !hasSupportAccess) {
+          if (isMounted) {
+            setIsSupportUser(false)
+            setOrganizations([])
+          }
+          return
+        }
+        if (isMounted) setIsSupportUser(true)
         const { data, error } = await supabase
           .from('organizations')
           .select('id, name, slug, plan, status')
@@ -59,18 +69,9 @@ export default function OrganizationSwitcherModal({ isOpen, onClose }: Organizat
 
     try {
       setSwitchingId(targetOrg.id)
-      
-      // 1. Actualizar fila de usuario en Supabase
-      const { error } = await supabase
-        .from('users')
-        .update({ organization_id: targetOrg.id, updated_at: new Date().toISOString() })
-        .eq('id', currentUser.id)
 
-      if (error) {
-        console.warn('Advertencia actualizando organization_id en DB:', error.message)
-      }
-
-      // 2. Actualizar currentUser en store global (dispara purga de drafts/productos anteriores)
+      // Support context is deliberately local. Mutating users.organization_id
+      // would silently move a real user between tenants.
       const updatedUser = {
         ...currentUser,
         organizationId: targetOrg.id,
@@ -78,7 +79,7 @@ export default function OrganizationSwitcherModal({ isOpen, onClose }: Organizat
       }
       setCurrentUser(updatedUser)
 
-      // 3. Limpiar tema y recargar contexto para aplicar configuraciones frescas
+      // Reload with the selected, RLS-authorized support context.
       setTimeout(() => {
         window.location.href = '/pos'
       }, 400)
@@ -120,6 +121,8 @@ export default function OrganizationSwitcherModal({ isOpen, onClose }: Organizat
               <Loader2 className="w-6 h-6 animate-spin text-teal-400" />
               <p className="text-xs font-mono uppercase tracking-wider">Cargando organizaciones...</p>
             </div>
+          ) : !isSupportUser ? (
+            <p className="text-center py-8 text-xs text-slate-400">Esta función está reservada para soporte autorizado.</p>
           ) : organizations.length === 0 ? (
             <p className="text-center py-8 text-xs text-slate-400">No hay organizaciones disponibles.</p>
           ) : (

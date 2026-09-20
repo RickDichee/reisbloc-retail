@@ -23,7 +23,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
   const pieceCode = product.barcode || product.sku || `750${Math.floor(1000000000 + Math.random() * 9000000000)}`
   const packCode = product.barcode_pack || (product as any).barcodePack || `${pieceCode}-PAQ`
 
-  let explicitPackQty = Number(
+  const explicitPackQty = Number(
     parsedDesc.packQty ||
     parsedDesc.pack_quantity ||
     (product as any).packQty ||
@@ -46,7 +46,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
 
   const rawPrice = Number(product.price || 0)
   let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-  let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+  const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
 
   // Extraer precio del título de Moda Miel MX si viene formateado con $ (Ej: $45 - Blusa Miel)
   let extractedPriceFromName: number | null = null
@@ -76,7 +76,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
   }
 
   // 3. PRECIO MENUDEO INDIVIDUAL (retailPiecePrice)
-  let retailPiecePrice = rawPrice > unitPackPrice ? rawPrice : Math.round(unitPackPrice * 1.3)
+  const retailPiecePrice = rawPrice > unitPackPrice ? rawPrice : Math.round(unitPackPrice * 1.3)
   if (wholesalePrice === 0) {
     wholesalePrice = Math.round(unitPackPrice * 1.15)
   }

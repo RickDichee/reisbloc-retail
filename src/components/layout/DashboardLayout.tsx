@@ -308,14 +308,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
             {/* Main Content */}
             <main className={`flex-1 flex flex-col h-full overflow-hidden relative ${accessibility.largeText ? 'text-lg' : ''} ${accessibility.highContrast ? 'high-contrast-mode' : ''}`}>
-                <div className={`flex-1 overflow-auto p-2 pb-20 md:pb-6 lg:p-6 ${accessibility.largeText ? 'text-lg' : ''}`}>
+                <div className={`flex-1 overflow-auto p-2 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] scroll-pb-[calc(6rem+env(safe-area-inset-bottom,0px))] md:pb-6 lg:p-6 ${accessibility.largeText ? 'text-lg' : ''}`}>
                     <div className="w-full max-w-[1720px] mx-auto h-full">
                         {children}
                     </div>
                 </div>
 
                 {/* Mobile Sticky Bottom Navigation (Accessible thumb bar) */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-around py-1 safe-bottom w-full shadow-lg">
+                <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 min-h-[4.5rem] bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-around py-1 safe-bottom w-full shadow-lg">
                     {mobileBottomItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));

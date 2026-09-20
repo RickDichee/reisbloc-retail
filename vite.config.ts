@@ -25,6 +25,10 @@ type ClipServerConfig = {
   webhookUrl: string
 }
 
+// Keep the local proxy code for the future audited rollout, but fail closed
+// until the payment integration is explicitly enabled platform-wide.
+const CLIP_PAYMENTS_ENABLED = false
+
 function loadClipServerConfig(): { config: ClipServerConfig | null; missing: string[] } {
   const required = ['CLIP_API_KEY', 'CLIP_API_SECRET', 'CLIP_PINPAD_SERIAL', 'CLIP_WEBHOOK_URL'] as const
   const missing = required.filter((key) => !process.env[key] || !(process.env[key] as string).trim())
@@ -62,6 +66,13 @@ function clipPinpadDevPlugin(): Plugin {
     if (req.method === 'OPTIONS') {
       res.statusCode = 200
       res.end()
+      return
+    }
+
+    if (!CLIP_PAYMENTS_ENABLED) {
+      res.statusCode = 503
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Los cobros por Clip están temporalmente deshabilitados.' }))
       return
     }
 

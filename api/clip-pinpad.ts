@@ -10,6 +10,10 @@ type ClipServerConfig = {
   webhookUrl: string
 }
 
+// Emergency feature flag: preserve the endpoint implementation for the audited
+// rollout, but never permit a charge while Clip is disabled platform-wide.
+const CLIP_PAYMENTS_ENABLED = false
+
 function loadClipServerConfig(): { config: ClipServerConfig | null; missing: string[] } {
   const required = ['CLIP_API_KEY', 'CLIP_API_SECRET', 'CLIP_PINPAD_SERIAL', 'CLIP_WEBHOOK_URL'] as const
   const missing = required.filter((key) => !process.env[key] || !(process.env[key] as string).trim())
@@ -42,6 +46,10 @@ export default async function handler(req: any, res: any) {
   if (req.method === 'OPTIONS') {
     res.status(200).end()
     return
+  }
+
+  if (!CLIP_PAYMENTS_ENABLED) {
+    return res.status(503).json({ error: 'Los cobros por Clip están temporalmente deshabilitados.' })
   }
 
   const clipConfig = loadClipServerConfig()

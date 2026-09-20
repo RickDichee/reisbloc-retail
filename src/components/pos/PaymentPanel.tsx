@@ -5,6 +5,10 @@ import clipPinpadService from '@/services/clipPinpadService'
 import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X, Smartphone } from 'lucide-react'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 
+// The modal and integration code stay in place for controlled re-enablement,
+// but no tenant may initiate a Clip charge until its end-to-end flow is audited.
+const CLIP_PAYMENTS_ENABLED = false
+
 export interface PaymentResult {
   transactionId: string
   paymentMethod: 'cash' | 'card_mercadopago' | 'card' | 'clip'
@@ -46,6 +50,9 @@ export default function PaymentPanel({
 
   const handlePayment = async () => {
     try {
+      if (paymentMethod === 'clip' && !CLIP_PAYMENTS_ENABLED) {
+        throw new Error('Los cobros por Clip están temporalmente deshabilitados.')
+      }
       setLoading(true)
       setError(null)
       setClipStatusMessage(null)
@@ -216,14 +223,14 @@ export default function PaymentPanel({
 
                 <button
                   onClick={() => setPaymentMethod('clip')}
-                  disabled={loading || success}
-                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'clip'
+                  disabled={loading || success || !CLIP_PAYMENTS_ENABLED}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all disabled:cursor-not-allowed disabled:opacity-50 ${paymentMethod === 'clip'
                     ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg ring-2 ring-amber-400'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                 >
                   <Smartphone size={22} strokeWidth={2.5} />
-                  <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Clip Total 3</span>
+                  <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Clip {CLIP_PAYMENTS_ENABLED ? 'Total 3' : 'No disponible'}</span>
                 </button>
 
                 <button

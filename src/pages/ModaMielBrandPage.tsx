@@ -169,9 +169,9 @@ export default function ModaMielBrandPage() {
     const hasExplicitPackQty = explicitPackQty > 1
     const packQty = hasExplicitPackQty ? explicitPackQty : 1
 
-    let rawPrice = Number(product.price || 0)
-    let wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-    let packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+    const rawPrice = Number(product.price || 0)
+    const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
 
     let extractedPriceFromName: number | null = null
     const nameStr = product.name || ''
