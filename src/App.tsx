@@ -165,8 +165,6 @@ function AppLayout() {
             element={
               isCapacitor ? (
                 <Navigate to={homeTarget} replace />
-              ) : isModaMiel ? (
-                <ModaMielBrandPage />
               ) : (
                 <LandingPage />
               )
