@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/config/supabase';
 import { getPlanPrice, getPlanDisplayName, type PlanType } from '@/config/plans';
 import { ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { initiateGoogleOAuth } from '@/utils/oauthHelper';
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -21,15 +22,10 @@ const Register = () => {
       setLoading(true)
       setError(null)
       
-      const redirectTo = window.location.origin + '/auth/callback' + (selectedPlan !== 'free' ? `?plan=${selectedPlan}` : '')
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo
-        }
+      await initiateGoogleOAuth({
+        plan: selectedPlan !== 'free' ? selectedPlan : undefined,
+        ref: referralCode || undefined
       })
-      if (error) throw error
     } catch (err: any) {
       console.error('Google auth error:', err)
       setError(err.message || 'Error al iniciar con Google')

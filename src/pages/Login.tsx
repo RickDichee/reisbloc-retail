@@ -4,6 +4,7 @@ import { supabase } from '@/config/supabase'
 import { BRANDING } from '@/config/branding'
 import { ArrowRight } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
+import { initiateGoogleOAuth } from '@/utils/oauthHelper'
 
 export default function Login() {
   const [loading, setLoading] = useState(false)
@@ -44,16 +45,10 @@ export default function Login() {
       const errParam = params.get('error')
       // Evitar re-enviar brand en el callback si vino de un error de aislamiento previo
       const shouldPassBrand = brandParam && !errParam
-      const redirectUrl = window.location.origin + '/auth/callback' + (shouldPassBrand ? `?brand=${brandParam}` : '')
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl
-        }
+      await initiateGoogleOAuth({
+        brand: shouldPassBrand ? brandParam : undefined
       })
-
-      if (error) throw error
     } catch (err: any) {
       setError(err?.message || 'Error al iniciar con Google')
       setLoading(false)

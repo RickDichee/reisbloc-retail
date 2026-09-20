@@ -1,5 +1,8 @@
 import { useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { App as CapApp } from '@capacitor/app'
+import { Browser } from '@capacitor/browser'
+import { Capacitor } from '@capacitor/core'
 import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
 import { supabase, forceAuthHeader } from '@/config/supabase'
@@ -56,8 +59,66 @@ function PageLoader() {
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const { accessibility, currentUser, isAuthenticated, logout } = useAppStore()
   const { isModaMiel } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
+
+  // 🔗 Escuchar Deep Links en Capacitor para OAuth Callback
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+
+    const listenerPromise = CapApp.addListener('appUrlOpen', async (data) => {
+      try {
+        await Browser.close()
+      } catch {}
+
+      if (!data?.url) return
+
+      try {
+        const rawUrl = data.url
+        // URL puede ser: com.reisbloclabs.pos://auth/callback#access_token=... o https://store.reisbloc.com/auth/callback#...
+        if (rawUrl.includes('access_token')) {
+          const hashIndex = rawUrl.indexOf('#')
+          if (hashIndex !== -1) {
+            const hashString = rawUrl.substring(hashIndex + 1)
+            const params = new URLSearchParams(hashString)
+            let accessToken = params.get('access_token')
+            const refreshToken = params.get('refresh_token')
+            if (accessToken) {
+              accessToken = accessToken.trim()
+              if (accessToken.startsWith('.')) {
+                accessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' + accessToken
+              }
+              await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken || ''
+              })
+            }
+          }
+        } else if (rawUrl.includes('code=')) {
+          const queryIndex = rawUrl.indexOf('?')
+          if (queryIndex !== -1) {
+            const queryString = rawUrl.substring(queryIndex + 1).split('#')[0]
+            const params = new URLSearchParams(queryString)
+            const code = params.get('code')
+            if (code) {
+              await supabase.auth.exchangeCodeForSession(code)
+            }
+          }
+        }
+
+        // Navegar a /auth/callback para que ejecute la sincronización de organización y perfiles
+        navigate('/auth/callback', { replace: true })
+      } catch (deepLinkErr) {
+        console.error('Error procesando deep link en appUrlOpen:', deepLinkErr)
+        navigate('/auth/callback', { replace: true })
+      }
+    })
+
+    return () => {
+      listenerPromise.then(handle => handle.remove()).catch(() => {})
+    }
+  }, [navigate])
 
   // Ocultar NavBar en landing, login, registro, invitaciones, legales y portada de tienda
   const isPublicPage = 

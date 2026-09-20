@@ -23,6 +23,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- OAuth Deep Link: Custom Scheme (com.reisbloclabs.pos://auth/callback) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.reisbloclabs.pos" />
+            </intent-filter>
+
+            <!-- OAuth App Links / Universal Links -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="store.reisbloc.com" android:pathPrefix="/auth" />
+                <data android:scheme="https" android:host="reisbloc.store" android:pathPrefix="/auth" />
+                <data android:scheme="https" android:host="reisbloc.com" android:pathPrefix="/auth" />
+            </intent-filter>
+
             <!-- Privacy Policy Link -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />

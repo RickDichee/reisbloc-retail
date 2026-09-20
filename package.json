@@ -19,6 +19,8 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/browser": "^8.0.4",
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.93.1",
     "@types/dompurify": "^3.0.5",

@@ -19,6 +19,7 @@ import { resetTenantTheme } from '@/hooks/useTenantTheme'
 
 import logger from '@/utils/logger'
 import { User } from '@/types/index'
+import { initiateGoogleOAuth } from '@/utils/oauthHelper'
 
 
 /**
@@ -70,33 +71,12 @@ export async function loginWithEmail(email: string, password: string): Promise<a
  */
 export async function loginWithGoogle(): Promise<{ error?: string }> {
   try {
-    const redirectTo = `${window.location.origin}/admin`
-    logger.info('auth', '🌍 Iniciando login con Google...', {
-      redirectTo,
-      origin: window.location.origin
-    })
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    })
-
-    if (error) {
-      logger.error('auth', '❌ Error inicializando OAuth', error)
-      throw error
-    }
-
-    logger.info('auth', '✅ Redirección OAuth iniciada', data)
+    logger.info('auth', '🌍 Iniciando login con Google...')
+    await initiateGoogleOAuth()
     return {}
   } catch (error: any) {
     logger.error('auth', '❌ Error en login con Google', error)
-    return { error: error.message }
+    return { error: error.message || 'Error al iniciar sesión con Google' }
   }
 }
 
