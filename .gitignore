@@ -105,3 +105,4 @@ MASTER_PLAN.md
 .vercel
 my-agent/
 .env*
+.andromity/

@@ -412,7 +412,7 @@ export default function POS() {
   const isReadOnly = currentUser?.role === 'supervisor'
 
 
-  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('pieza')
+  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto' | 'medio_paquete'>('paquete')
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
 
   const priceModeRef = useRef(priceMode)
@@ -746,6 +746,25 @@ export default function POS() {
     const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
     const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
     const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
+
+    // 👗 REGLA ESTRICTA MODAMIEL: Únicamente Paquete Completo o Medio Paquete (Sin venta por pieza unitaria ni mayoreo suelto)
+    if (isModaMiel) {
+      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+      const fullPackQty = explicitPackQty > 1 ? explicitPackQty : 10
+      const isFullPack = isPackageMode || priceMode === 'paquete'
+      const count = isFullPack ? fullPackQty : Math.max(1, Math.round(fullPackQty / 2))
+
+      const computedProduct = {
+        ...product,
+        price: unitPackPrice,
+        packQuantity: 1
+      }
+
+      for (let i = 0; i < count; i++) {
+        addItemToDraft(tableNumber, computedProduct, currentUser.id)
+      }
+      return
+    }
 
     // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
     if (isPackageMode || priceMode === 'paquete') {
@@ -1176,13 +1195,26 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
+      let saleNotes = isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail'
+      if (result.transferDetails) {
+        const { bank, reference, notes: tNotes } = result.transferDetails
+        const parts = [
+          bank ? `Banco: ${bank}` : '',
+          reference ? `Ref/Rastreo: ${reference}` : '',
+          tNotes ? `Titular/Nota: ${tNotes}` : ''
+        ].filter(Boolean)
+        if (parts.length > 0) {
+          saleNotes = `${saleNotes}\n[Transferencia: ${parts.join(' | ')}]`
+        }
+      }
+
       const salePayload: any = {
         tableNumber,
         subtotal: paymentPanel.orderTotal,
         total: result.total,
         paymentMethod: mappedMethod,
         saleBy: currentUser.id,
-        notes: isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail',
+        notes: saleNotes,
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
         clientPhone: selectedClient?.phone
@@ -1521,9 +1553,19 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               </button>
 
               <button
-                onClick={() => setShowManualAdjustModal(true)}
+                onClick={() => {
+                  if (isModaMiel) {
+                    const userRole = (currentUser?.role || '').toLowerCase()
+                    const isAuthorized = ['admin', 'manager', 'supervisor', 'gerente'].includes(userRole)
+                    if (!isAuthorized) {
+                      alert('🔒 ACCESO RESTRINGIDO: En ModaMielMX, los ajustes manuales de precios y cantidades están reservados exclusivamente para Gerencia y Administradores.')
+                      return
+                    }
+                  }
+                  setShowManualAdjustModal(true)
+                }}
                 className="p-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl transition-all shadow-xs active:scale-95"
-                title="Ajuste Manual de Ticket (Piezas y Precios)"
+                title="Ajuste Manual de Ticket (Piezas y Precios - Exclusivo Gerencia/Admin)"
               >
                 <SlidersHorizontal size={16} />
               </button>
@@ -1644,7 +1686,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 onAdd={handleAddProduct} 
                 disableAdd={isReadOnly || !!activeShift?.end_time} 
                 isPackageMode={priceMode === 'paquete'}
-                onTogglePackageMode={(isPack) => setPriceMode(isPack ? 'paquete' : 'pieza')}
+                onTogglePackageMode={(isPack) => setPriceMode(isPack ? 'paquete' : (isModaMiel ? 'medio_paquete' : 'pieza'))}
               />
 
             </div>
@@ -2015,6 +2057,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             items={items}
             tableNumber={tableNumber}
             currentUser={currentUser}
+            isModaMiel={isModaMiel}
           />
         )}
 
@@ -2312,13 +2355,15 @@ function ManualAdjustModal({
   onClose,
   items,
   tableNumber,
-  currentUser
+  currentUser,
+  isModaMiel = false
 }: {
   isOpen: boolean
   onClose: () => void
   items: OrderItem[]
   tableNumber: number
   currentUser: any
+  isModaMiel?: boolean
 }) {
   const [adjustedItems, setAdjustedItems] = useState<OrderItem[]>([])
   const [reason, setReason] = useState('')
@@ -2351,9 +2396,18 @@ function ManualAdjustModal({
       return
     }
 
+    if (isModaMiel) {
+      const userRole = (currentUser?.role || '').toLowerCase()
+      const isAuthorized = ['admin', 'manager', 'supervisor', 'gerente'].includes(userRole)
+      if (!isAuthorized) {
+        alert('🔒 ACCESO RESTRINGIDO: En ModaMielMX, los ajustes manuales de precios y cantidades están reservados exclusivamente para Gerencia y Administradores.')
+        return
+      }
+    }
+
     setSaving(true)
     try {
-      // 📝 LOG DE AUDITORÍA OBLIGATORIO PARA TODOS LOS USUARIOS
+      // 📝 LOG DE AUDITORÍA OBLIGATORIO PARA TODOS LOS USUARIOS CON TRAZABILIDAD
       await supabaseService.createAuditLog({
         userId: currentUser?.id || 'unknown',
         action: 'POS_MANUAL_TICKET_ADJUSTMENT',
@@ -2365,6 +2419,7 @@ function ManualAdjustModal({
           reason,
           adjustedBy: currentUser?.username || currentUser?.email || currentUser?.id,
           role: currentUser?.role,
+          tenant: isModaMiel ? 'MODAMIELMX' : 'STANDARD',
           itemsAfter: adjustedItems.map(i => ({ name: i.productName, qty: i.quantity, price: i.unitPrice }))
         }
       })

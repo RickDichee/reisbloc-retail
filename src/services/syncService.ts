@@ -25,7 +25,7 @@ class SyncService {
             action,
             payload
         })
-        if (options.processImmediately !== false && navigator.onLine) {
+        if (options.processImmediately !== false && (typeof navigator !== 'undefined' ? navigator.onLine : true)) {
             void this.processQueue()
         }
         return operationId
@@ -36,7 +36,7 @@ class SyncService {
      */
     async processQueue(): Promise<void> {
         if (this.isSyncing) return
-        if (!navigator.onLine) {
+        if (typeof window !== 'undefined' && !window.navigator.onLine) {
             logger.info('sync', '[Sync] Se intentó sincronizar pero seguimos sin internet.')
             return
         }
@@ -67,7 +67,7 @@ class SyncService {
 
                     // Reintentos agresivos: Mantenemos el error y aumentamos contador
                     await offlineStorage.updateSyncOperation(op.id, {
-                        retryCount: op.retryCount + 1,
+                        retryCount: (op.retryCount || 0) + 1,
                         error: error.message || 'Error desconocido'
                     })
                 }
@@ -79,7 +79,9 @@ class SyncService {
             await supabaseService.getAllProducts()
 
             // Lanzar evento global para que la UI sepa que se sincronizó la nube
-            window.dispatchEvent(new Event('reisbloc-sync-completed'))
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('reisbloc-sync-completed'))
+            }
 
         } finally {
             this.isSyncing = false
@@ -126,3 +128,4 @@ class SyncService {
 }
 
 export const syncService = new SyncService()
+export default syncService

@@ -42,8 +42,12 @@ export default function ReceiptTicket({
   const defaultName = isMM ? 'MODA MIEL MX' : (organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'REISBLOC STORE')
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
   const ticketBusinessName = (organizationSettings?.ticketBusinessName || businessName || defaultName).toUpperCase()
-  const defaultAddress = isMM ? 'TEXTICUITZEO PASILLO 3 LOCAL 230' : ''
-  const ticketAddress = organizationSettings?.ticketAddress || address || defaultAddress
+  const defaultAddress = isMM ? 'TEXTICUITZEO · PASILLO 3 LOCAL 230' : ''
+  const ticketAddress = isMM 
+    ? (organizationSettings?.ticketAddress?.toUpperCase().includes('PASILLO 3') 
+        ? organizationSettings.ticketAddress 
+        : (organizationSettings?.ticketAddress ? `${organizationSettings.ticketAddress} · PASILLO 3 LOCAL 230` : 'TEXTICUITZEO · PASILLO 3 LOCAL 230'))
+    : (organizationSettings?.ticketAddress || address || defaultAddress)
 
   const ticketPhone = organizationSettings?.ticketPhone || phone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
@@ -249,6 +253,11 @@ export default function ReceiptTicket({
       {/* Método de Pago */}
       <div style={{ marginBottom: '5px', fontSize: is80mm ? '10.5px' : '9px', textAlign: 'center', fontWeight: 900, textTransform: 'uppercase' }}>
         PAGO CON: {paymentMethod.toUpperCase()}
+        {order.notes && order.notes.includes('[Transferencia:') && (
+          <div style={{ fontSize: is80mm ? '9px' : '7.5px', fontWeight: 700, marginTop: '2px', textTransform: 'none', color: '#222' }}>
+            Rastreo: {order.notes.split('[Transferencia:')[1]?.replace(']', '')?.trim()}
+          </div>
+        )}
       </div>
 
       {/* Código de Barras Térmico Code128 con Folio del Ticket */}

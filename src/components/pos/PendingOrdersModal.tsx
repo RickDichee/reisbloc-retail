@@ -3,12 +3,13 @@ import { Order, OrderItem, Product } from '@/types/index'
 import { 
   X, Clock, User, DollarSign, Printer, Trash2, Package, ShoppingBag, 
   AlertTriangle, Truck, CheckCircle2, CreditCard, Pencil, Plus, Minus, 
-  Search, ArrowLeft, Save, Check, Tag
+  Search, ArrowLeft, Save, Check, Tag, Scissors
 } from 'lucide-react'
 import printService from '@/services/printService'
 import supabaseService from '@/services/supabaseService'
 import { useAppStore } from '@/store/appStore'
 import { parseProductDescription } from '@/utils/priceParser'
+import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 interface PendingOrdersModalProps {
   isOpen: boolean
@@ -80,6 +81,7 @@ export default function PendingOrdersModal({
   onCheckoutOrder,
   onRefresh
 }: PendingOrdersModalProps) {
+  const { isModaMiel } = useTenantTheme()
   const { organizationSettings, currentUser, products: storeProducts } = useAppStore()
   const availableProducts = (propProducts && propProducts.length > 0) ? propProducts : (storeProducts || [])
   const storeTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'Moda Miel MX'
@@ -254,11 +256,17 @@ export default function PendingOrdersModal({
     setEditItems(prev => prev.filter(item => item.id !== itemId))
   }
 
-  // 📦 Agregar producto a pedido existente: por defecto con PRECIO POR PAQUETE
+  // 📦 Agregar producto a pedido existente: por defecto con PRECIO POR PAQUETE (o Medio Paquete en Moda Miel)
   const addProductToEdit = (product: Product, useFullPackage: boolean = true) => {
     const pricing = getProductPricing(product)
-    const assignedPrice = useFullPackage ? pricing.fullPackagePrice : pricing.unitPiecePrice
-    const itemLabel = useFullPackage ? `${product.name} (Paquete ${pricing.packQty} pzs)` : product.name
+    const halfQty = Math.max(1, Math.round(pricing.packQty / 2))
+    const halfPrice = Math.round((pricing.fullPackagePrice / 2) * 100) / 100
+
+    const assignedPrice = useFullPackage ? pricing.fullPackagePrice : (isModaMiel ? halfPrice : pricing.unitPiecePrice)
+    const itemLabel = useFullPackage 
+      ? `${product.name} (Paquete ${pricing.packQty} pzs)` 
+      : (isModaMiel ? `${product.name} (1/2 Paq ${halfQty} pzs)` : product.name)
+    const packQuantity = useFullPackage ? pricing.packQty : (isModaMiel ? halfQty : 1)
 
     const existing = editItems.find(i => i.productId === product.id && i.unitPrice === assignedPrice)
     if (existing) {
@@ -273,7 +281,7 @@ export default function PendingOrdersModal({
         addedAt: new Date(),
         addedBy: currentUser?.id || 'system',
         canBeDeleted: true,
-        packQuantity: useFullPackage ? pricing.packQty : 1,
+        packQuantity: packQuantity,
         sku: product.sku || product.barcode || ''
       }
       setEditItems(prev => [...prev, newItem])
@@ -383,8 +391,14 @@ export default function PendingOrdersModal({
 
   const addProductToNewOrder = (product: Product, useFullPackage: boolean = true) => {
     const pricing = getProductPricing(product)
-    const assignedPrice = useFullPackage ? pricing.fullPackagePrice : pricing.unitPiecePrice
-    const itemLabel = useFullPackage ? `${product.name} (Paquete ${pricing.packQty} pzs)` : product.name
+    const halfQty = Math.max(1, Math.round(pricing.packQty / 2))
+    const halfPrice = Math.round((pricing.fullPackagePrice / 2) * 100) / 100
+
+    const assignedPrice = useFullPackage ? pricing.fullPackagePrice : (isModaMiel ? halfPrice : pricing.unitPiecePrice)
+    const itemLabel = useFullPackage 
+      ? `${product.name} (Paquete ${pricing.packQty} pzs)` 
+      : (isModaMiel ? `${product.name} (1/2 Paq ${halfQty} pzs)` : product.name)
+    const packQuantity = useFullPackage ? pricing.packQty : (isModaMiel ? halfQty : 1)
 
     const existing = newOrderItems.find(i => i.productId === product.id && i.unitPrice === assignedPrice)
     if (existing) {
@@ -404,7 +418,7 @@ export default function PendingOrdersModal({
         addedAt: new Date(),
         addedBy: currentUser?.id || 'system',
         canBeDeleted: true,
-        packQuantity: useFullPackage ? pricing.packQty : 1,
+        packQuantity: packQuantity,
         sku: product.sku || product.barcode || ''
       }
       setNewOrderItems(prev => [...prev, newItem])
@@ -687,15 +701,27 @@ export default function PendingOrdersModal({
                               <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
                             </button>
 
-                            {/* Botón Secundario: Agregar por Pieza */}
-                            <button
-                              type="button"
-                              onClick={() => addProductToEdit(prod, false)}
-                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
-                              title="Agregar 1 pieza individual"
-                            >
-                              Pieza (${pricing.unitPiecePrice.toFixed(2)})
-                            </button>
+                            {/* Botón Secundario: Medio Paquete (Moda Miel) o Pieza (Otros) */}
+                            {isModaMiel ? (
+                              <button
+                                type="button"
+                                onClick={() => addProductToEdit(prod, false)}
+                                className="px-2.5 py-1.5 bg-sky-100 hover:bg-sky-200 text-sky-950 font-black rounded-xl text-xs transition-colors flex items-center gap-1 shadow-xs"
+                                title={`Agregar medio paquete de ${Math.max(1, Math.round(pricing.packQty / 2))} pzas`}
+                              >
+                                <Scissors size={12} />
+                                <span>1/2 Paq (${(pricing.fullPackagePrice / 2).toFixed(2)})</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => addProductToEdit(prod, false)}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                                title="Agregar 1 pieza individual"
+                              >
+                                Pieza (${pricing.unitPiecePrice.toFixed(2)})
+                              </button>
+                            )}
                           </div>
                         </div>
                       )
@@ -932,13 +958,25 @@ export default function PendingOrdersModal({
                               <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
                             </button>
 
-                            <button
-                              type="button"
-                              onClick={() => addProductToNewOrder(prod, false)}
-                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
-                            >
-                              Pieza (${pricing.unitPiecePrice.toFixed(2)})
-                            </button>
+                            {isModaMiel ? (
+                              <button
+                                type="button"
+                                onClick={() => addProductToNewOrder(prod, false)}
+                                className="px-2.5 py-1.5 bg-sky-100 hover:bg-sky-200 text-sky-950 font-black rounded-xl text-xs transition-colors flex items-center gap-1 shadow-xs"
+                                title={`Agregar medio paquete de ${Math.max(1, Math.round(pricing.packQty / 2))} pzas`}
+                              >
+                                <Scissors size={12} />
+                                <span>1/2 Paq (${(pricing.fullPackagePrice / 2).toFixed(2)})</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => addProductToNewOrder(prod, false)}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors"
+                              >
+                                Pieza (${pricing.unitPiecePrice.toFixed(2)})
+                              </button>
+                            )}
                           </div>
                         </div>
                       )

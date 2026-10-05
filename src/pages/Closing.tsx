@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import supabaseService from '@/services/supabaseService'
+import syncService from '@/services/syncService'
 import {
   DollarSign,
   Check,
@@ -53,14 +54,23 @@ export default function Closing() {
   const loadClosingData = async () => {
     setLoading(true)
     try {
-      // Usar UTC correctamente - obtener hoy en UTC
-      const today = new Date()
-      const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0))
-      const tomorrowUTC = new Date(todayUTC)
-      tomorrowUTC.setUTCDate(tomorrowUTC.getUTCDate() + 1)
+      // 1. Sincronizar cola offline a Supabase antes de generar el corte de caja
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        try {
+          await syncService.processQueue()
+        } catch (syncErr) {
+          logger.warn('closing', 'Error al sincronizar cola antes de cargar corte', syncErr)
+        }
+      }
+
+      // 2. Rango de fecha en zona horaria local (desde las 00:00:00 locales de hoy)
+      const startOfDay = new Date()
+      startOfDay.setHours(0, 0, 0, 0)
+      const endOfDay = new Date(startOfDay)
+      endOfDay.setDate(endOfDay.getDate() + 1)
 
       // Obtener ventas del día desde Supabase y calcular métricas localmente
-      const sales = await supabaseService.getSalesByDateRange(todayUTC, tomorrowUTC)
+      const sales = await supabaseService.getSalesByDateRange(startOfDay, endOfDay)
 
       // Métricas generales de cierre
       const metrics = sales.reduce(
@@ -68,10 +78,10 @@ export default function Closing() {
           const total = Number(sale.total || 0)
           acc.totalSales += total
           acc.transactionCount += 1
-          const method = (sale.payment_method || '').toLowerCase()
-          if (method === 'cash') {
+          const method = (sale.payment_method || sale.paymentMethod || '').toLowerCase()
+          if (['cash', 'efectivo'].includes(method)) {
             acc.totalCash += total
-          } else if (['digital', 'transferencia', 'transfer'].includes(method)) {
+          } else if (['digital', 'transferencia', 'transfer', 'card_mercadopago'].includes(method)) {
             acc.totalDigital += total
           } else if (['clip', 'tarjeta', 'card'].includes(method)) {
             acc.totalClip += total
