@@ -2408,11 +2408,14 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       }
 
       const sanitizedItems = (items || []).map(item => {
-        const rawProductId = item.productId || item.id || ''
+        let rawProductId = item.productId || item.id || ''
+        if (typeof rawProductId === 'string') {
+          rawProductId = rawProductId.replace(/-(pack|half)$/, '')
+        }
         const isValidUuid = uuidRegex.test(rawProductId)
         const unitPrice = Number(item.unitPrice ?? item.unit_price ?? item.price ?? 0)
         const quantity = Number(item.quantity) || 1
-        const packQuantity = isMM ? 1 : (Number(item.packQuantity || item.pack_quantity) || 1)
+        const rawPackQty = Number(item.packQuantity || item.pack_quantity) || 1
         return {
           productId: isValidUuid ? rawProductId : null,
           productName: item.productName || item.name || 'Artículo manual',
@@ -2420,7 +2423,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           unitPrice: unitPrice,
           totalPrice: Number((unitPrice * quantity).toFixed(2)),
           parentId: (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : null,
-          packQuantity: packQuantity
+          packQuantity: rawPackQty,
+          isHalfPack: Boolean((item as any).isHalfPack || (item.productName && item.productName.includes('1/2')))
         }
       })
 

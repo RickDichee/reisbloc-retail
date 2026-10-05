@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { OrderItem, Order } from '@/types'
 import { LucideIcon, ShoppingBag, Plus, Minus, Trash2, Clock, Pencil } from 'lucide-react'
+import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 interface OrderPanelProps {
   tableNumber: number
@@ -34,11 +35,13 @@ export function OrderPanel({
   onUpdatePrice,
   icon: Icon = ShoppingBag
 }: OrderPanelProps) {
+  const { isModaMiel } = useTenantTheme()
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
   const [editingPriceVal, setEditingPriceVal] = useState<string>('')
 
   const safeItems = items || []
   const totalPieces = safeItems.reduce((sum, item) => sum + ((item?.quantity || 0) * (item?.packQuantity || 1)), 0)
+  const totalPacks = safeItems.reduce((sum, item) => sum + (item?.quantity || 1), 0)
 
   const effectiveTotal = safeItems.reduce((sum, item) => {
     return sum + ((item?.unitPrice || 0) * (item?.quantity || 0))
@@ -56,7 +59,9 @@ export function OrderPanel({
             </h2>
           </div>
           <p className="text-[10px] font-bold text-slate-400 mt-0.5">
-            {items.length} prod • {totalPieces} pzas total
+            {isModaMiel 
+              ? `${items.length} partidas • ${totalPacks} paq/1/2 paq`
+              : `${items.length} prod • ${totalPieces} pzas total`}
           </p>
         </div>
 

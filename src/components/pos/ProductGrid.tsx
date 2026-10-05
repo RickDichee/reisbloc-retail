@@ -75,9 +75,7 @@ export function ProductGrid({
           <div>
             <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none">Modo de Venta en Caja</p>
             <p className="text-xs font-black uppercase text-white tracking-tight">
-              {isModaMiel
-                ? (isPackageMode ? '📦 Vender Paquete Completo' : '✂️ Vender Medio Paquete')
-                : (isPackageMode ? '📦 Vender Paquete Completo' : '👤 Venta por Pieza')}
+              {isPackageMode ? '📦 Vender Paquete Completo' : '✂️ Vender Medio Paquete'}
             </p>
           </div>
         </div>
@@ -88,13 +86,13 @@ export function ProductGrid({
             onClick={() => setPackageMode(false)}
             className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
               !isPackageMode 
-                ? (isModaMiel ? 'bg-sky-400 text-slate-950 shadow-md font-black' : 'bg-white text-slate-900 shadow-md')
+                ? 'bg-sky-400 text-slate-950 shadow-md font-black'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            {isModaMiel ? <Scissors size={14} /> : <User size={14} />}
-            <span>{isModaMiel ? '✂️ 1/2 Paquete' : '👤 Pieza'}</span>
-            {isModaMiel && !isPackageMode && <Check size={14} className="text-slate-950" />}
+            <Scissors size={14} />
+            <span>✂️ 1/2 Paquete</span>
+            {!isPackageMode && <Check size={14} className="text-slate-950" />}
           </button>
 
           <button
@@ -107,7 +105,7 @@ export function ProductGrid({
             }`}
           >
             <Package size={14} />
-            <span>{isModaMiel ? '📦 Paquete Completo' : '📦 PAQUETE'}</span>
+            <span>📦 Paquete Completo</span>
             {isPackageMode && <Check size={14} className="text-slate-950" />}
           </button>
         </div>
@@ -194,19 +192,11 @@ export function ProductGrid({
                   }`}
                 >
                   {/* Badge de Paquete / Medio Paquete */}
-                  {isModaMiel ? (
-                    <div className={`font-black text-[9px] uppercase px-2 py-0.5 text-center tracking-wider ${
-                      isPackageMode ? 'bg-amber-400 text-slate-950' : 'bg-sky-400 text-slate-950'
-                    }`}>
-                      {isPackageMode ? `📦 Paquete (${packQty} pzas)` : `✂️ 1/2 Paquete (${halfPackQty} pzas)`}
-                    </div>
-                  ) : (
-                    isPackageMode && (
-                      <div className="bg-amber-400 text-slate-950 font-black text-[9px] uppercase px-2 py-0.5 text-center tracking-wider">
-                        📦 Paquete ({packQty} pzas)
-                      </div>
-                    )
-                  )}
+                  <div className={`font-black text-[9px] uppercase px-2 py-0.5 text-center tracking-wider ${
+                    isPackageMode ? 'bg-amber-400 text-slate-950' : 'bg-sky-400 text-slate-950'
+                  }`}>
+                    {isPackageMode ? `📦 Paquete (${packQty} pzas)` : `✂️ 1/2 Paquete (${halfPackQty} pzas)`}
+                  </div>
 
                   {/* Product Image / Placeholder */}
                   {product.image ? (
@@ -240,30 +230,19 @@ export function ProductGrid({
                     
                     {/* Precio: regular o por pieza en paquete */}
                     <div className="mt-1">
-                      {isModaMiel ? (
-                        <div>
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-sm sm:text-base font-black text-slate-900">
-                              {currency.format(isPackageMode ? fullPackPrice : halfPackPrice)}
-                            </span>
-                            <span className="text-[9px] font-bold text-slate-500 uppercase">
-                              {isPackageMode ? `(${packQty} pz)` : `(${halfPackQty} pz)`}
-                            </span>
-                          </div>
-                          <span className="text-[9px] font-semibold text-slate-400 block">
-                            ${unitPackPrice.toFixed(2)} / pz
-                          </span>
-                        </div>
-                      ) : (
+                      <div>
                         <div className="flex items-baseline gap-1">
                           <span className="text-sm sm:text-base font-black text-slate-900">
-                            {currency.format(isPackageMode ? unitPackPrice : rawPrice)}
+                            {currency.format(isPackageMode ? fullPackPrice : halfPackPrice)}
                           </span>
-                          {isPackageMode && (
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
-                          )}
+                          <span className="text-[9px] font-bold text-slate-500 uppercase">
+                            {isPackageMode ? `(${packQty} pz)` : `(${halfPackQty} pz)`}
+                          </span>
                         </div>
-                      )}
+                        <span className="text-[9px] font-semibold text-slate-400 block">
+                          ${unitPackPrice.toFixed(2)} / pza
+                        </span>
+                      </div>
                     </div>
 
 

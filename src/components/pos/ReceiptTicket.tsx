@@ -232,7 +232,11 @@ export default function ReceiptTicket({
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: is80mm ? '10px' : '8.5px', color: '#000', marginTop: '1px' }}>
-                    <span>{itemQty} pz x ${itemUnitPrice.toFixed(2)}</span>
+                    <span>
+                      {itemQty} {isMM 
+                        ? ((item.productName || '').toUpperCase().includes('1/2') || (item as any).isHalfPack ? '1/2 Paq' : 'Paq')
+                        : 'pz'} x ${itemUnitPrice.toFixed(2)}
+                    </span>
                     <span style={{ fontWeight: 900 }}>${itemTotal.toFixed(2)}</span>
                   </div>
                 </div>

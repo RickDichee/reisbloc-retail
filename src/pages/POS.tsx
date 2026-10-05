@@ -757,111 +757,57 @@ export default function POS() {
     const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
 
     // 👗 REGLA ESTRICTA MODAMIEL: Únicamente Paquete Completo o Medio Paquete (Sin venta por pieza unitaria ni mayoreo suelto)
-    if (isModaMiel) {
-      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
-      const fullPackQty = explicitPackQty > 1 ? explicitPackQty : 10
-      const isFullPack = isPackageMode || priceMode === 'paquete'
-      const count = isFullPack ? fullPackQty : Math.max(1, Math.round(fullPackQty / 2))
+    // 👗 REGLA ESTRICTA MODAMIEL: Únicamente Paquete Completo o Medio Paquete (Sin venta por pieza unitaria)
+    const isFullPack = isPackageMode || priceMode === 'paquete'
+    const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+    const fullPackQty = explicitPackQty > 1 ? explicitPackQty : 10
+    const halfPackQty = Math.max(1, Math.round(fullPackQty / 2))
 
-      const manualHalf = Number(product.halfPackPrice || (product as any).half_pack_price || 0)
-      const effectivePrice = (!isFullPack && manualHalf > 0)
-        ? Math.round((manualHalf / count) * 100) / 100
-        : unitPackPrice
+    const fullPackPrice = packPrice > 0 ? packPrice : unitPackPrice * fullPackQty
+    const manualHalf = Number(product.halfPackPrice || (product as any).half_pack_price || 0)
+    const halfPackPrice = manualHalf > 0 ? manualHalf : Math.round((fullPackPrice / 2) * 100) / 100
 
-      const computedProduct = {
-        ...product,
-        price: effectivePrice,
-        packQuantity: 1
-      }
+    const itemPrice = isFullPack ? fullPackPrice : halfPackPrice
+    const presentationLabel = isFullPack ? 'PAQUETE' : '1/2 PAQUETE'
+    const piecesDeduct = isFullPack ? fullPackQty : halfPackQty
 
-      for (let i = 0; i < count; i++) {
-        addItemToDraft(tableNumber, computedProduct, currentUser.id)
-      }
-      return
-    }
-
-    // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
-    if (isPackageMode || priceMode === 'paquete') {
-      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
-      const packQty = explicitPackQty > 1 ? explicitPackQty : 10
-
-      const computedProduct = {
-        ...product,
-        price: unitPackPrice,
-        packQuantity: 1
-      }
-
-      for (let i = 0; i < packQty; i++) {
-        addItemToDraft(tableNumber, computedProduct, currentUser.id)
-      }
-      return
-    }
-
-    // 👤 MODO PIEZA: Agregar 1 pieza individual usando PRECIO POR PIEZA EN PAQUETE
-    const computedProduct = {
+    const computedProduct: any = {
       ...product,
-      price: unitPackPrice,
-      packQuantity: 1
+      id: `${product.id}-${isFullPack ? 'pack' : 'half'}`,
+      name: `${product.name} (${presentationLabel})`,
+      price: itemPrice,
+      packQuantity: piecesDeduct,
+      isHalfPack: !isFullPack,
+      productId: product.id
     }
 
     addItemToDraft(tableNumber, computedProduct, currentUser.id)
-
-
+    return
   }
 
   const handleAddPackageProduct = (product: Product) => {
-    if (!currentUser || isReadOnly) return
-
-    const parsedDesc = parseProductDescription(product.description || '')
-    const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
-    const packQty = explicitPackQty > 1 ? explicitPackQty : 10
-
-    const rawPrice = Number(product.price || 0)
-    const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-    const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
-
-    let namePrice: number | null = null
-    if (product.name && product.name.includes('$')) {
-      const afterDollar = product.name.split('$')[1] || ''
-      const pNum = parseFloat(afterDollar)
-      if (!isNaN(pNum) && pNum > 0) namePrice = pNum
-    }
-
-    let unitPackPrice = rawPrice
-    if (namePrice !== null && namePrice > 0) {
-      unitPackPrice = namePrice
-    } else if (packPrice > 0) {
-      unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
-    } else if (wholesalePrice > 0) {
-      unitPackPrice = wholesalePrice
-    }
-
-    const computedProduct = {
-      ...product,
-      price: unitPackPrice,
-      packQuantity: 1
-    }
-
-    for (let i = 0; i < packQty; i++) {
-      addItemToDraft(tableNumber, computedProduct, currentUser.id)
-    }
+    handleAddProduct(product, true)
   }
 
-  const handleAddManualItem = (description: string, price: number, packQty: number = 1) => {
+  const handleAddManualItem = (description: string, price: number, packQty: number = 10) => {
     if (!currentUser || isReadOnly) return
+    const isFullPack = !description.toUpperCase().includes('1/2') && !description.toUpperCase().includes('MEDIO')
+    const finalDesc = description.toUpperCase().includes('PAQUETE') 
+      ? description 
+      : `${description} (${isFullPack ? 'PAQUETE' : '1/2 PAQUETE'})`
+
     const virtualProduct: any = {
       id: `manual-${Date.now()}`,
-      name: description,
+      name: finalDesc,
       price: price,
       category: 'Manual',
       image: '',
-      packQuantity: 1
+      packQuantity: packQty > 1 ? packQty : (isFullPack ? 10 : 5),
+      isHalfPack: !isFullPack
     }
 
-    const count = packQty > 1 ? packQty : 1
-    for (let i = 0; i < count; i++) {
-      addItemToDraft(tableNumber, virtualProduct, currentUser.id)
-    }
+    addItemToDraft(tableNumber, virtualProduct, currentUser.id)
+  }
     
     // Audit Log: Manual item added
     supabaseService.createAuditLog({
@@ -1209,15 +1155,15 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
-      // 🛡️ REGLA MODAMIEL: Los items ya están expresados en piezas reales; packQuantity = 1 previene sobre-descuentos
       const normalizedItems = allItems.map(it => {
-        if (isModaMiel) {
-          return {
-            ...it,
-            packQuantity: 1
-          }
+        let cleanProductId = it.productId || it.id || ''
+        if (typeof cleanProductId === 'string') {
+          cleanProductId = cleanProductId.replace(/-(pack|half)$/, '')
         }
-        return it
+        return {
+          ...it,
+          productId: cleanProductId
+        }
       })
 
       let saleNotes = isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail'
@@ -2502,7 +2448,9 @@ function ManualAdjustModal({
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Piezas (Cantidad):</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">
+                        {isModaMiel ? '1/2 Paquetes / Paquetes (Cantidad):' : 'Piezas (Cantidad):'}
+                      </label>
                       <input
                         type="number"
                         min="1"
@@ -2512,7 +2460,9 @@ function ManualAdjustModal({
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Precio Unitario ($):</label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">
+                        {isModaMiel ? 'Precio Paquete / 1/2 Paq ($):' : 'Precio Unitario ($):'}
+                      </label>
                       <input
                         type="number"
                         step="0.01"
@@ -2540,7 +2490,7 @@ function ManualAdjustModal({
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="ej: Descuento autorizado en mostrador / Corrección de piezas"
+                placeholder={isModaMiel ? "ej: Descuento autorizado en mostrador / Ajuste 1/2 paquete" : "ej: Descuento autorizado en mostrador / Corrección de piezas"}
                 className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl font-bold text-xs text-slate-900 outline-none focus:border-indigo-500"
                 required
               />

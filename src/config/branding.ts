@@ -30,6 +30,8 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
   return (
     host.includes('modamiel') ||
     host.includes('moda-miel') ||
+    host.includes('reisbloc-pos') ||
+    host.includes('vercel.app') ||
     query.includes('modamiel') ||
     query.includes('brand=modamiel') ||
     query.includes('brand=modamielmx') ||
@@ -37,7 +39,9 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
     fragment.includes('brand=modamiel') ||
     fragment.includes('brand=modamielmx') ||
     pathname.includes('modamiel') ||
-    envBrand.includes('modamiel')
+    envBrand.includes('modamiel') ||
+    // Si no hay otra organización explícita, Moda Miel MX es el tenant principal
+    (!orgSlug && !host.includes('other'))
   )
 }
 
