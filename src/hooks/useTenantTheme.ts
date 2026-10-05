@@ -148,11 +148,11 @@ export function useTenantTheme(): {
     root.style.setProperty('--font-sans', selectedTheme.fontSans)
 
     // Favicon y Título dinámicos
-    const appTitle = isMM ? 'Moda Miel MX' : (validSettings?.businessName || currentUser?.businessName || 'Reisbloc Store')
+    const appTitle = isMM ? 'Moda Miel MX' : (organizationSettings?.businessName || currentUser?.businessName || 'Reisbloc Store')
     document.title = appTitle
     const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
     if (favicon) {
-      const customLogo = (validSettings as any)?.logo_url || (validSettings as any)?.logoUrl || currentUser?.avatar_url
+      const customLogo = (organizationSettings as any)?.logo_url || (organizationSettings as any)?.logoUrl || currentUser?.avatar_url
       favicon.href = isMM ? '/images/moda-miel-mx-logo.jpeg' : (customLogo || '/icon.svg')
     }
   }, [location.search, location.hash, location.pathname, organizationSettings, currentUser])
