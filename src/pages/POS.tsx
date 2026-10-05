@@ -807,7 +807,6 @@ export default function POS() {
     }
 
     addItemToDraft(tableNumber, virtualProduct, currentUser.id)
-  }
     
     // Audit Log: Manual item added
     supabaseService.createAuditLog({
@@ -815,7 +814,7 @@ export default function POS() {
       action: 'POS_MANUAL_ITEM_ADDED',
       entityType: 'POS',
       entityId: `caja-${tableNumber}`,
-      newValue: { description, price, packQty: count }
+      newValue: { description: finalDesc, price, packQty: virtualProduct.packQuantity }
     }).catch(err => console.error('Error logging manual item:', err))
   }
 

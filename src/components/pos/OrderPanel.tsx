@@ -60,12 +60,12 @@ export function OrderPanel({
           </div>
           <p className="text-[10px] font-bold text-slate-400 mt-0.5">
             {isModaMiel 
-              ? `${items.length} partidas • ${totalPacks} paq/1/2 paq`
-              : `${items.length} prod • ${totalPieces} pzas total`}
+              ? `${safeItems.length} partidas • ${totalPacks} paq/1/2 paq`
+              : `${safeItems.length} prod • ${totalPieces} pzas total`}
           </p>
         </div>
 
-        {items.length > 0 && (
+        {safeItems.length > 0 && (
           <button
             onClick={onClear}
             className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 transition-all"

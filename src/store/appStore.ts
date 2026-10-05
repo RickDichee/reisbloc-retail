@@ -281,23 +281,7 @@ export const useAppStore = create<AppStore>()(
           }
         }),
 
-      // Clear draft functions - legacy + new naming
-      clearDraftForTicket: (ticketNumber: number) =>
-        set(state => ({
-          draftOrders: {
-            ...state.draftOrders,
-            [ticketNumber || 1]: [],
-          },
-        })),
 
-      // Legacy alias
-      clearDraftForTable: (tableNumber: number) =>
-        set(state => ({
-          draftOrders: {
-            ...state.draftOrders,
-            [tableNumber || 1]: [],
-          },
-        })),
 
       // Organization Settings
       setOrganizationSettings: (settings: any) => set({ organizationSettings: settings }),
