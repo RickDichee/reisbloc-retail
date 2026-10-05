@@ -2169,6 +2169,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           createdAt: new Date(p.created_at),
           parentId: p.parent_id,
           packQuantity: p.pack_quantity,
+          halfPackPrice: p.half_pack_price != null ? Number(p.half_pack_price) : undefined,
           wholesalePrice: parsedDesc.wholesalePrice !== undefined ? parsedDesc.wholesalePrice : (p.wholesale_price || undefined),
           wholesaleMinQty: parsedDesc.wholesaleMinQty !== undefined ? parsedDesc.wholesaleMinQty : (p.wholesale_min_qty || undefined),
           packPrice: parsedDesc.packPrice,
@@ -2211,7 +2212,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         has_inventory: product.hasInventory ?? true,
         active: product.active ?? true,
         parent_id: product.parentId || null,
-        pack_quantity: product.packQuantity || 1
+        pack_quantity: product.packQuantity || 1,
+        half_pack_price: (product as any).halfPackPrice || (product as any).half_pack_price || 0
       }
 
       const { data, error } = await supabase
@@ -2256,6 +2258,9 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if ('packQuantity' in updates) payload.pack_quantity = updates.packQuantity
       if ('pack_quantity' in updates) payload.pack_quantity = (updates as any).pack_quantity
+
+      if ('halfPackPrice' in updates) payload.half_pack_price = (updates as any).halfPackPrice
+      if ('half_pack_price' in updates) payload.half_pack_price = (updates as any).half_pack_price
 
       // Handle extra pricing fields packaging in description
       if ('description' in updates || 'packPrice' in updates || 'bulkPrice' in updates || 'packQty' in updates || 'bulkQty' in updates || 'packagesPerBulk' in updates || 'wholesalePrice' in updates || 'wholesaleMinQty' in updates) {
@@ -2343,7 +2348,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         hasInventory: data.has_inventory,
         createdAt: new Date(data.created_at),
         parentId: data.parent_id,
-        packQuantity: data.pack_quantity
+        packQuantity: data.pack_quantity,
+        halfPackPrice: data.half_pack_price != null ? Number(data.half_pack_price) : undefined
       } as Product
     } catch (error) {
       logger.error('supabase', 'Error getting retail product by code', error as any)

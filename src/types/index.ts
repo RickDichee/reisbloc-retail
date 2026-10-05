@@ -46,6 +46,7 @@ export interface Product {
   createdAt: Date;
   parentId?: string;
   packQuantity?: number;
+  halfPackPrice?: number;
   barcode?: string;
   sku?: string;
   description?: string;

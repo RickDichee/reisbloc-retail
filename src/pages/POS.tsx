@@ -763,9 +763,14 @@ export default function POS() {
       const isFullPack = isPackageMode || priceMode === 'paquete'
       const count = isFullPack ? fullPackQty : Math.max(1, Math.round(fullPackQty / 2))
 
+      const manualHalf = Number(product.halfPackPrice || (product as any).half_pack_price || 0)
+      const effectivePrice = (!isFullPack && manualHalf > 0)
+        ? Math.round((manualHalf / count) * 100) / 100
+        : unitPackPrice
+
       const computedProduct = {
         ...product,
-        price: unitPackPrice,
+        price: effectivePrice,
         packQuantity: 1
       }
 

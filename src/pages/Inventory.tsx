@@ -267,6 +267,11 @@ export default function Inventory() {
                     <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">
                       ${Number(product.packPrice || product.price || 0).toFixed(2)}
                     </div>
+                    {product.halfPackPrice && Number(product.halfPackPrice) > 0 && (
+                      <p className="text-[10px] font-bold text-sky-600">
+                        ½ Paq: ${Number(product.halfPackPrice).toFixed(2)}
+                      </p>
+                    )}
                   </div>
                   {product.hasInventory && (
                     <div className="text-right">

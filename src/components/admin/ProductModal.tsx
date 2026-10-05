@@ -90,6 +90,7 @@ export default function ProductModal({
         wholesalePrice: product?.wholesalePrice ?? (product as any)?.wholesale_price ?? undefined,
         wholesaleMinQty: product?.wholesaleMinQty ?? (product as any)?.wholesale_min_qty ?? parsedDesc.wholesaleMinQty ?? 3,
         packPrice: parsedDesc.packPrice,
+        halfPackPrice: product?.halfPackPrice || (product as any)?.half_pack_price || undefined,
         packQty: parsedDesc.packQty || 10,
         bulkPrice: parsedDesc.bulkPrice,
         packagesPerBulk: parsedDesc.packagesPerBulk || 10
@@ -845,15 +846,18 @@ export default function ProductModal({
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-bold text-sky-600 mb-1 uppercase">PRECIO ESTIMADO 1/2 PAQUETE</label>
+                                                <label className="block text-[10px] font-bold text-sky-600 mb-1 uppercase">PRECIO 1/2 PAQUETE (MANUAL)</label>
                                                 <div className="relative">
                                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
                                                     <input
-                                                        type="text"
-                                                        value={formData.packPrice ? ((formData.packPrice) / 2).toFixed(2) : (formData.price ? (formData.price * Math.max(1, Math.round((formData.packQty || 10) / 2))).toFixed(2) : '0.00')}
-                                                        readOnly
-                                                        disabled
-                                                        className="w-full pl-7 pr-3 py-2.5 bg-sky-50/50 border border-sky-200 rounded-xl outline-none font-bold text-xs text-sky-950 select-none"
+                                                        type="number"
+                                                        value={formData.halfPackPrice !== undefined ? formData.halfPackPrice : ''}
+                                                        placeholder={formData.packPrice ? ((formData.packPrice) / 2).toFixed(2) : (formData.price ? (formData.price * Math.max(1, Math.round((formData.packQty || 10) / 2))).toFixed(2) : '0.00')}
+                                                        onChange={(e) => setFormData({ ...formData, halfPackPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-sky-300 rounded-xl outline-none font-bold text-xs text-sky-950 focus:ring-2 focus:ring-sky-400 disabled:bg-slate-100 disabled:text-slate-400"
+                                                        step="0.01"
+                                                        min="0"
+                                                        disabled={!isAdminOrManager}
                                                     />
                                                 </div>
                                             </div>

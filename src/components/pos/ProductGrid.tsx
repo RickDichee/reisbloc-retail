@@ -174,7 +174,8 @@ export function ProductGrid({
               const packQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 10)
               const halfPackQty = Math.max(1, Math.round(packQty / 2))
               const fullPackPrice = packPrice > 0 ? packPrice : unitPackPrice * packQty
-              const halfPackPrice = Math.round((fullPackPrice / 2) * 100) / 100
+              const manualHalfPrice = Number(product.halfPackPrice || (product as any).half_pack_price || 0)
+              const halfPackPrice = manualHalfPrice > 0 ? manualHalfPrice : Math.round((fullPackPrice / 2) * 100) / 100
 
               return (
                 <button
