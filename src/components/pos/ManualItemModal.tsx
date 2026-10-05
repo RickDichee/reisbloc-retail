@@ -9,7 +9,13 @@ interface ManualItemModalProps {
 }
 
 export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemModalProps) {
-  const { isModaMiel } = useTenantTheme()
+  const { isModaMiel: isThemeMM } = useTenantTheme()
+  const isModaMiel = isThemeMM || (typeof window !== 'undefined' && (
+    window.location.hostname.includes('modamiel') ||
+    window.location.search.includes('modamiel') ||
+    window.location.hash.includes('modamiel') ||
+    (localStorage.getItem('current_org_id') || '').includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
+  ))
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [isPackage, setIsPackage] = useState(false)

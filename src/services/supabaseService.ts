@@ -21,6 +21,7 @@ import { getStoredToken } from './jwtService'
 import { offlineStorage } from './offlineStorage'
 import { syncService } from './syncService'
 import { isUuidIdentifier, normalizePublicTenantIdentifier } from './tenantValidation'
+import { checkIsModaMiel } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import {
   User,
@@ -2350,59 +2351,87 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     }
   }
 
-  async createRetailSale(sale: any, items: any[], options?: { skipStockDeduction?: boolean; clientMutationId?: string }): Promise<string> {
+  async createRetailSale(sale: any, items: any[], options?: { skipStockDeduction?: boolean; clientMutationId?: string; reservedOrderIds?: string[] }): Promise<string> {
     try {
-      const orgId = this.getCurrentOrgId()
+      const explicitOrg = sale?.organization_id || sale?.organizationId
+      const currentOrg = this.getCurrentOrgId()
+      const isMM = checkIsModaMiel(
+        typeof window !== 'undefined' ? window.location.hostname : '',
+        typeof window !== 'undefined' ? window.location.search : '',
+        typeof window !== 'undefined' ? window.location.hash : '',
+        explicitOrg || currentOrg
+      )
+      const orgId = explicitOrg || currentOrg || (isMM ? '1b498fa6-aca5-428c-9bdd-01e6fea30316' : '')
+
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-      const saleNotes = sale.clientName
+      const saleNotes = sale?.clientName
         ? `${sale.notes || ''}\n[Cliente: ${sale.clientName} ${sale.clientPhone ? `(Tel: ${sale.clientPhone})` : ''}]`.trim()
-        : sale.notes
+        : (sale?.notes || '')
+
+      let saleBy = sale?.saleBy || sale?.sale_by
+      try {
+        const { data: authData } = await supabase.auth.getSession()
+        if (authData?.session?.user?.id) {
+          saleBy = authData.session.user.id
+        }
+      } catch {}
+
+      const mutationId = sale?.clientMutationId || sale?.client_mutation_id || options?.clientMutationId || crypto.randomUUID()
 
       const insertPayload: any = {
         organization_id: orgId,
-        table_number: sale.tableNumber,
-        subtotal: sale.subtotal,
-        discounts: sale.discounts || 0,
-        tax: sale.tax || 0,
-        total: sale.total,
-        payment_method: sale.paymentMethod,
-        tip: sale.tip || 0,
-        tip_source: sale.tipSource || 'none',
-        sale_by: sale.saleBy,
+        table_number: sale?.tableNumber || 1,
+        subtotal: Number(sale?.subtotal) || Number(sale?.total) || 0,
+        discounts: Number(sale?.discounts) || 0,
+        tax: Number(sale?.tax) || 0,
+        total: Number(sale?.total) || 0,
+        payment_method: sale?.paymentMethod || 'cash',
+        tip: Number(sale?.tip) || 0,
+        tip_source: sale?.tipSource || 'none',
+        sale_by: saleBy,
         notes: saleNotes,
-        client_mutation_id: sale.clientMutationId || options?.clientMutationId
+        client_mutation_id: mutationId
       }
 
-      if (sale.clientId && uuidRegex.test(sale.clientId)) {
+      if (sale?.clientId && uuidRegex.test(sale.clientId)) {
         insertPayload.client_id = sale.clientId
+      }
+      if (sale?.reference_id || sale?.referenceId) {
+        insertPayload.reference_id = sale.reference_id || sale.referenceId
       }
 
       const sanitizedItems = (items || []).map(item => {
         const rawProductId = item.productId || item.id || ''
         const isValidUuid = uuidRegex.test(rawProductId)
-        const unitPrice = Number(item.unitPrice) || 0
+        const unitPrice = Number(item.unitPrice ?? item.unit_price ?? item.price ?? 0)
         const quantity = Number(item.quantity) || 1
+        const packQuantity = isMM ? 1 : (Number(item.packQuantity || item.pack_quantity) || 1)
         return {
           productId: isValidUuid ? rawProductId : null,
           productName: item.productName || item.name || 'Artículo manual',
           quantity: quantity,
           unitPrice: unitPrice,
-          totalPrice: unitPrice * quantity,
+          totalPrice: Number((unitPrice * quantity).toFixed(2)),
           parentId: (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : null,
-          packQuantity: Number(item.packQuantity) || 1
+          packQuantity: packQuantity
         }
       })
+
+      const rpcOptions: any = {
+        skip_stock_deduction: Boolean(options?.skipStockDeduction),
+        client_mutation_id: insertPayload.client_mutation_id
+      }
+      if (options?.skipStockDeduction) {
+        rpcOptions.reserved_order_ids = options.reservedOrderIds || (sale as any)?.reservedOrderIds || []
+      }
 
       // Confirmed retail sales are RPC-only. A sequential fallback would create
       // partial sales when a later stock/client/audit step fails.
       const { data: rpcData, error: rpcError } = await supabase.rpc('process_retail_sale_transaction', {
         p_sale: insertPayload,
         p_items: sanitizedItems,
-        p_options: {
-          skip_stock_deduction: Boolean(options?.skipStockDeduction),
-          client_mutation_id: insertPayload.client_mutation_id
-        }
+        p_options: rpcOptions
       })
 
       if (rpcError) throw rpcError

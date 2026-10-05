@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { Product } from '@/types/index'
-import { X, Printer, QrCode, Barcode, Package, Tag, DollarSign, Layers, Check, Monitor } from 'lucide-react'
+import { X, Printer, QrCode, Barcode, Package, Tag, DollarSign, Layers, Check, Monitor, Scissors } from 'lucide-react'
 import printService from '@/services/printService'
 import { useAppStore } from '@/store/appStore'
+import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 interface LabelPrintModalProps {
   product: Product | any
@@ -11,6 +12,13 @@ interface LabelPrintModalProps {
 
 export default function LabelPrintModal({ product, onClose }: LabelPrintModalProps) {
   const { organizationSettings } = useAppStore()
+  const { isModaMiel: isThemeMM } = useTenantTheme()
+  const isModaMiel = isThemeMM || (typeof window !== 'undefined' && (
+    window.location.hostname.includes('modamiel') ||
+    window.location.search.includes('modamiel') ||
+    window.location.hash.includes('modamiel') ||
+    (localStorage.getItem('current_org_id') || '').includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
+  ))
   
   // Extraer datos de precios y paquetes infaliblemente (sincronizado con Moda Miel MX)
   let parsedDesc: any = {}
@@ -226,8 +234,8 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <Tag size={15} />
-                    <span>👤 Pieza Individual</span>
+                    {isModaMiel ? <Scissors size={15} /> : <Tag size={15} />}
+                    <span>{isModaMiel ? `✂️ 1/2 Paquete (${Math.max(1, Math.round(packQty / 2))} pzas)` : '👤 Pieza Individual'}</span>
                   </button>
                   <button
                     type="button"
@@ -239,7 +247,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                     }`}
                   >
                     <Package size={15} />
-                    <span>📦 Paquete ({packQty} pzas)</span>
+                    <span>{isModaMiel ? `📦 Paquete Completo (${packQty} pzas)` : `📦 Paquete (${packQty} pzas)`}</span>
                   </button>
                 </div>
               </div>
@@ -260,30 +268,7 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                     <span className="font-extrabold">📦 Pza en Paquete (Predeterminado)</span>
                     <span className="text-[9px] opacity-80">${unitPackPrice.toFixed(2)}/pza</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setPriceContent('retail')}
-                    className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
-                      priceContent === 'retail' 
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="font-extrabold">🏷️ Precio Menudeo</span>
-                    <span className="text-[9px] opacity-80">${retailPiecePrice.toFixed(2)} c/u</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPriceContent('wholesale')}
-                    className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
-                      priceContent === 'wholesale' 
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="font-extrabold">💙 Precio Mayoreo (3+)</span>
-                    <span className="text-[9px] opacity-80">${wholesalePrice.toFixed(2)} c/u</span>
-                  </button>
+
                   <button
                     type="button"
                     onClick={() => setPriceContent('totalPack')}
@@ -296,6 +281,35 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
                     <span className="font-extrabold">💰 Precio Total Paquete</span>
                     <span className="text-[9px] opacity-80">${rawPackPrice.toFixed(2)}</span>
                   </button>
+
+                  {!isModaMiel && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPriceContent('retail')}
+                        className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
+                          priceContent === 'retail' 
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="font-extrabold">🏷️ Precio Menudeo</span>
+                        <span className="text-[9px] opacity-80">${retailPiecePrice.toFixed(2)} c/u</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPriceContent('wholesale')}
+                        className={`p-2.5 rounded-2xl font-bold text-[11px] flex flex-col items-center justify-center border transition-all ${
+                          priceContent === 'wholesale' 
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200' 
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="font-extrabold">💙 Precio Mayoreo (3+)</span>
+                        <span className="text-[9px] opacity-80">${wholesalePrice.toFixed(2)} c/u</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

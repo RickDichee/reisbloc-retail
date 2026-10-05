@@ -81,7 +81,13 @@ export default function PendingOrdersModal({
   onCheckoutOrder,
   onRefresh
 }: PendingOrdersModalProps) {
-  const { isModaMiel } = useTenantTheme()
+  const { isModaMiel: isThemeMM } = useTenantTheme()
+  const isModaMiel = isThemeMM || (typeof window !== 'undefined' && (
+    window.location.hostname.includes('modamiel') ||
+    window.location.search.includes('modamiel') ||
+    window.location.hash.includes('modamiel') ||
+    (localStorage.getItem('current_org_id') || '').includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
+  ))
   const { organizationSettings, currentUser, products: storeProducts } = useAppStore()
   const availableProducts = (propProducts && propProducts.length > 0) ? propProducts : (storeProducts || [])
   const storeTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'Moda Miel MX'

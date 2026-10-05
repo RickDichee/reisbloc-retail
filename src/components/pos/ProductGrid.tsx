@@ -33,7 +33,13 @@ export function ProductGrid({
   isPackageMode: externalIsPackageMode,
   onTogglePackageMode
 }: ProductGridProps) {
-  const { isModaMiel } = useTenantTheme()
+  const { isModaMiel: isThemeMM } = useTenantTheme()
+  const isModaMiel = isThemeMM || (typeof window !== 'undefined' && (
+    window.location.hostname.includes('modamiel') ||
+    window.location.search.includes('modamiel') ||
+    window.location.hash.includes('modamiel') ||
+    (localStorage.getItem('current_org_id') || '').includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
+  ))
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [internalIsPackageMode, setInternalIsPackageMode] = useState<boolean>(false)
 

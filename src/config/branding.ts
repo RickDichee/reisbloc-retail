@@ -1,8 +1,8 @@
 export const checkIsModaMiel = (hostname?: string, search?: string, hash?: string, orgSlug?: string): boolean => {
-  // 🛡️ AISLAMIENTO ESTRICTO: Si se provee orgSlug / orgId específico, evaluar ÚNICAMENTE la organización
+  // 1. Evaluar si orgSlug o ID coincide con Moda Miel
   if (typeof orgSlug === 'string' && orgSlug.trim() !== '') {
     const slug = orgSlug.toLowerCase()
-    return (
+    if (
       slug === 'modamiel' ||
       slug === 'modamielmx' ||
       slug === 'moda-miel' ||
@@ -12,13 +12,16 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
       slug.includes('modamiel') ||
       slug.includes('moda-miel') ||
       slug.includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
-    )
+    ) {
+      return true
+    }
   }
 
-  // Si no hay organización (usuario público o en login), evaluar URL y variables de entorno
-  const host = (hostname !== undefined ? hostname : (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
-  const query = (search !== undefined ? search : (typeof window !== 'undefined' ? window.location.search : '')).toLowerCase()
-  const fragment = (hash !== undefined ? hash : (typeof window !== 'undefined' ? window.location.hash : '')).toLowerCase()
+  // 2. Si no hubo match por orgSlug, evaluar URL, hostname, query string y envBrand
+  const host = (hostname && hostname.trim() !== '' ? hostname : (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
+  const query = (search && search.trim() !== '' ? search : (typeof window !== 'undefined' ? window.location.search : '')).toLowerCase()
+  const fragment = (hash && hash.trim() !== '' ? hash : (typeof window !== 'undefined' ? window.location.hash : '')).toLowerCase()
+  const pathname = (typeof window !== 'undefined' ? window.location.pathname : '').toLowerCase()
 
   const envBrand = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_BRAND)
     ? String(import.meta.env.VITE_APP_BRAND).toLowerCase()
@@ -27,10 +30,13 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
   return (
     host.includes('modamiel') ||
     host.includes('moda-miel') ||
+    query.includes('modamiel') ||
     query.includes('brand=modamiel') ||
     query.includes('brand=modamielmx') ||
+    fragment.includes('modamiel') ||
     fragment.includes('brand=modamiel') ||
     fragment.includes('brand=modamielmx') ||
+    pathname.includes('modamiel') ||
     envBrand.includes('modamiel')
   )
 }

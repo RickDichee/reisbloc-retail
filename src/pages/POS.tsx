@@ -420,6 +420,15 @@ export default function POS() {
     priceModeRef.current = priceMode
   }, [priceMode])
 
+  // 🔒 REGLA ESTRICTA MODAMIEL: Prohibir 'pieza', 'mayoreo' o 'bulto'. Únicamente 'paquete' o 'medio_paquete'
+  useEffect(() => {
+    if (isModaMiel) {
+      if (priceMode !== 'paquete' && priceMode !== 'medio_paquete') {
+        setPriceMode('paquete')
+      }
+    }
+  }, [isModaMiel, priceMode])
+
 
   const handleChangePriceMode = (newMode: 'pieza' | 'mayoreo' | 'paquete' | 'bulto') => {
     setPriceMode(newMode)
@@ -1195,6 +1204,17 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
+      // 🛡️ REGLA MODAMIEL: Los items ya están expresados en piezas reales; packQuantity = 1 previene sobre-descuentos
+      const normalizedItems = allItems.map(it => {
+        if (isModaMiel) {
+          return {
+            ...it,
+            packQuantity: 1
+          }
+        }
+        return it
+      })
+
       let saleNotes = isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail'
       if (result.transferDetails) {
         const { bank, reference, notes: tNotes } = result.transferDetails
@@ -1208,7 +1228,11 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         }
       }
 
+      const targetOrgId = currentUser.organizationId || (isModaMiel ? '1b498fa6-aca5-428c-9bdd-01e6fea30316' : undefined)
+
       const salePayload: any = {
+        organization_id: targetOrgId,
+        organizationId: targetOrgId,
         tableNumber,
         subtotal: paymentPanel.orderTotal,
         total: result.total,
@@ -1217,7 +1241,8 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         notes: saleNotes,
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
-        clientPhone: selectedClient?.phone
+        clientPhone: selectedClient?.phone,
+        reference_id: (result as any).referenceId || (result as any).trackingDetails || undefined
       }
 
       // Persist a single idempotency key before networking. The same intent is
@@ -1226,7 +1251,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       salePayload.clientMutationId = clientMutationId
       const syncOperationId = await syncService.queueOperation('CREATE_RETAIL_SALE', {
         sale: salePayload,
-        items: allItems,
+        items: normalizedItems,
         options: {
           skipStockDeduction: isCheckingOutPendingOrder,
           reservedOrderIds: isCheckingOutPendingOrder ? orderIds : []
@@ -1356,7 +1381,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               {registers[tableNumber.toString()] || `Caja ${tableNumber}`}
             </span>
             <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-black uppercase">
-              {priceMode}
+              {isModaMiel ? (priceMode === 'paquete' ? 'PAQUETE COMPLETO' : '1/2 PAQUETE') : priceMode}
             </span>
           </div>
           <div className="flex items-center gap-2">

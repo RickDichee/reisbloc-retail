@@ -30,11 +30,6 @@ const OfflineIndicator: React.FC = () => {
       try {
         const pending = await offlineStorage.getPendingSyncOperations();
         setPendingCount(pending.length);
-
-        // Si hay conexión y tareas pendientes, sincronizar en segundo plano sin mostrar alertas invasivas
-        if (navigator.onLine && pending.length > 0 && !(syncService as any).isSyncing) {
-          syncService.processQueue();
-        }
       } catch {
         // Silencioso
       }

@@ -9,6 +9,7 @@ import logger from '@/utils/logger'
 
 class SyncService {
     private isSyncing = false
+    private lastSyncTime = 0
 
     /**
      * Agrega una operación a la cola. Si hay internet, intenta sincronizar de inmediato.
@@ -32,17 +33,40 @@ class SyncService {
     }
 
     /**
+     * Identifica errores que no tienen posibilidad de resolverse con un reintento inmediato
+     */
+    private isFatalError(msg: string): boolean {
+        const lower = (msg || '').toLowerCase()
+        return (
+            lower.includes('cross-tenant') ||
+            lower.includes('seller identity is invalid') ||
+            lower.includes('organization context is required') ||
+            lower.includes('permission denied') ||
+            lower.includes('item quantities must be positive') ||
+            lower.includes('sale totals must be positive')
+        )
+    }
+
+    /**
      * Ejecuta en ráfaga todas las operaciones pendientes de IndexedDB.
      */
     async processQueue(): Promise<void> {
+        const now = Date.now()
         if (this.isSyncing) return
+        if (now - this.lastSyncTime < 4000) {
+            logger.info('sync', '[Sync] Petición ignorada: enfriamiento activo entre sincronizaciones.')
+            return
+        }
         if (typeof window !== 'undefined' && !window.navigator.onLine) {
             logger.info('sync', '[Sync] Se intentó sincronizar pero seguimos sin internet.')
             return
         }
 
         this.isSyncing = true
+        this.lastSyncTime = now
         logger.info('sync', '🚀 [Background Sync] Iniciando sincronización...')
+
+        let successCount = 0
 
         try {
             const pendingOps = await offlineStorage.getPendingSyncOperations()
@@ -60,27 +84,37 @@ class SyncService {
 
                     // Marcar como exitoso borrándolo de la cola
                     await offlineStorage.removeSyncOperation(op.id)
+                    successCount++
                     logger.info('sync', `✔️ [Background Sync] Éxito: ${op.action}`)
 
                 } catch (error: any) {
                     logger.error('sync', `❌ [Background Sync] Error ejecutando ${op.action}:`, error)
 
-                    // Reintentos agresivos: Mantenemos el error y aumentamos contador
+                    const retryCount = (op.retryCount || 0) + 1
+                    const errorMsg = error?.message || 'Error desconocido'
+                    const isFatal = retryCount >= 3 || this.isFatalError(errorMsg)
+
+                    // Si excede 3 intentos o es fatal, marcar como 'failed' para detener loops
                     await offlineStorage.updateSyncOperation(op.id, {
-                        retryCount: (op.retryCount || 0) + 1,
-                        error: error.message || 'Error desconocido'
+                        retryCount,
+                        status: isFatal ? 'failed' : 'pending',
+                        error: errorMsg
                     })
                 }
             }
 
-            // Al terminar de enviar datos, forzamos la descarga de catálogos frescos 
-            // para asegurar que las ventas offline que afectaron el inventario se reflejen en la interfaz actual
-            logger.info('sync', '🔄 [Background Sync] Refrescando inventario post-sincronización...')
-            await supabaseService.getAllProducts()
+            // Al terminar con éxito al menos una operación, refrescamos inventario y avisamos a la UI
+            if (successCount > 0) {
+                try {
+                    logger.info('sync', '🔄 [Background Sync] Refrescando inventario post-sincronización...')
+                    await supabaseService.getAllProducts()
+                } catch (err) {
+                    logger.warn('sync', 'No se pudo actualizar inventario tras sync exitoso:', err)
+                }
 
-            // Lanzar evento global para que la UI sepa que se sincronizó la nube
-            if (typeof window !== 'undefined') {
-                window.dispatchEvent(new Event('reisbloc-sync-completed'))
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new Event('reisbloc-sync-completed'))
+                }
             }
 
         } finally {
