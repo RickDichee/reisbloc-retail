@@ -2423,8 +2423,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           unitPrice: unitPrice,
           totalPrice: Number((unitPrice * quantity).toFixed(2)),
           parentId: (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : null,
-          packQuantity: rawPackQty,
-          isHalfPack: Boolean((item as any).isHalfPack || (item.productName && item.productName.includes('1/2')))
+          packQuantity: rawPackQty
         }
       })
 
@@ -2492,8 +2491,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         sanitizedItems.forEach(item => {
           if (!item.productId) return
           const targetId = item.parentId || item.productId
-          const packFactor = (item as any).isHalfPack ? 0.5 : 1
-          const qtyToDeduct = item.quantity * (item.packQuantity || 1) * packFactor
+          const qtyToDeduct = item.quantity * (item.packQuantity || 1)
           aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct
         })
 
