@@ -60,7 +60,7 @@ export function OrderPanel({
           </div>
           <p className="text-[10px] font-bold text-slate-400 mt-0.5">
             {isModaMiel 
-              ? `${safeItems.length} partidas • ${totalPacks} paq/1/2 paq`
+              ? `${safeItems.length} partidas • ${totalPacks} paq`
               : `${safeItems.length} prod • ${totalPieces} pzas total`}
           </p>
         </div>
