@@ -33,15 +33,29 @@ serve(async (req) => {
       }
     )
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const authHeader = req.headers.get("Authorization")
+    const body = await req.json().catch(() => ({}))
+    const { action, feature, amount } = body
+
+    let user = null
+    if (authHeader && authHeader.trim().length > 10) {
+      try {
+        const { data } = await supabaseClient.auth.getUser()
+        user = data?.user
+      } catch {}
+    }
+
     if (!user) {
+      if (action === 'check_balance' || !action) {
+        return new Response(JSON.stringify({ balance: 0 }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    const { action, feature, amount } = await req.json().catch(() => ({}))
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",

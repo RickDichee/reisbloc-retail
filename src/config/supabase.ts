@@ -78,7 +78,15 @@ export const setAuthToken = async (token: string) => {
 }
 
 export const getAuthToken = async (): Promise<string | null> => {
-  return window.localStorage.getItem('sb-access-token')
+  const manual = window.localStorage.getItem('sb-access-token')
+  if (manual) return manual
+  try {
+    const { data } = await supabase.auth.getSession()
+    if (data?.session?.access_token) {
+      return data.session.access_token
+    }
+  } catch {}
+  return null
 }
 
 export const removeAuthToken = async () => {
