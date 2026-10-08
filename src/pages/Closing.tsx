@@ -4,9 +4,6 @@ import { Navigate } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import supabaseService from '@/services/supabaseService'
-import syncService from '@/services/syncService'
-import { supabase } from '@/config/supabase'
-import { offlineStorage } from '@/services/offlineStorage'
 import {
   DollarSign,
   Check,
@@ -16,12 +13,6 @@ import {
   Mail,
   Share2,
   TrendingUp,
-  Calendar,
-  ArrowRightLeft,
-  ShieldCheck,
-  RefreshCw,
-  WifiOff,
-  Database,
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import {
@@ -37,142 +28,53 @@ import {
   Pie,
   Cell,
 } from 'recharts'
+import { BRANDING } from '@/config/branding'
 
 export default function Closing() {
   const { currentUser } = useAppStore()
-  const { isAdmin, hasAnyRole } = usePermissions()
+  const { isAdmin } = usePermissions()
 
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [closingData, setClosingData] = useState<any>(null)
   const [employeeMetrics, setEmployeeMetrics] = useState<any[]>([])
   const [daySales, setDaySales] = useState<any[]>([])
-  const getLocalDateISO = (d: Date = new Date()) => {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  }
-
-  const [startDate, setStartDate] = useState(getLocalDateISO())
-  const [endDate, setEndDate] = useState(getLocalDateISO())
-  const [manualAdjustments, setManualAdjustments] = useState<any[]>([])
   const [confirmed, setConfirmed] = useState(false)
   const [notes, setNotes] = useState('')
-  const [pendingQueueCount, setPendingQueueCount] = useState(0)
-  const [syncingQueue, setSyncingQueue] = useState(false)
 
   // Gestión de Planes: Verificar si la organización tiene acceso a features premium
   const userPlan = (currentUser as any)?.plan || 'free' // Por defecto free si no hay dato
   const canSendEmail = ['starter', 'growth', 'scale', 'enterprise'].includes(userPlan)
 
-  const checkOfflineQueue = async () => {
-    try {
-      const ops = await offlineStorage.getAllSyncOperations()
-      setPendingQueueCount(ops.length)
-    } catch {
-      setPendingQueueCount(0)
-    }
-  }
-
-  const handleForceSync = async () => {
-    setSyncingQueue(true)
-    try {
-      const res = await syncService.processQueue(true)
-      await checkOfflineQueue()
-      await loadClosingData(startDate, endDate)
-      alert(`✅ Sincronización completada:\n• ${res.success} operaciones subidas con éxito a la nube\n• ${res.failed} pendientes`)
-    } catch (err: any) {
-      alert(`❌ Error al forzar sincronización: ${err?.message || err}`)
-    } finally {
-      setSyncingQueue(false)
-    }
-  }
-
   useEffect(() => {
     loadClosingData()
-    checkOfflineQueue()
+  }, [])
 
-    const orgId = supabaseService.getCurrentOrgId()
-    const channelId = `closing_sales_${Date.now()}`
-    const channel = supabase
-      .channel(channelId)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'retail_sales',
-          ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
-        },
-        () => {
-          loadClosingData(startDate, endDate)
-          checkOfflineQueue()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [startDate, endDate])
-
-  const loadClosingData = async (startStr?: string, endStr?: string) => {
+  const loadClosingData = async () => {
     setLoading(true)
     try {
-      if (typeof navigator !== 'undefined' && navigator.onLine) {
-        try {
-          await syncService.processQueue()
-        } catch (syncErr) {
-          logger.warn('closing', 'Error al sincronizar cola antes de cargar corte', syncErr)
-        }
-      }
+      // Usar UTC correctamente - obtener hoy en UTC
+      const today = new Date()
+      const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0))
+      const tomorrowUTC = new Date(todayUTC)
+      tomorrowUTC.setUTCDate(tomorrowUTC.getUTCDate() + 1)
 
-      const sStr = startStr || startDate
-      const eStr = endStr || endDate
-
-      const [startYear, startMonth, startDay] = sStr.split('-').map(Number)
-      const [endYear, endMonth, endDay] = eStr.split('-').map(Number)
-
-      const startRange = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0)
-      const endRange = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999)
-
-      // Obtener ventas del rango desde Supabase y calcular métricas localmente
-      const sales = await supabaseService.getSalesByDateRange(startRange, endRange)
-      const completedSales = sales.filter((s: any) => s.status !== 'cancelled' && s.status !== 'pending')
-
-      // Obtener ajustes manuales autorizados (Admin / Gerencia) para el periodo
-      try {
-        const orgId = supabaseService.getCurrentOrgId()
-        let query = supabase
-          .from('audit_logs')
-          .select('*')
-          .eq('action', 'MANUAL_ADJUSTMENT')
-          .gte('created_at', startRange.toISOString())
-          .lte('created_at', endRange.toISOString())
-          .order('created_at', { ascending: false })
-
-        if (orgId) {
-          query = query.eq('organization_id', orgId)
-        }
-        const { data: adjData } = await query
-        setManualAdjustments(adjData || [])
-      } catch (err) {
-        logger.warn('closing', 'Error loading adjustments', err as any)
-      }
+      // Obtener ventas del día desde Supabase y calcular métricas localmente
+      const sales = await supabaseService.getSalesByDateRange(todayUTC, tomorrowUTC)
 
       // Métricas generales de cierre
-      const metrics = completedSales.reduce(
+      const metrics = sales.reduce(
         (acc: any, sale: any) => {
           const total = Number(sale.total || 0)
           acc.totalSales += total
           acc.transactionCount += 1
-          const method = (sale.payment_method || sale.paymentMethod || '').toLowerCase()
-          if (['cash', 'efectivo', 'money'].includes(method)) {
+          const method = (sale.payment_method || '').toLowerCase()
+          if (method === 'cash') {
             acc.totalCash += total
-          } else if (['digital', 'transferencia', 'transfer', 'spei'].includes(method)) {
+          } else if (['digital', 'transferencia', 'transfer'].includes(method)) {
             acc.totalDigital += total
-          } else if (['clip', 'tarjeta', 'card', 'debito', 'credito'].includes(method)) {
+          } else if (['clip', 'tarjeta', 'card'].includes(method)) {
             acc.totalClip += total
-          } else {
-            acc.totalOther = (acc.totalOther || 0) + total
           }
           return acc
         },
@@ -181,7 +83,6 @@ export default function Closing() {
           totalCash: 0,
           totalDigital: 0,
           totalClip: 0,
-          totalOther: 0,
           totalDiscounts: 0,
           transactionCount: 0,
           averageTicket: 0,
@@ -201,26 +102,16 @@ export default function Closing() {
           role: u.role,
           salesCount: 0,
           totalSales: 0,
-          totalTips: 0,
           averageTicket: 0,
         }
       })
-      completedSales.forEach((sale: any) => {
-        const uid = sale.waiter_id || sale.saleBy || sale.sale_by || 'unknown'
-        if (!byUser[uid]) {
-          byUser[uid] = {
-            userId: uid,
-            userName: uid === currentUser?.id ? (currentUser?.username || 'Cajero Actual') : 'Personal',
-            role: 'vendedor',
-            salesCount: 0,
-            totalSales: 0,
-            totalTips: 0,
-            averageTicket: 0,
-          }
+      sales.forEach((sale: any) => {
+        const uid = sale.waiter_id || sale.saleBy
+        if (uid && byUser[uid]) {
+          byUser[uid].salesCount += 1
+          byUser[uid].totalSales += Number(sale.total || 0)
+          byUser[uid].totalTips += Number(sale.tip_amount || sale.tip || 0)
         }
-        byUser[uid].salesCount += 1
-        byUser[uid].totalSales += Number(sale.total || 0)
-        byUser[uid].totalTips += Number(sale.tip_amount || sale.tip || 0)
       })
       const employees = Object.values(byUser)
         .filter((m: any) => m.salesCount > 0)
@@ -232,56 +123,13 @@ export default function Closing() {
 
       setClosingData(metrics)
       setEmployeeMetrics(employees)
-      setDaySales(completedSales)
+      setDaySales(sales)
     } catch (error) {
       logger.error('closing', 'Error loading closing data', error as any)
     } finally {
       setLoading(false)
     }
   }
-
-  const handleSelectDatePreset = (preset: 'today' | 'yesterday' | 'week' | 'onsite_shift' | 'sept21') => {
-    const today = new Date()
-    let start = getLocalDateISO(today)
-    let end = getLocalDateISO(today)
-
-    if (preset === 'yesterday') {
-      const y = new Date()
-      y.setDate(y.getDate() - 1)
-      start = getLocalDateISO(y)
-      end = getLocalDateISO(y)
-    } else if (preset === 'onsite_shift') {
-      // Turno onsite Moda Miel (Lunes 5 y Martes 6 de Octubre)
-      start = '2026-10-05'
-      end = getLocalDateISO(today)
-    } else if (preset === 'week') {
-      const w = new Date()
-      w.setDate(w.getDate() - 7)
-      start = getLocalDateISO(w)
-      end = getLocalDateISO(today)
-    } else if (preset === 'sept21') {
-      start = '2026-09-21'
-      end = getLocalDateISO(today)
-    }
-
-    setStartDate(start)
-    setEndDate(end)
-    loadClosingData(start, end)
-  }
-
-  const getTransferRef = (sale: any) => {
-    if (sale.notes && sale.notes.includes('Transferencia Ref:')) {
-      const match = sale.notes.match(/Transferencia Ref:\s*([^,\n]+)/)
-      if (match && match[1]) return match[1].trim()
-    }
-    return sale.notes || sale.reference || 'Sin Referencia'
-  }
-
-  const transferSales = daySales.filter((s: any) => {
-    const method = (s.payment_method || s.paymentMethod || '').toLowerCase()
-    const n = (s.notes || '').toLowerCase()
-    return ['transferencia', 'digital', 'transfer', 'spei'].includes(method) || n.includes('transferencia')
-  })
 
   const handleSubmitClosing = async () => {
     if (!confirmed) {
@@ -353,7 +201,7 @@ export default function Closing() {
 - Tarjeta: $${closingData.totalClip?.toFixed(2)}
 - Digital: $${closingData.totalDigital?.toFixed(2)}
 
-🚀 _Generado con Reisbloc POS_
+🚀 _Generado con ${BRANDING.appWithBrand}_
     `.trim()
 
     if (navigator.share) {
@@ -497,8 +345,7 @@ export default function Closing() {
       <body>
         <div class="receipt">
           <div class="header">
-            <h1>🏪 ${currentUser?.businessName || 'REISBLOC RETAIL'}</h1>
-            <p style="font-size: 10px; margin: 2px 0;">Pasillo 3 Local 230</p>
+            <h1>🏪 TPV SOLUTIONS</h1>
             <p>CIERRE DE CAJA</p>
             <p>${new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             <p>Cajero: ${currentUser?.username}</p>
@@ -579,7 +426,7 @@ export default function Closing() {
           ` : ''}
 
           <div class="footer">
-            <p>Documento generado automáticamente por Reisbloc POS</p>
+            <p>Documento generado automáticamente por ${BRANDING.appWithBrand}</p>
             <p>${new Date().toLocaleTimeString('es-MX')}</p>
           </div>
         </div>
@@ -588,7 +435,7 @@ export default function Closing() {
     `
   }
 
-  if (!hasAnyRole(['admin', 'supervisor'])) {
+  if (!isAdmin) {
     return <Navigate to="/pos" replace />
   }
 
@@ -631,130 +478,6 @@ export default function Closing() {
           </div>
         </div>
 
-        {/* Date Selector & Historical Filter Bar */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1 flex items-center gap-1 shrink-0">
-                <Calendar size={14} /> Periodo:
-              </span>
-              <button
-                type="button"
-                onClick={() => handleSelectDatePreset('today')}
-                className={`px-3 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                  startDate === getLocalDateISO() && endDate === getLocalDateISO()
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                Hoy
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDatePreset('yesterday')}
-                className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all shrink-0"
-              >
-                Ayer
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDatePreset('onsite_shift')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                  startDate === '2026-10-05' && endDate === getLocalDateISO()
-                    ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
-                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
-                }`}
-              >
-                ⭐ Turno Onsite (5 y 6 Oct)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDatePreset('week')}
-                className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all shrink-0"
-              >
-                Últimos 7 Días
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectDatePreset('sept21')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                  startDate === '2026-09-21'
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
-                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-                }`}
-              >
-                📅 Historial (21 Sep - Hoy)
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Del</span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-slate-800 outline-none"
-                />
-              </div>
-              <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Al</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-transparent text-xs font-bold text-slate-800 outline-none"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => loadClosingData(startDate, endDate)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-indigo-600/20"
-              >
-                Consultar
-              </button>
-              {pendingQueueCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleForceSync}
-                  disabled={syncingQueue}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 disabled:opacity-50"
-                >
-                  <RefreshCw size={14} className={syncingQueue ? 'animate-spin' : ''} />
-                  {syncingQueue ? 'Sincronizando...' : `⚡ Sincronizar (${pendingQueueCount})`}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Banner de Operaciones Locales Pendientes */}
-          {pendingQueueCount > 0 && (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/10 text-amber-600 rounded-xl">
-                  <Database size={20} />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-amber-900 uppercase">
-                    {pendingQueueCount} Operaciones en cola local de este dispositivo
-                  </p>
-                  <p className="text-xs text-amber-700">
-                    Las ventas se guardaron en la memoria local del navegador. Pulsa subir para sincronizarlas con Supabase.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleForceSync}
-                disabled={syncingQueue}
-                className="shrink-0 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all"
-              >
-                {syncingQueue ? 'Subiendo...' : 'Subir a Supabase'}
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Alert - Clean */}
         <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
           <div className="p-3 bg-amber-100 text-amber-600 rounded-2xl shrink-0">
@@ -762,9 +485,7 @@ export default function Closing() {
           </div>
           <div>
             <p className="font-black text-amber-900 uppercase tracking-wide text-xs mb-1">Aviso Importante</p>
-            <p className="text-amber-800 font-medium text-sm leading-relaxed">
-              Corte para el periodo: <span className="font-bold underline">{startDate} al {endDate}</span>. Total de transacciones encontradas: {closingData?.transactionCount || 0}. Revisa todos los números antes de confirmar.
-            </p>
+            <p className="text-amber-800 font-medium text-sm leading-relaxed">Este proceso generará un cierre oficial del día. Revisa todos los números antes de confirmar.</p>
           </div>
         </div>
 
@@ -893,144 +614,6 @@ export default function Closing() {
             </div>
           </div>
         )}
-
-        {/* Transferencias Bancarias con Referencia */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
-                <ArrowRightLeft size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-slate-900 leading-tight">Transferencias Bancarias del Periodo</h3>
-                <p className="text-xs font-bold text-slate-400 mt-0.5">
-                  Rastreo y conciliación de comprobantes para evitar discrepancias
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block">Total Transferencias</span>
-              <span className="text-2xl font-black text-blue-600">
-                ${(closingData?.totalDigital || 0).toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {transferSales.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 font-bold text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              No hay pagos por transferencia en el rango seleccionado
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 rounded-xl">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider rounded-l-xl">Fecha / Hora</th>
-                    <th className="px-4 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider">Referencia / Folio</th>
-                    <th className="px-4 py-3 text-right text-xs font-black text-slate-400 uppercase tracking-wider">Monto</th>
-                    <th className="px-4 py-3 text-right text-xs font-black text-slate-400 uppercase tracking-wider rounded-r-xl">Ticket ID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {transferSales.map((s: any, idx: number) => (
-                    <tr key={s.id || idx} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 py-3 text-xs font-bold text-slate-600">
-                        {new Date(s.created_at).toLocaleString('es-MX', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </td>
-                      <td className="px-4 py-3 text-xs font-black text-blue-900">
-                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100">
-                          {getTransferRef(s)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
-                        ${Number(s.total || 0).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-xs font-mono text-slate-400">
-                        {String(s.id || '').slice(0, 8)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Ajustes Manuales Autorizados (Admin / Gerencia) */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
-                <ShieldCheck size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-slate-900 leading-tight">Ajustes Manuales Autorizados (Admin / Gerencia)</h3>
-                <p className="text-xs font-bold text-slate-400 mt-0.5">
-                  Fallback auditado de partidas y correcciones ingresadas con permisos gerenciales
-                </p>
-              </div>
-            </div>
-            <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-black self-start sm:self-auto">
-              {manualAdjustments.length} ajustes registrados
-            </span>
-          </div>
-
-          {manualAdjustments.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 font-bold text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              No se registraron ajustes manuales en el rango seleccionado
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 rounded-xl">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider rounded-l-xl">Fecha / Hora</th>
-                    <th className="px-4 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider">Autorizado Por</th>
-                    <th className="px-4 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider">Concepto / Descripción</th>
-                    <th className="px-4 py-3 text-right text-xs font-black text-slate-400 uppercase tracking-wider">Monto</th>
-                    <th className="px-4 py-3 text-right text-xs font-black text-slate-400 uppercase tracking-wider rounded-r-xl">Caja</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {manualAdjustments.map((adj: any) => {
-                    const val = adj.new_value || adj.newValue || {}
-                    return (
-                      <tr key={adj.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-4 py-3 text-xs font-bold text-slate-600">
-                          {new Date(adj.created_at).toLocaleString('es-MX', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </td>
-                        <td className="px-4 py-3 text-xs font-black text-slate-800">
-                          <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-lg">
-                            {val.authorizedBy || adj.user_id || 'Gerencia'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs font-bold text-slate-700">
-                          {val.description || 'Ajuste manual'}
-                        </td>
-                        <td className="px-4 py-3 text-right font-black text-slate-900 text-sm">
-                          ${Number(val.price || 0).toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-right text-xs font-bold text-slate-500">
-                          Caja {val.tableNumber || 1}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
 
         {/* Notes Section */}
         <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-8">

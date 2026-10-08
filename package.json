@@ -19,8 +19,6 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
-    "@capacitor/app": "^8.1.1",
-    "@capacitor/browser": "^8.0.5",
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.93.1",
     "@types/dompurify": "^3.0.5",
@@ -46,7 +44,6 @@
     "recharts": "^3.7.0",
     "scripts": "^0.1.0",
     "tailwindcss": "^3.4.17",
-    "vercel": "^59.23.2",
     "zustand": "^4.5.6"
   },
   "devDependencies": {
@@ -67,7 +64,7 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.19",
     "eve": "^0.54.3",
-    "supabase": "^2.117.0",
+    "supabase": "2.117.0",
     "tar": "^7.5.7",
     "typescript": "^5.7.3",
     "vite": "^8.0.10",

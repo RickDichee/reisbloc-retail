@@ -21,7 +21,6 @@ import { getStoredToken } from './jwtService'
 import { offlineStorage } from './offlineStorage'
 import { syncService } from './syncService'
 import { isUuidIdentifier, normalizePublicTenantIdentifier } from './tenantValidation'
-import { checkIsModaMiel } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import {
   User,
@@ -221,14 +220,14 @@ class SupabaseService {
     try {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-      // Validar user_id
-      let finalUserId = log.userId
-      if (!uuidRegex.test(finalUserId)) {
+      // Validar user_id (debe ser UUID válido existente o null para evitar violación FK)
+      let finalUserId: string | null = log.userId
+      if (!finalUserId || !uuidRegex.test(finalUserId)) {
         const storeUser = useAppStore.getState().currentUser?.id
         if (storeUser && uuidRegex.test(storeUser)) {
           finalUserId = storeUser
         } else {
-          finalUserId = '00000000-0000-0000-0000-000000000000'
+          finalUserId = null
         }
       }
 
@@ -327,12 +326,18 @@ class SupabaseService {
 
   async deleteUser(userId: string): Promise<void> {
     try {
-      // Soft delete - marcar como inactivo
-      const { error } = await supabase
+      // Soft delete - marcar como inactivo y remover PIN de acceso
+      const orgId = this.getCurrentOrgId()
+      let query = supabase
         .from('users')
-        .update({ active: false })
+        .update({ active: false, pin: null })
         .eq('id', userId)
-        .eq('organization_id', this.getCurrentOrgId()) // FIX: Requerido por RLS
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId)
+      }
+
+      const { error } = await query
 
       if (error) throw error
     } catch (error) {
@@ -2169,7 +2174,6 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           createdAt: new Date(p.created_at),
           parentId: p.parent_id,
           packQuantity: p.pack_quantity,
-          halfPackPrice: p.half_pack_price != null ? Number(p.half_pack_price) : undefined,
           wholesalePrice: parsedDesc.wholesalePrice !== undefined ? parsedDesc.wholesalePrice : (p.wholesale_price || undefined),
           wholesaleMinQty: parsedDesc.wholesaleMinQty !== undefined ? parsedDesc.wholesaleMinQty : (p.wholesale_min_qty || undefined),
           packPrice: parsedDesc.packPrice,
@@ -2212,8 +2216,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         has_inventory: product.hasInventory ?? true,
         active: product.active ?? true,
         parent_id: product.parentId || null,
-        pack_quantity: product.packQuantity || 1,
-        half_pack_price: (product as any).halfPackPrice || (product as any).half_pack_price || 0
+        pack_quantity: product.packQuantity || 1
       }
 
       const { data, error } = await supabase
@@ -2258,9 +2261,6 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if ('packQuantity' in updates) payload.pack_quantity = updates.packQuantity
       if ('pack_quantity' in updates) payload.pack_quantity = (updates as any).pack_quantity
-
-      if ('halfPackPrice' in updates) payload.half_pack_price = (updates as any).halfPackPrice
-      if ('half_pack_price' in updates) payload.half_pack_price = (updates as any).half_pack_price
 
       // Handle extra pricing fields packaging in description
       if ('description' in updates || 'packPrice' in updates || 'bulkPrice' in updates || 'packQty' in updates || 'bulkQty' in updates || 'packagesPerBulk' in updates || 'wholesalePrice' in updates || 'wholesaleMinQty' in updates) {
@@ -2348,8 +2348,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         hasInventory: data.has_inventory,
         createdAt: new Date(data.created_at),
         parentId: data.parent_id,
-        packQuantity: data.pack_quantity,
-        halfPackPrice: data.half_pack_price != null ? Number(data.half_pack_price) : undefined
+        packQuantity: data.pack_quantity
       } as Product
     } catch (error) {
       logger.error('supabase', 'Error getting retail product by code', error as any)
@@ -2357,159 +2356,64 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
     }
   }
 
-  async createRetailSale(sale: any, items: any[], options?: { skipStockDeduction?: boolean; clientMutationId?: string; reservedOrderIds?: string[] }): Promise<string> {
+  async createRetailSale(sale: any, items: any[], options?: { skipStockDeduction?: boolean; clientMutationId?: string }): Promise<string> {
     try {
-      const explicitOrg = sale?.organization_id || sale?.organizationId
-      const currentOrg = this.getCurrentOrgId()
-      const isMM = checkIsModaMiel(
-        typeof window !== 'undefined' ? window.location.hostname : '',
-        typeof window !== 'undefined' ? window.location.search : '',
-        typeof window !== 'undefined' ? window.location.hash : '',
-        explicitOrg || currentOrg
-      )
-      const orgId = explicitOrg || currentOrg || (isMM ? '1b498fa6-aca5-428c-9bdd-01e6fea30316' : '')
-
+      const orgId = this.getCurrentOrgId()
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-      const saleNotes = sale?.clientName
+      const saleNotes = sale.clientName
         ? `${sale.notes || ''}\n[Cliente: ${sale.clientName} ${sale.clientPhone ? `(Tel: ${sale.clientPhone})` : ''}]`.trim()
-        : (sale?.notes || '')
-
-      let saleBy = sale?.saleBy || sale?.sale_by
-      try {
-        const { data: authData } = await supabase.auth.getSession()
-        if (authData?.session?.user?.id) {
-          saleBy = authData.session.user.id
-        }
-      } catch {}
-
-      const mutationId = sale?.clientMutationId || sale?.client_mutation_id || options?.clientMutationId || crypto.randomUUID()
+        : sale.notes
 
       const insertPayload: any = {
         organization_id: orgId,
-        table_number: sale?.tableNumber || 1,
-        subtotal: Number(sale?.subtotal) || Number(sale?.total) || 0,
-        discounts: Number(sale?.discounts) || 0,
-        tax: Number(sale?.tax) || 0,
-        total: Number(sale?.total) || 0,
-        payment_method: sale?.paymentMethod || 'cash',
-        tip: Number(sale?.tip) || 0,
-        tip_source: sale?.tipSource || 'none',
-        sale_by: saleBy,
+        table_number: sale.tableNumber,
+        subtotal: sale.subtotal,
+        discounts: sale.discounts || 0,
+        tax: sale.tax || 0,
+        total: sale.total,
+        payment_method: sale.paymentMethod,
+        tip: sale.tip || 0,
+        tip_source: sale.tipSource || 'none',
+        sale_by: sale.saleBy,
         notes: saleNotes,
-        client_mutation_id: mutationId
+        client_mutation_id: sale.clientMutationId || options?.clientMutationId
       }
 
-      if (sale?.clientId && uuidRegex.test(sale.clientId)) {
+      if (sale.clientId && uuidRegex.test(sale.clientId)) {
         insertPayload.client_id = sale.clientId
-      }
-      if (sale?.reference_id || sale?.referenceId) {
-        insertPayload.reference_id = sale.reference_id || sale.referenceId
       }
 
       const sanitizedItems = (items || []).map(item => {
-        let rawProductId = item.productId || item.id || ''
-        if (typeof rawProductId === 'string') {
-          rawProductId = rawProductId.replace(/-(pack|half)$/, '')
-        }
+        const rawProductId = item.productId || item.id || ''
         const isValidUuid = uuidRegex.test(rawProductId)
-        const unitPrice = Number(item.unitPrice ?? item.unit_price ?? item.price ?? 0)
+        const unitPrice = Number(item.unitPrice) || 0
         const quantity = Number(item.quantity) || 1
-        const rawPackQty = Number(item.packQuantity || item.pack_quantity) || 1
         return {
           productId: isValidUuid ? rawProductId : null,
           productName: item.productName || item.name || 'Artículo manual',
           quantity: quantity,
           unitPrice: unitPrice,
-          totalPrice: Number((unitPrice * quantity).toFixed(2)),
+          totalPrice: unitPrice * quantity,
           parentId: (item.parentId && uuidRegex.test(item.parentId)) ? item.parentId : null,
-          packQuantity: rawPackQty
+          packQuantity: Number(item.packQuantity) || 1
         }
       })
 
-      const rpcOptions: any = {
-        skip_stock_deduction: Boolean(options?.skipStockDeduction),
-        client_mutation_id: insertPayload.client_mutation_id
-      }
-      if (options?.skipStockDeduction) {
-        rpcOptions.reserved_order_ids = options.reservedOrderIds || (sale as any)?.reservedOrderIds || []
-      }
-
-      // 1. Intentar RPC transaccional ACID primero
-      let rpcData: any = null
-      let rpcError: any = null
-      try {
-        const res = await supabase.rpc('process_retail_sale_transaction', {
-          p_sale: insertPayload,
-          p_items: sanitizedItems,
-          p_options: rpcOptions
-        })
-        rpcData = res.data
-        rpcError = res.error
-      } catch (err: any) {
-        rpcError = err
-      }
-
-      if (!rpcError && rpcData?.sale_id) {
-        return rpcData.sale_id
-      }
-
-      // 2. Fallback de alta disponibilidad si el RPC no existe o falla en el schema
-      logger.warn('supabase', 'RPC process_retail_sale_transaction falló o no existe, ejecutando inserción directa segura:', rpcError?.message || rpcError)
-
-      const { data: saleData, error: saleError } = await supabase
-        .from('retail_sales')
-        .insert([{
-          ...insertPayload,
-          status: 'completed'
-        }])
-        .select('id')
-        .single()
-
-      if (saleError) throw saleError
-
-      const saleId = saleData.id
-
-      if (sanitizedItems.length > 0) {
-        const itemsPayload = sanitizedItems.map(item => ({
-          sale_id: saleId,
-          product_id: item.productId,
-          product_name: item.productName,
-          quantity: item.quantity,
-          unit_price: item.unitPrice,
-          total_price: item.totalPrice
-        }))
-        const { error: itemsError } = await supabase.from('retail_sale_items').insert(itemsPayload)
-        if (itemsError) {
-          logger.warn('supabase', 'Error guardando items de venta retail:', itemsError)
+      // Confirmed retail sales are RPC-only. A sequential fallback would create
+      // partial sales when a later stock/client/audit step fails.
+      const { data: rpcData, error: rpcError } = await supabase.rpc('process_retail_sale_transaction', {
+        p_sale: insertPayload,
+        p_items: sanitizedItems,
+        p_options: {
+          skip_stock_deduction: Boolean(options?.skipStockDeduction),
+          client_mutation_id: insertPayload.client_mutation_id
         }
-      }
+      })
 
-      // Descuento de stock mediante updateRetailStockBatch (probado y verificado en PROD)
-      if (!options?.skipStockDeduction) {
-        const aggregatedStock: Record<string, number> = {}
-        sanitizedItems.forEach(item => {
-          if (!item.productId) return
-          const targetId = item.parentId || item.productId
-          const qtyToDeduct = item.quantity * (item.packQuantity || 1)
-          aggregatedStock[targetId] = (aggregatedStock[targetId] || 0) - qtyToDeduct
-        })
-
-        const stockUpdates = Object.entries(aggregatedStock).map(([productId, quantity]) => ({
-          productId,
-          quantity
-        }))
-
-        if (stockUpdates.length > 0) {
-          try {
-            await this.updateRetailStockBatch(stockUpdates)
-          } catch (stkErr) {
-            logger.warn('supabase', 'Error al descontar stock en batch:', stkErr)
-          }
-        }
-      }
-
-      return saleId
+      if (rpcError) throw rpcError
+      if (!rpcData?.sale_id) throw new Error('La transacción de venta no devolvió un identificador de venta')
+      return rpcData.sale_id
     } catch (error) {
       logger.error('supabase', 'Error creating retail sale', error as any)
       throw error

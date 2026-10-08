@@ -4,10 +4,9 @@ import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { storageService } from '@/services/storageService'
 import { compressImage } from '@/utils/imageCompression'
-import { X, Save, Loader2, Image as ImageIcon, Camera, Plus, Printer, Scissors } from 'lucide-react'
+import { X, Save, Loader2, Image as ImageIcon, Camera, Plus, Printer } from 'lucide-react'
 import PlanGate from '@/components/common/PlanGate'
 import printService from '@/services/printService'
-import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 function parseProductDescription(descriptionText: string | null) {
   if (!descriptionText) return { description: '', packPrice: undefined, bulkPrice: undefined, packQty: 10, packagesPerBulk: 10, wholesaleMinQty: 3, sizes: undefined }
@@ -64,13 +63,6 @@ export default function ProductModal({
     onSuccess
 }: ProductModalProps) {
     const { currentUser, products, organizationSettings } = useAppStore()
-    const { isModaMiel: isThemeMM } = useTenantTheme()
-    const isModaMiel = isThemeMM || (typeof window !== 'undefined' && (
-        window.location.hostname.includes('modamiel') ||
-        window.location.search.includes('modamiel') ||
-        window.location.hash.includes('modamiel') ||
-        (localStorage.getItem('current_org_id') || '').includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
-    ))
     const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
     const parsedDesc = parseProductDescription(product?.description || '')
     const [formData, setFormData] = useState({
@@ -90,7 +82,6 @@ export default function ProductModal({
         wholesalePrice: product?.wholesalePrice ?? (product as any)?.wholesale_price ?? undefined,
         wholesaleMinQty: product?.wholesaleMinQty ?? (product as any)?.wholesale_min_qty ?? parsedDesc.wholesaleMinQty ?? 3,
         packPrice: parsedDesc.packPrice,
-        halfPackPrice: product?.halfPackPrice || (product as any)?.half_pack_price || undefined,
         packQty: parsedDesc.packQty || 10,
         bulkPrice: parsedDesc.bulkPrice,
         packagesPerBulk: parsedDesc.packagesPerBulk || 10
@@ -807,7 +798,7 @@ export default function ProductModal({
                                 <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Presentación</label>
                                 <input
                                     type="text"
-                                    value={isModaMiel ? "PAQUETE / 1/2 PAQUETE" : "POR PIEZA"}
+                                    value="POR PIEZA"
                                     readOnly
                                     disabled
                                     className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none font-black text-xs text-slate-400 text-center select-none"
@@ -816,149 +807,89 @@ export default function ProductModal({
                             
                             {showPricingOptions && (
                                 <>
-                                    {isModaMiel ? (
-                                        <>
-                                            {/* Moda Miel: Exclusivamente Paquete y Medio Paquete */}
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-amber-500 mb-1 uppercase">PRECIO PAQUETE COMPLETO</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                                    <input
-                                                        type="number"
-                                                        value={formData.packPrice || ''}
-                                                        onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                        step="0.01"
-                                                        min="0"
-                                                        disabled={!isAdminOrManager}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-amber-500 mb-1 uppercase">PIEZAS POR PAQUETE</label>
-                                                <input
-                                                    type="number"
-                                                    value={formData.packQty}
-                                                    onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 10 })}
-                                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                    min="1"
-                                                    disabled={!isAdminOrManager}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-sky-600 mb-1 uppercase">PRECIO 1/2 PAQUETE (MANUAL)</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                                    <input
-                                                        type="number"
-                                                        value={formData.halfPackPrice !== undefined ? formData.halfPackPrice : ''}
-                                                        placeholder={formData.packPrice ? ((formData.packPrice) / 2).toFixed(2) : (formData.price ? (formData.price * Math.max(1, Math.round((formData.packQty || 10) / 2))).toFixed(2) : '0.00')}
-                                                        onChange={(e) => setFormData({ ...formData, halfPackPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-sky-300 rounded-xl outline-none font-bold text-xs text-sky-950 focus:ring-2 focus:ring-sky-400 disabled:bg-slate-100 disabled:text-slate-400"
-                                                        step="0.01"
-                                                        min="0"
-                                                        disabled={!isAdminOrManager}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-sky-600 mb-1 uppercase">PIEZAS EN 1/2 PAQUETE</label>
-                                                <input
-                                                    type="text"
-                                                    value={`${Math.max(1, Math.round((formData.packQty || 10) / 2))} piezas`}
-                                                    readOnly
-                                                    disabled
-                                                    className="w-full px-4 py-2.5 bg-sky-50/50 border border-sky-200 rounded-xl outline-none font-bold text-xs text-sky-950 text-center select-none"
-                                                />
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            {/* Fila 2: Precio Mayoreo + Piezas por Mayoreo */}
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Precio Mayoreo</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                                    <input
-                                                        type="number"
-                                                        value={formData.wholesalePrice || ''}
-                                                        onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                        step="0.01"
-                                                        min="0"
-                                                        disabled={!isAdminOrManager}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Piezas por Mayoreo</label>
-                                                <input
-                                                    type="number"
-                                                    value={formData.wholesaleMinQty}
-                                                    onChange={(e) => setFormData({ ...formData, wholesaleMinQty: parseInt(e.target.value) || 3 })}
-                                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                    min="1"
-                                                    disabled={!isAdminOrManager}
-                                                />
-                                            </div>
+                                    {/* Fila 2: Precio Mayoreo + Piezas por Mayoreo */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Precio Mayoreo</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.wholesalePrice || ''}
+                                                onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                                step="0.01"
+                                                min="0"
+                                                disabled={!isAdminOrManager}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Piezas por Mayoreo</label>
+                                        <input
+                                            type="number"
+                                            value={formData.wholesaleMinQty}
+                                            onChange={(e) => setFormData({ ...formData, wholesaleMinQty: parseInt(e.target.value) || 3 })}
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                            min="1"
+                                            disabled={!isAdminOrManager}
+                                        />
+                                    </div>
 
-                                            {/* Fila 3: Precio Paquete + Piezas por Paquete */}
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO PAQUETE</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                                    <input
-                                                        type="number"
-                                                        value={formData.packPrice || ''}
-                                                        onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                        step="0.01"
-                                                        min="0"
-                                                        disabled={!isAdminOrManager}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PIEZAS POR PAQUETE</label>
-                                                <input
-                                                    type="number"
-                                                    value={formData.packQty}
-                                                    onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 10 })}
-                                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                    min="1"
-                                                    disabled={!isAdminOrManager}
-                                                />
-                                            </div>
+                                    {/* Fila 3: Precio Paquete + Piezas por Paquete */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO PAQUETE</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.packPrice || ''}
+                                                onChange={(e) => setFormData({ ...formData, packPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                                step="0.01"
+                                                min="0"
+                                                disabled={!isAdminOrManager}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PIEZAS POR PAQUETE</label>
+                                        <input
+                                            type="number"
+                                            value={formData.packQty}
+                                            onChange={(e) => setFormData({ ...formData, packQty: parseInt(e.target.value) || 10 })}
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                            min="1"
+                                            disabled={!isAdminOrManager}
+                                        />
+                                    </div>
 
-                                            {/* Fila 4: Precio Bulto + Paquetes por Bulto */}
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO BULTO</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
-                                                    <input
-                                                        type="number"
-                                                        value={formData.bulkPrice || ''}
-                                                        onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
-                                                        className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                        step="0.01"
-                                                        min="0"
-                                                        disabled={!isAdminOrManager}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PAQUETES POR BULTO</label>
-                                                <input
-                                                    type="number"
-                                                    value={formData.packagesPerBulk}
-                                                    onChange={(e) => setFormData({ ...formData, packagesPerBulk: parseInt(e.target.value) || 10 })}
-                                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                                    min="1"
-                                                    disabled={!isAdminOrManager}
-                                                />
-                                            </div>
-                                        </>
-                                    )}
+                                    {/* Fila 4: Precio Bulto + Paquetes por Bulto */}
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PRECIO BULTO</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">$</span>
+                                            <input
+                                                type="number"
+                                                value={formData.bulkPrice || ''}
+                                                onChange={(e) => setFormData({ ...formData, bulkPrice: e.target.value === '' ? undefined : parseFloat(e.target.value) || 0 })}
+                                                className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                                step="0.01"
+                                                min="0"
+                                                disabled={!isAdminOrManager}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase">PAQUETES POR BULTO</label>
+                                        <input
+                                            type="number"
+                                            value={formData.packagesPerBulk}
+                                            onChange={(e) => setFormData({ ...formData, packagesPerBulk: parseInt(e.target.value) || 10 })}
+                                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                            min="1"
+                                            disabled={!isAdminOrManager}
+                                        />
+                                    </div>
                                 </>
                             )}
                         </div>

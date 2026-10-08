@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, DollarSign, Tag, Package, User, Check, Scissors } from 'lucide-react'
-import { useTenantTheme } from '@/hooks/useTenantTheme'
+import { X, DollarSign, Tag, Package, User, Check } from 'lucide-react'
 
 interface ManualItemModalProps {
   isOpen: boolean
@@ -9,13 +8,6 @@ interface ManualItemModalProps {
 }
 
 export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemModalProps) {
-  const { isModaMiel: isThemeMM } = useTenantTheme()
-  const isModaMiel = isThemeMM || (typeof window !== 'undefined' && (
-    window.location.hostname.includes('modamiel') ||
-    window.location.search.includes('modamiel') ||
-    window.location.hash.includes('modamiel') ||
-    (localStorage.getItem('current_org_id') || '').includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
-  ))
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [isPackage, setIsPackage] = useState(false)
@@ -26,11 +18,11 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
     if (isOpen) {
       setDescription('')
       setPrice('')
-      setIsPackage(isModaMiel ? true : false)
+      setIsPackage(false)
       setPackQty(10)
       setTimeout(() => inputRef.current?.focus(), 100)
     }
-  }, [isOpen, isModaMiel])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -39,25 +31,13 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
     const numPrice = parseFloat(price)
     if (!description.trim() || isNaN(numPrice)) return
     
-    if (isModaMiel) {
-      if (isPackage) {
-        // Paquete completo Moda Miel
-        const finalDesc = description.toUpperCase().includes('PAQUETE') ? description : `PAQUETE - ${description}`
-        onAdd(finalDesc, numPrice, packQty > 1 ? packQty : 10)
-      } else {
-        // Medio paquete Moda Miel
-        const finalDesc = description.toUpperCase().includes('MEDIO') ? description : `MEDIO PAQUETE - ${description}`
-        onAdd(finalDesc, numPrice, packQty > 1 ? packQty : 5)
-      }
+    if (isPackage) {
+      // Agregar como paquete (packQty piezas a numPrice cada una)
+      const finalDesc = description.toUpperCase().includes('PAQUETE') ? description : `PAQUETE - ${description}`
+      onAdd(finalDesc, numPrice, packQty)
     } else {
-      if (isPackage) {
-        // Agregar como paquete (packQty piezas a numPrice cada una)
-        const finalDesc = description.toUpperCase().includes('PAQUETE') ? description : `PAQUETE - ${description}`
-        onAdd(finalDesc, numPrice, packQty)
-      } else {
-        // Agregar como pieza individual
-        onAdd(description, numPrice, 1)
-      }
+      // Agregar como pieza individual
+      onAdd(description, numPrice, 1)
     }
     
     onClose()
@@ -78,99 +58,57 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
-          {/* Selector de Modo: Medio Paquete vs Paquete Completo (Moda Miel) / Pieza vs Paquete (Otros) */}
+          {/* Selector de Modo: Pieza vs Paquete */}
           <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
               1. Selecciona Tipo de Venta
             </label>
-            {isModaMiel ? (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPackage(false)
-                    setPackQty(5)
-                  }}
-                  className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
-                    !isPackage
-                      ? 'bg-sky-500 text-slate-950 border-sky-500 shadow-md font-black'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Scissors size={14} />
-                  <span>✂️ 1/2 Paquete</span>
-                  {!isPackage && <Check size={14} className="text-slate-950" />}
-                </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setIsPackage(false)}
+                className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
+                  !isPackage
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <User size={14} />
+                <span>👤 Pieza</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPackage(true)
-                    setPackQty(10)
-                  }}
-                  className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
-                    isPackage
-                      ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg shadow-amber-200 font-black'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Package size={14} />
-                  <span>📦 Paquete Completo</span>
-                  {isPackage && <Check size={14} className="text-slate-950" />}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsPackage(false)}
-                  className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
-                    !isPackage
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <User size={14} />
-                  <span>👤 Pieza</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsPackage(true)}
-                  className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
-                    isPackage
-                      ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg shadow-amber-200'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <Package size={14} />
-                  <span>📦 PAQUETE</span>
-                  {isPackage && <Check size={14} />}
-                </button>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => setIsPackage(true)}
+                className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
+                  isPackage
+                    ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg shadow-amber-200'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <Package size={14} />
+                <span>📦 PAQUETE</span>
+                {isPackage && <Check size={14} />}
+              </button>
+            </div>
           </div>
 
-          {/* Cantidad de Piezas */}
-          {(isPackage || isModaMiel) && (
-            <div className={`p-3 rounded-2xl border space-y-2 animate-fadeIn ${
-              isModaMiel && !isPackage ? 'bg-sky-50 border-sky-200' : 'bg-amber-50 border-amber-200'
-            }`}>
-              <label className={`block text-[10px] font-black uppercase tracking-widest ${
-                isModaMiel && !isPackage ? 'text-sky-900' : 'text-amber-800'
-              }`}>
-                Piezas por lote ({isModaMiel ? (isPackage ? 'Paquete Completo' : 'Medio Paquete') : 'Paquete'}):
+          {/* Cantidad de Piezas si es Paquete */}
+          {isPackage && (
+            <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-2 animate-fadeIn">
+              <label className="block text-[10px] font-black text-amber-800 uppercase tracking-widest">
+                Piezas por Paquete:
               </label>
               <div className="flex gap-2">
-                {(isModaMiel && !isPackage ? [5, 6, 4, 3] : [10, 12, 6, 24]).map(qty => (
+                {[10, 12, 6, 24].map(qty => (
                   <button
                     key={qty}
                     type="button"
                     onClick={() => setPackQty(qty)}
                     className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all ${
                       packQty === qty
-                        ? (isModaMiel && !isPackage ? 'bg-sky-400 text-slate-950 border-sky-500 shadow-sm' : 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm')
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                        ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm'
+                        : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-100'
                     }`}
                   >
                     {qty} pzas
@@ -234,17 +172,13 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
             </button>
             <button
               type="submit"
-              className={`flex-1 py-3 px-4 font-black rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg ${
+              className={`flex-1 py-3 px-4 text-white font-black rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg ${
                 isPackage
                   ? 'bg-amber-400 text-slate-950 shadow-amber-200 hover:bg-amber-500'
-                  : isModaMiel
-                    ? 'bg-sky-500 text-slate-950 shadow-sky-200 hover:bg-sky-600'
-                    : 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700'
+                  : 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700'
               }`}
             >
-              {isPackage 
-                ? `Agregar Paquete (${packQty} pzas)` 
-                : (isModaMiel ? `Agregar 1/2 Paquete (${packQty} pzas)` : 'Agregar Pieza')}
+              {isPackage ? `Agregar Paquete (${packQty} pzas)` : 'Agregar Pieza'}
             </button>
           </div>
         </form>

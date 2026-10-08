@@ -412,22 +412,13 @@ export default function POS() {
   const isReadOnly = currentUser?.role === 'supervisor'
 
 
-  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('paquete')
+  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('pieza')
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
 
   const priceModeRef = useRef(priceMode)
   useEffect(() => {
     priceModeRef.current = priceMode
   }, [priceMode])
-
-  // 🔒 REGLA ESTRICTA MODAMIEL: Únicamente venta por paquete
-  useEffect(() => {
-    if (isModaMiel) {
-      if (priceMode !== 'paquete') {
-        setPriceMode('paquete')
-      }
-    }
-  }, [isModaMiel, priceMode])
 
 
   const handleChangePriceMode = (newMode: 'pieza' | 'mayoreo' | 'paquete' | 'bulto') => {
@@ -756,22 +747,6 @@ export default function POS() {
     const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
     const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
 
-    // 👗 REGLA ESTRICTA MODAMIEL: Venta exclusiva por paquete.
-    if (isModaMiel) {
-      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
-      const fullPackQty = explicitPackQty > 1 ? explicitPackQty : 10
-
-      const computedProduct: any = {
-        ...product,
-        price: unitPackPrice,
-        packQuantity: fullPackQty,
-        productId: product.id
-      }
-
-      addItemToDraft(tableNumber, computedProduct, currentUser.id)
-      return
-    }
-
     // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
     if (isPackageMode || priceMode === 'paquete') {
       const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
@@ -797,14 +772,49 @@ export default function POS() {
     }
 
     addItemToDraft(tableNumber, computedProduct, currentUser.id)
-    return
+
+
   }
 
   const handleAddPackageProduct = (product: Product) => {
-    handleAddProduct(product, true)
+    if (!currentUser || isReadOnly) return
+
+    const parsedDesc = parseProductDescription(product.description || '')
+    const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+    const packQty = explicitPackQty > 1 ? explicitPackQty : 10
+
+    const rawPrice = Number(product.price || 0)
+    const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
+    const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
+
+    let namePrice: number | null = null
+    if (product.name && product.name.includes('$')) {
+      const afterDollar = product.name.split('$')[1] || ''
+      const pNum = parseFloat(afterDollar)
+      if (!isNaN(pNum) && pNum > 0) namePrice = pNum
+    }
+
+    let unitPackPrice = rawPrice
+    if (namePrice !== null && namePrice > 0) {
+      unitPackPrice = namePrice
+    } else if (packPrice > 0) {
+      unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
+    } else if (wholesalePrice > 0) {
+      unitPackPrice = wholesalePrice
+    }
+
+    const computedProduct = {
+      ...product,
+      price: unitPackPrice,
+      packQuantity: 1
+    }
+
+    for (let i = 0; i < packQty; i++) {
+      addItemToDraft(tableNumber, computedProduct, currentUser.id)
+    }
   }
 
-  const handleAddManualItem = (description: string, price: number, packQty: number = 10) => {
+  const handleAddManualItem = (description: string, price: number, packQty: number = 1) => {
     if (!currentUser || isReadOnly) return
     const virtualProduct: any = {
       id: `manual-${Date.now()}`,
@@ -812,10 +822,13 @@ export default function POS() {
       price: price,
       category: 'Manual',
       image: '',
-      packQuantity: packQty > 1 ? packQty : 10
+      packQuantity: 1
     }
 
-    addItemToDraft(tableNumber, virtualProduct, currentUser.id)
+    const count = packQty > 1 ? packQty : 1
+    for (let i = 0; i < count; i++) {
+      addItemToDraft(tableNumber, virtualProduct, currentUser.id)
+    }
     
     // Audit Log: Manual item added
     supabaseService.createAuditLog({
@@ -823,7 +836,7 @@ export default function POS() {
       action: 'POS_MANUAL_ITEM_ADDED',
       entityType: 'POS',
       entityId: `caja-${tableNumber}`,
-      newValue: { description, price, packQty: virtualProduct.packQuantity }
+      newValue: { description, price, packQty: count }
     }).catch(err => console.error('Error logging manual item:', err))
   }
 
@@ -1163,45 +1176,16 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
-      const normalizedItems = allItems.map(it => {
-        let cleanProductId = it.productId || it.id || ''
-        if (typeof cleanProductId === 'string') {
-          cleanProductId = cleanProductId.replace(/-(pack|half)$/, '')
-        }
-        return {
-          ...it,
-          productId: cleanProductId
-        }
-      })
-
-      let saleNotes = isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail'
-      if (result.transferDetails) {
-        const { bank, reference, notes: tNotes } = result.transferDetails
-        const parts = [
-          bank ? `Banco: ${bank}` : '',
-          reference ? `Ref/Rastreo: ${reference}` : '',
-          tNotes ? `Titular/Nota: ${tNotes}` : ''
-        ].filter(Boolean)
-        if (parts.length > 0) {
-          saleNotes = `${saleNotes}\n[Transferencia: ${parts.join(' | ')}]`
-        }
-      }
-
-      const targetOrgId = currentUser.organizationId || (isModaMiel ? '1b498fa6-aca5-428c-9bdd-01e6fea30316' : undefined)
-
       const salePayload: any = {
-        organization_id: targetOrgId,
-        organizationId: targetOrgId,
         tableNumber,
         subtotal: paymentPanel.orderTotal,
         total: result.total,
         paymentMethod: mappedMethod,
         saleBy: currentUser.id,
-        notes: saleNotes,
+        notes: isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail',
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
-        clientPhone: selectedClient?.phone,
-        reference_id: (result as any).referenceId || (result as any).trackingDetails || undefined
+        clientPhone: selectedClient?.phone
       }
 
       // Persist a single idempotency key before networking. The same intent is
@@ -1210,7 +1194,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       salePayload.clientMutationId = clientMutationId
       const syncOperationId = await syncService.queueOperation('CREATE_RETAIL_SALE', {
         sale: salePayload,
-        items: normalizedItems,
+        items: allItems,
         options: {
           skipStockDeduction: isCheckingOutPendingOrder,
           reservedOrderIds: isCheckingOutPendingOrder ? orderIds : []
@@ -1340,7 +1324,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               {registers[tableNumber.toString()] || `Caja ${tableNumber}`}
             </span>
             <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-black uppercase">
-              {isModaMiel ? 'PAQUETE' : priceMode}
+              {priceMode}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -1537,19 +1521,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               </button>
 
               <button
-                onClick={() => {
-                  if (isModaMiel) {
-                    const userRole = (currentUser?.role || '').toLowerCase()
-                    const isAuthorized = ['admin', 'manager', 'supervisor', 'gerente'].includes(userRole)
-                    if (!isAuthorized) {
-                      alert('🔒 ACCESO RESTRINGIDO: En ModaMielMX, los ajustes manuales de precios y cantidades están reservados exclusivamente para Gerencia y Administradores.')
-                      return
-                    }
-                  }
-                  setShowManualAdjustModal(true)
-                }}
+                onClick={() => setShowManualAdjustModal(true)}
                 className="p-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl transition-all shadow-xs active:scale-95"
-                title="Ajuste Manual de Ticket (Piezas y Precios - Exclusivo Gerencia/Admin)"
+                title="Ajuste Manual de Ticket (Piezas y Precios)"
               >
                 <SlidersHorizontal size={16} />
               </button>
@@ -2041,7 +2015,6 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             items={items}
             tableNumber={tableNumber}
             currentUser={currentUser}
-            isModaMiel={isModaMiel}
           />
         )}
 
@@ -2339,15 +2312,13 @@ function ManualAdjustModal({
   onClose,
   items,
   tableNumber,
-  currentUser,
-  isModaMiel = false
+  currentUser
 }: {
   isOpen: boolean
   onClose: () => void
   items: OrderItem[]
   tableNumber: number
   currentUser: any
-  isModaMiel?: boolean
 }) {
   const [adjustedItems, setAdjustedItems] = useState<OrderItem[]>([])
   const [reason, setReason] = useState('')
@@ -2380,18 +2351,9 @@ function ManualAdjustModal({
       return
     }
 
-    if (isModaMiel) {
-      const userRole = (currentUser?.role || '').toLowerCase()
-      const isAuthorized = ['admin', 'manager', 'supervisor', 'gerente'].includes(userRole)
-      if (!isAuthorized) {
-        alert('🔒 ACCESO RESTRINGIDO: En ModaMielMX, los ajustes manuales de precios y cantidades están reservados exclusivamente para Gerencia y Administradores.')
-        return
-      }
-    }
-
     setSaving(true)
     try {
-      // 📝 LOG DE AUDITORÍA OBLIGATORIO PARA TODOS LOS USUARIOS CON TRAZABILIDAD
+      // 📝 LOG DE AUDITORÍA OBLIGATORIO PARA TODOS LOS USUARIOS
       await supabaseService.createAuditLog({
         userId: currentUser?.id || 'unknown',
         action: 'POS_MANUAL_TICKET_ADJUSTMENT',
@@ -2403,7 +2365,6 @@ function ManualAdjustModal({
           reason,
           adjustedBy: currentUser?.username || currentUser?.email || currentUser?.id,
           role: currentUser?.role,
-          tenant: isModaMiel ? 'MODAMIELMX' : 'STANDARD',
           itemsAfter: adjustedItems.map(i => ({ name: i.productName, qty: i.quantity, price: i.unitPrice }))
         }
       })
@@ -2456,9 +2417,7 @@ function ManualAdjustModal({
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">
-                        {isModaMiel ? 'Paquetes (Cantidad):' : 'Piezas (Cantidad):'}
-                      </label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Piezas (Cantidad):</label>
                       <input
                         type="number"
                         min="1"
@@ -2468,9 +2427,7 @@ function ManualAdjustModal({
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">
-                        {isModaMiel ? 'Precio Paquete ($):' : 'Precio Unitario ($):'}
-                      </label>
+                      <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Precio Unitario ($):</label>
                       <input
                         type="number"
                         step="0.01"
@@ -2498,7 +2455,7 @@ function ManualAdjustModal({
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder={isModaMiel ? "ej: Descuento autorizado en mostrador / Ajuste de paquetes" : "ej: Descuento autorizado en mostrador / Corrección de piezas"}
+                placeholder="ej: Descuento autorizado en mostrador / Corrección de piezas"
                 className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl font-bold text-xs text-slate-900 outline-none focus:border-indigo-500"
                 required
               />

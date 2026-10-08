@@ -2,9 +2,8 @@ import { useState } from 'react'
 import logger from '@/utils/logger'
 import mercadopagoService from '@/services/mercadopagoService'
 import clipPinpadService from '@/services/clipPinpadService'
-import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X, Smartphone, ArrowRightLeft, Building2 } from 'lucide-react'
+import { CheckCircle, CreditCard, DollarSign, Loader2, Users, X, Smartphone } from 'lucide-react'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
-import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 // The modal and integration code stay in place for controlled re-enablement,
 // but no tenant may initiate a Clip charge until its end-to-end flow is audited.
@@ -12,17 +11,12 @@ const CLIP_PAYMENTS_ENABLED = false
 
 export interface PaymentResult {
   transactionId: string
-  paymentMethod: 'cash' | 'card_mercadopago' | 'card' | 'clip' | 'transferencia'
+  paymentMethod: 'cash' | 'card_mercadopago' | 'card' | 'clip'
   currency?: 'MXN' | 'USD'
   total: number
   splitRequested?: boolean
   authCode?: string
   last4?: string
-  transferDetails?: {
-    bank?: string
-    reference?: string
-    notes?: string
-  }
 }
 
 interface PaymentPanelProps {
@@ -44,12 +38,7 @@ export default function PaymentPanel({
 }: PaymentPanelProps) {
   const ids = orderIds || (orderId ? [orderId] : [])
 
-  const { isModaMiel } = useTenantTheme()
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_mercadopago' | 'card' | 'clip' | 'transferencia'>('cash')
-  const [transferBank, setTransferBank] = useState('BBVA')
-  const [customBank, setCustomBank] = useState('')
-  const [transferReference, setTransferReference] = useState('')
-  const [transferNotes, setTransferNotes] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card_mercadopago' | 'card' | 'clip'>('cash')
   const { canUseFeature } = usePlanLimits()
   const [currency, setCurrency] = useState<'MXN' | 'USD'>('MXN')
   const [loading, setLoading] = useState(false)
@@ -70,25 +59,17 @@ export default function PaymentPanel({
 
       const finalTotal = orderTotal
 
-      if (paymentMethod === 'cash' || paymentMethod === 'card' || paymentMethod === 'transferencia') {
+      if (paymentMethod === 'cash' || paymentMethod === 'card') {
         const transactionId = `${paymentMethod}-${Date.now()}`
         setSuccess(true)
         setTimeout(() => {
-          const resolvedBank = transferBank === 'Otro' ? (customBank.trim() || 'Otro') : transferBank
           onPaymentComplete({
             transactionId,
             paymentMethod,
             currency,
             total: finalTotal,
-            ...(paymentMethod === 'transferencia' ? {
-              transferDetails: {
-                bank: resolvedBank,
-                reference: transferReference.trim() || 'Sin folio',
-                notes: transferNotes.trim()
-              }
-            } : {})
           })
-        }, 1200)
+        }, 1500)
       } else if (paymentMethod === 'clip') {
         setClipStatusMessage(`Enviando $${finalTotal.toFixed(2)} MXN a Clip Total 3...`)
         const shortOrderId = ids[0] ? ids[0].slice(-4) : Date.now().toString().slice(-4)
@@ -227,170 +208,69 @@ export default function PaymentPanel({
           {!mercadopagoUrl ? (
             <div className="mb-6">
               <label className="block text-sm font-bold text-gray-900 mb-3">Forma de Pago</label>
-              {isModaMiel ? (
-                <div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('cash')}
-                      disabled={loading || success}
-                      className={`p-4 rounded-xl flex flex-col items-center gap-2 transition-all ${paymentMethod === 'cash'
-                        ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                      <DollarSign size={26} strokeWidth={2.5} />
-                      <span className="text-xs font-black uppercase tracking-tight text-center">💵 Efectivo</span>
-                    </button>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  onClick={() => setPaymentMethod('cash')}
+                  disabled={loading || success}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'cash'
+                    ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <DollarSign size={22} strokeWidth={2.5} />
+                  <span className="text-[11px] font-black uppercase tracking-tight text-center">Efectivo</span>
+                </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('transferencia')}
-                      disabled={loading || success}
-                      className={`p-4 rounded-xl flex flex-col items-center gap-2 transition-all ${paymentMethod === 'transferencia'
-                        ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                      <ArrowRightLeft size={26} strokeWidth={2.5} />
-                      <span className="text-xs font-black uppercase tracking-tight text-center">🏦 Transferencia</span>
-                    </button>
-                  </div>
+                <button
+                  onClick={() => setPaymentMethod('clip')}
+                  disabled={loading || success || !CLIP_PAYMENTS_ENABLED}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all disabled:cursor-not-allowed disabled:opacity-50 ${paymentMethod === 'clip'
+                    ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg ring-2 ring-amber-400'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <Smartphone size={22} strokeWidth={2.5} />
+                  <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Clip {CLIP_PAYMENTS_ENABLED ? 'Total 3' : 'No disponible'}</span>
+                </button>
 
-                  {paymentMethod === 'transferencia' && (
-                    <div className="mt-4 p-4 rounded-2xl bg-blue-50/80 border border-blue-200 space-y-3 animate-fadeIn">
-                      <div className="flex items-center gap-2 text-blue-900 font-black text-xs uppercase tracking-wider">
-                        <Building2 size={16} className="text-blue-600" />
-                        <span>Detalles para Rastreo de Transferencia</span>
-                      </div>
+                <button
+                  onClick={() => setPaymentMethod('card')}
+                  disabled={loading || success}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card'
+                    ? 'bg-slate-900 text-white shadow-lg ring-2 ring-slate-400'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  <CreditCard size={22} />
+                  <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta Ext.</span>
+                </button>
 
-                      {/* Selector rápido de banco */}
-                      <div>
-                        <label className="block text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1.5">
-                          Banco Emisor:
-                        </label>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {['BBVA', 'Santander', 'Banamex', 'Banorte', 'Azteca', 'Nu', 'STP/MP', 'Otro'].map(b => (
-                            <button
-                              key={b}
-                              type="button"
-                              onClick={() => setTransferBank(b)}
-                              className={`py-1.5 px-1 rounded-lg text-[10px] font-black uppercase transition-all border ${
-                                transferBank === b
-                                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                  : 'bg-white text-slate-700 border-blue-200 hover:bg-blue-100/60'
-                              }`}
-                            >
-                              {b}
-                            </button>
-                          ))}
-                        </div>
-                        {transferBank === 'Otro' && (
-                          <input
-                            type="text"
-                            value={customBank}
-                            onChange={(e) => setCustomBank(e.target.value)}
-                            placeholder="Escribe el nombre del banco o app"
-                            className="mt-2 w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-                          />
-                        )}
-                      </div>
-
-                      {/* Folio / Referencia */}
-                      <div>
-                        <label className="block text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">
-                          Folio / Referencia / Clave de Rastreo:
-                        </label>
-                        <input
-                          type="text"
-                          value={transferReference}
-                          onChange={(e) => setTransferReference(e.target.value)}
-                          placeholder="Ej. 184920 o últimos 4 dígitos"
-                          className="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-                        />
-                      </div>
-
-                      {/* Titular o Notas */}
-                      <div>
-                        <label className="block text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">
-                          Titular de la cuenta / Notas adicionales:
-                        </label>
-                        <input
-                          type="text"
-                          value={transferNotes}
-                          onChange={(e) => setTransferNotes(e.target.value)}
-                          placeholder="Ej. Pagó Juan Pérez / Enviar comprobante"
-                          className="w-full p-2.5 bg-white border border-blue-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-500"
-                        />
-                      </div>
+                {canUseFeature('mercadopago') ? (
+                  <button
+                    onClick={() => setPaymentMethod('card_mercadopago')}
+                    disabled={loading || success}
+                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_mercadopago'
+                      ? 'bg-[#00B1EA] text-white shadow-lg ring-2 ring-[#00B1EA]'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
+                      <span className="text-[#00B1EA] font-black text-xs">M</span>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    onClick={() => setPaymentMethod('cash')}
-                    disabled={loading || success}
-                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'cash'
-                      ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                  >
-                    <DollarSign size={22} strokeWidth={2.5} />
-                    <span className="text-[11px] font-black uppercase tracking-tight text-center">Efectivo</span>
+                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Mercado Pago</span>
                   </button>
-
+                ) : (
                   <button
-                    onClick={() => setPaymentMethod('clip')}
-                    disabled={loading || success || !CLIP_PAYMENTS_ENABLED}
-                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all disabled:cursor-not-allowed disabled:opacity-50 ${paymentMethod === 'clip'
-                      ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg ring-2 ring-amber-400'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
+                    disabled
+                    className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative"
                   >
-                    <Smartphone size={22} strokeWidth={2.5} />
-                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Clip {CLIP_PAYMENTS_ENABLED ? 'Total 3' : 'No disponible'}</span>
+                    <div className="w-6 h-6 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-400 font-black text-xs">M</span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">Mercado Pago</span>
                   </button>
-
-                  <button
-                    onClick={() => setPaymentMethod('card')}
-                    disabled={loading || success}
-                    className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card'
-                      ? 'bg-slate-900 text-white shadow-lg ring-2 ring-slate-400'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                  >
-                    <CreditCard size={22} />
-                    <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Tarjeta Ext.</span>
-                  </button>
-
-                  {canUseFeature('mercadopago') ? (
-                    <button
-                      onClick={() => setPaymentMethod('card_mercadopago')}
-                      disabled={loading || success}
-                      className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${paymentMethod === 'card_mercadopago'
-                        ? 'bg-[#00B1EA] text-white shadow-lg ring-2 ring-[#00B1EA]'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                    >
-                      <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
-                        <span className="text-[#00B1EA] font-black text-xs">M</span>
-                      </div>
-                      <span className="text-[11px] font-black uppercase tracking-tight text-center leading-tight">Mercado Pago</span>
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="p-3 rounded-xl flex flex-col items-center gap-1.5 bg-gray-50 text-gray-300 cursor-not-allowed relative"
-                    >
-                      <div className="w-6 h-6 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400 font-black text-xs">M</span>
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-tight text-center leading-tight">Mercado Pago</span>
-                    </button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               {paymentMethod === 'clip' && !loading && !clipStatusMessage && (
                 <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-center justify-between">
@@ -486,9 +366,7 @@ export default function PaymentPanel({
                   className={`flex-1 px-6 py-4 rounded-xl font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-white ${
                     paymentMethod === 'clip'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-orange-500/30'
-                      : paymentMethod === 'transferencia'
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/50'
-                        : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/50'
+                      : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/50'
                   }`}
                 >
                   {loading ? (
@@ -509,9 +387,7 @@ export default function PaymentPanel({
                           ? `Enviar $${orderTotal.toFixed(2)} a Clip`
                           : paymentMethod === 'card'
                             ? 'Registrar Info (Pago Externo)'
-                            : paymentMethod === 'transferencia'
-                              ? `Cobrar $${orderTotal.toFixed(2)} en Transferencia`
-                              : `Cobrar $${orderTotal.toFixed(2)} en Efectivo`}
+                            : `Cobrar $${orderTotal.toFixed(2)} en Efectivo`}
                     </>
                   )}
                 </button>

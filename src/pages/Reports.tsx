@@ -103,7 +103,7 @@ export default function Reports() {
       const chartData = Object.entries(byDay)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([day, sales]: [string, any[]]) => ({
-          date: new Date(`${day}T12:00:00`).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' }),
+          date: new Date(day).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' }),
           total: sales.reduce((sum, s: any) => sum + Number(s.total || 0), 0),
           transactions: sales.length,
         }))

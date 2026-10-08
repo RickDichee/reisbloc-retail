@@ -3,7 +3,7 @@
 # =============================================================================
 
 # --- Dependencies ---
-node_modules
+node_modules/
 .pnp
 .pnp.js
 
@@ -106,4 +106,7 @@ MASTER_PLAN.md
 my-agent/
 .env*
 .andromity/
-backup_modamiel_chrome/
+
+.continue/
+
+Sistema de Punto de Venta.txt

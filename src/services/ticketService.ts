@@ -285,10 +285,7 @@ export const ticketService = {
     let text = `🧾 *TICKET DE COMPRA DIGITAL*\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n`;
     text += `✨ *${bizName}*\n`;
-    const isModaMiel = bizName.includes('MODA MIEL') || (data.address && data.address.toUpperCase().includes('PASILLO 3'));
-    if (isModaMiel) {
-      text += `📍 TEXTICUITZEO · Pasillo 3 Local 230\n`;
-    } else if (data.address && data.address.trim()) {
+    if (data.address && data.address.trim()) {
       text += `📍 ${data.address.trim()}\n`;
     }
     text += `🗓️ ${date} hrs\n`;

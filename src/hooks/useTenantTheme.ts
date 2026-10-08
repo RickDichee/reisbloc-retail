@@ -35,78 +35,53 @@ export function resetTenantTheme() {
   }
 }
 
-export function resolveIsModaMiel(
-  currentUser?: any,
-  organizationSettings?: any,
-  location?: any
-): boolean {
-  // 1. Validar por ID de organización directo en currentUser o localStorage
-  const userOrgId = (currentUser?.organizationId || '').trim().toLowerCase()
-  if (userOrgId === '1b498fa6-aca5-428c-9bdd-01e6fea30316' || userOrgId.includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')) {
-    return true
-  }
-
-  if (typeof window !== 'undefined') {
-    try {
-      const storedOrg = (localStorage.getItem('current_org_id') || '').trim().toLowerCase()
-      if (storedOrg === '1b498fa6-aca5-428c-9bdd-01e6fea30316' || storedOrg.includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')) {
-        return true
-      }
-      const rawToken = localStorage.getItem('reisbloc_auth_token')
-      if (rawToken && rawToken.includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')) {
-        return true
-      }
-    } catch {}
-  }
-
-  // 2. Validar por ajustes de organización (slug, name, businessName)
-  const orgSlug = (organizationSettings?.slug || '').toLowerCase()
-  const orgName = (organizationSettings?.name || '').toLowerCase()
-  const businessName = (organizationSettings?.businessName || '').toLowerCase()
-  if (
-    orgSlug.includes('modamiel') || orgSlug.includes('moda-miel') ||
-    orgName.includes('modamiel') || orgName.includes('moda-miel') || orgName.includes('moda miel') ||
-    businessName.includes('modamiel') || businessName.includes('moda-miel') || businessName.includes('moda miel')
-  ) {
-    return true
-  }
-
-  // 3. Validar por email de usuario (colaboradores de Moda Miel)
-  const userEmail = (currentUser?.email || '').toLowerCase()
-  if (userEmail.includes('modamiel') || userEmail.includes('lu.velazquez') || userEmail.includes('lu.velazquezz')) {
-    return true
-  }
-
-  // 4. Validar por URL (hostname, query, hash, pathname)
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
-  const search = location?.search || (typeof window !== 'undefined' ? window.location.search : '')
-  const hash = location?.hash || (typeof window !== 'undefined' ? window.location.hash : '')
-
-  return checkIsModaMiel(hostname, search, hash, orgSlug || userOrgId)
-}
-
 export function useTenantTheme(): {
   isModaMiel: boolean
   theme: TenantThemeConfig
 } {
   const location = useLocation()
   const { organizationSettings, currentUser } = useAppStore()
-
-  // ⚡ Evaluación SÍNCRONA para el primer render (evita parpadeos o estados incorrectos en POS)
-  const isMMSync = resolveIsModaMiel(currentUser, organizationSettings, location)
-  const [activeTheme, setActiveTheme] = useState<TenantThemeConfig>(isMMSync ? MODA_MIEL_THEME : DEFAULT_THEME)
-  const [isModaMielActive, setIsModaMielActive] = useState<boolean>(isMMSync)
+  const [activeTheme, setActiveTheme] = useState<TenantThemeConfig>(DEFAULT_THEME)
+  const [isModaMielActive, setIsModaMielActive] = useState<boolean>(false)
 
   useEffect(() => {
-    const isMM = resolveIsModaMiel(currentUser, organizationSettings, location)
+    // 🛡️ REGLA DE SEGURIDAD MULTI-TENANT ESTRICTA:
+    // Si el usuario está autenticado (currentUser), su tema se define ESTRICTAMENTE por su propia Organización.
+    // Jamás imponer el tema de Moda Miel a un usuario de otra tienda.
+    let isMM = false
 
+    // Validar que organizationSettings coincida exactamente con currentUser.organizationId para evitar settings residuales
+    const isSettingsMatchingUser = Boolean(
+      currentUser &&
+      organizationSettings &&
+      (!organizationSettings.id || organizationSettings.id === currentUser.organizationId)
+    )
+    const validSettings = isSettingsMatchingUser ? organizationSettings : (currentUser ? null : organizationSettings)
+
+    if (currentUser) {
+      // Usuario autenticado -> Evaluar única y estrictamente los datos de la organización del usuario
+      const userOrgId = currentUser.organizationId || ''
+      const userOrgSlug = validSettings?.slug || validSettings?.name || ''
+      isMM = (userOrgId === '1b498fa6-aca5-428c-9bdd-01e6fea30316') ||
+             checkIsModaMiel('', '', '', userOrgSlug || userOrgId)
+    } else {
+      // Visitante público no autenticado -> Evaluar exclusivamente por hostname / query string
+      isMM = checkIsModaMiel(
+        window.location.hostname,
+        location.search || window.location.search,
+        location.hash || window.location.hash
+      )
+    }
+
+    // 🎨 Soporte para temas personalizados definidos en validSettings.theme
+    // Si la organización tiene colores / tipografías custom en BD, se aplican sobre el baseTheme.
     const baseTheme = isMM ? MODA_MIEL_THEME : DEFAULT_THEME
-    const customTheme = (organizationSettings?.theme as Partial<TenantThemeConfig>) || {}
+    const customTheme = (validSettings?.theme as Partial<TenantThemeConfig>) || {}
     const selectedTheme: TenantThemeConfig = {
       ...baseTheme,
       ...customTheme,
-      id: isMM ? 'modamiel' : (organizationSettings?.slug || customTheme.id || baseTheme.id),
-      name: organizationSettings?.businessName || customTheme.name || baseTheme.name
+      id: isMM ? 'modamiel' : (validSettings?.slug || customTheme.id || baseTheme.id),
+      name: validSettings?.businessName || customTheme.name || baseTheme.name
     }
 
     setActiveTheme(selectedTheme)
@@ -148,11 +123,11 @@ export function useTenantTheme(): {
     root.style.setProperty('--font-sans', selectedTheme.fontSans)
 
     // Favicon y Título dinámicos
-    const appTitle = isMM ? 'Moda Miel MX' : (organizationSettings?.businessName || currentUser?.businessName || 'Reisbloc Store')
+    const appTitle = isMM ? 'Moda Miel MX' : (validSettings?.businessName || currentUser?.businessName || 'Reisbloc Store')
     document.title = appTitle
     const favicon = document.querySelector("link[rel*='icon']") as HTMLLinkElement
     if (favicon) {
-      const customLogo = (organizationSettings as any)?.logo_url || (organizationSettings as any)?.logoUrl || currentUser?.avatar_url
+      const customLogo = (validSettings as any)?.logo_url || (validSettings as any)?.logoUrl || currentUser?.avatar_url
       favicon.href = isMM ? '/images/moda-miel-mx-logo.jpeg' : (customLogo || '/icon.svg')
     }
   }, [location.search, location.hash, location.pathname, organizationSettings, currentUser])

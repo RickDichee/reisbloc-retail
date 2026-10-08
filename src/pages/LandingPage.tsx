@@ -49,7 +49,7 @@ export default function LandingPage() {
   }, [currentUser, navigate])
 
   const waLink = (text: string) =>
-    `https://wa.me/5215665848231?text=${encodeURIComponent(text)}`
+    `https://wa.me/5214451457252?text=${encodeURIComponent(text)}`
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault()

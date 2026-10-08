@@ -9,7 +9,6 @@ import logger from '@/utils/logger'
 
 class SyncService {
     private isSyncing = false
-    private lastSyncTime = 0
 
     /**
      * Agrega una operación a la cola. Si hay internet, intenta sincronizar de inmediato.
@@ -26,60 +25,31 @@ class SyncService {
             action,
             payload
         })
-        if (options.processImmediately !== false && (typeof navigator !== 'undefined' ? navigator.onLine : true)) {
+        if (options.processImmediately !== false && navigator.onLine) {
             void this.processQueue()
         }
         return operationId
     }
 
     /**
-     * Identifica errores que no tienen posibilidad de resolverse con un reintento inmediato
-     */
-    private isFatalError(msg: string): boolean {
-        const lower = (msg || '').toLowerCase()
-        // Errores de schema cache o columnas no son fatales permanentes
-        if (lower.includes('schema cache') || lower.includes('client_mutation_id') || lower.includes('network')) {
-            return false
-        }
-        return (
-            lower.includes('cross-tenant') ||
-            lower.includes('item quantities must be positive') ||
-            lower.includes('sale totals must be positive')
-        )
-    }
-
-    /**
      * Ejecuta en ráfaga todas las operaciones pendientes de IndexedDB.
      */
-    async processQueue(forceAll: boolean = false): Promise<{ success: number; failed: number }> {
-        const now = Date.now()
-        if (this.isSyncing) return { success: 0, failed: 0 }
-        if (!forceAll && now - this.lastSyncTime < 3000) {
-            logger.info('sync', '[Sync] Petición ignorada: enfriamiento activo entre sincronizaciones.')
-            return { success: 0, failed: 0 }
-        }
-        if (typeof window !== 'undefined' && !window.navigator.onLine) {
+    async processQueue(): Promise<void> {
+        if (this.isSyncing) return
+        if (!navigator.onLine) {
             logger.info('sync', '[Sync] Se intentó sincronizar pero seguimos sin internet.')
-            return { success: 0, failed: 0 }
+            return
         }
 
         this.isSyncing = true
-        this.lastSyncTime = now
         logger.info('sync', '🚀 [Background Sync] Iniciando sincronización...')
 
-        let successCount = 0
-        let failedCount = 0
-
         try {
-            if (forceAll) {
-                await offlineStorage.resetFailedSyncOperations()
-            }
-
             const pendingOps = await offlineStorage.getPendingSyncOperations()
 
             if (pendingOps.length === 0) {
                 logger.info('sync', '✅ [Background Sync] Nada pendiente que sincronizar.')
-                return { success: 0, failed: 0 }
+                return
             }
 
             for (const op of pendingOps) {
@@ -90,41 +60,26 @@ class SyncService {
 
                     // Marcar como exitoso borrándolo de la cola
                     await offlineStorage.removeSyncOperation(op.id)
-                    successCount++
                     logger.info('sync', `✔️ [Background Sync] Éxito: ${op.action}`)
 
                 } catch (error: any) {
                     logger.error('sync', `❌ [Background Sync] Error ejecutando ${op.action}:`, error)
-                    failedCount++
 
-                    const retryCount = (op.retryCount || 0) + 1
-                    const errorMsg = error?.message || 'Error desconocido'
-                    const isFatal = retryCount >= 5 || this.isFatalError(errorMsg)
-
-                    // Si excede 5 intentos o es fatal, marcar como 'failed' para detener loops continuos
+                    // Reintentos agresivos: Mantenemos el error y aumentamos contador
                     await offlineStorage.updateSyncOperation(op.id, {
-                        retryCount,
-                        status: isFatal ? 'failed' : 'pending',
-                        error: errorMsg
+                        retryCount: op.retryCount + 1,
+                        error: error.message || 'Error desconocido'
                     })
                 }
             }
 
-            // Al terminar con éxito al menos una operación, refrescamos inventario y avisamos a la UI
-            if (successCount > 0) {
-                try {
-                    logger.info('sync', '🔄 [Background Sync] Refrescando inventario post-sincronización...')
-                    await supabaseService.getAllProducts()
-                } catch (err) {
-                    logger.warn('sync', 'No se pudo actualizar inventario tras sync exitoso:', err)
-                }
+            // Al terminar de enviar datos, forzamos la descarga de catálogos frescos 
+            // para asegurar que las ventas offline que afectaron el inventario se reflejen en la interfaz actual
+            logger.info('sync', '🔄 [Background Sync] Refrescando inventario post-sincronización...')
+            await supabaseService.getAllProducts()
 
-                if (typeof window !== 'undefined') {
-                    window.dispatchEvent(new Event('reisbloc-sync-completed'))
-                }
-            }
-
-            return { success: successCount, failed: failedCount }
+            // Lanzar evento global para que la UI sepa que se sincronizó la nube
+            window.dispatchEvent(new Event('reisbloc-sync-completed'))
 
         } finally {
             this.isSyncing = false
@@ -171,4 +126,3 @@ class SyncService {
 }
 
 export const syncService = new SyncService()
-export default syncService

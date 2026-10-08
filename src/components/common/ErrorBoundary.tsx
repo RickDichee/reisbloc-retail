@@ -45,18 +45,17 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
         </p>
 
         {(() => {
-          const errObj: any = error
-          const msg = errObj?.message || String(error)
-          const stack = errObj?.stack || ''
-          return (
-            <div className="mb-4">
-              <p className="text-xs font-bold text-red-600 mb-1">Detalle del error:</p>
-              <pre className="text-xs bg-red-50 border border-red-200 rounded p-3 overflow-auto max-h-48 text-red-800 font-mono select-all">
-                {msg}
-                {stack ? `\n\nStack:\n${stack}` : ''}
+          const hasMessage = typeof error === 'object' && error !== null && 'message' in error;
+          return hasMessage ? (
+            <details className="mb-4">
+              <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700 mb-2">
+                Ver detalles técnicos
+              </summary>
+              <pre className="text-xs bg-gray-50 border border-gray-200 rounded p-3 overflow-auto max-h-32 text-gray-600">
+                {(error as Error).message}
               </pre>
-            </div>
-          );
+            </details>
+          ) : null;
         })()}
 
         <div className="flex gap-2">

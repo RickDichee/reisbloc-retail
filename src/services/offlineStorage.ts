@@ -231,33 +231,6 @@ class OfflineStorageService {
         }
     }
 
-    async getAllSyncOperations(explicitOrgId?: string): Promise<SyncOperation[]> {
-        try {
-            const orgId = this.resolveOrgId(explicitOrgId)
-            const db = await initOfflineDB(orgId)
-            return await db.getAll('sync_queue')
-        } catch (error) {
-            logger.error('offline', 'Error getting all sync operations', error)
-            return []
-        }
-    }
-
-    async resetFailedSyncOperations(explicitOrgId?: string): Promise<number> {
-        try {
-            const orgId = this.resolveOrgId(explicitOrgId)
-            const db = await initOfflineDB(orgId)
-            const failedOps = await db.getAllFromIndex('sync_queue', 'by-status', 'failed')
-            for (const op of failedOps) {
-                await db.put('sync_queue', { ...op, status: 'pending', retryCount: 0, error: undefined })
-            }
-            logger.info('offline', `Restablecidas ${failedOps.length} operaciones fallidas a pendientes`)
-            return failedOps.length
-        } catch (error) {
-            logger.error('offline', 'Error resetting failed operations', error)
-            return 0
-        }
-    }
-
     async removeSyncOperation(id: string, explicitOrgId?: string): Promise<void> {
         try {
             const orgId = this.resolveOrgId(explicitOrgId)

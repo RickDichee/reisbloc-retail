@@ -41,15 +41,10 @@ export default function ReceiptTicket({
 
   const defaultName = isMM ? 'MODA MIEL MX' : (organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'REISBLOC STORE')
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
-  const ticketBusinessName = (organizationSettings?.ticketBusinessName || businessName || defaultName).toUpperCase()
-  const defaultAddress = isMM ? 'TEXTICUITZEO · PASILLO 3 LOCAL 230' : ''
-  const ticketAddress = isMM 
-    ? (organizationSettings?.ticketAddress?.toUpperCase().includes('PASILLO 3') 
-        ? organizationSettings.ticketAddress 
-        : (organizationSettings?.ticketAddress ? `${organizationSettings.ticketAddress} · PASILLO 3 LOCAL 230` : 'TEXTICUITZEO · PASILLO 3 LOCAL 230'))
-    : (organizationSettings?.ticketAddress || address || defaultAddress)
+  const defaultAddress = isMM ? 'Pasillo 3 Local 230' : ''
+  const ticketAddress = organizationSettings?.ticketAddress || address || defaultAddress
 
-  const ticketPhone = organizationSettings?.ticketPhone || phone
+  const ticketPhone = organizationSettings?.ticketPhone || phone || (isMM ? '+52 445 145 7252' : '')
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
   const ticketWidth = width || organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
 
@@ -232,9 +227,7 @@ export default function ReceiptTicket({
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: is80mm ? '10px' : '8.5px', color: '#000', marginTop: '1px' }}>
-                    <span>
-                      {itemQty} {isMM ? 'Paq' : 'pz'} x ${itemUnitPrice.toFixed(2)}
-                    </span>
+                    <span>{itemQty} pz x ${itemUnitPrice.toFixed(2)}</span>
                     <span style={{ fontWeight: 900 }}>${itemTotal.toFixed(2)}</span>
                   </div>
                 </div>
@@ -255,11 +248,6 @@ export default function ReceiptTicket({
       {/* Método de Pago */}
       <div style={{ marginBottom: '5px', fontSize: is80mm ? '10.5px' : '9px', textAlign: 'center', fontWeight: 900, textTransform: 'uppercase' }}>
         PAGO CON: {paymentMethod.toUpperCase()}
-        {order.notes && order.notes.includes('[Transferencia:') && (
-          <div style={{ fontSize: is80mm ? '9px' : '7.5px', fontWeight: 700, marginTop: '2px', textTransform: 'none', color: '#222' }}>
-            Rastreo: {order.notes.split('[Transferencia:')[1]?.replace(']', '')?.trim()}
-          </div>
-        )}
       </div>
 
       {/* Código de Barras Térmico Code128 con Folio del Ticket */}

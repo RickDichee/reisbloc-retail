@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Product } from '@/types'
 import { Package, AlertTriangle, User, Check } from 'lucide-react'
 import { parseProductDescription } from '@/utils/priceParser'
-import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 interface ProductGridProps {
   products: Product[]
@@ -33,13 +32,6 @@ export function ProductGrid({
   isPackageMode: externalIsPackageMode,
   onTogglePackageMode
 }: ProductGridProps) {
-  const { isModaMiel: isThemeMM } = useTenantTheme()
-  const isModaMiel = isThemeMM || (typeof window !== 'undefined' && (
-    window.location.hostname.includes('modamiel') ||
-    window.location.search.includes('modamiel') ||
-    window.location.hash.includes('modamiel') ||
-    (localStorage.getItem('current_org_id') || '').includes('1b498fa6-aca5-428c-9bdd-01e6fea30316')
-  ))
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [internalIsPackageMode, setInternalIsPackageMode] = useState<boolean>(false)
 
@@ -68,62 +60,47 @@ export function ProductGrid({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
       
-      {/* 📦 Selector de Modo de Venta */}
+      {/* 📦 Selector de Modo de Venta: PIEZA vs PAQUETE COMPLETO (Visibilidad Garantizada 100%) */}
       <div className="p-3 bg-slate-900 text-white rounded-t-xl shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <Package size={20} className="text-amber-400 animate-bounce shrink-0" />
           <div>
             <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none">Modo de Venta en Caja</p>
             <p className="text-xs font-black uppercase text-white tracking-tight">
-              {isModaMiel
-                ? '📦 Vender por Paquete'
-                : (isPackageMode ? '📦 Vender Paquete Completo' : '👤 Venta por Pieza')}
+              {isPackageMode ? '📦 Vender Paquete Completo' : '👤 Venta por Pieza'}
             </p>
           </div>
         </div>
 
-        {isModaMiel ? (
-          <div className="flex bg-slate-800 p-1 rounded-2xl border border-slate-700 w-full sm:w-auto">
-            <button
-              type="button"
-              disabled
-              className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 font-black cursor-default"
-            >
-              <Package size={14} />
-              <span>📦 Paquete</span>
-              <Check size={14} className="text-slate-950" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex bg-slate-800 p-1 rounded-2xl border border-slate-700 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setPackageMode(false)}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
-                !isPackageMode
-                  ? 'bg-white text-slate-900 shadow-md'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <User size={14} />
-              <span>👤 Pieza</span>
-            </button>
+        <div className="flex bg-slate-800 p-1 rounded-2xl border border-slate-700 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setPackageMode(false)}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
+              !isPackageMode 
+                ? 'bg-white text-slate-900 shadow-md' 
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <User size={14} />
+            <span>👤 Pieza</span>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => setPackageMode(true)}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
-                isPackageMode
-                  ? 'bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Package size={14} />
-              <span>📦 PAQUETE</span>
-              {isPackageMode && <Check size={14} className="text-slate-950" />}
-            </button>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={() => setPackageMode(true)}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
+              isPackageMode 
+                ? 'bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 font-black' 
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+
+            <Package size={14} />
+            <span>📦 PAQUETE</span>
+            {isPackageMode && <Check size={14} className="text-slate-950" />}
+          </button>
+        </div>
       </div>
 
       {/* Category Tabs - Horizontal Scroll */}
@@ -185,35 +162,26 @@ export function ProductGrid({
 
               const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
               const packQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 10)
-              const forcedPackageMode = isModaMiel ? true : isPackageMode
 
               return (
                 <button
                   key={product.id}
                   type="button"
-                  onClick={() => !disabled && onAdd(product, forcedPackageMode)}
+                  onClick={() => !disabled && onAdd(product, isPackageMode)}
                   disabled={disabled}
                   className={`group relative text-left rounded-lg border overflow-hidden transition-all duration-200 active:scale-[0.98] flex flex-col justify-between ${
                     disabled
                       ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
-                      : forcedPackageMode
+                      : isPackageMode
                         ? 'border-amber-400 bg-amber-50/30 hover:border-amber-500 shadow-xs'
-                        : isModaMiel
-                          ? 'border-sky-300 bg-sky-50/20 hover:border-sky-400 shadow-xs'
-                          : 'border-slate-200/90 bg-white hover:border-slate-400 hover:shadow-md'
+                        : 'border-slate-200/90 bg-white hover:border-slate-400 hover:shadow-md'
                   }`}
                 >
-                  {/* Badge de Paquete / Medio Paquete */}
-                  {isModaMiel ? (
-                    <div className="font-black text-[9px] uppercase px-2 py-0.5 text-center tracking-wider bg-amber-400 text-slate-950">
+                  {/* Badge de Paquete si está en modo paquete */}
+                  {isPackageMode && (
+                    <div className="bg-amber-400 text-slate-950 font-black text-[9px] uppercase px-2 py-0.5 text-center tracking-wider">
                       📦 Paquete ({packQty} pzas)
                     </div>
-                  ) : (
-                    isPackageMode && (
-                      <div className="bg-amber-400 text-slate-950 font-black text-[9px] uppercase px-2 py-0.5 text-center tracking-wider">
-                        📦 Paquete ({packQty} pzas)
-                      </div>
-                    )
                   )}
 
                   {/* Product Image / Placeholder */}
@@ -247,30 +215,12 @@ export function ProductGrid({
                     </h3>
                     
                     {/* Precio: regular o por pieza en paquete */}
-                    <div className="mt-1">
-                      {isModaMiel ? (
-                        <div>
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-sm sm:text-base font-black text-slate-900">
-                              {currency.format(unitPackPrice)}
-                            </span>
-                            <span className="text-[9px] font-bold text-slate-500 uppercase">
-                              / Paq
-                            </span>
-                          </div>
-                          <span className="text-[9px] font-semibold text-slate-400 block">
-                            {packQty} pzas por paquete
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm sm:text-base font-black text-slate-900">
-                            {currency.format(isPackageMode ? unitPackPrice : rawPrice)}
-                          </span>
-                          {isPackageMode && (
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
-                          )}
-                        </div>
+                    <div className="mt-1 flex items-baseline gap-1">
+                      <span className="text-sm sm:text-base font-black text-slate-900">
+                        {currency.format(isPackageMode ? unitPackPrice : rawPrice)}
+                      </span>
+                      {isPackageMode && (
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
                       )}
                     </div>
 
