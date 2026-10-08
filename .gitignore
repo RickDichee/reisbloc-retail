@@ -106,3 +106,4 @@ MASTER_PLAN.md
 my-agent/
 .env*
 .andromity/
+backup_modamiel_chrome/

@@ -6,6 +6,7 @@ import { usePermissions } from '@/hooks/usePermissions'
 import supabaseService from '@/services/supabaseService'
 import syncService from '@/services/syncService'
 import { supabase } from '@/config/supabase'
+import { offlineStorage } from '@/services/offlineStorage'
 import {
   DollarSign,
   Check,
@@ -18,6 +19,9 @@ import {
   Calendar,
   ArrowRightLeft,
   ShieldCheck,
+  RefreshCw,
+  WifiOff,
+  Database,
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import {
@@ -52,13 +56,39 @@ export default function Closing() {
   const [manualAdjustments, setManualAdjustments] = useState<any[]>([])
   const [confirmed, setConfirmed] = useState(false)
   const [notes, setNotes] = useState('')
+  const [pendingQueueCount, setPendingQueueCount] = useState(0)
+  const [syncingQueue, setSyncingQueue] = useState(false)
 
   // Gestión de Planes: Verificar si la organización tiene acceso a features premium
   const userPlan = (currentUser as any)?.plan || 'free' // Por defecto free si no hay dato
   const canSendEmail = ['starter', 'growth', 'scale', 'enterprise'].includes(userPlan)
 
+  const checkOfflineQueue = async () => {
+    try {
+      const ops = await offlineStorage.getAllSyncOperations()
+      setPendingQueueCount(ops.length)
+    } catch {
+      setPendingQueueCount(0)
+    }
+  }
+
+  const handleForceSync = async () => {
+    setSyncingQueue(true)
+    try {
+      const res = await syncService.processQueue(true)
+      await checkOfflineQueue()
+      await loadClosingData(startDate, endDate)
+      alert(`✅ Sincronización completada:\n• ${res.success} operaciones subidas con éxito a la nube\n• ${res.failed} pendientes`)
+    } catch (err: any) {
+      alert(`❌ Error al forzar sincronización: ${err?.message || err}`)
+    } finally {
+      setSyncingQueue(false)
+    }
+  }
+
   useEffect(() => {
     loadClosingData()
+    checkOfflineQueue()
 
     const orgId = supabaseService.getCurrentOrgId()
     const channelId = `closing_sales_${Date.now()}`
@@ -73,7 +103,8 @@ export default function Closing() {
           ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
         },
         () => {
-          loadClosingData()
+          loadClosingData(startDate, endDate)
+          checkOfflineQueue()
         }
       )
       .subscribe()
@@ -81,7 +112,7 @@ export default function Closing() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [startDate, endDate])
 
   const loadClosingData = async (startStr?: string, endStr?: string) => {
     setLoading(true)
@@ -209,7 +240,7 @@ export default function Closing() {
     }
   }
 
-  const handleSelectDatePreset = (preset: 'today' | 'yesterday' | 'week' | 'sept21') => {
+  const handleSelectDatePreset = (preset: 'today' | 'yesterday' | 'week' | 'onsite_shift' | 'sept21') => {
     const today = new Date()
     let start = getLocalDateISO(today)
     let end = getLocalDateISO(today)
@@ -219,6 +250,10 @@ export default function Closing() {
       y.setDate(y.getDate() - 1)
       start = getLocalDateISO(y)
       end = getLocalDateISO(y)
+    } else if (preset === 'onsite_shift') {
+      // Turno onsite Moda Miel (Lunes 5 y Martes 6 de Octubre)
+      start = '2026-10-05'
+      end = getLocalDateISO(today)
     } else if (preset === 'week') {
       const w = new Date()
       w.setDate(w.getDate() - 7)
@@ -597,76 +632,127 @@ export default function Closing() {
         </div>
 
         {/* Date Selector & Historical Filter Bar */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            <span className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1 flex items-center gap-1 shrink-0">
-              <Calendar size={14} /> Periodo:
-            </span>
-            <button
-              type="button"
-              onClick={() => handleSelectDatePreset('today')}
-              className={`px-3 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                startDate === getLocalDateISO() && endDate === getLocalDateISO()
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Hoy
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectDatePreset('yesterday')}
-              className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all shrink-0"
-            >
-              Ayer
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectDatePreset('week')}
-              className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all shrink-0"
-            >
-              Últimos 7 Días
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectDatePreset('sept21')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                startDate === '2026-09-21'
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
-                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-              }`}
-            >
-              📅 Historial (21 Sep - Hoy)
-            </button>
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-4">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest mr-1 flex items-center gap-1 shrink-0">
+                <Calendar size={14} /> Periodo:
+              </span>
+              <button
+                type="button"
+                onClick={() => handleSelectDatePreset('today')}
+                className={`px-3 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
+                  startDate === getLocalDateISO() && endDate === getLocalDateISO()
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectDatePreset('yesterday')}
+                className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all shrink-0"
+              >
+                Ayer
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectDatePreset('onsite_shift')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
+                  startDate === '2026-10-05' && endDate === getLocalDateISO()
+                    ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                }`}
+              >
+                ⭐ Turno Onsite (5 y 6 Oct)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectDatePreset('week')}
+                className="px-3 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all shrink-0"
+              >
+                Últimos 7 Días
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectDatePreset('sept21')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
+                  startDate === '2026-09-21'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
+                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                }`}
+              >
+                📅 Historial (21 Sep - Hoy)
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Del</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-800 outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Al</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-800 outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => loadClosingData(startDate, endDate)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-indigo-600/20"
+              >
+                Consultar
+              </button>
+              {pendingQueueCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleForceSync}
+                  disabled={syncingQueue}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 disabled:opacity-50"
+                >
+                  <RefreshCw size={14} className={syncingQueue ? 'animate-spin' : ''} />
+                  {syncingQueue ? 'Sincronizando...' : `⚡ Sincronizar (${pendingQueueCount})`}
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Del</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-800 outline-none"
-              />
+          {/* Banner de Operaciones Locales Pendientes */}
+          {pendingQueueCount > 0 && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 text-amber-600 rounded-xl">
+                  <Database size={20} />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-amber-900 uppercase">
+                    {pendingQueueCount} Operaciones en cola local de este dispositivo
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    Las ventas se guardaron en la memoria local del navegador. Pulsa subir para sincronizarlas con Supabase.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleForceSync}
+                disabled={syncingQueue}
+                className="shrink-0 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all"
+              >
+                {syncingQueue ? 'Subiendo...' : 'Subir a Supabase'}
+              </button>
             </div>
-            <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Al</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-transparent text-xs font-bold text-slate-800 outline-none"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => loadClosingData(startDate, endDate)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-indigo-600/20"
-            >
-              Consultar
-            </button>
-          </div>
+          )}
         </div>
 
         {/* Alert - Clean */}
@@ -676,7 +762,9 @@ export default function Closing() {
           </div>
           <div>
             <p className="font-black text-amber-900 uppercase tracking-wide text-xs mb-1">Aviso Importante</p>
-            <p className="text-amber-800 font-medium text-sm leading-relaxed">Este proceso generará un cierre oficial del día. Revisa todos los números antes de confirmar.</p>
+            <p className="text-amber-800 font-medium text-sm leading-relaxed">
+              Corte para el periodo: <span className="font-bold underline">{startDate} al {endDate}</span>. Total de transacciones encontradas: {closingData?.transactionCount || 0}. Revisa todos los números antes de confirmar.
+            </p>
           </div>
         </div>
 
