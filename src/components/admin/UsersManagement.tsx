@@ -39,15 +39,16 @@ export const roleLabels: Record<string, string> = {
   employee: 'Empleado / Inventario',
 }
 
-// Preset de Avatares estilo iOS Memoji
-const MEMOJI_PRESETS = [
-  'https://api.dicebear.com/7.x/open-peeps/svg?seed=Sofia&face=smile,cute&backgroundColor=ffd5dc',
-  'https://api.dicebear.com/7.x/open-peeps/svg?seed=Mateo&face=smileBig&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/7.x/open-peeps/svg?seed=Valentina&face=smile&backgroundColor=c0aede',
-  'https://api.dicebear.com/7.x/open-peeps/svg?seed=Santiago&face=smileBig&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/7.x/open-peeps/svg?seed=Camila&face=cute&backgroundColor=ffd5dc',
-  'https://api.dicebear.com/7.x/open-peeps/svg?seed=Diego&face=smile&backgroundColor=d1d4f9',
-]
+// Helper para generar iniciales elegantes
+export function getUserInitials(name: string): string {
+  if (!name) return 'U'
+  const clean = name.trim()
+  const parts = clean.split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return clean.slice(0, 2).toUpperCase()
+}
 
 export default function UsersManagement() {
   const { users, setUsers, currentUser } = useAppStore()
@@ -99,7 +100,8 @@ export default function UsersManagement() {
       return
     }
 
-    if (!confirm(`¿Eliminar usuario "${user.username}"? Esta acción no se puede deshacer.`)) {
+    const targetName = user.name || user.username || user.email || 'este usuario'
+    if (!confirm(`¿Eliminar al usuario "${targetName}" del equipo?`)) {
       return
     }
 
@@ -162,7 +164,7 @@ export default function UsersManagement() {
         </div>
       )}
 
-      {/* Users Grid - Estilo iOS Memoji Cards */}
+      {/* Users Grid */}
       {loading ? (
         <div className="text-center py-16 bg-white rounded-3xl border border-slate-100">
           <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -175,7 +177,7 @@ export default function UsersManagement() {
               ? user.name 
               : ((user.username && user.username.trim() !== '') ? user.username : (user.email ? user.email.split('@')[0] : `Empleado ${idx + 1}`))
             
-            const fallbackAvatar = MEMOJI_PRESETS[idx % MEMOJI_PRESETS.length]
+            const initials = getUserInitials(displayName)
             const isSelf = user.id === currentUser?.id
             const canEditThisCard = canManageUsers || isSelf
 
@@ -198,14 +200,20 @@ export default function UsersManagement() {
                   </div>
                 </div>
 
-                {/* Avatar flotante estilo iOS Memoji */}
+                {/* Avatar flotante */}
                 <div className="px-6 relative -mt-12 flex justify-between items-end">
                   <div className="relative">
-                    <img 
-                      src={user.avatar_url || fallbackAvatar} 
-                      alt={displayName} 
-                      className="w-20 h-20 rounded-3xl object-cover bg-slate-100 border-4 border-white shadow-xl transition-transform group-hover:scale-105" 
-                    />
+                    {user.avatar_url ? (
+                      <img 
+                        src={user.avatar_url} 
+                        alt={displayName} 
+                        className="w-20 h-20 rounded-3xl object-cover bg-slate-100 border-4 border-white shadow-xl transition-transform group-hover:scale-105" 
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 border-4 border-white shadow-xl flex items-center justify-center text-white font-black text-xl tracking-wider transition-transform group-hover:scale-105 select-none">
+                        {initials}
+                      </div>
+                    )}
                     <span className="absolute -bottom-1 -right-1 bg-slate-900 text-white text-[8px] font-mono font-black px-1.5 py-0.5 rounded-md border border-white">
                       #0{idx + 1}
                     </span>
@@ -510,35 +518,27 @@ function EditUserModal({
 
         <div className="overflow-y-auto space-y-4 pr-1 flex-1 custom-scrollbar">
           
-          {/* Selector de Avatar Memoji iOS */}
-          <div className="space-y-2 text-center">
+          {/* Foto de Perfil */}
+          <div className="space-y-3 text-center">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-              1. Selecciona un Avatar Estilo iOS Memoji
+              Foto de Perfil
             </label>
             
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {MEMOJI_PRESETS.map((presetUrl, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, avatar_url: presetUrl })}
-                  className={`w-12 h-12 rounded-2xl border-2 transition-all p-0.5 ${
-                    formData.avatar_url === presetUrl 
-                      ? 'border-indigo-600 scale-110 shadow-lg shadow-indigo-200' 
-                      : 'border-slate-200 hover:border-slate-400'
-                  }`}
-                >
-                  <img src={presetUrl} alt="memoji" className="w-full h-full object-cover rounded-xl" />
-                </button>
-              ))}
-            </div>
-
-            <div className="pt-2">
+            <div className="flex flex-col items-center justify-center gap-2">
               <AvatarUpload
                 userId={user.id}
                 currentAvatarUrl={formData.avatar_url}
                 onUploadComplete={(url) => setFormData({ ...formData, avatar_url: url })}
               />
+              {formData.avatar_url && (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, avatar_url: '' })}
+                  className="text-xs text-red-500 hover:text-red-700 font-bold hover:underline transition-colors"
+                >
+                  Quitar foto actual
+                </button>
+              )}
             </div>
           </div>
 

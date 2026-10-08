@@ -220,14 +220,14 @@ class SupabaseService {
     try {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-      // Validar user_id
-      let finalUserId = log.userId
-      if (!uuidRegex.test(finalUserId)) {
+      // Validar user_id (debe ser UUID válido existente o null para evitar violación FK)
+      let finalUserId: string | null = log.userId
+      if (!finalUserId || !uuidRegex.test(finalUserId)) {
         const storeUser = useAppStore.getState().currentUser?.id
         if (storeUser && uuidRegex.test(storeUser)) {
           finalUserId = storeUser
         } else {
-          finalUserId = '00000000-0000-0000-0000-000000000000'
+          finalUserId = null
         }
       }
 
@@ -326,12 +326,18 @@ class SupabaseService {
 
   async deleteUser(userId: string): Promise<void> {
     try {
-      // Soft delete - marcar como inactivo
-      const { error } = await supabase
+      // Soft delete - marcar como inactivo y remover PIN de acceso
+      const orgId = this.getCurrentOrgId()
+      let query = supabase
         .from('users')
-        .update({ active: false })
+        .update({ active: false, pin: null })
         .eq('id', userId)
-        .eq('organization_id', this.getCurrentOrgId()) // FIX: Requerido por RLS
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId)
+      }
+
+      const { error } = await query
 
       if (error) throw error
     } catch (error) {

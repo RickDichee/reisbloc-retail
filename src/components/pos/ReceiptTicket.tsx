@@ -41,11 +41,10 @@ export default function ReceiptTicket({
 
   const defaultName = isMM ? 'MODA MIEL MX' : (organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'REISBLOC STORE')
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
-  const ticketBusinessName = (organizationSettings?.ticketBusinessName || businessName || defaultName).toUpperCase()
-  const defaultAddress = isMM ? 'TEXTICUITZEO PASILLO 3 LOCAL 230' : ''
+  const defaultAddress = isMM ? 'Pasillo 3 Local 230' : ''
   const ticketAddress = organizationSettings?.ticketAddress || address || defaultAddress
 
-  const ticketPhone = organizationSettings?.ticketPhone || phone
+  const ticketPhone = organizationSettings?.ticketPhone || phone || (isMM ? '+52 445 145 7252' : '')
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
   const ticketWidth = width || organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
 

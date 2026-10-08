@@ -842,7 +842,7 @@ export default function ModaMielBrandPage() {
             {/* Direct WhatsApp Action Button */}
             <div className="space-y-3 pt-2">
               <a
-                href={`https://wa.me/5215555555555?text=${encodeURIComponent(lastOrderText)}`}
+                href={`https://wa.me/5214451457252?text=${encodeURIComponent(lastOrderText)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all border-2 border-emerald-400"
