@@ -24,7 +24,7 @@ import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { useTenantTheme } from '@/hooks/useTenantTheme'
 import { sanitizeHTML } from '@/utils/sanitize'
 import { playCashRegisterSound } from '@/utils/audioAlerts'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag, ChevronUp, ChevronDown } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag, ChevronUp, ChevronDown, RotateCcw, ArrowLeftRight } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import { useTerminalSession } from '@/hooks/useTerminalSession'
 import { TerminalLockModal } from '@/components/pos/TerminalLockModal'
@@ -100,12 +100,23 @@ export default function POS() {
     orderId: string | null
     orderTotal: number
     orderIds?: string[]
+    initialMethod?: 'cash' | 'transfer'
   }>({
     isOpen: false,
     orderId: null,
     orderTotal: 0,
-    orderIds: []
+    orderIds: [],
+    initialMethod: 'cash'
   })
+
+  const [lastSaleTicket, setLastSaleTicket] = useState<{
+    id: string
+    folio: string
+    html: string
+    total: number
+    paymentMethod: string
+    clientName?: string
+  } | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [showManualItemModal, setShowManualItemModal] = useState(false)
@@ -150,7 +161,9 @@ export default function POS() {
             saleTotal={receiptModal.total}
             paymentMethod={receiptModal.paymentMethod}
             tableNumber={tableNumber}
-            businessName={currentBusinessTitle}
+            businessName={currentBusinessTitle || 'MODA MIEL MX'}
+            address="Pasillo 3 Local 230"
+            phone="+52 445 145 7252"
             clientName={receiptModal.clientName}
             clientPhone={receiptModal.clientPhone}
             width={newWidth}
@@ -1052,7 +1065,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           saleTotal={total}
           paymentMethod="Pendiente"
           tableNumber={tableNum}
-          businessName={currentBusinessTitle}
+          businessName={currentBusinessTitle || 'MODA MIEL MX'}
+          address="Pasillo 3 Local 230"
+          phone="+52 445 145 7252"
           clientName={selectedClient?.name}
           clientPhone={selectedClient?.phone}
           width={selectedTicketWidth}
@@ -1108,6 +1123,51 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       orderId: 'retail-direct',
       orderTotal: draftTotal,
       orderIds: []
+    })
+  }
+
+  // 💵 1-Click Cobro Directo en Efectivo: Venta instantánea sin popups, impresión directa y pantalla lista para el siguiente cliente
+  const handleDirectCashCheckout = async () => {
+    if (!currentUser || isReadOnly) return
+    const draftTotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
+    if (draftTotal === 0) return
+
+    // 1. Stock Check 🛡️
+    const formattedDraft = items.map(i => ({ ...i, productId: i.productId }))
+    const stockIssues = checkStockAvailability([], formattedDraft)
+    if (stockIssues.length > 0) {
+      setStockWarning({ isOpen: true, items: stockIssues })
+      return
+    }
+
+    // 2. Cobro Inmediato
+    await handlePaymentComplete({
+      transactionId: `cash-${Date.now()}`,
+      paymentMethod: 'cash',
+      currency: 'MXN',
+      total: draftTotal
+    })
+  }
+
+  // 🏦 Apertura directa de ventana de Transferencia para registrar referencia/banco
+  const handleOpenTransferModal = () => {
+    if (!currentUser || isReadOnly) return
+    const draftTotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
+    if (draftTotal === 0) return
+
+    const formattedDraft = items.map(i => ({ ...i, productId: i.productId }))
+    const stockIssues = checkStockAvailability([], formattedDraft)
+    if (stockIssues.length > 0) {
+      setStockWarning({ isOpen: true, items: stockIssues })
+      return
+    }
+
+    setPaymentPanel({
+      isOpen: true,
+      orderId: 'retail-direct',
+      orderTotal: draftTotal,
+      orderIds: [],
+      initialMethod: 'transfer'
     })
   }
 
@@ -1240,46 +1300,52 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         imageCacheService.saveCachedProducts(updatedProds).catch(console.error)
       }
 
-      // Generar ticket y mostrar modal
+      // Generar ticket HTML y enviar a la impresora de forma inmediata
+      const saleId = `sale-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const shortFolio = saleId.slice(-6).toUpperCase()
+
       try {
         const ticketHTML = renderToStaticMarkup(
           <ReceiptTicket
-            order={{ id: 'Venta', items: allItems, status: 'completed', total: result.total } as any}
+            order={{ id: saleId, items: allItems, status: 'completed', total: result.total } as any}
             products={products}
             saleTotal={result.total}
             paymentMethod={mappedMethod}
             tableNumber={tableNumber}
-            businessName={currentBusinessTitle}
+            businessName={currentBusinessTitle || 'MODA MIEL MX'}
+            address="Pasillo 3 Local 230"
+            phone="+52 445 145 7252"
             clientName={selectedClient?.name}
             clientPhone={selectedClient?.phone}
             width={selectedTicketWidth}
           />
         )
-        // Abrir modal ANTES de limpiar el borrador
-        const saleId = `sale-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-        setReceiptModal({
-          isOpen: true,
+
+        // Guardar para reimpresión opcional sin modal bloqueante
+        setLastSaleTicket({
+          id: saleId,
+          folio: shortFolio,
           html: ticketHTML,
           total: result.total,
-          items: allItems,
-          orderId: saleId,
           paymentMethod: mappedMethod,
-          clientName: selectedClient?.name,
-          clientPhone: selectedClient?.phone
+          clientName: selectedClient?.name
         })
 
-        // Lanzar diálogo de impresión automáticamente
+        // Lanzar impresión térmica de inmediato
         printService.printReceipt(ticketHTML, {
-          title: `Ticket_${tableNumber}`,
+          title: `Ticket_${tableNumber}_${shortFolio}`,
           width: selectedTicketWidth
         }).catch(err => logger.warn('pos', 'Auto-print error', err))
       } catch (printErr) {
         logger.error('pos', 'No se pudo generar ticket', printErr as any)
       }
 
+      // Dejar la pantalla lista para el siguiente cliente de inmediato (cero fricción)
       setSelectedClient(null)
       clearDraftForTicket(tableNumber)
       setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })
+      setReceiptModal(null)
+      setShowMobileCartDrawer(false)
       playCashRegisterSound()
     } catch (error: any) {
       logger.error('pos', 'Error recording sale', error)
@@ -1719,35 +1785,65 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 </span>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons: 1-Click Fluido sin ventanas emergentes */}
               <div className="flex flex-col gap-2">
+                {/* Botón Principal: Cobro Directo en Efectivo */}
                 <button
                   type="button"
-                  onClick={handleCreatePendingOrder}
+                  onClick={handleDirectCashCheckout}
                   disabled={currentTotal === 0}
-                  className="w-full py-2.5 bg-amber-400 text-slate-950 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all border border-amber-300 shadow-xs shadow-amber-100 disabled:opacity-40 uppercase text-[11px] tracking-wider"
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 transition-all disabled:opacity-40 uppercase text-xs tracking-wider cursor-pointer"
                 >
-                  <ShoppingBag size={16} />
-                  <span>Guardar Pedido / Apartado (Stock)</span>
+                  <DollarSign size={18} strokeWidth={2.5} />
+                  <span>Cobrar Efectivo (${currentTotal.toFixed(2)})</span>
                 </button>
 
+                {/* Botones Secundarios: Transferencia y Apartado */}
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => handlePrintAccount(tableNumber)}
+                    type="button"
+                    onClick={handleOpenTransferModal}
                     disabled={currentTotal === 0}
-                    className="py-2.5 bg-slate-100 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-all border border-slate-300 text-xs"
+                    className="py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-indigo-900/20 transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
                   >
-                    <Printer size={16} />
-                    Ticket
+                    <ArrowLeftRight size={15} />
+                    <span>Transferencia</span>
                   </button>
                   <button
-                    onClick={handleQuickCheckout}
+                    type="button"
+                    onClick={handleCreatePendingOrder}
                     disabled={currentTotal === 0}
-                    className="py-2.5 bg-emerald-600 text-white font-black rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200 hover:bg-emerald-700 transition-all text-xs"
+                    className="py-2.5 bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-950 font-black rounded-xl flex items-center justify-center gap-1.5 border border-amber-300 shadow-xs transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
                   >
-                    <DollarSign size={16} />
-                    COBRAR
+                    <ShoppingBag size={15} />
+                    <span>Apartado</span>
                   </button>
+                </div>
+
+                {/* Fila Auxiliar: Pre-cuenta y Reimpresión rápida */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePrintAccount(tableNumber)}
+                    disabled={currentTotal === 0}
+                    className="py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl flex items-center justify-center gap-1.5 border border-slate-300 text-xs transition-all disabled:opacity-40 cursor-pointer"
+                  >
+                    <Printer size={15} />
+                    <span>Pre-cuenta</span>
+                  </button>
+                  {lastSaleTicket ? (
+                    <button
+                      type="button"
+                      onClick={() => printService.printReceipt(lastSaleTicket.html, { title: `Ticket_${lastSaleTicket.folio}`, width: selectedTicketWidth })}
+                      className="py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer shadow-xs"
+                      title={`Reimprimir ticket #${lastSaleTicket.folio}`}
+                    >
+                      <RotateCcw size={14} />
+                      <span>Reimprimir #{lastSaleTicket.folio}</span>
+                    </button>
+                  ) : (
+                    <div />
+                  )}
                 </div>
               </div>
             </div>
@@ -1775,13 +1871,23 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             </div>
           </div>
 
-          <button
-            onClick={() => setShowMobileCartDrawer(true)}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase rounded-xl shadow-md transition-all flex items-center gap-1.5 active:scale-95"
-          >
-            <span>Ver Ticket</span>
-            <ChevronUp size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowMobileCartDrawer(true)}
+              className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase rounded-xl transition-all flex items-center gap-1"
+            >
+              <span>Ver Ticket</span>
+              <ChevronUp size={15} />
+            </button>
+            <button
+              onClick={handleDirectCashCheckout}
+              disabled={currentTotal === 0}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-emerald-900/40 transition-all flex items-center gap-1.5 disabled:opacity-40"
+            >
+              <DollarSign size={16} strokeWidth={2.5} />
+              <span>Cobrar</span>
+            </button>
+          </div>
         </div>
 
         {/* 📱 Mobile & Tablet Slide-Up Ticket Drawer Sheet (< lg screens) */}
@@ -1848,44 +1954,75 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                   <span className="font-black text-2xl text-slate-900">${currentTotal.toFixed(2)}</span>
                 </div>
 
-                {/* Actions */}
+                {/* Actions: 1-Click Fluido sin ventanas emergentes */}
                 <div className="space-y-2">
                   <button
                     type="button"
                     onClick={() => {
                       setShowMobileCartDrawer(false)
-                      handleCreatePendingOrder()
+                      handleDirectCashCheckout()
                     }}
                     disabled={currentTotal === 0}
-                    className="w-full py-3 bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md"
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 disabled:opacity-40"
                   >
-                    <ShoppingBag size={18} />
-                    <span>Guardar Pedido / Apartado (Stock)</span>
+                    <DollarSign size={18} strokeWidth={2.5} />
+                    <span>Cobrar Efectivo (${currentTotal.toFixed(2)})</span>
                   </button>
 
                   <div className="grid grid-cols-2 gap-2">
                     <button
+                      type="button"
+                      onClick={() => {
+                        setShowMobileCartDrawer(false)
+                        handleOpenTransferModal()
+                      }}
+                      disabled={currentTotal === 0}
+                      className="py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1.5 shadow-md disabled:opacity-40"
+                    >
+                      <ArrowLeftRight size={16} />
+                      <span>Transferencia</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMobileCartDrawer(false)
+                        handleCreatePendingOrder()
+                      }}
+                      disabled={currentTotal === 0}
+                      className="py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-40"
+                    >
+                      <ShoppingBag size={16} />
+                      <span>Apartado</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
                       onClick={() => {
                         setShowMobileCartDrawer(false)
                         handlePrintAccount(tableNumber)
                       }}
                       disabled={currentTotal === 0}
-                      className="py-3 bg-slate-100 text-slate-900 font-bold rounded-xl text-xs flex items-center justify-center gap-2"
+                      className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-slate-300 disabled:opacity-40"
                     >
-                      <Printer size={18} />
-                      Imprimir
+                      <Printer size={16} />
+                      <span>Pre-cuenta</span>
                     </button>
-                    <button
-                      onClick={() => {
-                        setShowMobileCartDrawer(false)
-                        handleQuickCheckout()
-                      }}
-                      disabled={currentTotal === 0}
-                      className="py-3 bg-emerald-600 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
-                    >
-                      <DollarSign size={18} />
-                      COBRAR
-                    </button>
+
+                    {lastSaleTicket ? (
+                      <button
+                        type="button"
+                        onClick={() => printService.printReceipt(lastSaleTicket.html, { title: `Ticket_${lastSaleTicket.folio}`, width: selectedTicketWidth })}
+                        className="py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5"
+                      >
+                        <RotateCcw size={15} />
+                        <span>Reimprimir #{lastSaleTicket.folio}</span>
+                      </button>
+                    ) : (
+                      <div />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1990,6 +2127,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             orderIds={paymentPanel.orderIds}
             orderTotal={paymentPanel.orderTotal}
             tableNumber={tableNumber}
+            initialMethod={paymentPanel.initialMethod}
             onPaymentComplete={handlePaymentComplete}
             onCancel={() => setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })}
           />

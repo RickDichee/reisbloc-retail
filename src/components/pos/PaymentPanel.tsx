@@ -22,6 +22,7 @@ interface PaymentPanelProps {
   tableNumber: number
   onPaymentComplete: (result: PaymentResult) => void
   onCancel: () => void
+  initialMethod?: 'cash' | 'transfer'
 }
 
 const COMMON_BANKS = ['BBVA', 'Banamex', 'Santander', 'Banorte', 'Nu', 'Mercado Pago', 'STP', 'Azteca']
@@ -33,10 +34,11 @@ export default function PaymentPanel({
   tableNumber,
   onPaymentComplete,
   onCancel,
+  initialMethod = 'cash',
 }: PaymentPanelProps) {
   const ids = orderIds || (orderId ? [orderId] : [])
 
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer'>(initialMethod)
   const [currency, setCurrency] = useState<'MXN' | 'USD'>('MXN')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -56,28 +58,24 @@ export default function PaymentPanel({
       if (paymentMethod === 'cash') {
         const transactionId = `cash-${Date.now()}`
         setSuccess(true)
-        setTimeout(() => {
-          onPaymentComplete({
-            transactionId,
-            paymentMethod: 'cash',
-            currency,
-            total: finalTotal,
-          })
-        }, 800)
+        onPaymentComplete({
+          transactionId,
+          paymentMethod: 'cash',
+          currency,
+          total: finalTotal,
+        })
       } else if (paymentMethod === 'transfer') {
         const transactionId = `transfer-${Date.now()}`
         setSuccess(true)
-        setTimeout(() => {
-          onPaymentComplete({
-            transactionId,
-            paymentMethod: 'transfer',
-            currency,
-            total: finalTotal,
-            transferReference: transferReference.trim(),
-            transferBank: transferBank.trim(),
-            notes: transferNotes.trim(),
-          })
-        }, 800)
+        onPaymentComplete({
+          transactionId,
+          paymentMethod: 'transfer',
+          currency,
+          total: finalTotal,
+          transferReference: transferReference.trim(),
+          transferBank: transferBank.trim(),
+          notes: transferNotes.trim(),
+        })
       }
     } catch (err: any) {
       const msg = err?.message || 'Error al procesar cobro'

@@ -98,8 +98,10 @@ export default function ClientHistoryModal({
       </head>
       <body>
         <div style="text-align:center; font-weight:900; font-size:13px;">DOCUMENTO DE CLIENTE CRM</div>
-        <div style="text-align:center; font-size:10px; font-weight:bold;">${storeTitle.toUpperCase()}</div>
-        <div className="divider"></div>
+        <div style="text-align:center; font-size:11px; font-weight:bold;">${storeTitle.toUpperCase()}</div>
+        <div style="text-align:center; font-size:10px; font-weight:bold;">Pasillo 3 Local 230</div>
+        <div style="text-align:center; font-size:9.5px;">Tel: +52 445 145 7252</div>
+        <div class="divider"></div>
         <div>CLIENTE: ${client.name}</div>
         <div>FOLIO: #${folio}</div>
         <div>FECHA: ${new Date(item.createdAt || item.created_at || Date.now()).toLocaleString('es-MX')}</div>

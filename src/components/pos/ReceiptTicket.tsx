@@ -36,16 +36,18 @@ export default function ReceiptTicket({
   const isMM = Boolean(
     currentUser?.organizationId === '1b498fa6-aca5-428c-9bdd-01e6fea30316' ||
     organizationSettings?.slug === 'modamiel' ||
-    organizationSettings?.name?.toLowerCase().includes('moda miel')
+    organizationSettings?.name?.toLowerCase().includes('moda miel') ||
+    true
   )
 
-  const defaultName = isMM ? 'MODA MIEL MX' : (organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'REISBLOC STORE')
-  const ticketBusinessName = businessName || defaultName
+  const defaultName = 'MODA MIEL MX'
+  const ticketBusinessName = businessName || organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || defaultName
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
-  const defaultAddress = isMM ? 'Pasillo 3 Local 230' : ''
-  const ticketAddress = organizationSettings?.ticketAddress || address || defaultAddress
+  const defaultAddress = 'Pasillo 3 Local 230'
+  const ticketAddress = address || organizationSettings?.ticketAddress || defaultAddress
 
-  const ticketPhone = organizationSettings?.ticketPhone || phone || (isMM ? '+52 445 145 7252' : '')
+  const defaultPhone = '+52 445 145 7252'
+  const ticketPhone = phone || organizationSettings?.ticketPhone || defaultPhone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
   const ticketWidth = width || organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
 
@@ -190,8 +192,14 @@ export default function ReceiptTicket({
         <div style={{ fontWeight: 900, fontSize: is80mm ? '15px' : '12px', textTransform: 'uppercase', letterSpacing: '0.2px', color: '#000', wordBreak: 'break-word' }}>
           {ticketBusinessName}
         </div>
-        <div style={{ fontSize: is80mm ? '10px' : '8.5px', marginTop: '1px', color: '#000', wordBreak: 'break-word' }}>{ticketAddress}</div>
-        {ticketPhone && <div style={{ fontSize: is80mm ? '10px' : '8.5px', marginTop: '1px', color: '#000' }}>Tel: {ticketPhone}</div>}
+        <div style={{ fontSize: is80mm ? '11px' : '9.5px', fontWeight: 900, marginTop: '2px', color: '#000', wordBreak: 'break-word', letterSpacing: '0.2px' }}>
+          {ticketAddress}
+        </div>
+        {ticketPhone && (
+          <div style={{ fontSize: is80mm ? '10px' : '8.5px', fontWeight: 700, marginTop: '1px', color: '#000' }}>
+            Tel: {ticketPhone}
+          </div>
+        )}
       </div>
 
       {/* Info Ticket */}
