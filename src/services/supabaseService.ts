@@ -255,6 +255,7 @@ class SupabaseService {
           entity_id: finalEntityId || null,
           old_value: log.oldValue,
           new_value: log.newValue,
+          changes: { old_value: log.oldValue, new_value: log.newValue, details: finalDetails || null },
           ip_address: log.ipAddress,
           device_id: log.deviceId,
           details: finalDetails || null,
@@ -1138,22 +1139,25 @@ class SupabaseService {
   }
 
   async updateOrder(orderId: string, updates: Partial<Order>): Promise<void> {
-    try {
-      // 1. Siempre actualizar el estado en almacenamiento local
-      this.updateLocalPendingOrder(orderId, updates)
+    // 1. Siempre actualizar el estado en almacenamiento local
+    this.updateLocalPendingOrder(orderId, updates)
 
-      // 2. Si orderId es un UUID válido de Postgres, intentar actualizar en Supabase remoto
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      if (uuidRegex.test(orderId) && navigator.onLine) {
-        const payload = this.buildOrderPayload(updates, true)
+    // 2. Si orderId es un UUID válido de Postgres, intentar actualizar en Supabase remoto
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(orderId) && navigator.onLine) {
+      const payload = this.buildOrderPayload(updates, true)
+      payload.updated_at = new Date().toISOString()
+      delete payload.id
+      delete payload.paidAmount
+      delete payload.pendingBalance
+      delete payload.paymentStatus
+      delete payload.isPaid
 
-        const { error } = await supabase.from('orders').update(payload).eq('id', orderId)
-        if (error) {
-          logger.warn('supabase', `⚠️ Warning en updateOrder remoto: ${error.message}`)
-        }
+      const { error } = await supabase.from('orders').update(payload).eq('id', orderId)
+      if (error) {
+        logger.error('supabase', `⚠️ Error en updateOrder remoto: ${error.message}`, error)
+        throw error
       }
-    } catch (error) {
-      logger.warn('supabase', 'Catch en updateOrder (silencioso local):', error as any)
     }
   }
 
@@ -1162,9 +1166,11 @@ class SupabaseService {
       const orgId = this.getCurrentOrgId()
       const ordersKey = this.getLocalOrdersKey(orgId)
       const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
+      let found = false
       const updated = existing.map((o: any) => {
         if (o.id === orderId) {
-          const merged = { ...o, ...updates }
+          found = true
+          const merged = { ...o, ...updates, updated_at: new Date().toISOString() }
           if (updates.paidAmount !== undefined) merged.paid_amount = updates.paidAmount
           if ((updates as any).paid_amount !== undefined) merged.paidAmount = (updates as any).paid_amount
           if (updates.pendingBalance !== undefined) merged.pending_balance = updates.pendingBalance
@@ -1177,6 +1183,14 @@ class SupabaseService {
         }
         return o
       })
+      if (!found) {
+        updated.push({
+          id: orderId,
+          organizationId: orgId,
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+      }
       localStorage.setItem(ordersKey, JSON.stringify(updated))
     } catch (e) {}
   }

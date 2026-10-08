@@ -100,6 +100,115 @@ export default function PendingOrdersModal({
   const [newOrderInitialAbono, setNewOrderInitialAbono] = useState<string>('')
   const [newOrderProductSearch, setNewOrderProductSearch] = useState('')
 
+  // ➕ Prenda Fuera de Catálogo / Prenda Manual
+  const [manualModal, setManualModal] = useState<{
+    isOpen: boolean
+    target: 'edit' | 'new'
+    name: string
+    price: string
+    quantity: number
+    packQty: number
+    saveToCatalog: boolean
+    category: string
+    barcode: string
+  }>({
+    isOpen: false,
+    target: 'edit',
+    name: '',
+    price: '',
+    quantity: 1,
+    packQty: 1,
+    saveToCatalog: false,
+    category: 'General',
+    barcode: ''
+  })
+
+  const openManualModal = (target: 'edit' | 'new', initialName: string = '') => {
+    setManualModal({
+      isOpen: true,
+      target,
+      name: initialName.trim(),
+      price: '',
+      quantity: 1,
+      packQty: 1,
+      saveToCatalog: false,
+      category: 'General',
+      barcode: ''
+    })
+  }
+
+  const handleAddManualItemSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!manualModal.name.trim()) {
+      alert('⚠️ Ingresa el nombre de la prenda.')
+      return
+    }
+    const price = parseFloat(manualModal.price)
+    if (isNaN(price) || price <= 0) {
+      alert('⚠️ Ingresa un precio válido mayor a 0.')
+      return
+    }
+    const qty = Math.max(1, Number(manualModal.quantity) || 1)
+    const packQty = Math.max(1, Number(manualModal.packQty) || 1)
+
+    let finalProductId = `manual-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+    let finalSku = `MAN-${Date.now().toString().slice(-4)}`
+
+    if (manualModal.saveToCatalog) {
+      try {
+        const createdId = await supabaseService.createRetailProduct({
+          name: manualModal.name.trim(),
+          price: price,
+          currentStock: 0,
+          category: manualModal.category || 'General',
+          packQuantity: packQty,
+          active: true,
+          hasInventory: true,
+          barcode: manualModal.barcode?.trim() || undefined
+        })
+        if (createdId) {
+          finalProductId = createdId
+          finalSku = manualModal.barcode?.trim() || `CAT-${Date.now().toString().slice(-4)}`
+        }
+      } catch (err: any) {
+        console.warn('Could not save product to catalog:', err)
+        alert('Nota: No se pudo registrar en el catálogo en la nube, pero la prenda fue agregada al pedido como artículo manual.')
+      }
+    }
+
+    const newItem: OrderItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      productId: finalProductId,
+      productName: manualModal.name.trim(),
+      quantity: qty,
+      unitPrice: price,
+      addedAt: new Date(),
+      addedBy: currentUser?.id || 'system',
+      canBeDeleted: true,
+      packQuantity: packQty,
+      sku: finalSku
+    }
+
+    if (manualModal.target === 'edit') {
+      setEditItems(prev => [...prev, newItem])
+      setEditProductSearch('')
+    } else {
+      setNewOrderItems(prev => [...prev, newItem])
+      setNewOrderProductSearch('')
+    }
+
+    setManualModal(prev => ({
+      ...prev,
+      isOpen: false,
+      name: '',
+      price: '',
+      quantity: 1,
+      packQty: 1,
+      saveToCatalog: false,
+      barcode: ''
+    }))
+  }
+
   if (!isOpen) return null
 
   // 🛡️ Filtro estricto: Solo mostrar órdenes que no estén canceladas, pagadas o completadas
@@ -634,13 +743,24 @@ export default function PendingOrdersModal({
 
               {/* Buscar y Agregar Producto (Con Precio Paquete) */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">
                     + Agregar Producto al Pedido:
                   </label>
-                  <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
-                    📦 Prioriza Precio por Paquete
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openManualModal('edit', editProductSearch)}
+                      className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black rounded-xl text-[11px] flex items-center gap-1 transition-all border border-indigo-200 active:scale-95 shadow-xs"
+                      title="Agregar prenda personalizada o fuera de catálogo"
+                    >
+                      <Plus size={13} />
+                      <span>Prenda Fuera de Catálogo</span>
+                    </button>
+                    <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
+                      📦 Prioriza Precio por Paquete
+                    </span>
+                  </div>
                 </div>
                 <div className="relative">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -704,6 +824,21 @@ export default function PendingOrdersModal({
                     })}
                   </div>
                 )}
+                {editProductSearch.trim() !== '' && filteredProductsForEdit.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center space-y-2 mt-1 shadow-sm">
+                    <p className="text-xs font-bold text-amber-900">
+                      No se encontró ninguna prenda en catálogo con "{editProductSearch}".
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => openManualModal('edit', editProductSearch)}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
+                    >
+                      <Plus size={14} />
+                      <span>Agregar "{editProductSearch}" fuera de catálogo</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Lista de Items Actuales con edición de precio */}
@@ -730,6 +865,11 @@ export default function PendingOrdersModal({
                               {((item as any).sku || (item as any).barcode) && (
                                 <span className="bg-amber-200 text-slate-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shrink-0">
                                   SKU: {(item as any).sku || (item as any).barcode}
+                                </span>
+                              )}
+                              {item.productId && item.productId.toLowerCase().startsWith('manual-') && (
+                                <span className="bg-purple-100 text-purple-900 font-bold text-[10px] px-1.5 py-0.5 rounded border border-purple-200 shrink-0">
+                                  Fuera de Catálogo
                                 </span>
                               )}
                               <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
@@ -880,13 +1020,24 @@ export default function PendingOrdersModal({
 
               {/* Buscar y Agregar Producto */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <label className="text-xs font-black text-slate-700 uppercase tracking-wider block">
                     Buscar Productos para Apartar:
                   </label>
-                  <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
-                    📦 Prioriza Precio por Paquete
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openManualModal('new', newOrderProductSearch)}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-black rounded-xl text-[11px] flex items-center gap-1 transition-all border border-emerald-200 active:scale-95 shadow-xs"
+                      title="Agregar prenda personalizada o fuera de catálogo"
+                    >
+                      <Plus size={13} />
+                      <span>Prenda Fuera de Catálogo</span>
+                    </button>
+                    <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
+                      📦 Prioriza Precio por Paquete
+                    </span>
+                  </div>
                 </div>
                 <div className="relative">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -947,6 +1098,21 @@ export default function PendingOrdersModal({
                     })}
                   </div>
                 )}
+                {newOrderProductSearch.trim() !== '' && filteredProductsForNew.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center space-y-2 mt-1 shadow-sm">
+                    <p className="text-xs font-bold text-amber-900">
+                      No se encontró ninguna prenda en catálogo con "{newOrderProductSearch}".
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => openManualModal('new', newOrderProductSearch)}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs inline-flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
+                    >
+                      <Plus size={14} />
+                      <span>Agregar "{newOrderProductSearch}" fuera de catálogo</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Lista de Items Seleccionados */}
@@ -969,6 +1135,11 @@ export default function PendingOrdersModal({
                               {((item as any).sku || (item as any).barcode) && (
                                 <span className="bg-amber-200 text-slate-900 font-mono font-black text-[10px] px-1.5 py-0.5 rounded border border-amber-300 shrink-0">
                                   SKU: {(item as any).sku || (item as any).barcode}
+                                </span>
+                              )}
+                              {item.productId && item.productId.toLowerCase().startsWith('manual-') && (
+                                <span className="bg-purple-100 text-purple-900 font-bold text-[10px] px-1.5 py-0.5 rounded border border-purple-200 shrink-0">
+                                  Fuera de Catálogo
                                 </span>
                               )}
                               <p className="text-xs font-black text-slate-900 truncate">{item.productName}</p>
@@ -1346,6 +1517,146 @@ export default function PendingOrdersModal({
         )}
 
       </div>
+
+      {/* ======================================================== */}
+      {/* MODAL SECUNDARIO: AGREGAR PRENDA FUERA DE CATÁLOGO */}
+      {/* ======================================================== */}
+      {manualModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[10000] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 animate-scaleIn border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 uppercase flex items-center gap-2">
+                  <Plus size={18} className="text-indigo-600" />
+                  <span>Prenda Fuera de Catálogo</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Carga prendas especiales o no inventariadas al pedido
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManualModal(prev => ({ ...prev, isOpen: false }))}
+                className="p-1.5 text-slate-400 hover:text-slate-600 font-bold rounded-xl hover:bg-slate-100"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddManualItemSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">
+                  Nombre / Descripción de la Prenda *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={manualModal.name}
+                  onChange={e => setManualModal(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ej: Vestido campesino floreado rojo"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">
+                    Precio ($) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.01"
+                    required
+                    value={manualModal.price}
+                    onChange={e => setManualModal(prev => ({ ...prev, price: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">
+                    Cantidad
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={manualModal.quantity}
+                    onChange={e => setManualModal(prev => ({ ...prev, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 text-center"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={manualModal.saveToCatalog}
+                    onChange={e => setManualModal(prev => ({ ...prev, saveToCatalog: e.target.checked }))}
+                    className="mt-1 rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-amber-950 block">
+                      📦 Registrar permanentemente en el Catálogo de Productos
+                    </span>
+                    <span className="text-[11px] text-amber-800 font-medium block leading-snug">
+                      Se guardará en la nube con existencias en cero para que puedas seguir vendiéndola y ajustarle inventario después.
+                    </span>
+                  </div>
+                </label>
+
+                {manualModal.saveToCatalog && (
+                  <div className="pt-2 grid grid-cols-2 gap-2 border-t border-amber-200/60">
+                    <div>
+                      <label className="text-[10px] font-black text-amber-900 uppercase block mb-1">
+                        Categoría
+                      </label>
+                      <input
+                        type="text"
+                        value={manualModal.category}
+                        onChange={e => setManualModal(prev => ({ ...prev, category: e.target.value }))}
+                        placeholder="Ej: Vestidos"
+                        className="w-full px-2.5 py-1.5 bg-white border border-amber-200 rounded-xl text-xs font-bold text-slate-900 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-amber-900 uppercase block mb-1">
+                        Código / SKU (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={manualModal.barcode}
+                        onChange={e => setManualModal(prev => ({ ...prev, barcode: e.target.value }))}
+                        placeholder="Ej: VEST-01"
+                        className="w-full px-2.5 py-1.5 bg-white border border-amber-200 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setManualModal(prev => ({ ...prev, isOpen: false }))}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Plus size={15} />
+                  <span>Agregar al Pedido</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
