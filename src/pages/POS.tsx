@@ -412,7 +412,7 @@ export default function POS() {
   const isReadOnly = currentUser?.role === 'supervisor'
 
 
-  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto' | 'medio_paquete'>('paquete')
+  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('paquete')
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
 
   const priceModeRef = useRef(priceMode)
@@ -420,10 +420,10 @@ export default function POS() {
     priceModeRef.current = priceMode
   }, [priceMode])
 
-  // 🔒 REGLA ESTRICTA MODAMIEL: Prohibir 'pieza', 'mayoreo' o 'bulto'. Únicamente 'paquete' o 'medio_paquete'
+  // 🔒 REGLA ESTRICTA MODAMIEL: Únicamente venta por paquete
   useEffect(() => {
     if (isModaMiel) {
-      if (priceMode !== 'paquete' && priceMode !== 'medio_paquete') {
+      if (priceMode !== 'paquete') {
         setPriceMode('paquete')
       }
     }
@@ -756,29 +756,44 @@ export default function POS() {
     const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
     const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
 
-    // 👗 REGLA ESTRICTA MODAMIEL: Únicamente Paquete Completo o Medio Paquete (Sin venta por pieza unitaria ni mayoreo suelto)
-    // 👗 REGLA ESTRICTA MODAMIEL: Únicamente Paquete Completo o Medio Paquete (Sin venta por pieza unitaria)
-    const isFullPack = isPackageMode || priceMode === 'paquete'
-    const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
-    const fullPackQty = explicitPackQty > 1 ? explicitPackQty : 10
-    const halfPackQty = Math.max(1, Math.round(fullPackQty / 2))
+    // 👗 REGLA ESTRICTA MODAMIEL: Venta exclusiva por paquete.
+    if (isModaMiel) {
+      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+      const fullPackQty = explicitPackQty > 1 ? explicitPackQty : 10
 
-    const fullPackPrice = packPrice > 0 ? packPrice : unitPackPrice * fullPackQty
-    const manualHalf = Number(product.halfPackPrice || (product as any).half_pack_price || 0)
-    const halfPackPrice = manualHalf > 0 ? manualHalf : Math.round((fullPackPrice / 2) * 100) / 100
+      const computedProduct: any = {
+        ...product,
+        price: unitPackPrice,
+        packQuantity: fullPackQty,
+        productId: product.id
+      }
 
-    const itemPrice = isFullPack ? fullPackPrice : halfPackPrice
-    const presentationLabel = isFullPack ? 'PAQUETE' : '1/2 PAQUETE'
-    const piecesDeduct = isFullPack ? fullPackQty : halfPackQty
+      addItemToDraft(tableNumber, computedProduct, currentUser.id)
+      return
+    }
 
-    const computedProduct: any = {
+    // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
+    if (isPackageMode || priceMode === 'paquete') {
+      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+      const packQty = explicitPackQty > 1 ? explicitPackQty : 10
+
+      const computedProduct = {
+        ...product,
+        price: unitPackPrice,
+        packQuantity: 1
+      }
+
+      for (let i = 0; i < packQty; i++) {
+        addItemToDraft(tableNumber, computedProduct, currentUser.id)
+      }
+      return
+    }
+
+    // 👤 MODO PIEZA: Agregar 1 pieza individual usando PRECIO POR PIEZA EN PAQUETE
+    const computedProduct = {
       ...product,
-      id: `${product.id}-${isFullPack ? 'pack' : 'half'}`,
-      name: `${product.name} (${presentationLabel})`,
-      price: itemPrice,
-      packQuantity: piecesDeduct,
-      isHalfPack: !isFullPack,
-      productId: product.id
+      price: unitPackPrice,
+      packQuantity: 1
     }
 
     addItemToDraft(tableNumber, computedProduct, currentUser.id)
@@ -791,19 +806,13 @@ export default function POS() {
 
   const handleAddManualItem = (description: string, price: number, packQty: number = 10) => {
     if (!currentUser || isReadOnly) return
-    const isFullPack = !description.toUpperCase().includes('1/2') && !description.toUpperCase().includes('MEDIO')
-    const finalDesc = description.toUpperCase().includes('PAQUETE') 
-      ? description 
-      : `${description} (${isFullPack ? 'PAQUETE' : '1/2 PAQUETE'})`
-
     const virtualProduct: any = {
       id: `manual-${Date.now()}`,
-      name: finalDesc,
+      name: description,
       price: price,
       category: 'Manual',
       image: '',
-      packQuantity: packQty > 1 ? packQty : (isFullPack ? 10 : 5),
-      isHalfPack: !isFullPack
+      packQuantity: packQty > 1 ? packQty : 10
     }
 
     addItemToDraft(tableNumber, virtualProduct, currentUser.id)
@@ -814,7 +823,7 @@ export default function POS() {
       action: 'POS_MANUAL_ITEM_ADDED',
       entityType: 'POS',
       entityId: `caja-${tableNumber}`,
-      newValue: { description: finalDesc, price, packQty: virtualProduct.packQuantity }
+      newValue: { description, price, packQty: virtualProduct.packQuantity }
     }).catch(err => console.error('Error logging manual item:', err))
   }
 
@@ -1331,7 +1340,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
               {registers[tableNumber.toString()] || `Caja ${tableNumber}`}
             </span>
             <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-black uppercase">
-              {isModaMiel ? (priceMode === 'paquete' ? 'PAQUETE COMPLETO' : '1/2 PAQUETE') : priceMode}
+              {isModaMiel ? 'PAQUETE' : priceMode}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -1661,7 +1670,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 onAdd={handleAddProduct} 
                 disableAdd={isReadOnly || !!activeShift?.end_time} 
                 isPackageMode={priceMode === 'paquete'}
-                onTogglePackageMode={(isPack) => setPriceMode(isPack ? 'paquete' : (isModaMiel ? 'medio_paquete' : 'pieza'))}
+                onTogglePackageMode={(isPack) => setPriceMode(isPack ? 'paquete' : 'pieza')}
               />
 
             </div>
@@ -2448,7 +2457,7 @@ function ManualAdjustModal({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">
-                        {isModaMiel ? '1/2 Paquetes / Paquetes (Cantidad):' : 'Piezas (Cantidad):'}
+                        {isModaMiel ? 'Paquetes (Cantidad):' : 'Piezas (Cantidad):'}
                       </label>
                       <input
                         type="number"
@@ -2460,7 +2469,7 @@ function ManualAdjustModal({
                     </div>
                     <div>
                       <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">
-                        {isModaMiel ? 'Precio Paquete / 1/2 Paq ($):' : 'Precio Unitario ($):'}
+                        {isModaMiel ? 'Precio Paquete ($):' : 'Precio Unitario ($):'}
                       </label>
                       <input
                         type="number"
@@ -2489,7 +2498,7 @@ function ManualAdjustModal({
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder={isModaMiel ? "ej: Descuento autorizado en mostrador / Ajuste 1/2 paquete" : "ej: Descuento autorizado en mostrador / Corrección de piezas"}
+                placeholder={isModaMiel ? "ej: Descuento autorizado en mostrador / Ajuste de paquetes" : "ej: Descuento autorizado en mostrador / Corrección de piezas"}
                 className="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl font-bold text-xs text-slate-900 outline-none focus:border-indigo-500"
                 required
               />
