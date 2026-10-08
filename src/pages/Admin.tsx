@@ -410,7 +410,7 @@ function EcommerceDashboard() {
           <div className="space-y-2">
             <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">Mi Tienda Online</h2>
             <p className="text-slate-500 font-medium text-lg leading-relaxed">
-              Tu catálogo digital está activo y listo para recibir clientes. Comparte el enlace directo o úsalo como menú digital en tus mesas.
+              Tu catálogo digital está activo y listo para recibir pedidos. Comparte el enlace directo con tus clientes y mayoristas.
             </p>
           </div>
 

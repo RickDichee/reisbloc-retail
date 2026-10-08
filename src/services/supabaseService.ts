@@ -847,7 +847,7 @@ class SupabaseService {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      // Normalizar table_number para evitar "Mesa 0"
+      // Normalizar table_number (Caja / Terminal)
       return (data || []).map((o: any) => ({
         ...o,
         tableNumber: o.table_number ?? o.tableNumber ?? 0,

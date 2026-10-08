@@ -5,8 +5,6 @@ import { useAppStore } from '@/store/appStore'
 import { BRANDING } from '@/config/branding'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
-import { useNotifications } from '@/hooks/useNotifications'
-import NotificationCenter from '@/components/common/NotificationCenter'
 import { changeLanguage } from '@/i18n'
 import {
   ShoppingCart,
@@ -47,12 +45,7 @@ export default function NavBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showOrgSwitcher, setShowOrgSwitcher] = useState(false)
 
-  const {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead
-  } = useNotifications(currentUser?.id || null)
+
 
   const { i18n } = useTranslation()
 
@@ -251,14 +244,7 @@ export default function NavBar() {
                 {i18n.language === 'es' ? 'EN' : 'ES'}
               </button>
 
-              <div className="relative">
-                <NotificationCenter
-                  notifications={notifications}
-                  unreadCount={unreadCount}
-                  onMarkAsRead={markAsRead}
-                  onMarkAllAsRead={markAllAsRead}
-                />
-              </div>
+
 
               {/* User Profile Menu */}
               <div className="relative group">

@@ -323,7 +323,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-white">Módulos a tu Elección</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Activa únicamente los componentes indispensables: POS Multicaja, Control de Inventario y Código de Barras, Mayoreo por Paquete, Comandero de Cocina, Facturación CFDI 4.0 o Reportes Financieros.
+                Activa únicamente los componentes indispensables: POS Multicaja, Control de Inventario y Código de Barras, Mayoreo por Paquete, Facturación CFDI 4.0 o Reportes Financieros.
               </p>
             </div>
 
@@ -596,7 +596,7 @@ export default function LandingPage() {
                     >
                       <option value="Retail Boutique + Terminal Clip">Tienda Retail / Boutique + Terminal Clip</option>
                       <option value="Mayoreo por Paquete + E-commerce WhatsApp">Venta por Paquete / Mayoreo + E-commerce</option>
-                      <option value="Restaurante / Bar / Dark Kitchen">Restaurante / Bar / Comandero Cocina</option>
+                      <option value="Distribucion Mayorista / Moda y Ropa">Distribución Mayorista / Ropa y Confección</option>
                       <option value="POS Multi-Sucursal + Facturacion CFDI 4.0">Multi-sucursal + Facturación Electrónica SAT</option>
                       <option value="Desarrollo 100% Personalizado">Desarrollo Especial a la Medida</option>
                     </select>

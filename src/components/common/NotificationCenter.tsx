@@ -84,13 +84,11 @@ export default function NotificationCenter({
     // Cerrar panel
     setIsOpen(false)
 
-    // Navegación inteligente
-    if (notification.title.includes('Orden lista') || notification.body.includes('listo')) {
-      navigate('/ready') // Mesero: ir a recoger
-    } else if (notification.title.includes('Nueva orden') && notification.body.includes('cocina')) {
-      navigate('/kitchen') // Cocina: ver nueva orden
-    } else if (notification.title.includes('Nueva orden') && notification.body.includes('bar')) {
-      navigate('/bar') // Bar: ver nueva orden
+    // Navegación general de retail
+    if (notification.title.toLowerCase().includes('inventario') || notification.title.toLowerCase().includes('stock')) {
+      navigate('/inventory')
+    } else if (notification.title.toLowerCase().includes('venta') || notification.title.toLowerCase().includes('pedido')) {
+      navigate('/pos')
     }
   }
 

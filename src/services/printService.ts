@@ -165,7 +165,7 @@ class PrintService {
   }
 
   /**
-   * Imprimir comprobante de venta (ticket comensal)
+   * Imprimir comprobante de venta (ticket retail)
    */
   async printReceipt(
     receiptHTML: string,

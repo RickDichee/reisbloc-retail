@@ -2,7 +2,7 @@ import { supabase } from '../config/supabase'
 import logger from '../utils/logger'
 import { UserRole } from '../types'
 
-export const NOTIFICATIONS_ENABLED = true
+export const NOTIFICATIONS_ENABLED = false
 
 export interface Notification {
   id: string
@@ -160,6 +160,15 @@ export async function notifyUsersByRole(
  * Escuchar notificaciones del usuario en tiempo real con respaldo resiliente
  */
 export function subscribeToNotifications(
+  _userId: string,
+  callback: (notifications: Notification[]) => void,
+  _maxNotifications: number = 50
+) {
+  callback([])
+  return () => {}
+}
+
+export function _deprecatedSubscribeToNotifications(
   userId: string,
   callback: (notifications: Notification[]) => void,
   maxNotifications: number = 50
