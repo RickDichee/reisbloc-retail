@@ -412,7 +412,7 @@ export default function POS() {
   const isReadOnly = currentUser?.role === 'supervisor'
 
 
-  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('pieza')
+  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('paquete')
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
 
   const priceModeRef = useRef(priceMode)
@@ -730,7 +730,7 @@ export default function POS() {
     });
   }
 
-  function handleAddProduct(product: Product, isPackageMode: boolean = false) {
+  function handleAddProduct(product: Product, isPackageMode: boolean = true) {
     if (!currentUser || isReadOnly) return
     
     const parsedDesc = parseProductDescription(product.description || '')
@@ -748,32 +748,18 @@ export default function POS() {
     const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
 
     // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
-    if (isPackageMode || priceMode === 'paquete') {
-      const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
-      const packQty = explicitPackQty > 1 ? explicitPackQty : 10
+    const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
+    const packQty = explicitPackQty > 1 ? explicitPackQty : 10
 
-      const computedProduct = {
-        ...product,
-        price: unitPackPrice,
-        packQuantity: 1
-      }
-
-      for (let i = 0; i < packQty; i++) {
-        addItemToDraft(tableNumber, computedProduct, currentUser.id)
-      }
-      return
-    }
-
-    // 👤 MODO PIEZA: Agregar 1 pieza individual usando PRECIO POR PIEZA EN PAQUETE
     const computedProduct = {
       ...product,
       price: unitPackPrice,
       packQuantity: 1
     }
 
-    addItemToDraft(tableNumber, computedProduct, currentUser.id)
-
-
+    for (let i = 0; i < packQty; i++) {
+      addItemToDraft(tableNumber, computedProduct, currentUser.id)
+    }
   }
 
   const handleAddPackageProduct = (product: Product) => {
@@ -1169,12 +1155,25 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
     if (!currentUser || isReadOnly) return
 
     try {
-      const mappedMethod = result.paymentMethod === 'card' ? 'tarjeta' : (result.paymentMethod === 'card_mercadopago' ? 'transferencia' : result.paymentMethod)
+      const mappedMethod = (result.paymentMethod as any) === 'transfer' ? 'transferencia' :
+        result.paymentMethod === 'card' ? 'tarjeta' : 
+        (result.paymentMethod === 'card_mercadopago' ? 'transferencia' : result.paymentMethod)
 
       const { orderIds } = paymentPanel
       const isCheckingOutPendingOrder = Boolean(orderIds && orderIds.length > 0)
       const ordersToProcess = activeOrdersList.filter(o => (orderIds || []).includes(o.id))
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
+
+      let baseNotes = isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail'
+      if (result.transferReference) {
+        baseNotes += ' | Ref: ' + result.transferReference
+      }
+      if (result.transferBank) {
+        baseNotes += ' (' + result.transferBank + ')'
+      }
+      if (result.notes) {
+        baseNotes += ' - ' + result.notes
+      }
 
       const salePayload: any = {
         tableNumber,
@@ -1182,7 +1181,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         total: result.total,
         paymentMethod: mappedMethod,
         saleBy: currentUser.id,
-        notes: isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail',
+        notes: baseNotes,
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
         clientPhone: selectedClient?.phone
@@ -1268,8 +1267,14 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           clientName: selectedClient?.name,
           clientPhone: selectedClient?.phone
         })
+
+        // Lanzar diálogo de impresión automáticamente
+        printService.printReceipt(ticketHTML, {
+          title: `Ticket_${tableNumber}`,
+          width: selectedTicketWidth
+        }).catch(err => logger.warn('pos', 'Auto-print error', err))
       } catch (printErr) {
-        logger.warn('pos', 'No se pudo generar ticket', printErr as any)
+        logger.error('pos', 'No se pudo generar ticket', printErr as any)
       }
 
       setSelectedClient(null)
@@ -1643,8 +1648,8 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 products={filteredProducts} 
                 onAdd={handleAddProduct} 
                 disableAdd={isReadOnly || !!activeShift?.end_time} 
-                isPackageMode={priceMode === 'paquete'}
-                onTogglePackageMode={(isPack) => setPriceMode(isPack ? 'paquete' : 'pieza')}
+                isPackageMode={true}
+                onTogglePackageMode={() => {}}
               />
 
             </div>

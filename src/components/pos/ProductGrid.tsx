@@ -33,9 +33,9 @@ export function ProductGrid({
   onTogglePackageMode
 }: ProductGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [internalIsPackageMode, setInternalIsPackageMode] = useState<boolean>(false)
+  const [internalIsPackageMode, setInternalIsPackageMode] = useState<boolean>(true)
 
-  const isPackageMode = externalIsPackageMode !== undefined ? externalIsPackageMode : internalIsPackageMode
+  const isPackageMode = externalIsPackageMode !== undefined ? externalIsPackageMode : true
 
   const setPackageMode = (val: boolean) => {
     setInternalIsPackageMode(val)
@@ -60,46 +60,21 @@ export function ProductGrid({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
       
-      {/* 📦 Selector de Modo de Venta: PIEZA vs PAQUETE COMPLETO (Visibilidad Garantizada 100%) */}
-      <div className="p-3 bg-slate-900 text-white rounded-t-xl shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <Package size={20} className="text-amber-400 animate-bounce shrink-0" />
+      {/* 📦 Modo de Venta: Exclusivo Paquete */}
+      <div className="p-3 bg-slate-900 text-white rounded-t-xl shrink-0 flex items-center justify-between border-b border-slate-800">
+        <div className="flex items-center gap-2.5">
+          <Package size={20} className="text-amber-400 shrink-0" />
           <div>
-            <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none">Modo de Venta en Caja</p>
-            <p className="text-xs font-black uppercase text-white tracking-tight">
-              {isPackageMode ? '📦 Vender Paquete Completo' : '👤 Venta por Pieza'}
+            <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none">Venta en Mostrador</p>
+            <p className="text-xs font-black uppercase text-white tracking-tight mt-0.5">
+              📦 Venta por Paquete Completo
             </p>
           </div>
         </div>
 
-        <div className="flex bg-slate-800 p-1 rounded-2xl border border-slate-700 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={() => setPackageMode(false)}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
-              !isPackageMode 
-                ? 'bg-white text-slate-900 shadow-md' 
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <User size={14} />
-            <span>👤 Pieza</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPackageMode(true)}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase transition-all flex items-center justify-center gap-1.5 ${
-              isPackageMode 
-                ? 'bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/30 font-black' 
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-
-            <Package size={14} />
-            <span>📦 PAQUETE</span>
-            {isPackageMode && <Check size={14} className="text-slate-950" />}
-          </button>
+        <div className="px-3 py-1 bg-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-1.5">
+          <Package size={14} />
+          <span>Paquete</span>
         </div>
       </div>
 
