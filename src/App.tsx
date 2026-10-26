@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
 import { supabase, forceAuthHeader } from '@/config/supabase'
-import { BRANDING, checkIsModaMiel } from '@/config/branding'
+import { BRANDING, checkIsModaMiel, checkIsLosChunches } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { getStoredToken } from '@/services/jwtService'
@@ -35,6 +35,7 @@ const Analytics = lazy(() => import('@/pages/Analytics'))
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'))
 const TermsOfService = lazy(() => import('@/pages/TermsOfService'))
 const ModaMielBrandPage = lazy(() => import('@/pages/ModaMielBrandPage'))
+const LosChunchesBrandPage = lazy(() => import('@/pages/LosChunchesBrandPage'))
 const Pricing = lazy(() => import('@/pages/Pricing'))
 const Branches = lazy(() => import('@/pages/Branches'))
 const Schedules = lazy(() => import('@/pages/Schedules'))
@@ -57,7 +58,7 @@ function PageLoader() {
 function AppLayout() {
   const { pathname } = useLocation()
   const { accessibility, currentUser, isAuthenticated, logout } = useAppStore()
-  const { isModaMiel } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
+  const { isModaMiel, isLosChunches } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
 
   // Ocultar NavBar en landing, login, registro, invitaciones, legales y portada de tienda
   const isPublicPage = 
@@ -70,6 +71,8 @@ function AppLayout() {
     pathname === '/terms' || 
     pathname === '/modamielmx' || 
     pathname === '/modamielmxn' || 
+    pathname === '/loschunches' || 
+    pathname === '/los-chunches' || 
     pathname.startsWith('/p/')
   const hideNavBar = isPublicPage
 
@@ -106,6 +109,8 @@ function AppLayout() {
                 <Navigate to={homeTarget} replace />
               ) : isModaMiel ? (
                 <ModaMielBrandPage />
+              ) : isLosChunches ? (
+                <LosChunchesBrandPage />
               ) : (
                 <LandingPage />
               )
@@ -120,6 +125,8 @@ function AppLayout() {
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/modamielmx" element={<ModaMielBrandPage />} />
           <Route path="/modamielmxn" element={<ModaMielBrandPage />} />
+          <Route path="/loschunches" element={<LosChunchesBrandPage />} />
+          <Route path="/los-chunches" element={<LosChunchesBrandPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/upgrade" element={<Pricing />} />
@@ -267,7 +274,7 @@ export default function App() {
                   p_auth_uid: session.user.id,
                   p_email: (session.user.email || '').toLowerCase().trim(),
                   p_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
-                  p_hostname: isMM ? 'modamiel' : window.location.hostname
+                  p_hostname: isMM ? 'modamiel' : (checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash) ? 'loschunches' : window.location.hostname)
                 })
                 if (rpcData?.success && rpcData?.user) {
                   user = {

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
 import { logSuccessfulLogin } from '@/services/authService'
 import { ShieldCheck, AlertCircle } from 'lucide-react'
-import { checkIsModaMiel } from '@/config/branding'
+import { checkIsModaMiel, checkIsLosChunches } from '@/config/branding'
 import supabaseService from '@/services/supabaseService'
 import { useAppStore } from '@/store/appStore'
 import { User } from '@/types'
@@ -147,7 +147,8 @@ export function AuthCallback() {
         const userEmail = (user.email || '').toLowerCase().trim()
         const userName = user.user_metadata?.full_name || user.user_metadata?.name || userEmail.split('@')[0] || 'Usuario'
         const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
-        const hostnameToPass = isMM ? 'modamiel' : window.location.hostname
+        const isLC = checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash)
+        const hostnameToPass = isMM ? 'modamiel' : (isLC ? 'loschunches' : window.location.hostname)
 
         // 5. Sincronización atómica backend con handle_auth_callback_sync (RPC SECURITY DEFINER)
         let syncedUser: any = null
@@ -181,13 +182,14 @@ export function AuthCallback() {
             .maybeSingle()
 
           const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+          const lcDefaultOrgId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
           const mgmtOrgId = '8fdd0efd-544a-4624-80a3-a6c26054f639'
           const isLu = userEmail.includes('lu.velazquez') || userEmail.includes('lu.velazquezz')
           const isRick = userEmail === 'rick.playacar@gmail.com'
-          const targetOrgId = isRick ? mgmtOrgId : (isMM || isLu ? mmDefaultOrgId : (existingUser?.organization_id || mgmtOrgId))
+          const targetOrgId = isRick ? mgmtOrgId : (isMM || isLu ? mmDefaultOrgId : (isLC ? lcDefaultOrgId : (existingUser?.organization_id || mgmtOrgId)))
 
-          if (isMM || isLu || isRick) {
-            const roleToAssign = (isLu || isRick) ? 'admin' : 'cashier'
+          if (isMM || isLu || isRick || isLC) {
+            const roleToAssign = (isLu || isRick || isLC) ? 'admin' : 'cashier'
             if (!existingUser) {
               const { data: newUser } = await supabase
                 .from('users')

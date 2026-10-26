@@ -65,43 +65,78 @@ export default function ProductModal({
     const { currentUser, products, organizationSettings } = useAppStore()
     const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
     const parsedDesc = parseProductDescription(product?.description || '')
+    const initialPackPrice = Number(parsedDesc.packPrice || product?.price || 0)
+    const initialPackQty = Number(product?.packQuantity || (product as any)?.pack_quantity || parsedDesc.packQty || 12)
+    const initialCurrentStock = Number(product ? (product.currentStock ?? (product as any).current_stock ?? 0) : 0)
+
     const [formData, setFormData] = useState({
         name: product?.name || '',
-        price: product?.price || 0,
+        price: initialPackPrice,
         category: product?.category || 'General',
         sku: product?.sku || '',
         barcode: product?.barcode || initialBarcode || '',
         description: parsedDesc.description,
         hasInventory: product ? (product.hasInventory ?? (product as any).has_inventory ?? true) : true,
-        currentStock: product ? (product.currentStock ?? (product as any).current_stock ?? 0) : 0,
+        currentStock: initialCurrentStock,
         minimumStock: product ? (product.minimumStock ?? (product as any).minimum_stock ?? 10) : 10,
         active: product?.active ?? true,
         image: product?.image || '',
         parentId: product?.parentId || '',
-        packQuantity: product?.packQuantity || 1,
-        wholesalePrice: product?.wholesalePrice ?? (product as any)?.wholesale_price ?? undefined,
-        wholesaleMinQty: product?.wholesaleMinQty ?? (product as any)?.wholesale_min_qty ?? parsedDesc.wholesaleMinQty ?? 3,
-        packPrice: parsedDesc.packPrice,
-        packQty: parsedDesc.packQty || 10,
-        bulkPrice: parsedDesc.bulkPrice,
-        packagesPerBulk: parsedDesc.packagesPerBulk || 10
+        packQuantity: initialPackQty,
+        packPrice: initialPackPrice,
+        packQty: initialPackQty,
     })
     const [loading, setLoading] = useState(false)
     const [isBulk, setIsBulk] = useState(() => !!parsedDesc.sizes)
-    const [packagesCount, setPackagesCount] = useState(1)
-    const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>(() => {
-        const base = { 'CH': 0, 'M': 0, 'G': 0, 'XG': 0 }
-        if (parsedDesc.sizes && typeof parsedDesc.sizes === 'object') {
-            return { ...base, ...parsedDesc.sizes }
+    const [packagesCount, setPackagesCount] = useState<number>(() => {
+        if (initialCurrentStock > 0 && initialPackQty > 0) {
+            return Math.round((initialCurrentStock / initialPackQty) * 100) / 100
         }
-        return base
+        return 0
     })
+
+    const handlePackagesCountChange = (newPacks: number) => {
+        const val = Math.max(0, newPacks)
+        setPackagesCount(val)
+        const packSize = Number(formData.packQty || 12)
+        const totalPieces = Math.round(val * packSize)
+        setFormData(prev => ({
+            ...prev,
+            currentStock: totalPieces
+        }))
+    }
+
+    const handlePiecesCountChange = (newPieces: number) => {
+        const val = Math.max(0, newPieces)
+        const packSize = Number(formData.packQty || 12)
+        setFormData(prev => ({
+            ...prev,
+            currentStock: val
+        }))
+        if (packSize > 0) {
+            const calculatedPacks = Math.round((val / packSize) * 100) / 100
+            setPackagesCount(calculatedPacks)
+        }
+    }
+
+    const handlePackQtyChange = (newPackQty: number) => {
+        const val = Math.max(1, newPackQty)
+        setFormData(prev => {
+            const updatedStock = packagesCount > 0 ? Math.round(packagesCount * val) : prev.currentStock
+            return {
+                ...prev,
+                packQty: val,
+                packQuantity: val,
+                currentStock: updatedStock
+            }
+        })
+    }
+
     const [customSize, setCustomSize] = useState('')
     const [shouldPrint, setShouldPrint] = useState(true)
     const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
     const [codeFormat, setCodeFormat] = useState<'code128' | 'qrcode'>('code128')
     const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
-    const [showPricingOptions, setShowPricingOptions] = useState(() => !!formData.wholesalePrice || !!formData.packPrice || !!formData.bulkPrice)
     const [showStockAdvanced, setShowStockAdvanced] = useState(true)
 
     const getCodeImageUrl = (code: string) => {
@@ -187,23 +222,29 @@ export default function ProductModal({
                 finalImageUrl = await storageService.uploadProductImage(storageId, compressedBlob)
             }
 
+            const realPackQty = Number(formData.packQty || formData.packQuantity || 12)
+            const packPriceVal = Number(formData.packPrice || formData.price || 0)
+
             const finalDescription = serializeProductDescription(
                 formData.description || '',
-                formData.packPrice,
-                formData.bulkPrice,
-                formData.packQty,
-                formData.packagesPerBulk,
-                formData.wholesaleMinQty
+                packPriceVal,
+                undefined,
+                realPackQty,
+                undefined,
+                undefined
             )
-
-            const realPackQty = Number(formData.packQty || formData.packQuantity || 10)
 
             const payload = { 
                 ...formData, 
+                price: packPriceVal,
+                packPrice: packPriceVal,
                 image: finalImageUrl,
                 description: finalDescription,
-                wholesalePrice: formData.wholesalePrice,
-                parentId: isWholesale && formData.parentId ? formData.parentId : undefined,
+                wholesalePrice: undefined,
+                wholesaleMinQty: undefined,
+                bulkPrice: undefined,
+                packagesPerBulk: undefined,
+                parentId: undefined,
                 packQuantity: realPackQty,
                 pack_quantity: realPackQty,
                 packQty: realPackQty
@@ -243,12 +284,10 @@ export default function ProductModal({
                   }).catch(err => console.error('Error logging stock reduction request:', err))
                 }
 
-                // Calcular precio de paquete automático para Moda Miel MX (Precio Unitario Cargado * Piezas por Paquete)
-                const computedPackPrice = formData.packPrice || (Number(formData.price || 0) * realPackQty)
-
                 const updatedPayload = {
                     ...payload,
-                    packPrice: computedPackPrice,
+                    price: packPriceVal,
+                    packPrice: packPriceVal,
                     currentStock: finalStock,
                     current_stock: finalStock,
                     hasInventory: formData.hasInventory

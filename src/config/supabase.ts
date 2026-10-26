@@ -36,7 +36,7 @@ if (isProductionDomain) {
   // En dominios oficiales de producción forzar siempre el Supabase PROD y su Publishable Key correspondiente
   validUrl = PROD_SUPABASE_URL
   validKey = PROD_PUBLISHABLE_KEY
-} else if (rawUrl.includes('jnyyaclrelqcqzjummwe') || rawUrl.includes('dev')) {
+} else if (rawUrl.includes('jnyyaclrelqcqzjummwe') || rawUrl.includes('htjhzdtlvdbtlfdhsydq') || rawUrl.includes('dev')) {
   // En ambiente DEV usar la URL de DEV y la Publishable Key de DEV correspondiente
   validUrl = DEV_SUPABASE_URL
   validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : DEV_PUBLISHABLE_KEY

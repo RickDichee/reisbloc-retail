@@ -15,7 +15,7 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search)
     const errParam = params.get('error')
     if (errParam === 'unauthorized_collaborator') {
-      setError('⚠️ Acceso restringido: Únicamente los colaboradores autorizados por Moda Miel MX pueden ingresar. Solicita una invitación a tu Administrador.')
+      setError('⚠️ Acceso restringido: Únicamente los colaboradores autorizados pueden ingresar. Solicita una invitación a tu Administrador.')
     } else if (errParam === 'auth_failed') {
       setError('⚠️ No se pudo completar el inicio de sesión. Por favor intenta de nuevo.')
     }
@@ -67,6 +67,8 @@ export default function Login() {
           <div className={`inline-flex items-center justify-center w-20 h-20 rounded-xl mb-4 overflow-hidden border shadow-xl ${
             BRANDING.isModaMiel 
               ? 'bg-pink-500/10 border-pink-500/30' 
+              : BRANDING.isLosChunches
+              ? 'bg-rose-500/10 border-rose-500/30 shadow-rose-500/10'
               : 'bg-slate-900 border-amber-500/30 shadow-amber-500/5'
           }`}>
             <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
@@ -74,7 +76,7 @@ export default function Login() {
           <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 tracking-tight">{BRANDING.appName}</h1>
           <p className="text-slate-400 text-sm sm:text-base font-medium">{BRANDING.loginSubtitle}</p>
           <div className={`text-xs mt-2 uppercase tracking-widest font-bold font-mono ${
-            BRANDING.isModaMiel ? 'text-pink-400' : 'text-amber-400'
+            BRANDING.isModaMiel ? 'text-pink-400' : BRANDING.isLosChunches ? 'text-rose-400' : 'text-amber-400'
           }`}>
             {BRANDING.whiteLabelName}
           </div>
