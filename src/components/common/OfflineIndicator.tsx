@@ -26,14 +26,37 @@ const OfflineIndicator: React.FC = () => {
       setIsDismissed(false);
     };
 
+    // ⛑️ FIX EGRESS: backoff exponencial para el auto-sync. Antes cada tick de
+    // 15s disparaba processQueue() si el conteo pendiente era > 0, y una op en
+    // stuck generaba syncs + refetch de catálogo eternos.
+    const AUTO_SYNC_BASE_MS = 15 * 1000
+    const AUTO_SYNC_MAX_MS = 15 * 60 * 1000
+    let autoSyncBackoffMs = AUTO_SYNC_BASE_MS
+    let lastAutoSyncAttempt = 0
+    let lastSeenPendingCount = -1
+
     const updatePendingCount = async () => {
       try {
         const pending = await offlineStorage.getPendingSyncOperations();
         setPendingCount(pending.length);
 
-        // Si hay conexión y tareas pendientes, sincronizar en segundo plano sin mostrar alertas invasivas
+        // Si hay conexión y tareas pendientes, sincronizar en segundo plano
+        // solo si el conteo cambió (op nueva) o si el backoff lo permite.
         if (navigator.onLine && pending.length > 0 && !(syncService as any).isSyncing) {
-          syncService.processQueue();
+          const now = Date.now();
+          const countChanged = pending.length !== lastSeenPendingCount;
+          if (countChanged || now - lastAutoSyncAttempt >= autoSyncBackoffMs) {
+            if (countChanged) {
+              // Aparecieron ops nuevas: sync inmediato y reset del backoff
+              autoSyncBackoffMs = AUTO_SYNC_BASE_MS;
+            } else {
+              // Mismas ops que el ciclo anterior (stuck): duplica la espera
+              autoSyncBackoffMs = Math.min(AUTO_SYNC_MAX_MS, autoSyncBackoffMs * 2);
+            }
+            lastAutoSyncAttempt = now;
+            lastSeenPendingCount = pending.length;
+            syncService.processQueue().catch(() => { /* silencioso */ });
+          }
         }
       } catch {
         // Silencioso

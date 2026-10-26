@@ -10,6 +10,10 @@ import logger from '@/utils/logger'
 class SyncService {
     private isSyncing = false
 
+    // ⛑️ FIX EGRESS: límite de reintentos por operación. Sin esto, una op
+    // fallida queda pendiente para SIEMPRE y dispara syncs eternos cada 15s.
+    private static readonly MAX_RETRIES = 5
+
     /**
      * Agrega una operación a la cola. Si hay internet, intenta sincronizar de inmediato.
      */
@@ -52,6 +56,8 @@ class SyncService {
                 return
             }
 
+            let syncedCount = 0
+
             for (const op of pendingOps) {
                 logger.info('sync', `⏳ [Background Sync] Procesando ${op.action} (ID: ${op.id})`)
                 try {
@@ -60,26 +66,43 @@ class SyncService {
 
                     // Marcar como exitoso borrándolo de la cola
                     await offlineStorage.removeSyncOperation(op.id)
+                    syncedCount++
                     logger.info('sync', `✔️ [Background Sync] Éxito: ${op.action}`)
 
                 } catch (error: any) {
                     logger.error('sync', `❌ [Background Sync] Error ejecutando ${op.action}:`, error)
 
-                    // Reintentos agresivos: Mantenemos el error y aumentamos contador
-                    await offlineStorage.updateSyncOperation(op.id, {
-                        retryCount: op.retryCount + 1,
-                        error: error.message || 'Error desconocido'
-                    })
+                    const errorMsg = error?.message || 'Error desconocido'
+                    if (op.retryCount + 1 >= SyncService.MAX_RETRIES) {
+                        // ⛑️ Cuarentena: marca la op como 'failed'. Sale del índice
+                        // 'pending' (el contador de UI baja) y deja de disparar
+                        // syncs eternos. La op NO se borra: queda auditable en IDB.
+                        await offlineStorage.updateSyncOperation(op.id, {
+                            status: 'failed',
+                            retryCount: op.retryCount + 1,
+                            error: `En cuarentena tras ${SyncService.MAX_RETRIES} intentos. Último error: ${errorMsg}`
+                        })
+                        logger.error('sync', `⛔ [Background Sync] Operación ${op.id} puesta en cuarentena tras ${SyncService.MAX_RETRIES} intentos. Revisar manualmente.`)
+                    } else {
+                        await offlineStorage.updateSyncOperation(op.id, {
+                            retryCount: op.retryCount + 1,
+                            error: errorMsg
+                        })
+                    }
                 }
             }
 
-            // Al terminar de enviar datos, forzamos la descarga de catálogos frescos 
-            // para asegurar que las ventas offline que afectaron el inventario se reflejen en la interfaz actual
-            logger.info('sync', '🔄 [Background Sync] Refrescando inventario post-sincronización...')
-            await supabaseService.getAllProducts()
+            // Al terminar de enviar datos, forzamos la descarga de catálogos frescos
+            // solo si REALMENTE se sincronizó algo (FIX EGRESS: antes se refetchaba
+            // el catálogo completo en cada ciclo de sync, incluso con 0 éxitos,
+            // lo que generaba un storm de descargas cuando había ops en stuck)
+            if (syncedCount > 0) {
+                logger.info('sync', '🔄 [Background Sync] Refrescando inventario post-sincronización...')
+                await supabaseService.getAllProducts()
 
-            // Lanzar evento global para que la UI sepa que se sincronizó la nube
-            window.dispatchEvent(new Event('reisbloc-sync-completed'))
+                // Lanzar evento global para que la UI sepa que se sincronizó la nube
+                window.dispatchEvent(new Event('reisbloc-sync-completed'))
+            }
 
         } finally {
             this.isSyncing = false

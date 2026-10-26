@@ -566,6 +566,20 @@ class SupabaseService {
         return await offlineStorage.getProducts()
       }
 
+      // ⛑️ FIX EGRESS: throttle del catálogo. Si los datos locales tienen menos
+      // de 5 minutos, no re-descargamos la tabla completa de nuevo.
+      const CATALOG_REFETCH_MIN_MS = 5 * 60 * 1000
+      const throttleOrgId = this.getCurrentOrgId()
+      const throttleKey = `last_products_fetch_ms${throttleOrgId ? `_${throttleOrgId}` : ''}`
+      const lastCatalogFetch = Number(localStorage.getItem(throttleKey) || 0)
+      if (Date.now() - lastCatalogFetch < CATALOG_REFETCH_MIN_MS) {
+        const freshEnough = await offlineStorage.getProducts(throttleOrgId)
+        if (freshEnough && freshEnough.length > 0) {
+          console.log('📦 [Supabase] Catálogo reciente en caché (< 5 min), omitiendo refetch')
+          return freshEnough
+        }
+      }
+
       console.log('🔍 [Supabase] Obteniendo productos de la red...')
       const { data, error } = await withOrg(
         supabase.from('products').select('*'),
@@ -575,6 +589,9 @@ class SupabaseService {
         .order('name', { ascending: true })
 
       if (error) throw error
+
+      // ⛑️ FIX EGRESS: registrar timestamp de éxito solo tras un fetch real
+      localStorage.setItem(throttleKey, String(Date.now()))
 
       // Filter in memory to show active/available products
       const products = (data || []).map((p: any) => ({

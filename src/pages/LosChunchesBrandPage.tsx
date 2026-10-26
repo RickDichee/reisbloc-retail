@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Shield,
   ShoppingCart,
   Sparkles,
   Search,
@@ -11,10 +10,7 @@ import {
   CheckCircle2,
   Package,
   UserCheck,
-  Star,
-  Gift,
-  HeartHandshake,
-  ArrowRight
+  Star
 } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
 import { useAppStore } from '@/store/appStore'
@@ -27,14 +23,16 @@ interface CartItem {
 
 const LOS_CHUNCHES_ORG_ID = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
 
-// 📸 Fotografías de alta calidad curadas para catálogo y categorías (sin duplicar logos de negocio)
+// 📦 Catálogo de ejemplo estilo "Saldos Costco" (solo URLs verificadas 200 OK)
+// Mapea keywords de productos reales a fotografías de categoría
 const CATEGORY_IMAGES: Record<string, string> = {
-  'Bolsas & Accesorios': 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=600&q=80',
-  'Joyería': 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=600&q=80',
-  'Accesorios': 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=600&q=80',
-  'Novedades': 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=600&q=80',
-  'Regalos': 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80',
-  'Todos': 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'
+  'Muebles': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80',
+  'Ropa y Tenis': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+  'Herramientas': 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?auto=format&fit=crop&w=600&q=80',
+  'Hogar y Cocina': 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=600&q=80',
+  'Electrónica': 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=600&q=80',
+  'Deportes': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
+  'Todos': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80'
 }
 
 function resolveProductImage(product: Product): string {
@@ -45,31 +43,59 @@ function resolveProductImage(product: Product): string {
 
   const name = (product.name || '').toLowerCase()
   const cat = (product.category || '').toLowerCase()
+  const blob = `${name} ${cat}`
 
-  if (name.includes('bolsa') || cat.includes('bolsa')) {
-    return 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=600&q=80'
+  if (blob.includes('sofa') || blob.includes('sofá') || blob.includes('sillon') || blob.includes('sillón') || blob.includes('silla') || blob.includes('mesa') || cat.includes('mueble')) {
+    return CATEGORY_IMAGES['Muebles']
   }
-  if (name.includes('arete') || name.includes('arracada') || (cat.includes('joyer') && name.includes('flor'))) {
-    return 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=600&q=80'
+  if (blob.includes('colchon') || blob.includes('colchón') || blob.includes('cama') || blob.includes('matrimonial')) {
+    return 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80'
   }
-  if (name.includes('collar') || name.includes('dije') || name.includes('cadena')) {
-    return 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80'
+  if (blob.includes('tenis') || blob.includes('zapato') || blob.includes('sneaker') || blob.includes('calzado') || blob.includes('sandalia')) {
+    return CATEGORY_IMAGES['Ropa y Tenis']
   }
-  if (name.includes('diadema') || name.includes('peineta') || name.includes('cabello')) {
-    return 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=600&q=80'
+  if (blob.includes('sudadera') || blob.includes('hoodie') || blob.includes('chamarra')) {
+    return 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=600&q=80'
   }
-  if (name.includes('alhajero') || name.includes('cermica') || name.includes('ceramica') || cat.includes('novedad')) {
-    return 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=600&q=80'
+  if (blob.includes('playera') || blob.includes('camiseta') || blob.includes('ropa') || blob.includes('traje') || blob.includes('chaqueta')) {
+    return 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80'
   }
-  if (name.includes('regalo') || name.includes('sorpresa') || name.includes('caja') || cat.includes('regalo')) {
-    return 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80'
+  if (blob.includes('maletin') || blob.includes('maletín') || blob.includes('llaves') || blob.includes('dados')) {
+    return 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=600&q=80'
   }
-  if (name.includes('monedero') || name.includes('cartera')) {
-    return 'https://images.unsplash.com/photo-1563903530908-afdd155d057a?auto=format&fit=crop&w=600&q=80'
+  if (blob.includes('taladro') || blob.includes('herramienta') || blob.includes('broca') || blob.includes('destornillador') || cat.includes('herramienta')) {
+    return CATEGORY_IMAGES['Herramientas']
+  }
+  if (blob.includes('cafe') || blob.includes('café') || blob.includes('despensa')) {
+    return 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=600&q=80'
+  }
+  if (blob.includes('termo') || blob.includes('vaso') || blob.includes('botella')) {
+    return 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80'
+  }
+  if (blob.includes('licuadora') || blob.includes('cocina') || blob.includes('ollas') || blob.includes('sarten') || blob.includes('sartén') || cat.includes('hogar')) {
+    return CATEGORY_IMAGES['Hogar y Cocina']
+  }
+  if (blob.includes('tv') || blob.includes('televisi') || blob.includes('pantalla')) {
+    return CATEGORY_IMAGES['Electrónica']
+  }
+  if (blob.includes('laptop') || blob.includes('computadora') || blob.includes('macbook')) {
+    return 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80'
+  }
+  if (blob.includes('smartwatch') || blob.includes('reloj')) {
+    return 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80'
+  }
+  if (blob.includes('audifono') || blob.includes('audífono') || blob.includes('headphone')) {
+    return 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80'
+  }
+  if (blob.includes('pesas') || blob.includes('gimnasio') || blob.includes('fitness') || blob.includes('yoga')) {
+    return CATEGORY_IMAGES['Deportes']
+  }
+  if (blob.includes('juguete') || blob.includes('niños') || blob.includes('ninos') || blob.includes('lego') || blob.includes('construible') || blob.includes('constructivo')) {
+    return 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?auto=format&fit=crop&w=600&q=80'
   }
 
-  // Fallback por defecto armónico
-  return 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'
+  // Fallback por defecto: ambiente de bodega / paquetes de saldos
+  return CATEGORY_IMAGES['Todos']
 }
 
 export default function LosChunchesBrandPage() {
@@ -91,83 +117,286 @@ export default function LosChunchesBrandPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [showCartModal, setShowCartModal] = useState(false)
 
-  // Catálogo base con fotos de alta resolución temáticas y equilibradas
+  // Catálogo de ejemplo estilo "saldos de Costco" (muebles, ropa, tenis,
+  // herramientas, hogar y electrónica — todo lo no perecedero). En producción
+  // este catálogo vive en la tabla products del tenant en DEV.
   const fallbackProducts: Product[] = [
+    // ==================== MUEBLES ====================
     {
-      id: 'lc-pkg-1',
-      name: 'Bolsa Artesanal Chunches Rosa',
-      description: 'Hermosa bolsa tejida a mano con detalles tradicionales y forro resistente.',
-      price: 180,
-      category: 'Bolsas & Accesorios',
-      sku: 'LC-BOL-01',
-      currentStock: 15,
+      id: 'lc-f1',
+      name: 'Sofá 3 Plazas Premium',
+      description: 'Sofá de salón de tela premium con patas de madera. Estilo moderno, recién desempacado.',
+      price: 4499,
+      category: 'Muebles',
+      sku: 'LC-MUE-01',
+      currentStock: 4,
       isAvailable: true,
-      imageUrl: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
-      id: 'lc-pkg-2',
-      name: 'Aretes Flor Artesanales',
-      description: 'Aretes ligeros con acabado floral en tonalidad palo de rosa y baño hipoalergénico.',
-      price: 85,
-      category: 'Joyería',
-      sku: 'LC-ARE-02',
-      currentStock: 25,
+      id: 'lc-f2',
+      name: 'Sillón Individual Ergonómico',
+      description: 'Butaca tapizada con soporte lumbar, ideal para sala o estudio.',
+      price: 1799,
+      category: 'Muebles',
+      sku: 'LC-MUE-02',
+      currentStock: 6,
       isAvailable: true,
-      imageUrl: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
-      id: 'lc-pkg-3',
-      name: 'Diadema Bordada Tradicional',
-      description: 'Diadema cómoda y suave con sutiles bordados florales en relieve.',
-      price: 120,
-      category: 'Accesorios',
-      sku: 'LC-DIA-03',
+      id: 'lc-f3',
+      name: 'Set 2 Sillas de Comedor',
+      description: 'Par de sillas tapizadas con estructura de acero. Resistentes y elegantes.',
+      price: 1199,
+      category: 'Muebles',
+      sku: 'LC-MUE-03',
       currentStock: 10,
       isAvailable: true,
-      imageUrl: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
-      id: 'lc-pkg-4',
-      name: 'Collar Corazón de Talavera',
-      description: 'Dije de cerámica esmaltada estilo tradicional con cordón ajustable suave.',
-      price: 145,
-      category: 'Joyería',
-      sku: 'LC-COL-04',
-      currentStock: 12,
+      id: 'lc-f4',
+      name: 'Base + Colchón Matrimonial Pillowtop',
+      description: 'Base tapizada con colchón pillowtop de resortes. Cómodo y de doble cara.',
+      price: 3999,
+      category: 'Muebles',
+      sku: 'LC-MUE-04',
+      currentStock: 3,
       isAvailable: true,
-      imageUrl: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
       updatedAt: new Date()
     },
+    // ==================== ROPA Y TENIS ====================
     {
-      id: 'lc-pkg-5',
-      name: 'Alhajero Cerámico Decorativo',
-      description: 'Pieza decorativa de mesa para organizar anillos, aretes y pequeños tesoros.',
-      price: 95,
-      category: 'Novedades',
-      sku: 'LC-ALH-05',
+      id: 'lc-r1',
+      name: 'Tenis Running Ultraligeros',
+      description: 'Tenis deportivos unisex con amortiguación premium. Varios números disponibles.',
+      price: 1699,
+      category: 'Ropa y Tenis',
+      sku: 'LC-TEN-01',
       currentStock: 18,
       isAvailable: true,
-      imageUrl: 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
-      id: 'lc-pkg-6',
-      name: 'Caja de Regalo Chunches Sorpresa',
-      description: 'Selección curada con 4 accesorios artesanales y tarjeta personalizada de dedicatoria.',
-      price: 299,
-      category: 'Regalos',
-      sku: 'LC-PKG-06',
+      id: 'lc-r2',
+      name: 'Sneakers Blancas Urban',
+      description: 'Sneakers blancas versátiles para casual y gimnasio. Números del 24 al 29.',
+      price: 1299,
+      category: 'Ropa y Tenis',
+      sku: 'LC-TEN-02',
+      currentStock: 22,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-r3',
+      name: 'Sandalias Cómodas Unisex',
+      description: 'Sandalias livianas con correa ajustable, perfectas para el día a día.',
+      price: 649,
+      category: 'Ropa y Tenis',
+      sku: 'LC-TEN-03',
+      currentStock: 30,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-r4',
+      name: 'Pack 4 Playeras Básicas Algodón',
+      description: 'Cuatro playeras de algodón 100% básicas. Tallas surtidas de la S a la XL.',
+      price: 499,
+      category: 'Ropa y Tenis',
+      sku: 'LC-ROP-01',
+      currentStock: 25,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-r5',
+      name: 'Sudadera Fleece Unisex',
+      description: 'Sudadera de forro polar con capucha. Perfecta para clima frío.',
+      price: 549,
+      category: 'Ropa y Tenis',
+      sku: 'LC-ROP-02',
+      currentStock: 20,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    // ==================== HERRAMIENTAS ====================
+    {
+      id: 'lc-h1',
+      name: 'Taladro Percutor Inalámbrico 20V',
+      description: 'Taladro a batería con set de brocas incluido, mandril ajustable y luz LED integrada.',
+      price: 1199,
+      category: 'Herramientas',
+      sku: 'LC-HER-01',
       currentStock: 8,
       isAvailable: true,
-      imageUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-h2',
+      name: 'Maletín de Herramientas 120 Piezas',
+      description: 'Set completo de llaves, dados, destornilladores y alicates en estuche reforzado.',
+      price: 899,
+      category: 'Herramientas',
+      sku: 'LC-HER-02',
+      currentStock: 9,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    // ==================== HOGAR Y COCINA ====================
+    {
+      id: 'lc-k1',
+      name: 'Licuadora Profesional 1200W',
+      description: 'Vaso de vidrio de 2L, motor de 1200W y 10 velocidades. Potente para smoothies.',
+      price: 999,
+      category: 'Hogar y Cocina',
+      sku: 'LC-HOG-01',
+      currentStock: 12,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-k2',
+      name: 'Batería de Cocina Antiadherente 10 Pzas',
+      description: 'Set de ollas y sartenes antiadherentes con tapas de cristal. Compatible con inducción.',
+      price: 1249,
+      category: 'Hogar y Cocina',
+      sku: 'LC-HOG-02',
+      currentStock: 7,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-k3',
+      name: 'Vaso Térmico Tumbler 1L',
+      description: 'Doble pared de acero inoxidable que mantiene bebidas frías o calientes por 24 horas.',
+      price: 349,
+      category: 'Hogar y Cocina',
+      sku: 'LC-HOG-03',
+      currentStock: 40,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-k4',
+      name: 'Café Tostado Premium 2.5kg',
+      description: 'Bolsa de café tostado molido de altura 100% arábica. Despensa no perecedera.',
+      price: 589,
+      category: 'Hogar y Cocina',
+      sku: 'LC-HOG-04',
+      currentStock: 35,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    // ==================== ELECTRÓNICA ====================
+    {
+      id: 'lc-e1',
+      name: 'Smart TV 55" 4K UHD',
+      description: 'Pantalla 4K HDR con sistema inteligente y control remoto por voz. Caja sellada.',
+      price: 7499,
+      category: 'Electrónica',
+      sku: 'LC-ELE-01',
+      currentStock: 5,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-e2',
+      name: 'Laptop Ultrafina 14"',
+      description: 'Estilo premium, SSD de 512GB, 16GB RAM y cargador rápido. Recién desempacada.',
+      price: 11999,
+      category: 'Electrónica',
+      sku: 'LC-ELE-02',
+      currentStock: 4,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-e3',
+      name: 'Smartwatch Serie Pro',
+      description: 'Hasta 7 días de batería, monitoreo de ritmo cardíaco y pantalla AMOLED.',
+      price: 1799,
+      category: 'Electrónica',
+      sku: 'LC-ELE-03',
+      currentStock: 11,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-e4',
+      name: 'Audífonos Inalámbricos ANC',
+      description: 'Cancelación de ruido activa, 30 horas de batería y carga rápida USB-C.',
+      price: 1599,
+      category: 'Electrónica',
+      sku: 'LC-ELE-04',
+      currentStock: 14,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    // ==================== DEPORTES ====================
+    {
+      id: 'lc-d1',
+      name: 'Kit de Pesas Hexagonales · 30kg',
+      description: 'Par de pesas de hierro recubiertas de neopreno, ideal para gym en casa.',
+      price: 1499,
+      category: 'Deportes',
+      sku: 'LC-DEP-01',
+      currentStock: 6,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    },
+    {
+      id: 'lc-d2',
+      name: 'Set de Construcción Extra Grande',
+      description: 'Caja con cientos de piezas para construir. Diversión garantizada para niños.',
+      price: 899,
+      category: 'Deportes',
+      sku: 'LC-DEP-02',
+      currentStock: 10,
+      isAvailable: true,
+      imageUrl: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -198,7 +427,7 @@ export default function LosChunchesBrandPage() {
     loadProducts()
   }, [])
 
-  const categories = ['Todos', 'Bolsas & Accesorios', 'Joyería', 'Accesorios', 'Novedades', 'Regalos']
+  const categories = ['Todos', 'Muebles', 'Ropa y Tenis', 'Herramientas', 'Hogar y Cocina', 'Electrónica', 'Deportes']
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -207,7 +436,7 @@ export default function LosChunchesBrandPage() {
     const matchesCat =
       selectedCategory === 'Todos' ||
       p.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-      (selectedCategory === 'Accesorios' && p.category?.toLowerCase().includes('accesor'))
+      (selectedCategory === 'Ropa y Tenis' && p.category?.toLowerCase().includes('ropa'))
     return matchesSearch && matchesCat
   })
 
@@ -245,9 +474,9 @@ export default function LosChunchesBrandPage() {
     const lines = cart.map(
       (item) => `• ${item.quantity}x ${item.product.name} ($${(item.product.price * item.quantity).toFixed(2)})`
     )
-    const message = `¡Hola Los Chunches de Cons! 🌸 Me gustaría solicitar información y disponibilidad para el siguiente pedido:\n\n${lines.join(
+    const message = `¡Hola Los Chunches de Cons! 📦 Me interesa el siguiente saldo:\n\n${lines.join(
       '\n'
-    )}\n\n*Total aproximado: $${cartTotal.toFixed(2)} MXN*\n¿Cuentan con existencias? ¡Muchas gracias!`
+    )}\n\n*Total aproximado: $${cartTotal.toFixed(2)} MXN*\n¿Está disponible? ¿Aceptan envío a mi domicilio? ¡Gracias!`
 
     const encoded = encodeURIComponent(message)
     window.open(`https://wa.me/?text=${encoded}`, '_blank')
@@ -255,7 +484,7 @@ export default function LosChunchesBrandPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F7] text-slate-800 font-['Outfit',sans-serif] selection:bg-[#9B4158] selection:text-white pb-20">
-      {/* 🌸 HEADER MINIMALISTA & EQUILIBRADO */}
+      {/* 📦 HEADER MINIMALISTA & EQUILIBRADO */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EDE6E8] shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between gap-4">
           {/* Logotipo y Título del Negocio */}
@@ -272,10 +501,10 @@ export default function LosChunchesBrandPage() {
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
                   Los Chunches <span className="text-[#9B4158] font-['Dancing_Script',cursive] text-2xl sm:text-3xl font-bold">de Cons</span>
                 </h1>
-                <span className="text-base text-rose-300">🌸</span>
+                <span className="text-base text-rose-300">📦</span>
               </div>
               <p className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-                Tienda Oficial & Novedades
+                Saldos de Costco · Novedades Semanales
               </p>
             </div>
           </div>
@@ -309,13 +538,18 @@ export default function LosChunchesBrandPage() {
         </div>
       </header>
 
-      {/* 🌸 HERO SECTION LIMPIA Y ARMÓNICA */}
-      <section className="relative overflow-hidden py-12 sm:py-16 px-4">
+      {/* 📦 STRIP DE BODEGA: novedad de lotes */}
+      <div className="bg-slate-950 text-amber-300 text-[10px] sm:text-[11px] font-black tracking-[0.18em] uppercase text-center py-2.5 px-4">
+        📦 Nuevos lotes cada semana · Saldos originales de Costco · Precios de mayoreo 📦
+      </div>
+
+      {/* 📦 HERO SALDOS */}
+      <section className="relative overflow-hidden py-12 sm:py-16 px-4 bg-gradient-to-b from-white to-[#FAF6F7]">
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          {/* Badge Suave */}
+          {/* Badge Saldos */}
           <div className="inline-flex items-center gap-2 bg-white border border-[#EDE6E8] text-[#9B4158] px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase mb-6 shadow-xs">
             <Sparkles size={13} className="text-[#9B4158]" />
-            Catálogo y Novedades de Temporada
+            Saldos Originales de Costco · Nuevo Lote Cada Semana
           </div>
 
           {/* Presentación Central con Logo y Tipografías */}
@@ -331,7 +565,7 @@ export default function LosChunchesBrandPage() {
               Los Chunches <span className="text-[#9B4158] font-['Dancing_Script',cursive] text-5xl sm:text-6xl font-bold">de Cons</span>
             </h2>
             <p className="mt-3 text-base sm:text-lg text-slate-600 max-w-xl mx-auto font-normal leading-relaxed">
-              Detalles, accesorios y novedades artesanales con estilo único. Regalos cuidadosamente seleccionados para ti.
+              Saldos y liquidación de Costco: muebles, ropa, tenis, herramientas, cocina, electrónica — todo lo que <span className="font-semibold text-slate-800">no es perecedero</span>, hasta <span className="font-semibold text-[#9B4158]">60% menos</span>. Pedidos directo por WhatsApp.
             </p>
           </div>
 
@@ -339,21 +573,21 @@ export default function LosChunchesBrandPage() {
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-8">
             <div className="bg-white border border-[#EDE6E8] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-medium text-slate-700">
               <CheckCircle2 size={15} className="text-[#9B4158]" />
-              <span>Calidad Artesanal</span>
+              <span>Mercancía Original Costco</span>
             </div>
             <div className="bg-white border border-[#EDE6E8] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-medium text-slate-700">
               <Star size={14} className="text-amber-500 fill-amber-500" />
-              <span>Atención Personalizada</span>
+              <span>Precios de Saldo Real</span>
             </div>
             <div className="bg-white border border-[#EDE6E8] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-medium text-slate-700">
-              <Gift size={15} className="text-[#9B4158]" />
-              <span>Empaque para Regalo</span>
+              <Package size={15} className="text-[#9B4158]" />
+              <span>Nuevo Lote Cada Semana</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 🌸 CATÁLOGO & EXPLORACIÓN DE PRODUCTOS */}
+      {/* 📦 CATÁLOGO & EXPLORACIÓN DE PRODUCTOS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-8">
         {/* Barra de Filtros y Búsqueda */}
         <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-[#EDE6E8] mb-8">
@@ -410,7 +644,7 @@ export default function LosChunchesBrandPage() {
                   key={p.id}
                   className="bg-white rounded-3xl overflow-hidden border border-[#EDE6E8] shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col group hover:-translate-y-1"
                 >
-                  {/* Fotografía Real de la Categoría */}
+                  {/* 📦 Fotografía de la categoría + badge de saldo */}
                   <div className="relative aspect-4/3 bg-stone-100 overflow-hidden">
                     <img
                       src={photo}
@@ -418,9 +652,17 @@ export default function LosChunchesBrandPage() {
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    <div className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+                      Saldo
+                    </div>
                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-slate-700 border border-stone-200/80 shadow-2xs">
                       {p.category || 'Novedades'}
                     </div>
+                    {p.currentStock !== undefined && p.currentStock > 0 && p.currentStock <= 5 && (
+                      <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-xs text-white px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        ¡Últimas {p.currentStock} piezas!
+                      </div>
+                    )}
                   </div>
 
                   {/* Detalle y Precio */}
@@ -459,7 +701,7 @@ export default function LosChunchesBrandPage() {
         )}
       </section>
 
-      {/* 🌸 MODAL DE CARRITO ELEGANTE */}
+      {/* 📦 MODAL DE CARRITO ELEGANTE */}
       {showCartModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-stone-200 max-h-[85vh] flex flex-col">
@@ -537,12 +779,12 @@ export default function LosChunchesBrandPage() {
         </div>
       )}
 
-      {/* 🌸 FOOTER SOBRIO Y PROFESIONAL */}
+      {/* 📦 FOOTER SOBRIO Y PROFESIONAL */}
       <footer className="mt-20 border-t border-[#EDE6E8] bg-white py-8 px-4 text-center">
         <div className="max-w-4xl mx-auto space-y-3">
           <div className="flex items-center justify-center gap-2">
             <span className="font-bold text-slate-800 text-sm">Los Chunches de Cons</span>
-            <span className="text-xs text-rose-300">🌸</span>
+            <span className="text-xs text-rose-300">📦</span>
           </div>
           <p className="text-[11px] text-slate-400 font-medium">
             © {new Date().getFullYear()} · Sistema Retail POS Multitenant
