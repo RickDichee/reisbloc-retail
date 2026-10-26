@@ -8,6 +8,9 @@ import { useAppStore } from '@/store/appStore'
 export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<number | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const { isAuthenticated, currentUser, isInitializing } = useAppStore()
   const navigate = useNavigate()
 
@@ -33,6 +36,33 @@ export default function Login() {
       }
     }
   }, [navigate, isAuthenticated, currentUser, isInitializing])
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      setError(null)
+      setLoading(true)
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      })
+      if (error) {
+        setStatus(error.status)
+        throw error
+      }
+      setStatus(null)
+    } catch (err: any) {
+      setStatus(err?.status)
+      setError(err?.message || 'Error al iniciar sesión')
+      setLoading(false)
+    }
+  }
+
+  const statusToMessage = () => {
+    if (status === 400) return '📧 Email o contraseña incorrectos. Intenta de nuevo.'
+    if (status === 422) return '⚠️ Datos incompletos o sesión pendiente de confirmar.'
+    return null
+  }
 
   const handleGoogleLogin = async () => {
     try {
@@ -84,11 +114,62 @@ export default function Login() {
 
         {error && (
           <div className="mb-6 p-4 bg-red-950/40 border border-red-500/50 rounded-xl text-red-300 text-sm text-center">
-            {error}
+            {statusToMessage() || error}
           </div>
         )}
 
         <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-6 sm:p-8 shadow-2xl space-y-4">
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="login-email" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Email</label>
+              <input
+                id="login-email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+                disabled={loading}
+                className="w-full bg-[#070A11] border border-slate-700 focus:border-rose-500/60 rounded-lg py-3 px-4 text-white placeholder:text-slate-600 outline-none transition-colors disabled:opacity-50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="login-password" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Contraseña</label>
+              <input
+                id="login-password"
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={loading}
+                className="w-full bg-[#070A11] border border-slate-700 focus:border-rose-500/60 rounded-lg py-3 px-4 text-white placeholder:text-slate-600 outline-none transition-colors disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full font-bold py-3.5 px-6 rounded-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 active:scale-[0.99] ${
+                BRANDING.isLosChunches
+                  ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-lg shadow-rose-500/20'
+                  : BRANDING.isModaMiel
+                  ? 'bg-pink-500 hover:bg-pink-400 text-white shadow-lg shadow-pink-500/20'
+                  : 'bg-amber-500 hover:bg-amber-400 text-[#070A11] shadow-lg shadow-amber-500/20'
+              }`}
+            >
+              {loading ? 'Entrando...' : 'Entrar'}
+              <ArrowRight size={18} />
+            </button>
+          </form>
+
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 h-px bg-slate-800" />
+            <span className="text-slate-600 text-xs font-medium uppercase tracking-widest">o con Google</span>
+            <div className="flex-1 h-px bg-slate-800" />
+          </div>
+
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
