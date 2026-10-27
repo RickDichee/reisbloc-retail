@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
-import { Package, Plus, Search, AlertTriangle, Share2, Edit2, Printer } from 'lucide-react'
+import { Package, Plus, Search, AlertTriangle, Share2, Edit2, Printer, ExternalLink } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import logger from '@/utils/logger'
@@ -15,7 +15,7 @@ import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
-  const { isModaMiel } = useTenantTheme()
+  const { isModaMiel, isLosChunches } = useTenantTheme()
   const { hasAnyRole } = usePermissions()
   const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
   const [loading, setLoading] = useState(true)
@@ -86,6 +86,28 @@ export default function Inventory() {
 
   const handlePrintLabel = (product: any) => {
     setPrintingProduct(product)
+  }
+
+  const handleEditUnitCost = async (product: any) => {
+    const input = window.prompt(`Costo unitario de "${product.name}" (MXN)`, String(product.unitCost ?? ''))
+    if (input === null) return
+    const val = parseFloat(input.replace(',', '.'))
+    if (isNaN(val) || val < 0) {
+      alert('⚠️ Costo inválido')
+      return
+    }
+    try {
+      await supabaseService.updateRetailProduct(product.id, { unitCost: val })
+      loadInventory()
+    } catch (e) {
+      logger.error('inventory', 'Error updating unit cost', e as any)
+      alert('No se pudo guardar el costo')
+    }
+  }
+
+  const handleSearchOnline = (product: any) => {
+    const slug = encodeURIComponent((product.name || '').toLowerCase()).replace(/%20/g, '-')
+    window.open(`https://listado.mercadolibre.com.mx/${slug}`, '_blank', 'noopener')
   }
 
   const filteredProducts = products.filter(p => {
@@ -272,8 +294,8 @@ export default function Inventory() {
                     <div className="text-right">
                       <p className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">Stock</p>
                       <p className={`text-base sm:text-lg font-black font-mono leading-none ${
-                        Number(product.currentStock) <= Number(product.minimumStock) 
-                          ? 'text-rose-500' 
+                        Number(product.currentStock) <= Number(product.minimumStock)
+                          ? 'text-rose-500'
                           : 'text-slate-900 dark:text-white'
                       }`}>
                         {product.currentStock}
@@ -281,6 +303,22 @@ export default function Inventory() {
                     </div>
                   )}
                 </div>
+
+                {isLosChunches && isAdminOrManager && Number(product.unitCost) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleEditUnitCost(product)}
+                    className="flex items-center justify-between gap-1 w-full text-left bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors border border-emerald-500/25 rounded-md px-2 py-1"
+                    title="Editar costo unitario (privado)"
+                  >
+                    <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                      Mi costo ${Number(product.unitCost).toFixed(0)}
+                      {' · '}
+                      {Math.max(0, Math.round(((Number(product.price) - Number(product.unitCost)) / Number(product.price)) * 100))}% gan.
+                    </span>
+                    <Edit2 size={10} className="text-emerald-700/60 shrink-0" />
+                  </button>
+                )}
               </div>
 
               {/* Action Buttons */}
@@ -293,6 +331,16 @@ export default function Inventory() {
                 >
                   <Printer size={14} />
                 </button>
+                {isLosChunches && (
+                  <button
+                    type="button"
+                    onClick={() => handleSearchOnline(product)}
+                    className="p-1.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition-all rounded-md text-xs font-bold flex items-center justify-center shrink-0 border border-sky-500/20"
+                    title="Buscar precios similares en línea"
+                  >
+                    <ExternalLink size={14} />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleShareProduct(product)}

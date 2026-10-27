@@ -2202,6 +2202,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           currentStock: (p.current_stock !== null && p.current_stock !== undefined) ? Number(p.current_stock) : 0,
           minimumStock: (p.minimum_stock !== null && p.minimum_stock !== undefined) ? Number(p.minimum_stock) : 10,
           hasInventory: (p.has_inventory !== null && p.has_inventory !== undefined) ? Boolean(p.has_inventory) : true,
+          unitCost: (p.unit_cost !== null && p.unit_cost !== undefined) ? Number(p.unit_cost) : undefined,
           createdAt: new Date(p.created_at),
           parentId: p.parent_id,
           packQuantity: p.pack_quantity,
@@ -2292,6 +2293,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
       if ('packQuantity' in updates) payload.pack_quantity = updates.packQuantity
       if ('pack_quantity' in updates) payload.pack_quantity = (updates as any).pack_quantity
+
+      if ('unitCost' in updates) payload.unit_cost = updates.unitCost
 
       // Handle extra pricing fields packaging in description
       if ('description' in updates || 'packPrice' in updates || 'bulkPrice' in updates || 'packQty' in updates || 'bulkQty' in updates || 'packagesPerBulk' in updates || 'wholesalePrice' in updates || 'wholesaleMinQty' in updates) {

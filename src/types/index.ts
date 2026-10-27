@@ -49,6 +49,9 @@ export interface Product {
   barcode?: string;
   sku?: string;
   description?: string;
+  wholesalePrice?: number;
+  wholesaleMinQty?: number;
+  unitCost?: number;
 }
 
 export interface OrderItem {
