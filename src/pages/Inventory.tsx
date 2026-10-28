@@ -18,6 +18,7 @@ export default function Inventory() {
   const { isModaMiel, isLosChunches } = useTenantTheme()
   const { hasAnyRole } = usePermissions()
   const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
+  const isAdmin = currentUser?.role === 'admin'
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLowStock, setFilterLowStock] = useState(false)
@@ -304,19 +305,15 @@ export default function Inventory() {
                   )}
                 </div>
 
-                {isLosChunches && isAdminOrManager && Number(product.unitCost) > 0 && (
+                {isLosChunches && isAdmin && Number(product.unitCost) > 0 && (
                   <button
                     type="button"
                     onClick={() => handleEditUnitCost(product)}
-                    className="flex items-center justify-between gap-1 w-full text-left bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors border border-emerald-500/25 rounded-md px-2 py-1"
-                    title="Editar costo unitario (privado)"
+                    className="mx-auto flex items-center gap-1 text-[9px] font-mono text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors px-2 py-0.5 rounded opacity-60 hover:opacity-100"
+                    title="Costo unitario (solo administrador)"
                   >
-                    <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                      Mi costo ${Number(product.unitCost).toFixed(0)}
-                      {' · '}
-                      {Math.max(0, Math.round(((Number(product.price) - Number(product.unitCost)) / Number(product.price)) * 100))}% gan.
-                    </span>
-                    <Edit2 size={10} className="text-emerald-700/60 shrink-0" />
+                    <span>costo ${Number(product.unitCost).toFixed(0)}</span>
+                    <Edit2 size={9} />
                   </button>
                 )}
               </div>

@@ -87,6 +87,7 @@ export default function ProductModal({
         packQty: initialPackQty,
     })
     const [loading, setLoading] = useState(false)
+    const [showPricingOptions, setShowPricingOptions] = useState<boolean>(() => !!(product?.wholesalePrice || product?.wholesaleMinQty))
     const [isBulk, setIsBulk] = useState(() => !!parsedDesc.sizes)
     const [packagesCount, setPackagesCount] = useState<number>(() => {
         if (initialCurrentStock > 0 && initialPackQty > 0) {
