@@ -89,23 +89,6 @@ export default function Inventory() {
     setPrintingProduct(product)
   }
 
-  const handleEditUnitCost = async (product: any) => {
-    const input = window.prompt(`Costo unitario de "${product.name}" (MXN)`, String(product.unitCost ?? ''))
-    if (input === null) return
-    const val = parseFloat(input.replace(',', '.'))
-    if (isNaN(val) || val < 0) {
-      alert('⚠️ Costo inválido')
-      return
-    }
-    try {
-      await supabaseService.updateRetailProduct(product.id, { unitCost: val })
-      loadInventory()
-    } catch (e) {
-      logger.error('inventory', 'Error updating unit cost', e as any)
-      alert('No se pudo guardar el costo')
-    }
-  }
-
   const handleSearchOnline = (product: any) => {
     const slug = encodeURIComponent((product.name || '').toLowerCase()).replace(/%20/g, '-')
     window.open(`https://listado.mercadolibre.com.mx/${slug}`, '_blank', 'noopener')
@@ -308,12 +291,11 @@ export default function Inventory() {
                 {isLosChunches && isAdmin && Number(product.unitCost) > 0 && (
                   <button
                     type="button"
-                    onClick={() => handleEditUnitCost(product)}
-                    className="mx-auto flex items-center gap-1 text-[9px] font-mono text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors px-2 py-0.5 rounded opacity-60 hover:opacity-100"
-                    title="Costo unitario (solo administrador)"
+                    onClick={() => setEditingProduct(product)}
+                    className="w-full text-center text-[10px] font-bold uppercase tracking-wider font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 rounded-md px-2 py-1.5 transition-all duration-150 hover:bg-emerald-500 hover:text-white active:bg-emerald-500/40 active:scale-[0.98]"
+                    title="Costo unitario (privado) — tocar para editar la ficha"
                   >
-                    <span>costo ${Number(product.unitCost).toFixed(0)}</span>
-                    <Edit2 size={9} />
+                    COSTO ${Number(product.unitCost).toFixed(0)}
                   </button>
                 )}
               </div>

@@ -2248,7 +2248,8 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         has_inventory: product.hasInventory ?? true,
         active: product.active ?? true,
         parent_id: product.parentId || null,
-        pack_quantity: product.packQuantity || 1
+        pack_quantity: product.packQuantity || 1,
+        unit_cost: (product as any).unitCost ?? null
       }
 
       const { data, error } = await supabase

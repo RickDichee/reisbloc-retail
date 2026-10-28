@@ -6,6 +6,7 @@ import { storageService } from '@/services/storageService'
 import { compressImage } from '@/utils/imageCompression'
 import { X, Save, Loader2, Image as ImageIcon, Camera, Plus, Printer } from 'lucide-react'
 import PlanGate from '@/components/common/PlanGate'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 import printService from '@/services/printService'
 
 function parseProductDescription(descriptionText: string | null) {
@@ -85,7 +86,10 @@ export default function ProductModal({
         packQuantity: initialPackQty,
         packPrice: initialPackPrice,
         packQty: initialPackQty,
+        unitCost: (product as any)?.unitCost !== null && (product as any)?.unitCost !== undefined ? Number((product as any).unitCost) : undefined,
     })
+    const isAdminOnly = currentUser?.role === 'admin'
+    const showCostFields = tenantHasFeature(currentUser?.organizationId as any, 'unitCost') && isAdminOnly
     const [loading, setLoading] = useState(false)
     const [showPricingOptions, setShowPricingOptions] = useState<boolean>(() => !!(product?.wholesalePrice || product?.wholesaleMinQty))
     const [isBulk, setIsBulk] = useState(() => !!parsedDesc.sizes)
@@ -844,6 +848,39 @@ export default function ProductModal({
                                     className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none font-black text-xs text-slate-400 text-center select-none"
                                 />
                             </div>
+
+                            {showCostFields && (
+                                <>
+                                    <div className="md:col-span-2 flex items-center gap-3 bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
+                                        <div className="flex-1">
+                                            <label className="block text-[10px] font-bold text-emerald-700 mb-1 uppercase">Mi costo unitario (privado)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-emerald-600 text-xs">$</span>
+                                                <input
+                                                    type="number"
+                                                    value={formData.unitCost ?? ''}
+                                                    onChange={(e) => setFormData({ ...formData, unitCost: e.target.value === '' ? undefined : Math.max(0, parseFloat(e.target.value) || 0) })}
+                                                    className="w-full pl-7 pr-3 py-2.5 bg-white border border-emerald-200 rounded-xl outline-none font-bold text-xs focus:ring-4 focus:ring-emerald-500/10 disabled:bg-slate-100"
+                                                    step="0.01"
+                                                    min="0"
+                                                    placeholder="Cuánto te costó la pieza"
+                                                />
+                                            </div>
+                                        </div>
+                                        {Number(formData.unitCost) > 0 && Number(formData.price) > 0 && formData.price > formData.unitCost && (
+                                            <div className="text-right shrink-0 pr-1">
+                                                <p className="text-[9px] font-bold text-emerald-700/60 uppercase tracking-wider">Utilidad</p>
+                                                <p className="text-sm font-black text-emerald-700 font-mono leading-none">
+                                                    ${(Number(formData.price) - Number(formData.unitCost)).toFixed(2)}
+                                                </p>
+                                                <p className="text-[9px] font-bold font-mono text-emerald-600/70 mt-0.5">
+                                                    {Math.round(((Number(formData.price) - Number(formData.unitCost)) / Number(formData.price)) * 100)}%
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                             
                             {showPricingOptions && (
                                 <>
