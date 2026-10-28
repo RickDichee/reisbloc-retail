@@ -40,7 +40,7 @@ export const roleLabels: Record<string, string> = {
 }
 
 // Helper para generar iniciales elegantes
-export function getUserInitials(name: string): string {
+function getUserInitials(name: string): string {
   if (!name) return 'U'
   const clean = name.trim()
   const parts = clean.split(/\s+/)

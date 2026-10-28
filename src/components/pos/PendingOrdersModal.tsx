@@ -31,7 +31,7 @@ const statusWorkflow: { id: Order['status']; label: string; icon: any; color: st
  * Prioriza el Precio por Paquete Completo (el que más se utiliza en Moda Miel MX),
  * el precio por pieza en paquete y la cantidad de piezas por lote.
  */
-export function getProductPricing(product: Product) {
+function getProductPricing(product: Product) {
   const parsedDesc = parseProductDescription(product.description || '')
   const rawPrice = Number(product.price || 0)
   const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 0)
