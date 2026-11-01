@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { X, Receipt, ShoppingBag, Clock, DollarSign, Printer, User, FileText, CheckCircle2, AlertCircle } from 'lucide-react'
+import { X, Receipt, ShoppingBag, Clock, Printer } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
 import printService from '@/services/printService'
 import { useAppStore } from '@/store/appStore'
-import { sanitizeHTML } from '@/utils/sanitize'
 
 interface ClientHistoryModalProps {
   isOpen: boolean

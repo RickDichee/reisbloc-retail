@@ -1,7 +1,6 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { supabase } from '@/config/supabase';
-import { BRANDING } from '@/config/branding';
 import { whatsappService } from './whatsappService';
 
 export interface TicketData {

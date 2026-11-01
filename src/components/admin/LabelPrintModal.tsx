@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { Product } from '@/types/index'
-import { X, Printer, QrCode, Barcode, Package, Tag, DollarSign, Layers, Check, Monitor } from 'lucide-react'
+import { X, Printer, QrCode, Barcode, Package, Tag } from 'lucide-react'
 import printService from '@/services/printService'
-import { useAppStore } from '@/store/appStore'
 
 interface LabelPrintModalProps {
   product: Product | any
@@ -10,14 +9,13 @@ interface LabelPrintModalProps {
 }
 
 export default function LabelPrintModal({ product, onClose }: LabelPrintModalProps) {
-  const { organizationSettings } = useAppStore()
   
   // Extraer datos de precios y paquetes infaliblemente (sincronizado con Moda Miel MX)
   let parsedDesc: any = {}
   if (product.description && typeof product.description === 'string' && product.description.startsWith('{')) {
     try {
       parsedDesc = JSON.parse(product.description)
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   }
 
   const pieceCode = product.barcode || product.sku || `750${Math.floor(1000000000 + Math.random() * 9000000000)}`

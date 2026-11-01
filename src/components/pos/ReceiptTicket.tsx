@@ -1,7 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { Order, Product } from '@/types/index'
 import { useAppStore } from '@/store/appStore'
-import { BRANDING } from '@/config/branding'
+import {
+  BRANDING,
+  checkIsModaMiel,
+  checkIsLosChunches,
+  checkIsJuguetes,
+  MODA_MIEL_THEME,
+  LOS_CHUNCHES_THEME,
+  JUGUETES_THEME,
+  DEFAULT_THEME
+} from '@/config/branding'
 
 interface ReceiptTicketProps {
   order: Order
@@ -15,6 +24,8 @@ interface ReceiptTicketProps {
   clientName?: string
   clientPhone?: string
   width?: number
+  logoUrl?: string
+  organizationId?: string
 }
 
 export default function ReceiptTicket({
@@ -29,31 +40,98 @@ export default function ReceiptTicket({
   clientName = '',
   clientPhone = '',
   width,
+  logoUrl,
+  organizationId,
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { organizationSettings, currentUser } = useAppStore()
-  
-  const isMM = Boolean(
-    currentUser?.organizationId === '1b498fa6-aca5-428c-9bdd-01e6fea30316' ||
-    organizationSettings?.slug === 'modamiel' ||
-    organizationSettings?.name?.toLowerCase().includes('moda miel') ||
-    true
+
+  // Identificación estricta de tenant para evitar cualquier mezcla entre clientes (ej. Los Chunches vs San Judas Tadeo)
+  const activeOrgHint = [
+    organizationId,
+    currentUser?.organizationId,
+    organizationSettings?.id,
+    organizationSettings?.slug,
+    organizationSettings?.name,
+    businessName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const isJuguetesTenant = activeOrgHint
+    ? checkIsJuguetes('', '', '', activeOrgHint)
+    : BRANDING.isJuguetes
+  const isLosChunchesTenant = !isJuguetesTenant && (
+    activeOrgHint
+      ? checkIsLosChunches('', '', '', activeOrgHint)
+      : BRANDING.isLosChunches
+  )
+  const isModaMielTenant = !isJuguetesTenant && !isLosChunchesTenant && (
+    activeOrgHint
+      ? checkIsModaMiel('', '', '', activeOrgHint)
+      : BRANDING.isModaMiel
   )
 
-  const defaultName = 'MODA MIEL MX'
+  const resolvedTheme = isModaMielTenant
+    ? MODA_MIEL_THEME
+    : isJuguetesTenant
+    ? JUGUETES_THEME
+    : isLosChunchesTenant
+    ? LOS_CHUNCHES_THEME
+    : DEFAULT_THEME
+
+  const defaultName = (
+    isModaMielTenant
+      ? 'MODA MIEL MX'
+      : isJuguetesTenant
+      ? 'JUGUETES Y NOVEDADES SAN JUDAS TADEO'
+      : isLosChunchesTenant
+      ? 'LOS CHUNCHES DE CONS'
+      : BRANDING.appName
+  ).toUpperCase()
+
   const ticketBusinessName = businessName || organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || defaultName
   const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
-  const defaultAddress = 'Pasillo 3 Local 230'
+  const defaultAddress = resolvedTheme.locationBadge || ''
   const ticketAddress = address || organizationSettings?.ticketAddress || defaultAddress
 
-  const defaultPhone = '+52 445 145 7252'
-  const ticketPhone = phone || organizationSettings?.ticketPhone || defaultPhone
+  const defaultPhone = isModaMielTenant
+    ? '+52 445 145 7252'
+    : isJuguetesTenant
+    ? '(442) 600-3500'
+    : isLosChunchesTenant
+    ? '(443) 124-4490'
+    : ''
+  const rawTicketPhone = phone || organizationSettings?.ticketPhone || defaultPhone
+  const ticketPhone = rawTicketPhone.toLowerCase().includes('por configurar') ? defaultPhone : rawTicketPhone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
   const ticketWidth = width || organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
 
   // Ancho imprimible real: 80mm (72mm área neta) y 58mm (46mm área neta con 1mm de margen de seguridad)
   const is80mm = ticketWidth >= 70
   const printableWidth = is80mm ? 72 : 46
+
+  // Resolver logo del ticket garantizando que NUNCA se cruce la imagen de otro tenant
+  const resolvedTicketLogo = (() => {
+    const candidate = logoUrl || organizationSettings?.ticketLogoUrl || organizationSettings?.logoUrl || ''
+    if (isJuguetesTenant) {
+      // Si es San Judas Tadeo, usar el diseño completo de ticket (medallón + tipografía oficial) y jamás permitir imagen de chunches
+      if (candidate && !candidate.includes('chunches') && !candidate.includes('juguetes-san-judas-logo')) {
+        return candidate
+      }
+      return '/images/sanjudas-ticket-logo.png'
+    }
+    if (isLosChunchesTenant) {
+      if (candidate && !candidate.includes('sanjudas') && !candidate.includes('juguetes')) {
+        return candidate
+      }
+      return '/images/los_chunches.jpeg'
+    }
+    if (isModaMielTenant) {
+      return candidate || '/images/moda-miel-mx-logo.jpeg'
+    }
+    return candidate || resolvedTheme.ticketLogoUrl || BRANDING.ticketLogoUrl || BRANDING.logoUrl
+  })()
 
   const registerName = (() => {
     const customNames = organizationSettings?.cashRegisters
@@ -151,7 +229,7 @@ export default function ReceiptTicket({
             try {
               printWindow.focus()
               printWindow.print()
-            } catch (e) {}
+            } catch (e) { /* ignore */ }
           }, 300)
         }
       }
@@ -183,21 +261,31 @@ export default function ReceiptTicket({
       {/* Header Térmico Alto Contraste */}
       <div style={{ textAlign: 'center', marginBottom: '5px', borderBottom: '2px dashed #000', paddingBottom: '4px' }}>
         {ticketShowLogo && (
-          <img 
-            src={isMM ? '/images/moda-miel-mx-logo.jpeg' : (organizationSettings?.logoUrl || BRANDING.logoUrl)} 
-            alt="Logo" 
-            style={{ width: is80mm ? '46px' : '36px', height: is80mm ? '46px' : '36px', marginBottom: '3px', borderRadius: '4px', objectFit: 'cover', display: 'block', margin: '0 auto 3px auto' }} 
+          <img
+            src={resolvedTicketLogo}
+            alt={ticketBusinessName}
+            style={{
+              width: (isJuguetesTenant || isLosChunchesTenant) ? (is80mm ? '56mm' : '38mm') : (is80mm ? '44mm' : '30mm'),
+              maxWidth: '90%',
+              height: 'auto',
+              maxHeight: (isJuguetesTenant || isLosChunchesTenant) ? (is80mm ? '58mm' : '40mm') : (is80mm ? '44mm' : '30mm'),
+              marginBottom: '4px',
+              borderRadius: isJuguetesTenant ? '0px' : isLosChunchesTenant ? '50%' : '6px',
+              objectFit: 'contain',
+              display: 'block',
+              margin: '0 auto 4px auto'
+            }}
           />
         )}
-        <div style={{ fontWeight: 900, fontSize: is80mm ? '15px' : '12px', textTransform: 'uppercase', letterSpacing: '0.2px', color: '#000', wordBreak: 'break-word' }}>
+        <div style={{ fontWeight: 900, fontSize: is80mm ? '14px' : '11.5px', textTransform: 'uppercase', letterSpacing: '0.2px', color: '#000', wordBreak: 'break-word' }}>
           {ticketBusinessName}
         </div>
         <div style={{ fontSize: is80mm ? '11px' : '9.5px', fontWeight: 900, marginTop: '2px', color: '#000', wordBreak: 'break-word', letterSpacing: '0.2px' }}>
           {ticketAddress}
         </div>
         {ticketPhone && (
-          <div style={{ fontSize: is80mm ? '10px' : '8.5px', fontWeight: 700, marginTop: '1px', color: '#000' }}>
-            Tel: {ticketPhone}
+          <div style={{ fontSize: is80mm ? '10.5px' : '9px', fontWeight: 800, marginTop: '2px', color: '#000' }}>
+            {ticketPhone.toLowerCase().includes('tel') || ticketPhone.toLowerCase().includes('whatsapp') ? ticketPhone : `Tel / WhatsApp: ${ticketPhone}`}
           </div>
         )}
       </div>
@@ -261,17 +349,17 @@ export default function ReceiptTicket({
 
       {/* Código de Barras Térmico Code128 con Folio del Ticket */}
       <div style={{ textAlign: 'center', fontSize: is80mm ? '10px' : '8.5px', borderTop: '2px dashed #000', paddingTop: '4px', marginTop: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
-        <img 
-          src={barcodeUrl} 
-          alt={`barcode-${ticketFolio}`} 
-          style={{ width: is80mm ? '42mm' : '34mm', maxWidth: '88%', height: is80mm ? '13mm' : '10mm', margin: '3px auto', display: 'block', objectFit: 'contain' }} 
+        <img
+          src={barcodeUrl}
+          alt={`barcode-${ticketFolio}`}
+          style={{ width: is80mm ? '42mm' : '34mm', maxWidth: '88%', height: is80mm ? '13mm' : '10mm', margin: '3px auto', display: 'block', objectFit: 'contain' }}
         />
         <div style={{ fontWeight: 900, marginTop: '1px', fontSize: is80mm ? '9.5px' : '8px', letterSpacing: '0.3px' }}>FOLIO: {ticketFolio}</div>
         <div style={{ fontWeight: 900, marginTop: '1px', wordBreak: 'break-word' }}>{ticketFooterMsg}</div>
 
-        <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', marginTop: '1px' }}>{BRANDING.receiptTagline}</div>
+        <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', marginTop: '1px' }}>{resolvedTheme.tagline}</div>
 
-      {/* 📢 LEYENDA Y CONTACTO WHATSAPP CON DISEÑO MODERNO */}
+        {/* 📢 LEYENDA Y CONTACTO WHATSAPP CON DISEÑO MODERNO */}
         <div style={{
           marginTop: '6px',
           paddingTop: '4px',
@@ -285,10 +373,10 @@ export default function ReceiptTicket({
           color: '#000',
           boxSizing: 'border-box'
         }}>
-          <div style={{ letterSpacing: '0.2px', marginBottom: '3px' }}>
-            NO HAY CAMBIOS NI DEVOLUCIONES
+          <div style={{ border: '1.5px solid #000', padding: '3px 5px', borderRadius: '3px', letterSpacing: '0.2px', marginBottom: '4px', backgroundColor: '#f8f8f8' }}>
+            {resolvedTheme.receiptNoReturnsPolicy || 'NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA'}
           </div>
-          
+
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -309,8 +397,15 @@ export default function ReceiptTicket({
             <svg width="13" height="13" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0 }}>
               <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.205 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
             </svg>
-            <span style={{ color: '#000' }}>WHATSAPP: {ticketPhone || '+52 445 145 7252'}</span>
+            <span style={{ color: '#000' }}>
+              WHATSAPP: {String(ticketPhone || resolvedTheme.receiptWhatsappPlaceholder || 'Por configurar').replace(/^(tel\s*\/?\s*)?(whatsapp\s*:?\s*)?/i, '').trim()}
+            </span>
           </div>
+          {resolvedTheme.subdomain && (
+            <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', fontWeight: 900, marginTop: '3px', textTransform: 'lowercase' }}>
+              🌐 {resolvedTheme.subdomain}
+            </div>
+          )}
         </div>
 
         {/* Powered by Reisbloc */}

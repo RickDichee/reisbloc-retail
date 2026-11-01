@@ -18,13 +18,18 @@ const PROD_PUBLISHABLE_KEY = 'sb_publishable_99WitkcTh0U8rQ1qt3sgGQ_2uDwzz_D'
 const DEV_SUPABASE_URL = 'https://jnyyaclrelqcqzjummwe.supabase.co'
 const DEV_PUBLISHABLE_KEY = 'sb_publishable_5YHF5VWvNfoaYNXL-xGECw_J5IXdRAa'
 
-// Detección estricta de dominios de Producción
+// Detección estricta de dominios de Producción (mientras sanjudastadeo y loschunches están en fase DEV apuntan a jnyyaclrelqcqzjummwe)
 const hostname = (typeof window !== 'undefined' ? window.location.hostname : '').toLowerCase()
+const isStagingTenantDomain =
+  hostname === 'sanjudastadeo.reisbloc.com' ||
+  hostname === 'loschunchesdecons.reisbloc.com'
 const isProductionDomain = 
-  hostname === 'store.reisbloc.com' ||
-  hostname === 'modamielmx.reisbloc.com' ||
-  hostname === 'modamiel.reisbloc.com' ||
-  (hostname.endsWith('.reisbloc.com') && !hostname.includes('dev'))
+  !isStagingTenantDomain && (
+    hostname === 'store.reisbloc.com' ||
+    hostname === 'modamielmx.reisbloc.com' ||
+    hostname === 'modamiel.reisbloc.com' ||
+    (hostname.endsWith('.reisbloc.com') && !hostname.includes('dev'))
+  )
 
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
 const rawAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
@@ -85,7 +90,7 @@ export const getAuthToken = async (): Promise<string | null> => {
     if (data?.session?.access_token) {
       return data.session.access_token
     }
-  } catch {}
+  } catch { /* ignore */ }
   return null
 }
 

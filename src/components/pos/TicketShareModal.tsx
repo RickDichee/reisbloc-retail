@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, MessageCircle, Mail, Loader2, Check, AlertCircle, FileText, Image as ImageIcon, Copy, User } from 'lucide-react'
 import { ticketService, TicketData } from '@/services/ticketService'
-import { whatsappService } from '@/services/whatsappService'
 
 interface TicketShareModalProps {
   isOpen: boolean
@@ -31,7 +30,6 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
   const [successMessage, setSuccessMessage] = useState('')
   const [downloadingFormat, setDownloadingFormat] = useState<'jpg' | 'pdf' | null>(null)
   const [copiedText, setCopiedText] = useState(false)
-  const [whatsappConfigured] = useState(whatsappService.isConfigured())
 
   // Sincronizar automáticamente el teléfono si el ticket trae datos de cliente
   useEffect(() => {
@@ -207,7 +205,7 @@ export default function TicketShareModal({ isOpen, onClose, ticketHtml, ticketDa
       await navigator.clipboard.writeText(text)
       setCopiedText(true)
       setTimeout(() => setCopiedText(false), 2500)
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   }
 
   const handleClose = () => {

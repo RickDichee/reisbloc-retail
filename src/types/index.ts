@@ -52,6 +52,11 @@ export interface Product {
   wholesalePrice?: number;
   wholesaleMinQty?: number;
   unitCost?: number;
+  imageUrl?: string;
+  isAvailable?: boolean;
+  stock?: number;
+  organizationId?: string;
+  updatedAt?: Date;
 }
 
 export interface OrderItem {

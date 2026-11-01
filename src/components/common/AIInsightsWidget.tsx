@@ -51,6 +51,7 @@ export const AIInsightsWidget: React.FC<AIInsightsWidgetProps> = ({ metrics, top
 
     useEffect(() => {
         fetchInsights();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [metrics, topProducts]);
 
     const getIcon = (type: string) => {

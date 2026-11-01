@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, DollarSign, Tag, Package, User, Check } from 'lucide-react'
+import { useAppStore } from '@/store/appStore'
+import { tenantHasFeature } from '@/config/tenantFeatures'
+import { BRANDING } from '@/config/branding'
 
 interface ManualItemModalProps {
   isOpen: boolean
@@ -8,6 +11,9 @@ interface ManualItemModalProps {
 }
 
 export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemModalProps) {
+  const { currentUser } = useAppStore()
+  const allowPackage = tenantHasFeature(currentUser?.organizationId || null, 'packLabel') || BRANDING.isModaMiel
+
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [isPackage, setIsPackage] = useState(false)
@@ -31,7 +37,7 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
     const numPrice = parseFloat(price)
     if (!description.trim() || isNaN(numPrice)) return
     
-    if (isPackage) {
+    if (allowPackage && isPackage) {
       // Agregar como paquete (packQty piezas a numPrice cada una)
       const finalDesc = description.toUpperCase().includes('PAQUETE') ? description : `PAQUETE - ${description}`
       onAdd(finalDesc, numPrice, packQty)
@@ -50,7 +56,9 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
         <div className="p-4 bg-slate-900 text-white flex justify-between items-center shrink-0">
           <div className="flex items-center gap-2">
             <Tag size={18} className="text-amber-400" />
-            <h3 className="font-black text-base uppercase tracking-tight">Agregar Producto Manual / Paquete</h3>
+            <h3 className="font-black text-base uppercase tracking-tight">
+              {allowPackage ? 'Agregar Producto Manual / Paquete' : 'Agregar Producto Manual'}
+            </h3>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-slate-800 rounded-xl transition-colors text-slate-400 hover:text-white">
             <X size={18} />
@@ -58,43 +66,45 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
-          {/* Selector de Modo: Pieza vs Paquete */}
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-              1. Selecciona Tipo de Venta
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setIsPackage(false)}
-                className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
-                  !isPackage
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <User size={14} />
-                <span>👤 Pieza</span>
-              </button>
+          {/* Selector de Modo: Pieza vs Paquete (Solo visible para Moda Miel) */}
+          {allowPackage && (
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                1. Selecciona Tipo de Venta
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPackage(false)}
+                  className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
+                    !isPackage
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <User size={14} />
+                  <span>👤 Pieza</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setIsPackage(true)}
-                className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
-                  isPackage
-                    ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg shadow-amber-200'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <Package size={14} />
-                <span>📦 PAQUETE</span>
-                {isPackage && <Check size={14} />}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPackage(true)}
+                  className={`py-3 px-3 rounded-2xl text-xs font-black uppercase flex items-center justify-center gap-2 border transition-all ${
+                    isPackage
+                      ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-lg shadow-amber-200'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Package size={14} />
+                  <span>📦 PAQUETE</span>
+                  {isPackage && <Check size={14} />}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Cantidad de Piezas si es Paquete */}
-          {isPackage && (
+          {allowPackage && isPackage && (
             <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-2 animate-fadeIn">
               <label className="block text-[10px] font-black text-amber-800 uppercase tracking-widest">
                 Piezas por Paquete:
@@ -131,7 +141,7 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 pl-10 pr-3.5 py-3 rounded-2xl font-bold text-sm text-slate-900 focus:border-indigo-500 focus:bg-white transition-all outline-none"
-                placeholder={isPackage ? "Ej. PAQUETE BLUSA MIEL" : "Ej. Prenda Varios, Ajuste..."}
+                placeholder={allowPackage && isPackage ? "Ej. PAQUETE BLUSA MIEL" : "Ej. Artículo especial, Ajuste..."}
                 required
               />
             </div>
@@ -140,7 +150,7 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
           {/* Precio Unitario */}
           <div>
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-              {isPackage ? 'Precio por Pieza en Paquete ($)' : 'Precio Unitario ($)'}
+              {allowPackage && isPackage ? 'Precio por Pieza en Paquete ($)' : 'Precio Unitario ($)'}
             </label>
             <div className="relative">
               <DollarSign size={18} className="absolute left-3.5 top-3.5 text-slate-400" />
@@ -154,7 +164,7 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
                 required
               />
             </div>
-            {isPackage && parseFloat(price) > 0 && (
+            {allowPackage && isPackage && parseFloat(price) > 0 && (
               <p className="text-[11px] font-black text-amber-700 mt-1 ml-1">
                 Total Paquete ({packQty} pzas): ${ (parseFloat(price) * packQty).toFixed(2) }
               </p>
@@ -173,12 +183,12 @@ export default function ManualItemModal({ isOpen, onClose, onAdd }: ManualItemMo
             <button
               type="submit"
               className={`flex-1 py-3 px-4 text-white font-black rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg ${
-                isPackage
+                allowPackage && isPackage
                   ? 'bg-amber-400 text-slate-950 shadow-amber-200 hover:bg-amber-500'
                   : 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700'
               }`}
             >
-              {isPackage ? `Agregar Paquete (${packQty} pzas)` : 'Agregar Pieza'}
+              {allowPackage && isPackage ? `Agregar Paquete (${packQty} pzas)` : 'Agregar Pieza'}
             </button>
           </div>
         </form>

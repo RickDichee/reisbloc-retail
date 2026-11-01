@@ -80,5 +80,6 @@ export function useRealtimeSync(options: RealtimeSyncOptions = {}) {
       logger.info('realtime', `Cancelando suscripción Realtime para org: ${organizationId}`)
       supabase.removeChannel(channel)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId, options.onOrdersChange, options.onCashRegisterChange, options.onAuditLogsChange])
 }

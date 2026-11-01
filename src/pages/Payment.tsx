@@ -84,6 +84,7 @@ export default function Payment() {
       const interval = setInterval(checkCryptoPayment, 10000)
       return () => clearInterval(interval)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cryptoPayment, success])
 
   const handleCardPayment = async () => {

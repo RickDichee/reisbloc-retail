@@ -31,9 +31,9 @@
 
 /* 🎨 Moda Miel MX Custom Theme Overrides */
 .theme-modamiel {
-  --primary: #1A1A1A;
-  --primary-hover: #262626;
-  --secondary: #D4386C;
+  --primary: #D4386C;
+  --primary-hover: #B52656;
+  --secondary: #1A1A1A;
   --accent: #E8638B;
   --bg-canvas: #FFF8F9;
   --bg-surface: #FFFFFF;
@@ -60,7 +60,6 @@ body.theme-modamiel,
 .theme-modamiel .bg-slate-800,
 .theme-modamiel .bg-rb-nav {
   background-color: #1A1A1A !important;
-  border-color: #FCEBF2 !important;
 }
 
 /* 🌸 Primary Action Buttons & Highlights (Indigo/Emerald/Green -> Rose Berry #D4386C) */

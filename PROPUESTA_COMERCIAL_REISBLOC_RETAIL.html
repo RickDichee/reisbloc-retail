@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Propuesta Comercial y Técnica - Reisbloc Retail</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+    :root {
+      --primary: #18212e;
+      --primary-hover: #243041;
+      --primary-accent: #0f766e;
+      --primary-warm: #8b6f47;
+      --bg-canvas: #f7f6f2;
+      --bg-surface: #fffdfa;
+      --bg-muted: #f2efe8;
+      --text-main: #0f172a;
+      --text-secondary: #64748b;
+      --border-light: #e3e1da;
+      --border-strong: #c8c3ba;
+      --success: #0f8a5f;
+      --warning: #c08a2d;
+      --danger: #b91c1c;
+      --info: #137cad;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    @page {
+      size: A4;
+      margin: 10mm 12mm 10mm 12mm;
+    }
+
+    html, body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-canvas);
+      background-image: 
+        radial-gradient(circle at top left, rgba(24, 33, 46, .05), transparent 28%), 
+        radial-gradient(circle at top right, rgba(15, 118, 110, .07), transparent 26%), 
+        radial-gradient(circle at bottom left, rgba(192, 138, 45, .04), transparent 24%), 
+        linear-gradient(180deg, #f7f6f2, #f2efe8);
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 100%;
+      height: 272mm;
+      max-height: 272mm;
+      padding: 4mm 2mm;
+      box-sizing: border-box;
+      position: relative;
+      page-break-after: always;
+      page-break-inside: avoid;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border-light);
+      margin-bottom: 20px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-name {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+
+    .brand-name span {
+      color: var(--primary-accent);
+    }
+
+    .doc-pill {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--primary-accent);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(15, 118, 110, 0.25);
+    }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-light);
+      font-size: 10px;
+      color: var(--text-secondary);
+      margin-top: 15px;
+    }
+
+    /* Cover Page Styling */
+    .cover {
+      justify-content: center;
+      padding: 20mm 15mm;
+      text-align: left;
+    }
+
+    .cover-hero {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(24, 33, 46, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover-hero::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-accent), var(--primary-warm));
+    }
+
+    .cover-tagline {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--primary-accent);
+      background: rgba(15, 118, 110, 0.1);
+      border: 1px solid rgba(15, 118, 110, 0.2);
+      padding: 6px 14px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .cover-title {
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--primary);
+      margin: 0 0 15px 0;
+      letter-spacing: -1px;
+    }
+
+    .cover-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin: 0 0 30px 0;
+      max-width: 90%;
+    }
+
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 35px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--bg-muted);
+      border: 1px solid var(--border-light);
+      color: var(--primary);
+    }
+
+    .badge.accent {
+      background: rgba(15, 118, 110, 0.1);
+      border-color: rgba(15, 118, 110, 0.25);
+      color: var(--primary-accent);
+    }
+
+    .badge.warm {
+      background: rgba(192, 138, 45, 0.1);
+      border-color: rgba(192, 138, 45, 0.25);
+      color: var(--primary-warm);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-cols: 2;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      border-top: 1px solid var(--border-light);
+      padding-top: 25px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Content Cards and Sections */
+    .section-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--primary);
+      margin: 0 0 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+      letter-spacing: -0.3px;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 4px;
+      height: 18px;
+      background: var(--primary-accent);
+      border-radius: 2px;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 0 0 6px 0;
+    }
+
+    .card-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 10px 0 16px 0;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 11px;
+    }
+
+    th {
+      background: var(--primary);
+      color: #fff;
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 10px;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border-light);
+      color: var(--text-main);
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    tr:nth-child(even) td {
+      background: var(--bg-muted);
+    }
+
+    /* Workflow Diagram Box */
+    .flow-container {
+      background: #fffdfa;
+      border: 1px solid var(--border-strong);
+      border-radius: 16px;
+      padding: 18px;
+      margin: 14px 0;
+    }
+
+    .flow-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      position: relative;
+    }
+
+    .flow-step {
+      background: var(--bg-muted);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      background: var(--primary-accent);
+      color: #fff;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .step-desc {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* Pricing Plans */
+    .pricing-card {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-light);
+      border-radius: 18px;
+      padding: 22px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .pricing-card.featured {
+      border-color: var(--primary-accent);
+      box-shadow: 0 10px 25px rgba(15, 118, 110, 0.08);
+    }
+
+    .pricing-tag {
+      position: absolute;
+      top: -12px;
+      right: 20px;
+      background: var(--primary-accent);
+      color: white;
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pricing-name {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--primary);
+      margin: 0 0 6px 0;
+    }
+
+    .pricing-price {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .pricing-price span {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .pricing-subprice {
+      font-size: 11.5px;
+      color: var(--primary-warm);
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 18px 0;
+      font-size: 11px;
+    }
+
+    .feature-list li {
+      padding: 5px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: var(--text-main);
+      border-bottom: 1px dashed var(--border-light);
+    }
+
+    .feature-list li:last-child {
+      border-bottom: none;
+    }
+
+    .check-icon {
+      color: var(--success);
+      font-weight: 900;
+    }
+
+    .signatures-box {
+      margin-top: 25px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-surface);
+      border-radius: 14px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+
+    .sig-line {
+      border-top: 1px solid var(--border-strong);
+      margin-top: 45px;
+      padding-top: 8px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== PÁGINA 1: PORTADA EJECUTIVA ==================== -->
+  <div class="page cover">
+    <div class="cover-hero">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px;">
+        <div class="logo-container">
+          <svg width="48" height="48" viewBox="0 0 512 512" fill="none">
+            <rect width="512" height="512" rx="100" fill="#18212e"/>
+            <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#18212e"/>
+            <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#0f766e" stroke-width="18" stroke-linejoin="round"/>
+            <path d="M256 110V402" stroke="#0f766e" stroke-width="8" stroke-dasharray="10 10"/>
+            <circle cx="256" cy="256" r="45" stroke="#0f766e" stroke-width="4" opacity="0.4"/>
+            <circle cx="256" cy="256" r="22" fill="#0f766e" opacity="0.25"/>
+          </svg>
+          <div class="brand-name">REISBLOC <span>RETAIL</span></div>
+        </div>
+        <div class="doc-pill">Propuesta Comercial & Técnica</div>
+      </div>
+
+      <div class="cover-tagline">Solución Omnicanal para Retail en Crecimiento</div>
+
+      <h1 class="cover-title">Implementación de Reisbloc Retail Suite & Motor FastTransfer</h1>
+      <p class="cover-subtitle">
+        Software de Punto de Venta (POS) en la nube con inventarios sincronizados en tiempo real y módulo de traspasos express entre sucursales: ultra rápido, intuitivo, confiable y con seguridad transaccional ACID.
+      </p>
+
+      <div class="badges-row">
+        <div class="badge accent">⚡ Inventarios en Tiempo Real (WebSockets)</div>
+        <div class="badge accent">📦 Traspasos Express "One-Scan"</div>
+        <div class="badge">🔒 Transaccionalidad ACID PostgreSQL</div>
+        <div class="badge">📴 Arquitectura Offline-First (Venta Continua)</div>
+        <div class="badge warm">🧾 Facturación Electrónica SAT CFDI 4.0</div>
+        <div class="badge">📱 Soporte Móvil & Tabletas Android</div>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Presentado para:</span>
+          <span class="meta-value">Dirección General & Operaciones Retail</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Fecha de Emisión:</span>
+          <span class="meta-value">Octubre 2026</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Alcance del Proyecto:</span>
+          <span class="meta-value">Adquisición POS + Desarrollo Módulo Traspasos</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Tiempo de Entrega:</span>
+          <span class="meta-value">3 Semanas (Llave en Mano)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Reisbloc POS · Documento Confidencial</span>
+      <span>Página 1 de 5</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 2: DIAGNÓSTICO & FASTTRANSFER ==================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-name" style="font-size: 15px;">REISBLOC <span>RETAIL</span></div>
+        <div class="doc-pill">Diagnóstico & Propuesta de Valor</div>
+      </div>
+
+      <h2 class="section-title">1. Diagnóstico: Retos de su Cadena vs. Solución Reisbloc</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 28%;">Problema Típico en Tiendas</th>
+            <th style="width: 32%;">Impacto Negativo en el Negocio</th>
+            <th style="width: 40%;">Solución con Reisbloc Retail</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Desconocimiento de existencias</strong> en otras tiendas de la cadena.</td>
+            <td>Pérdida inmediata de ventas en mostrador; llamadas telefónicas y demoras frente al cliente.</td>
+            <td><strong>Matriz de Stock en Vivo:</strong> Cualquier cajero consulta en 2 segundos existencias exactas en cada sucursal vía WebSockets.</td>
+          </tr>
+          <tr>
+            <td><strong>Traspasos lentos y manuales</strong> en hojas de papel o mensajes informales.</td>
+            <td>Captura de datos tardada, errores de captura humana y diferencias constantes de inventario.</td>
+            <td><strong>Modo Pistola / One-Scan:</strong> Se leen los artículos con escáner, se emite vale QR y se despacha en menos de 60 segundos.</td>
+          </tr>
+          <tr>
+            <td><strong>Mercancía "volando"</strong> durante el traslado entre sucursales.</td>
+            <td>Robos hormiga y extravíos; nadie asume responsabilidad de los productos en tránsito.</td>
+            <td><strong>Estado "En Tránsito" + Cadena de Custodia:</strong> La mercancía se descuenta al salir y queda bajo custodia con registro inmutable.</td>
+          </tr>
+          <tr>
+            <td><strong>Caídas de conexión</strong> al realizar movimientos de stock.</td>
+            <td>Inventarios descuadrados, registros duplicados o productos desaparecidos en el sistema.</td>
+            <td><strong>Garantía ACID en PostgreSQL:</strong> Bloqueo atómico a nivel base de datos; la operación o se guarda al 100% o no afecta nada.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="section-title" style="margin-top: 25px;">2. Flujo de Traspasos Express "Effortless & Fast"</h2>
+      
+      <div class="flow-container">
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="step-num">1</div>
+            <div class="step-title">Salida Rápida (Emisor)</div>
+            <div class="step-desc">
+              Selecciona tienda destino y pasa la pistola sobre los códigos de barra. Al dar <em>Despachar</em>, se imprime el vale con código QR y se descuenta el stock de origen de inmediato.
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="step-num">2</div>
+            <div class="step-title">En Tránsito (Asegurado)</div>
+            <div class="step-desc">
+              El producto viaja protegido bajo el estado contable <strong>En Tránsito</strong>. Se asigna un responsable de traslado y no se permite sobreventa en ninguna sucursal.
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="step-num">3</div>
+            <div class="step-title">Recepción en 1 Tap (Destino)</div>
+            <div class="step-desc">
+              La sucursal destino escanea el código QR del manifiesto impreso o digital. Con un solo tap confirma la recepción y el stock ingresa a su inventario local.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 15px;">
+        <div class="card">
+          <div class="card-title">🔍 Consulta Cruzada en Mostrador</div>
+          <p class="card-text">
+            Si un cliente pide un producto agotado en sucursal A, el cajero ve al instante: <em>"En Sucursal B hay 4 piezas"</em>, permitiendo apartar la venta o coordinar el envío de inmediato.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">🛡️ Auditoría de Discrepancias</div>
+          <p class="card-text">
+            Si se enviaron 10 piezas y el destino recibe 9, el sistema levanta automáticamente un folio de merma/incidencia con fecha, hora y usuarios responsables.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Reisbloc POS · Diagnóstico & Flujo Operativo</span>
+      <span>Página 2 de 5</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 3: ARQUITECTURA TÉCNICA ==================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-name" style="font-size: 15px;">REISBLOC <span>RETAIL</span></div>
+        <div class="doc-pill">Arquitectura & Especificaciones</div>
+      </div>
+
+      <h2 class="section-title">3. Arquitectura y Capacidades de Reisbloc Retail</h2>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">🛒 Punto de Venta (POS)</div>
+          <p class="card-text">
+            Cobro rápido en 3 pasos, tickets y apartados múltiples, cobros con tarjeta, efectivo, transferencia y código QR MercadoPago.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">📴 Motor Offline-First</div>
+          <p class="card-text">
+            Resiliencia local con IndexedDB. Si se corta el internet, las tiendas siguen cobrando con total normalidad y sincronizan solas al volver la red.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">🧾 Facturación CFDI 4.0</div>
+          <p class="card-text">
+            Emisión de facturas electrónicas avaladas por el SAT en segundos mediante integración nativa con Facturapi (PAC certificado).
+          </p>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top: -4px;">
+        <div class="card">
+          <div class="card-title">💵 Arqueos y Caja Ciega</div>
+          <p class="card-text">
+            Control estricto de turnos, arqueo ciego para cajeros, cálculo de discrepancias, corte Z automático y registro de gastos de caja.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">🏷️ Impresión y Barcodes</div>
+          <p class="card-text">
+            Impresión directa de tickets en impresoras térmicas ESC-POS de 58/80mm y generación de etiquetas de códigos de barra para etiquetado.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">📱 App Móvil & Tabletas</div>
+          <p class="card-text">
+            Compatibilidad con Android nativo (Capacitor) para uso en tabletas de mostrador o terminales de cobro inalámbricas.
+          </p>
+        </div>
+      </div>
+
+      <h2 class="section-title" style="margin-top: 20px;">4. Confiabilidad y Seguridad de Grado Enterprise</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">Capa de Seguridad</th>
+            <th style="width: 35%;">Mecanismo Técnico</th>
+            <th style="width: 40%;">Beneficio Directo para el Cliente</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Atomicidad ACID</strong></td>
+            <td>Función PostgreSQL <code>process_branch_transfer</code> con bloqueo <code>FOR UPDATE</code>.</td>
+            <td>Garantiza que el débito en origen y el crédito en destino ocurran juntos; es imposible que se pierdan o dupliquen piezas.</td>
+          </tr>
+          <tr>
+            <td><strong>Aislamiento Multi-Tenant</strong></td>
+            <td>Políticas Row Level Security (RLS) estrictas en la base de datos Supabase.</td>
+            <td>Los datos de la empresa están blindados a nivel motor de base de datos; cero acceso no autorizado.</td>
+          </tr>
+          <tr>
+            <td><strong>Control de Hardware</strong></td>
+            <td>Fingerprinting y Whitelist de dispositivos autorizados.</td>
+            <td>Nadie puede abrir el punto de venta desde un celular o computadora ajena que no haya sido autorizada por el dueño.</td>
+          </tr>
+          <tr>
+            <td><strong>Bitácora de Auditoría</strong></td>
+            <td>Tabla inmutable <code>audit_logs</code> con sellado de tiempo, usuario e IP.</td>
+            <td>Historial forense completo de quién canceló una venta, quién hizo un traspaso y quién editó precios.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card" style="background: rgba(15, 118, 110, 0.05); border-color: rgba(15, 118, 110, 0.3);">
+        <div class="card-title" style="color: var(--primary-accent);">⚡ Rendimiento en Tiempo Real (Realtime WebSockets)</div>
+        <p class="card-text">
+          A diferencia de los sistemas tradicionales que requieren presionar "F5" o esperar procesos nocturnos por lote, Reisbloc propaga los movimientos de stock en menos de <strong>150 milisegundos</strong> a todas las terminales activas de la cadena.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Reisbloc POS · Arquitectura de Grado Enterprise</span>
+      <span>Página 3 de 5</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 4: PLAN DE TRABAJO ==================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-name" style="font-size: 15px;">REISBLOC <span>RETAIL</span></div>
+        <div class="doc-pill">Cronograma de Entrega</div>
+      </div>
+
+      <h2 class="section-title">5. Plan de Trabajo e Hitos de Entrega (3 Semanas)</h2>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+        El despliegue se realiza bajo metodología ágil con entregables tangibles cada semana, permitiendo validar las funciones sin detener la operación de sus tiendas:
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 15%;">Semana</th>
+            <th style="width: 35%;">Fase y Objetivos</th>
+            <th style="width: 50%;">Entregables Concretos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Semana 1</strong><br><span style="color: var(--primary-accent); font-weight: 700;">Fundación</span></td>
+            <td>
+              <strong>Alistamiento de Reisbloc & Arquitectura Multi-Tienda</strong><br>
+              Configuración de la plataforma, roles de personal y base de datos relacional.
+            </td>
+            <td>
+              • Entorno cloud en Supabase configurado y securizado.<br>
+              • Estructura de inventario por sucursal (<code>branch_inventory</code>).<br>
+              • Carga e importación del catálogo maestro de productos y códigos de barra.<br>
+              • Configuración de usuarios, roles (Admin, Gerente, Cajero) y sucursales.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Semana 2</strong><br><span style="color: var(--primary-accent); font-weight: 700;">Desarrollo</span></td>
+            <td>
+              <strong>Motor FastTransfer & Sincronización en Tiempo Real</strong><br>
+              Desarrollo de la interfaz de traspasos y canales WebSocket.
+            </td>
+            <td>
+              • Activación de WebSockets para actualización instantánea de stock.<br>
+              • Visor flotante de existencias multi-sucursal dentro del POS.<br>
+              • Módulo de despacho rápido con lector de códigos de barra.<br>
+              • Generación automática de manifiestos y vales con código QR de traslado.
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Semana 3</strong><br><span style="color: var(--primary-accent); font-weight: 700;">Lanzamiento</span></td>
+            <td>
+              <strong>Seguridad Transaccional, Pruebas y Capacitación</strong><br>
+              Validación de procedimientos ACID, capacitación y salida a producción.
+            </td>
+            <td>
+              • Procedimiento transaccional en PostgreSQL con bloqueo anti-errores.<br>
+              • Módulo de recepción en 1 tap y reporte de discrepancias.<br>
+              • Pruebas de estrés y corte de conexión para validar motor offline.<br>
+              • Capacitación práctica al personal de sucursal y arranque oficial.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="section-title" style="margin-top: 25px;">6. Retorno de Inversión y Beneficios Medibles</h2>
+
+      <div class="grid-3">
+        <div class="card" style="text-align: center; padding: 20px 15px;">
+          <div style="font-size: 26px; font-weight: 900; color: var(--primary-accent); margin-bottom: 5px;">+15%</div>
+          <div style="font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 5px;">Ventas Salvadas</div>
+          <p class="card-text" style="font-size: 11px;">
+            Al saber en 2 segundos si otra tienda tiene la prenda o artículo, se evita que el cliente se vaya con la competencia.
+          </p>
+        </div>
+        <div class="card" style="text-align: center; padding: 20px 15px;">
+          <div style="font-size: 26px; font-weight: 900; color: var(--success); margin-bottom: 5px;">90%</div>
+          <div style="font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 5px;">Menos Tiempo</div>
+          <p class="card-text" style="font-size: 11px;">
+            Traspasos que antes tomaban 20 minutos de captura manual se realizan en menos de 60 segundos con pistola lectora.
+          </p>
+        </div>
+        <div class="card" style="text-align: center; padding: 20px 15px;">
+          <div style="font-size: 26px; font-weight: 900; color: var(--primary-warm); margin-bottom: 5px;">100%</div>
+          <div style="font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 5px;">Cero Fugas</div>
+          <p class="card-text" style="font-size: 11px;">
+            El estado <em>En Tránsito</em> y la firma digital eliminan el extravío de mercancía durante el trayecto físico.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Reisbloc POS · Cronograma & Retorno de Inversión</span>
+      <span>Página 4 de 5</span>
+    </div>
+  </div>
+
+  <!-- ==================== PÁGINA 5: PRESUPUESTO & ACEPTACIÓN ==================== -->
+  <div class="page">
+    <div>
+      <div class="header-bar">
+        <div class="brand-name" style="font-size: 15px;">REISBLOC <span>RETAIL</span></div>
+        <div class="doc-pill">Propuesta Económica</div>
+      </div>
+
+      <h2 class="section-title">7. Opciones de Inversión y Presupuesto</h2>
+
+      <div class="grid-2" style="margin-top: 15px;">
+        <!-- Plan 1 -->
+        <div class="pricing-card featured">
+          <div class="pricing-tag">Recomendado</div>
+          <div>
+            <div class="pricing-name">Reisbloc Pro + FastTransfer</div>
+            <div class="pricing-price">$1,750 <span>USD</span></div>
+            <div class="pricing-subprice">Aprox. $33,500 MXN (Inversión Inicial Única)</div>
+            
+            <ul class="feature-list">
+              <li><span class="check-icon">✓</span> Licencia completa Reisbloc Retail POS en la nube</li>
+              <li><span class="check-icon">✓</span> Módulo Inventarios en Tiempo Real (WebSockets)</li>
+              <li><span class="check-icon">✓</span> Motor FastTransfer: Traspasos express por código de barras</li>
+              <li><span class="check-icon">✓</span> Generación e impresión de vales con código QR</li>
+              <li><span class="check-icon">✓</span> Transaccionalidad ACID en PostgreSQL (cero errores)</li>
+              <li><span class="check-icon">✓</span> Facturación CFDI 4.0 SAT + Cortes de Caja ciegos</li>
+              <li><span class="check-icon">✓</span> Capacitación virtual a gerentes y cajeros</li>
+            </ul>
+          </div>
+          
+          <div style="border-top: 1px solid var(--border-light); padding-top: 12px; font-size: 11px;">
+            <strong>Mantenimiento & Nube Cloud:</strong> $79 USD/mes ($1,500 MXN/mes). Incluye hosting base de datos, respaldos diarios y soporte.
+          </div>
+        </div>
+
+        <!-- Plan 2 -->
+        <div class="pricing-card">
+          <div>
+            <div class="pricing-name">Reisbloc Enterprise Omnicanal</div>
+            <div class="pricing-price">$2,650 <span>USD</span></div>
+            <div class="pricing-subprice">Aprox. $50,500 MXN (Inversión Inicial Única)</div>
+            
+            <ul class="feature-list">
+              <li><span class="check-icon">✓</span> <strong>Todo lo incluido en el Paquete Pro</strong></li>
+              <li><span class="check-icon">✓</span> Notificaciones automáticas por WhatsApp a gerentes</li>
+              <li><span class="check-icon">✓</span> App móvil de chofer/repartidor con firma digital</li>
+              <li><span class="check-icon">✓</span> Tablero ejecutivo de auditoría y análisis de mermas</li>
+              <li><span class="check-icon">✓</span> Sucursales y terminales ilimitadas</li>
+              <li><span class="check-icon">✓</span> Soporte técnico dedicado 24/7</li>
+            </ul>
+          </div>
+
+          <div style="border-top: 1px solid var(--border-light); padding-top: 12px; font-size: 11px;">
+            <strong>Mantenimiento & Nube Cloud:</strong> $129 USD/mes ($2,450 MXN/mes). Incluye infraestructura de alta concurrencia y API WhatsApp.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 16px;">
+        <div class="card-title">💳 Esquema de Pago Cómodo & Seguro</div>
+        <p class="card-text">
+          • <strong>50% de Anticipo:</strong> Para arranque de proyecto, configuración de servidores y carga de catálogo inicial.<br>
+          • <strong>50% Contra Entrega Final:</strong> Una vez implementado el sistema en sus tiendas, realizadas las pruebas de traspasos y capacitado a su personal.
+        </p>
+      </div>
+
+      <div class="signatures-box">
+        <div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Por el Proveedor de Tecnología:</div>
+          <div class="sig-line">
+            Ingeniería & Soluciones Reisbloc POS<br>
+            <span style="font-weight: 400; font-size: 10px; color: var(--text-secondary);">Firma y Sello Digital</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 5px;">Aceptación y Visto Bueno del Cliente:</div>
+          <div class="sig-line">
+            Dirección General / Representante Legal<br>
+            <span style="font-weight: 400; font-size: 10px; color: var(--text-secondary);">Firma de Aceptación</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span>Reisbloc POS · Validez de la Propuesta: 30 Días Naturales</span>
+      <span>Página 5 de 5</span>
+    </div>
+  </div>
+
+</body>
+</html>

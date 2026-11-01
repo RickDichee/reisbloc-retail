@@ -186,6 +186,7 @@ export default function AnalyticsDashboard() {
     // Refresh every 5 minutes
     const interval = setInterval(fetchMetrics, 5 * 60 * 1000)
     return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const toggleSection = (section: string) => {

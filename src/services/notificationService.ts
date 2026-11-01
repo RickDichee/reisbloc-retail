@@ -44,7 +44,7 @@ function saveLocalNotification(payload: any) {
     }
     existing.unshift(newNotif)
     localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(existing.slice(0, 100)))
-  } catch (e) {}
+  } catch (e) { /* ignore */ }
 }
 
 /**
@@ -241,12 +241,12 @@ export async function markNotificationAsRead(notificationId: string): Promise<vo
   if (!NOTIFICATIONS_ENABLED) return
   try {
     await supabase.from('notifications').update({ read: true }).eq('id', notificationId)
-  } catch (e) {}
+  } catch (e) { /* ignore */ }
 
   try {
     const local = getLocalNotificationsStore().map(n => n.id === notificationId ? { ...n, read: true } : n)
     localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(local))
-  } catch (e) {}
+  } catch (e) { /* ignore */ }
 }
 
 /**
@@ -256,12 +256,12 @@ export async function markAllNotificationsAsRead(userId: string): Promise<void> 
   if (!NOTIFICATIONS_ENABLED) return
   try {
     await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false)
-  } catch (e) {}
+  } catch (e) { /* ignore */ }
 
   try {
     const local = getLocalNotificationsStore().map(n => n.userId === userId ? { ...n, read: true } : n)
     localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(local))
-  } catch (e) {}
+  } catch (e) { /* ignore */ }
 }
 
 function mapFromDb(row: any): Notification {

@@ -12,7 +12,7 @@ const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'
 export default function Schedules() {
   const { currentUser } = useAppStore()
   const { isAdmin } = usePermissions()
-  const { schedules, setSchedule, DAY_NAMES } = useEmployeeSchedules()
+  const { schedules, setSchedule } = useEmployeeSchedules()
   const { branches } = useBranches()
 
   const [editDay, setEditDay] = useState<number | null>(null)
@@ -92,7 +92,6 @@ export default function Schedules() {
             {DAYS_ES.map((day, index) => {
               const schedule = getScheduleForDay(index)
               const isEditing = editDay === index
-              const isWeekend = index === 0 || index === 6
               const isToday = new Date().getDay() === index
 
               return (

@@ -5,23 +5,18 @@ import supabaseService from '@/services/supabaseService'
 import { User, UserRole } from '@/types/index'
 import AvatarUpload from './AvatarUpload'
 import {
-  Plus,
   Edit2,
   Trash2,
   CheckCircle,
-  XCircle,
-  Shield,
   Eye,
-  Lock,
   UserPlus,
   Key,
   Mail,
   User as UserIcon,
-  Sparkles,
-  Check
+  Sparkles
 } from 'lucide-react'
 
-export const roleColors: Record<string, string> = {
+const roleColors: Record<string, string> = {
   admin: 'from-purple-600 to-indigo-600',
   supervisor: 'from-cyan-600 to-blue-600',
   vendedor: 'from-teal-500 to-emerald-600',
@@ -31,7 +26,7 @@ export const roleColors: Record<string, string> = {
   manager: 'from-indigo-600 to-purple-700',
 }
 
-export const roleLabels: Record<string, string> = {
+const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   manager: 'Gerente',
   supervisor: 'Supervisor (Solo lectura)',
@@ -60,6 +55,7 @@ export default function UsersManagement() {
 
   useEffect(() => {
     loadUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadUsers = async () => {
@@ -471,7 +467,6 @@ function EditUserModal({
   onClose: () => void
   onSuccess: () => void
 }) {
-  const { currentUser } = useAppStore()
   const { canManageUsers } = usePermissions()
 
   const [formData, setFormData] = useState({

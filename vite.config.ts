@@ -222,10 +222,77 @@ function clipPinpadDevPlugin(): Plugin {
   }
 }
 
-const isModaMiel = process.env.VITE_APP_BRAND === 'modamiel'
+const appBrand = (process.env.VITE_APP_BRAND || process.env.VITE_DEFAULT_ORG_SLUG || '').toLowerCase()
+const isModaMiel = appBrand.includes('modamiel') || appBrand.includes('moda-miel')
+const isJuguetes = appBrand.includes('juguetes') || appBrand.includes('sanjudas') || appBrand.includes('judastadeo')
+const isLosChunches = appBrand.includes('chunches')
+
+function tenantMetaHtmlPlugin(): Plugin {
+  const meta = isJuguetes
+    ? {
+        title: 'Juguetes y Novedades San Judas Tadeo',
+        shortTitle: 'San Judas Tadeo',
+        description: '¡El juguete de tus sueños te espera! Surtido de temporada, juguetes y novedades · Tel/WhatsApp: (442) 600-3500.',
+        canonical: 'https://sanjudastadeo.reisbloc.com/',
+        ogImage: 'https://sanjudastadeo.reisbloc.com/images/juguetes-san-judas-logo.jpeg',
+        favicon: '/images/juguetes-san-judas-logo.jpeg',
+        faviconType: 'image/jpeg',
+        themeColor: '#C8323E'
+      }
+    : isLosChunches
+    ? {
+        title: 'Los Chunches de Cons · Mercancía Americana e Importada',
+        shortTitle: 'Los Chunches',
+        description: 'TARGET · CVS · JCP · Mercancía Americana e Importada a precios de liquidación real · Tel/WhatsApp: (443) 124-4490.',
+        canonical: 'https://loschunchesdecons.reisbloc.com/',
+        ogImage: 'https://loschunchesdecons.reisbloc.com/images/los_chunches.jpeg',
+        favicon: '/images/los_chunches.jpeg',
+        faviconType: 'image/jpeg',
+        themeColor: '#C83E74'
+      }
+    : isModaMiel
+    ? {
+        title: 'Moda Miel MX · Reisbloc Store',
+        shortTitle: 'Moda Miel MX',
+        description: 'Moda Miel MX: Catálogo mayorista y Punto de Venta (POS) todo por paquete · Pasillo 3 Local 230.',
+        canonical: 'https://modamielmx.reisbloc.com/',
+        ogImage: 'https://modamielmx.reisbloc.com/images/moda-miel-mx-logo.jpeg',
+        favicon: '/images/moda-miel-mx-logo.jpeg',
+        faviconType: 'image/jpeg',
+        themeColor: '#D4386C'
+      }
+    : {
+        title: 'Reisbloc Store · Sistema POS Retail',
+        shortTitle: 'Reisbloc Store',
+        description: 'Reisbloc Store: Sistema de Punto de Venta (POS), facturación y control de inventario para tiendas y retail.',
+        canonical: 'https://store.reisbloc.com/',
+        ogImage: 'https://store.reisbloc.com/images/logoNew.jpg',
+        favicon: '/icon.svg',
+        faviconType: 'image/svg+xml',
+        themeColor: '#0B0B0B'
+      }
+
+  return {
+    name: 'tenant-meta-html-plugin',
+    transformIndexHtml(html) {
+      return html
+        .replace(/<title>.*?<\/title>/i, `<title>${meta.title}</title>`)
+        .replace(/<meta name="theme-color" content=".*?" \/>/i, `<meta name="theme-color" content="${meta.themeColor}" />`)
+        .replace(/<meta name="description" content=".*?" \/>/i, `<meta name="description" content="${meta.description}" />`)
+        .replace(/<link rel="canonical" href=".*?" \/>/i, `<link rel="canonical" href="${meta.canonical}" />`)
+        .replace(/<link rel="icon" type=".*?" href=".*?" \/>/i, `<link rel="icon" type="${meta.faviconType}" href="${meta.favicon}" />`)
+        .replace(/<link rel="apple-touch-icon" href=".*?">/i, `<link rel="apple-touch-icon" href="${meta.favicon}">`)
+        .replace(/<meta property="og:title" content=".*?" \/>/i, `<meta property="og:title" content="${meta.title}" />`)
+        .replace(/<meta property="og:description" content=".*?" \/>/i, `<meta property="og:description" content="${meta.description}" />`)
+        .replace(/<meta property="og:image" content=".*?" \/>/i, `<meta property="og:image" content="${meta.ogImage}" />\n    <meta property="og:url" content="${meta.canonical}" />\n    <meta name="twitter:card" content="summary_large_image" />\n    <meta name="twitter:title" content="${meta.title}" />\n    <meta name="twitter:description" content="${meta.description}" />\n    <meta name="twitter:image" content="${meta.ogImage}" />`)
+        .replace(/<meta name="apple-mobile-web-app-title" content=".*?" \/>/i, `<meta name="apple-mobile-web-app-title" content="${meta.shortTitle}" />`)
+    }
+  }
+}
 
 export default defineConfig({
   plugins: [
+    tenantMetaHtmlPlugin(),
     clipPinpadDevPlugin(),
     react(),
     VitePWA({
@@ -304,25 +371,47 @@ export default defineConfig({
         clientsClaim: true,
       },
       manifest: {
-        short_name: isModaMiel ? 'Moda Miel MX' : 'Reisbloc',
-        name: isModaMiel ? 'Reisbloc Store · Moda Miel MX' : 'Reisbloc Retail Lab',
+        short_name: isModaMiel ? 'Moda Miel MX' : isJuguetes ? 'San Judas Tadeo' : isLosChunches ? 'Los Chunches' : 'Reisbloc',
+        name: isModaMiel
+          ? 'Reisbloc Store · Moda Miel MX'
+          : isJuguetes
+          ? 'Juguetes y Novedades San Judas Tadeo'
+          : isLosChunches
+          ? 'Los Chunches de Cons'
+          : 'Reisbloc Retail Lab',
         description: isModaMiel 
           ? 'POS personalizado para Moda Miel MX, powered by Reisbloc.' 
+          : isJuguetes
+          ? '¡El juguete de tus sueños te espera! Juguetes y Novedades San Judas Tadeo.'
+          : isLosChunches
+          ? 'Mercancía Americana e Importada · Los Chunches de Cons.'
           : 'Sistema de Punto de Venta Profesional',
-        theme_color: '#0B0B0B',
-        background_color: '#0B0B0B',
+        theme_color: isJuguetes ? '#C8323E' : isLosChunches ? '#C83E74' : isModaMiel ? '#D4386C' : '#0B0B0B',
+        background_color: '#FFFFFF',
         display: 'standalone',
         start_url: '.',
         icons: [
           {
-            src: isModaMiel ? 'images/moda-miel-mx-logo.jpeg' : 'icon.svg',
-            type: isModaMiel ? 'image/jpeg' : 'image/svg+xml',
+            src: isModaMiel
+              ? 'images/moda-miel-mx-logo.jpeg'
+              : isJuguetes
+              ? 'images/juguetes-san-judas-logo.jpeg'
+              : isLosChunches
+              ? 'images/los_chunches.jpeg'
+              : 'icon.svg',
+            type: (isModaMiel || isJuguetes || isLosChunches) ? 'image/jpeg' : 'image/svg+xml',
             sizes: '512x512',
             purpose: 'any maskable'
           },
           {
-            src: isModaMiel ? 'images/moda-miel-mx-logo.jpeg' : 'icon.svg',
-            type: isModaMiel ? 'image/jpeg' : 'image/svg+xml',
+            src: isModaMiel
+              ? 'images/moda-miel-mx-logo.jpeg'
+              : isJuguetes
+              ? 'images/juguetes-san-judas-logo.jpeg'
+              : isLosChunches
+              ? 'images/los_chunches.jpeg'
+              : 'icon.svg',
+            type: (isModaMiel || isJuguetes || isLosChunches) ? 'image/jpeg' : 'image/svg+xml',
             sizes: '192x192',
             purpose: 'any maskable'
           }

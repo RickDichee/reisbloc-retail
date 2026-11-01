@@ -88,7 +88,7 @@ class ImageCacheService {
     // 1. Guardar copia en localStorage para fallback inmediato
     try {
       localStorage.setItem('cached_retail_products', JSON.stringify(products))
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 
     // 2. Guardar en IndexedDB
     try {
@@ -132,13 +132,13 @@ class ImageCacheService {
       const all = await Promise.race([idbPromise, timeoutPromise])
 
       if (all && all.length > 0) return all
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 
     // 2. Fallback a localStorage
     try {
       const raw = localStorage.getItem('cached_retail_products')
       if (raw) return JSON.parse(raw)
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 
     return []
   }

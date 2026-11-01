@@ -290,7 +290,7 @@ class OfflineStorageService {
                         legacyTx.objectStore('sync_queue').clear(),
                         legacyTx.done
                     ])
-                } catch (e) {}
+                } catch (e) { /* ignore */ }
             }
 
             // 3. Resetear mapa de promesas de DBs

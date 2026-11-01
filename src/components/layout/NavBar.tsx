@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/appStore'
 import { BRANDING } from '@/config/branding'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { changeLanguage } from '@/i18n'
@@ -12,7 +13,6 @@ import {
   Shield,
   Settings,
   LogOut,
-  User,
   DollarSign,
   Package,
   Maximize,
@@ -29,7 +29,6 @@ import {
   Menu,
   X,
   ChevronRight,
-  Sparkles,
   Building2
 } from 'lucide-react'
 import OrganizationSwitcherModal from './OrganizationSwitcherModal'
@@ -44,8 +43,6 @@ export default function NavBar() {
   const [supportsFullscreen, setSupportsFullscreen] = useState(true)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showOrgSwitcher, setShowOrgSwitcher] = useState(false)
-
-
 
   const { i18n } = useTranslation()
 
@@ -90,62 +87,73 @@ export default function NavBar() {
     {
       title: 'Operación Diaria',
       items: [
-        { path: '/pos', label: 'Punto de Venta', desc: 'Caja rápida y tickets', icon: ShoppingCart, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier', 'employee'] },
-        { path: '/closing', label: 'Cierre de Caja', desc: 'Corte y arqueo de turno', icon: DollarSign, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-        { path: '/ecommerce', label: 'Tienda en Línea', desc: 'Catálogo y pedidos web', icon: ShoppingBag, color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20', roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/pos', label: 'Punto de Venta', desc: 'Caja rápida y tickets', icon: ShoppingCart, color: 'bg-emerald-50 text-emerald-600 border-emerald-200', roles: ['admin', 'manager', 'supervisor', 'cashier', 'employee'] },
+        { path: '/closing', label: 'Cierre de Caja', desc: 'Corte y arqueo de turno', icon: DollarSign, color: 'bg-amber-50 text-amber-600 border-amber-200', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/ecommerce', label: 'Tienda en Línea', desc: 'Catálogo y pedidos web', icon: ShoppingBag, color: 'bg-cyan-50 text-cyan-600 border-cyan-200', roles: ['admin', 'manager', 'supervisor'] },
       ]
     },
     {
       title: 'Inventario y Catálogo',
       items: [
-        { path: '/inventory', label: 'Inventario', desc: 'Existencias y stock', icon: Package, color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-        { path: '/purchases', label: 'Compras', desc: 'Entradas y proveedores', icon: ShoppingBag, color: 'bg-orange-500/10 text-orange-400 border-orange-500/20', roles: ['admin', 'manager'] },
-        { path: '/wholesale', label: 'Catálogo Mayorista', desc: 'Precios por bulto y volumen', icon: Package, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', roles: ['admin', 'manager'] },
-        { path: '/wholesale-dashboard', label: 'Portal B2B', desc: 'Pedidos de clientes mayoristas', icon: Store, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20', roles: ['admin', 'manager', 'wholesaler'] },
+        { path: '/inventory', label: 'Inventario', desc: 'Existencias y stock', icon: Package, color: 'bg-blue-50 text-blue-600 border-blue-200', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/purchases', label: 'Compras', desc: 'Entradas y proveedores', icon: ShoppingBag, color: 'bg-orange-50 text-orange-600 border-orange-200', roles: ['admin', 'manager'] },
+        { path: '/wholesale', label: 'Catálogo Mayorista', desc: 'Precios por bulto y volumen', icon: Package, color: 'bg-indigo-50 text-indigo-600 border-indigo-200', roles: ['admin', 'manager'] },
+        { path: '/wholesale-dashboard', label: 'Portal B2B', desc: 'Pedidos de clientes mayoristas', icon: Store, color: 'bg-indigo-50 text-indigo-600 border-indigo-200', roles: ['admin', 'manager', 'wholesaler'] },
       ]
     },
     {
       title: 'Gestión Comercial',
       items: [
-        { path: '/clients', label: 'Clientes & Créditos', desc: 'Historial y apartados', icon: Users, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
-        { path: '/reports', label: 'Reportes Financieros', desc: 'Ventas y balance diario', icon: BarChart3, color: 'bg-teal-500/10 text-teal-400 border-teal-500/20', roles: ['admin', 'manager', 'supervisor'] },
-        { path: '/invoicing', label: 'Facturación SAT', desc: 'Timbrado CFDI 4.0', icon: Receipt, color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', roles: ['admin'] },
+        { path: '/clients', label: 'Clientes & Créditos', desc: 'Historial y apartados', icon: Users, color: 'bg-purple-50 text-purple-600 border-purple-200', roles: ['admin', 'manager', 'supervisor', 'cashier'] },
+        { path: '/reports', label: 'Reportes Financieros', desc: 'Ventas y balance diario', icon: BarChart3, color: 'bg-teal-50 text-teal-600 border-teal-200', roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/invoicing', label: 'Facturación SAT', desc: 'Timbrado CFDI 4.0', icon: Receipt, color: 'bg-rose-50 text-rose-600 border-rose-200', roles: ['admin'] },
       ]
     },
     {
       title: 'Inteligencia Artificial',
       items: [
-        { path: '/agent', label: 'Agente Copiloto IA', desc: 'Asistente de negocio virtual', icon: Bot, color: 'bg-sky-500/10 text-sky-400 border-sky-500/20', roles: ['admin', 'manager', 'supervisor'] },
-        { path: '/marketing', label: 'Marketing WhatsApp', desc: 'Campañas automáticas', icon: Megaphone, color: 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20', roles: ['admin', 'manager'] },
-        { path: '/analytics', label: 'Analytics Predictivo', desc: 'Tendencias y proyecciones', icon: TrendingUp, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', roles: ['admin', 'manager'] },
+        { path: '/agent', label: 'Agente Copiloto IA', desc: 'Asistente de negocio virtual', icon: Bot, color: 'bg-sky-50 text-sky-600 border-sky-200', roles: ['admin', 'manager', 'supervisor'] },
+        { path: '/marketing', label: 'Marketing WhatsApp', desc: 'Campañas automáticas', icon: Megaphone, color: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200', roles: ['admin', 'manager'] },
+        { path: '/analytics', label: 'Analytics Predictivo', desc: 'Tendencias y proyecciones', icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600 border-emerald-200', roles: ['admin', 'manager'] },
       ]
     },
     {
       title: 'Administración y Ajustes',
       items: [
-        { path: '/admin', label: 'Administración', desc: 'Control de usuarios y roles', icon: Shield, color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', roles: ['admin'] },
-        { path: '/branches', label: 'Sucursales', desc: 'Gestión multitienda', icon: Store, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', roles: ['admin'] },
-        { path: '/settings', label: 'Configuración', desc: 'Ajustes de ticket y empresa', icon: Settings, color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', roles: ['admin', 'manager'] },
-        { path: '/referral', label: 'Referidos', desc: 'Programa de recompensas', icon: Gift, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', roles: ['admin', 'manager'] },
+        { path: '/admin', label: 'Administración', desc: 'Control de usuarios y roles', icon: Shield, color: 'bg-rose-50 text-rose-600 border-rose-200', roles: ['admin'] },
+        { path: '/branches', label: 'Sucursales', desc: 'Gestión multitienda', icon: Store, color: 'bg-amber-50 text-amber-600 border-amber-200', roles: ['admin'] },
+        { path: '/settings', label: 'Configuración', desc: 'Ajustes de ticket y empresa', icon: Settings, color: 'bg-slate-100 text-slate-600 border-slate-200', roles: ['admin', 'manager'] },
+        { path: '/referral', label: 'Referidos', desc: 'Programa de recompensas', icon: Gift, color: 'bg-amber-50 text-amber-600 border-amber-200', roles: ['admin', 'manager'] },
       ]
     }
   ]
 
   const isMM = BRANDING.isModaMiel
+  const isJG = BRANDING.isJuguetes || currentUser?.organizationId === '324fd41f-b8af-4aef-9ea6-2f954350775a'
+  const isLC = BRANDING.isLosChunches
+  // isBranded: true cuando el tenant tiene colores propios (no el default oscuro)
+  const isBranded = isMM || isJG || isLC
+  const activeOrgId = currentUser?.organizationId || organizationSettings?.id || null
+  const canShowOnlineStore = !isJG && (activeOrgId ? tenantHasFeature(activeOrgId, 'onlineStoreModule') : true)
+  const canShowAiModules = tenantHasFeature(activeOrgId, 'aiModules')
 
   // Desktop quick favorites
   const favNavbar = organizationSettings?.favorites?.navbar || ['/pos', '/inventory', '/clients', '/reports', '/closing']
   const desktopQuickItems = allNavCategories
     .flatMap(cat => cat.items)
-    .filter(item => item.roles.includes(currentUser?.role || '') && favNavbar.includes(item.path))
+    .filter(item => {
+      if (item.path === '/ecommerce' && !canShowOnlineStore) return false
+      if ((item.path === '/marketing' || item.path === '/agent') && !canShowAiModules) return false
+      return item.roles.includes(currentUser?.role || '') && favNavbar.includes(item.path)
+    })
 
   return (
     <>
       <nav
         className="text-white shadow-md fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 pt-[env(safe-area-inset-top,0px)]"
         style={{
-          background: isMM ? 'var(--primary, #D4386C)' : '#0B0F19',
-          borderBottomColor: isMM ? 'var(--secondary, #FF7597)' : 'rgba(255, 255, 255, 0.08)',
+          background: isBranded ? 'var(--primary, #D4386C)' : '#0B0F19',
+          borderBottomColor: isBranded ? 'var(--secondary, #FF7597)' : 'rgba(255, 255, 255, 0.08)',
           borderBottomWidth: '1px'
         }}
       >
@@ -167,7 +175,7 @@ export default function NavBar() {
 
               <Link to="/pos" className="flex items-center gap-2 group">
                 <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 border ${
-                  isMM ? 'bg-white/15 border-white/30' : 'bg-slate-900 border-amber-500/30'
+                  isBranded ? 'bg-white/15 border-white/30' : 'bg-slate-900 border-amber-500/30'
                 }`}>
                   {currentUser?.avatar_url ? (
                     <img src={currentUser.avatar_url} alt="Logo" className="w-full h-full object-cover" />
@@ -180,7 +188,7 @@ export default function NavBar() {
                     {organizationSettings?.businessName || currentUser?.businessName || BRANDING.appName}
                   </h1>
                   <span className={`text-[9px] font-mono font-bold block uppercase tracking-widest mt-0.5 ${
-                    isMM ? 'text-pink-200' : 'text-amber-400'
+                    isBranded ? 'text-[var(--on-primary-soft)]' : 'text-amber-400'
                   }`}>
                     {BRANDING.whiteLabelName}
                   </span>
@@ -199,15 +207,15 @@ export default function NavBar() {
                     to={item.path}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap text-xs sm:text-sm border ${
                       isActive
-                        ? isMM 
-                          ? 'bg-white text-[#D4386C] shadow-sm border-white' 
+                        ? isBranded
+                          ? 'bg-white/20 text-white shadow-sm border-white/40' 
                           : 'bg-teal-500/15 text-teal-300 border-teal-500/40 shadow-xs'
-                        : isMM
+                        : isBranded
                           ? 'text-white/90 hover:bg-white/15 hover:text-white border-transparent'
                           : 'text-slate-300 hover:bg-slate-800/80 hover:text-white border-transparent'
                     }`}
                   >
-                    <Icon size={16} className={isActive ? (isMM ? 'text-[#D4386C]' : 'text-teal-400') : 'opacity-80'} />
+                    <Icon size={16} className={isActive ? (isBranded ? 'text-white' : 'text-teal-400') : 'opacity-80'} />
                     <span>{item.label}</span>
                   </Link>
                 )
@@ -244,8 +252,6 @@ export default function NavBar() {
                 {i18n.language === 'es' ? 'EN' : 'ES'}
               </button>
 
-
-
               {/* User Profile Menu */}
               <div className="relative group">
                 <button
@@ -254,7 +260,7 @@ export default function NavBar() {
                   className="flex items-center gap-1.5 p-1 sm:pr-2.5 bg-white/10 hover:bg-white/20 rounded-lg border border-white/15 transition-all"
                 >
                   <div className={`w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs ${
-                    isMM ? 'bg-white text-[#D4386C]' : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                    isBranded ? 'bg-white text-[var(--primary)]' : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
                   }`}>
                     {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
@@ -269,24 +275,24 @@ export default function NavBar() {
                 </button>
 
                 {/* Dropdown Menu Desktop */}
-                <div className="absolute right-0 mt-2 w-52 bg-[#0F172A] border border-slate-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-[60] overflow-hidden">
+                <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-[60] overflow-hidden">
                   <div className="p-1.5 space-y-0.5">
                     <button
                       type="button"
                       onClick={() => setShowOrgSwitcher(true)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-amber-300 hover:bg-slate-800 rounded-lg transition-colors text-left"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors text-left"
                     >
-                      <Building2 size={15} className="text-amber-400 shrink-0" />
+                      <Building2 size={15} className="text-amber-600 shrink-0" />
                       <span>Cambiar de Negocio</span>
                     </button>
-                    <Link to="/settings" className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800 rounded-lg transition-colors">
-                      <Settings size={15} className="text-slate-400 shrink-0" />
+                    <Link to="/settings" className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+                      <Settings size={15} className="text-slate-500 shrink-0" />
                       <span>Configuración</span>
                     </Link>
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-950/30 rounded-lg transition-colors text-left"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
                     >
                       <LogOut size={15} className="shrink-0" />
                       <span>Cerrar Sesión</span>
@@ -307,27 +313,33 @@ export default function NavBar() {
         <div className="lg:hidden fixed inset-0 z-[100] flex">
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setIsMobileMenuOpen(false)}
           />
 
           {/* Drawer Content */}
-          <div className="relative w-[290px] max-w-[85vw] bg-[#0B0F19] text-white border-r border-slate-800 flex flex-col h-full shadow-2xl z-10 animate-fadeIn">
+          <div className="relative w-[290px] max-w-[85vw] bg-white text-slate-900 border-r border-slate-200 flex flex-col h-full shadow-2xl z-10 animate-fadeIn">
             {/* Drawer Header */}
-            <div className="p-3.5 border-b border-slate-800 flex items-center justify-between gap-3 bg-[#0F172A]/90">
+            <div className="p-3.5 border-b border-slate-200 flex items-center justify-between gap-3 bg-[var(--bg-canvas)]">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-lg overflow-hidden border border-amber-500/30 bg-slate-900 shrink-0">
+                <div className={`w-9 h-9 rounded-xl overflow-hidden border shrink-0 ${
+                  isBranded ? 'border-[var(--primary)]/30 bg-[var(--primary)]' : 'border-amber-500/30 bg-slate-900'
+                }`}>
                   <img src={BRANDING.logoUrl} alt="Logo" className="w-full h-full object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-black text-xs text-white truncate">
+                  <h3 className="font-black text-xs text-slate-900 truncate">
                     {organizationSettings?.businessName || BRANDING.appName}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[9px] font-mono uppercase bg-teal-500/15 text-teal-400 px-1.5 py-0.2 rounded border border-teal-500/30 font-bold">
+                    <span className={`text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border font-bold ${
+                      isBranded
+                        ? 'bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30'
+                        : 'bg-teal-50 text-teal-700 border-teal-200'
+                    }`}>
                       {currentRole}
                     </span>
-                    <span className="text-[10px] text-slate-400 truncate">
+                    <span className="text-[10px] text-slate-500 font-semibold truncate">
                       {currentUser?.username}
                     </span>
                   </div>
@@ -336,7 +348,7 @@ export default function NavBar() {
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
                 aria-label="Cerrar menú"
               >
                 <X size={18} />
@@ -346,15 +358,17 @@ export default function NavBar() {
             {/* Drawer Body (Navigation List) */}
             <div className="flex-1 overflow-y-auto p-2.5 space-y-3.5 custom-scrollbar">
               {allNavCategories.map((category, catIdx) => {
-                const userFilteredItems = category.items.filter(item => 
-                  item.roles.includes(currentUser?.role || '')
-                )
+                const userFilteredItems = category.items.filter(item => {
+                  if (item.path === '/ecommerce' && !canShowOnlineStore) return false
+                  if ((item.path === '/marketing' || item.path === '/agent') && !canShowAiModules) return false
+                  return item.roles.includes(currentUser?.role || '')
+                })
                 if (userFilteredItems.length === 0) return null
 
                 return (
                   <div key={catIdx} className="space-y-1">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 py-0.5 font-mono">
-                      {category.title}
+                    <p className="text-[10.5px] font-black uppercase tracking-widest text-slate-400 px-2.5 py-0.5 font-mono">
+                      {category.title === 'Inteligencia Artificial' && !canShowAiModules ? 'Analítica & Proyecciones' : category.title}
                     </p>
                     <div className="space-y-1">
                       {userFilteredItems.map((item) => {
@@ -365,37 +379,47 @@ export default function NavBar() {
                             key={item.path}
                             to={item.path}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className={`flex items-center justify-between p-2 rounded-lg transition-all border ${
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all border ${
                               isActive 
-                                ? 'bg-teal-500/15 text-teal-300 border-teal-500/40 shadow-xs'
-                                : 'text-slate-300 hover:bg-slate-800/70 hover:text-white border-transparent'
+                                ? isBranded
+                                  ? 'bg-[var(--bg-canvas)] text-[var(--primary)] border-[var(--border-light)] shadow-xs'
+                                  : 'bg-teal-50 text-teal-700 border-teal-200 shadow-xs'
+                                : 'bg-white text-slate-800 hover:bg-[var(--bg-canvas)] hover:text-[var(--primary)] border-transparent'
                             }`}
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all ${
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
                                 isActive
-                                  ? 'bg-teal-500 text-slate-950 border-teal-400 shadow-xs font-black'
-                                  : (item as any).color || 'bg-slate-800 text-slate-400 border-slate-700'
+                                  ? isBranded
+                                    ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm'
+                                    : 'bg-teal-600 text-white border-teal-600 shadow-sm font-black'
+                                  : isBranded
+                                    ? 'bg-slate-50 text-slate-600 border-slate-200/80'
+                                    : (item as any).color || 'bg-slate-100 text-slate-600 border-slate-200'
                               }`}>
-                                <Icon size={16} />
+                                <Icon size={17} />
                               </div>
                               <div className="min-w-0 text-left">
-                                <span className={`block font-bold text-[13.5px] truncate leading-snug ${
-                                  isActive ? 'text-teal-300' : 'text-slate-200'
+                                <span className={`block font-extrabold text-[13.5px] truncate leading-snug ${
+                                  isActive
+                                    ? (isBranded ? 'text-[var(--primary)]' : 'text-teal-700')
+                                    : 'text-slate-800'
                                 }`}>
                                   {item.label}
                                 </span>
                                 {(item as any).desc && (
-                                  <p className="text-[11px] text-slate-400 truncate leading-tight mt-0.5 font-medium">
+                                  <p className="text-[11px] text-slate-500 truncate leading-tight mt-0.5 font-medium">
                                     {(item as any).desc}
                                   </p>
                                 )}
                               </div>
                             </div>
                             {isActive ? (
-                              <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shrink-0 ml-1" />
+                              <span className={`w-2 h-2 rounded-full shrink-0 ml-1 ${
+                                isBranded ? 'bg-[var(--primary)]' : 'bg-teal-500'
+                              }`} />
                             ) : (
-                              <ChevronRight size={14} className="text-slate-600 shrink-0 ml-1" />
+                              <ChevronRight size={14} className="text-slate-400 shrink-0 ml-1" />
                             )}
                           </Link>
                         )
@@ -407,14 +431,14 @@ export default function NavBar() {
             </div>
 
             {/* Drawer Footer */}
-            <div className="p-3 border-t border-slate-800 bg-[#070A11] space-y-2 safe-bottom">
+            <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2 safe-bottom">
               <button
                 type="button"
                 onClick={() => {
                   setIsMobileMenuOpen(false)
                   setShowOrgSwitcher(true)
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold transition-colors"
               >
                 <Building2 size={16} />
                 <span>Cambiar de Negocio / Cliente</span>
@@ -423,7 +447,7 @@ export default function NavBar() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-500/30 text-xs font-bold transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white hover:bg-red-50 text-red-600 border border-slate-200 hover:border-red-200 text-xs font-bold transition-colors"
               >
                 <LogOut size={16} />
                 <span>Cerrar Sesión</span>

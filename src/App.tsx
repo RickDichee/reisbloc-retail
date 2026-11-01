@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
 import { supabase, forceAuthHeader } from '@/config/supabase'
-import { BRANDING, checkIsModaMiel, checkIsLosChunches } from '@/config/branding'
+import { BRANDING, checkIsModaMiel, checkIsLosChunches, checkIsJuguetes } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { getStoredToken } from '@/services/jwtService'
@@ -36,6 +36,7 @@ const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'))
 const TermsOfService = lazy(() => import('@/pages/TermsOfService'))
 const ModaMielBrandPage = lazy(() => import('@/pages/ModaMielBrandPage'))
 const LosChunchesBrandPage = lazy(() => import('@/pages/LosChunchesBrandPage'))
+const JuguetesBrandPage = lazy(() => import('@/pages/JuguetesBrandPage'))
 const Pricing = lazy(() => import('@/pages/Pricing'))
 const Branches = lazy(() => import('@/pages/Branches'))
 const Schedules = lazy(() => import('@/pages/Schedules'))
@@ -57,8 +58,8 @@ function PageLoader() {
 // 🎨 Contenedor Principal con Layout Condicional
 function AppLayout() {
   const { pathname } = useLocation()
-  const { accessibility, currentUser, isAuthenticated, logout } = useAppStore()
-  const { isModaMiel, isLosChunches } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
+  const { accessibility, currentUser } = useAppStore()
+  const { isModaMiel, isLosChunches, isJuguetes } = useTenantTheme() // 🎨 Inyección dinámica de tema y tipografía multi-tenant
 
   // Ocultar NavBar en landing, login, registro, invitaciones, legales y portada de tienda
   const isPublicPage = 
@@ -73,6 +74,8 @@ function AppLayout() {
     pathname === '/modamielmxn' || 
     pathname === '/loschunches' || 
     pathname === '/los-chunches' || 
+    pathname === '/juguetes' || 
+    pathname === '/sanjudastadeo' || 
     pathname.startsWith('/p/')
   const hideNavBar = isPublicPage
 
@@ -109,6 +112,8 @@ function AppLayout() {
                 <Navigate to={homeTarget} replace />
               ) : isModaMiel ? (
                 <ModaMielBrandPage />
+              ) : isJuguetes ? (
+                <JuguetesBrandPage />
               ) : isLosChunches ? (
                 <LosChunchesBrandPage />
               ) : (
@@ -127,6 +132,8 @@ function AppLayout() {
           <Route path="/modamielmxn" element={<ModaMielBrandPage />} />
           <Route path="/loschunches" element={<LosChunchesBrandPage />} />
           <Route path="/los-chunches" element={<LosChunchesBrandPage />} />
+          <Route path="/juguetes" element={<JuguetesBrandPage />} />
+          <Route path="/sanjudastadeo" element={<JuguetesBrandPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/upgrade" element={<Pricing />} />
@@ -254,7 +261,11 @@ export default function App() {
 
                 if (userByEmail) {
                   // Sincronizar auth_uid para futuros accesos directos
-                  await supabase.from('users').update({ auth_uid: session.user.id }).eq('id', userByEmail.id).catch(console.error)
+                  try {
+                    await supabase.from('users').update({ auth_uid: session.user.id }).eq('id', userByEmail.id)
+                  } catch (syncErr) {
+                    console.error('Error sincronizando auth_uid:', syncErr)
+                  }
                   user = {
                     ...userByEmail,
                     username: userByEmail.name,
@@ -270,11 +281,13 @@ export default function App() {
             if (!user) {
               try {
                 const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
+                const isLC = checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash)
+                const isJG = checkIsJuguetes(window.location.hostname, window.location.search, window.location.hash)
                 const { data: rpcData } = await supabase.rpc('handle_auth_callback_sync', {
                   p_auth_uid: session.user.id,
                   p_email: (session.user.email || '').toLowerCase().trim(),
                   p_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
-                  p_hostname: isMM ? 'modamiel' : (checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash) ? 'loschunches' : window.location.hostname)
+                  p_hostname: isMM ? 'modamiel' : isJG ? 'juguetes' : (isLC ? 'loschunches' : window.location.hostname)
                 })
                 if (rpcData?.success && rpcData?.user) {
                   user = {

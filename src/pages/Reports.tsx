@@ -35,15 +35,14 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area
+  ResponsiveContainer
 } from 'recharts'
 import AIInsightsWidget from '@/components/common/AIInsightsWidget'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useTokens } from '@/hooks/useTokens'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 import SalesHistoryTab from '@/components/reports/SalesHistoryTab'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 
 type ReportTab = 'sales' | 'tickets' | 'inventory' | 'employees' | 'goals' | 'purchases' | 'tokens'
 
@@ -54,6 +53,7 @@ export default function Reports() {
   const canViewSalesReport = permissions.canViewSalesReport || currentUser?.role === 'admin' || currentUser?.role === 'supervisor'
   const canViewEmployeeMetrics = permissions.canViewEmployeeMetrics || currentUser?.role === 'admin' || currentUser?.role === 'supervisor'
   const isReadOnly = permissions.isReadOnly
+  const canUseAiFeatures = tenantHasFeature(currentUser?.organizationId || null, 'aiModules')
 
   const [activeTab, setActiveTab] = useState<ReportTab>('sales')
   const [loading, setLoading] = useState(false)
@@ -78,6 +78,7 @@ export default function Reports() {
     if (dateRange.from && dateRange.to) {
       loadReports()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange])
 
   const loadReports = async () => {
@@ -243,7 +244,7 @@ export default function Reports() {
             { id: 'employees' as const, label: '👥 Empleados', enabled: canViewEmployeeMetrics },
             { id: 'goals' as const, label: '🎯 Metas', enabled: true },
             { id: 'purchases' as const, label: '🛍️ Compras', enabled: true },
-            { id: 'tokens' as const, label: '⚡ Tokens', enabled: true },
+            { id: 'tokens' as const, label: '⚡ Tokens', enabled: canUseAiFeatures },
           ]
             .filter(t => t.enabled)
             .map(tab => (
@@ -289,8 +290,10 @@ export default function Reports() {
               </div>
             )}
 
-            {/* AI Strategic Insights */}
-            <AIInsightsWidget metrics={metrics} topProducts={topProducts} />
+            {/* AI Strategic Insights (solo si el tenant tiene aiModules habilitado) */}
+            {canUseAiFeatures && (
+              <AIInsightsWidget metrics={metrics} topProducts={topProducts} />
+            )}
 
             {/* Charts Row 1 */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -511,7 +514,7 @@ export default function Reports() {
         )}
 
         {/* Tokens Report */}
-        {activeTab === 'tokens' && (
+        {activeTab === 'tokens' && canUseAiFeatures && (
           <TokensReport />
         )}
       </div>
@@ -528,6 +531,7 @@ function TokensReport() {
 
   useEffect(() => {
     loadTokenData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadTokenData = async () => {

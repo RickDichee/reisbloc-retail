@@ -1,64 +1,114 @@
 # SKILL.md — Protocolo del proyecto reisbloc-retail
-> LÉEME ANTES DE TOCAR NADA. Este archivo protege a productores/producción/clientes. Si algo aquí contradice un merge request, gana este archivo.
+> ⚠️ **LÉEME ANTES DE TOCAR NADA.** Este archivo protege a producción, a los clientes activos y a la integridad de los datos. Si alguna instrucción contradice este documento, este documento prevalece.
 
-## 1. REGLAS DE ORO (infringir cualquiera = desastre)
+---
 
-1. **NUNCA tocar Production (`store.reisbloc.com`, Supabase PROD `nmovxyaibnixvxtepbod`).** Toda feature nueva se prueba en DEV (`jnyyaclrelqcqzjummwe`).
-2. **NUNCA hacer push/merge a `main` sin orden explícita del dueño.** Trabajar en ramas (`feat/*`). `main` dispara deploys a producción de TODOS los clientes.
-3. **NO usar nunca `*.reisbloc.com` (sin la palabra "dev") para probar deploys nuevos** — `src/config/supabase.ts` fuerza a PROD con esos hostnames.
-4. Secretos: service_role keys solo para ops de DEV, nunca escapar al bundle ni al git.
+## 1. REGLAS DE ORO (Inviolables)
+
+1. **NUNCA tocar Producción directamente** (`store.reisbloc.com`, Supabase PROD `nmovxyaibnixvxtepbod`). Toda feature, migración o cambio se prueba y valida primero en DEV (`jnyyaclrelqcqzjummwe`).
+2. **NUNCA hacer push ni merge a `main` sin orden explícita del propietario.** Se trabaja siempre en ramas feature (`feat/*`). Un merge a `main` dispara automáticamente deploys a producción de TODOS los tenants en Vercel.
+3. **NO usar hostnames `*.reisbloc.com` (sin "dev") para pruebas.** `src/config/supabase.ts` enruta automáticamente a PROD cuando detecta hostnames de producción.
+4. **Seguridad de Secretos:** Las `service_role` keys solo se utilizan para scripts operativos de administración en DEV; jamás deben filtrarse al bundle del cliente ni comitearse a git.
+
+---
 
 ## 2. ARQUITECTURA MULTI-TENANT
 
-### Detección de tenant
-- `src/config/branding.ts`: `checkIsModaMiel` / `checkIsLosChunches` (por org id, org slug, hostname).
-- Tema: `src/hooks/useTenantTheme.ts`. No hardcodear estilos por cliente fuera de ahí.
+El proyecto opera bajo una **única base de código compartida** para múltiples clientes (tenants), con aislamiento estricto por organización, tema dinámico y flags de características.
 
-### Aislamiento de features (CANDADO)
-- **`src/config/tenantFeatures.ts`** es el ÚNICO registro de flags por tenant. Defaults `false`; solo org `a1b2c3d4-e5f6-4a7b-9c9d-0e1f2a3b4c5d` (Los Chunches) tiene flags activos hoy: `unitCost`, `webReference`.
-- Regla: **feature tenant-específica = flag en tenantFeatures.ts; usarse con hooks/try checks reales en RENDER**, no esconder con CSS. Si el flag está apagado, el JSX no se monta (null).
-- Los datos de features tenant (costos, comparisons) viven en tablas con `organization_id` → RLS por-org. NO crear tablas globales con datos de un solo cliente.
-- Datos privados (costo de venta) SOLO se muestran a `role === 'admin'`. Ni manager, ni employee, ni POS.
+### Tenants Registrados
 
-## 3. TABLAS QUE IMPORTAN (DEV hoy)
+| Tenant | Organization ID | Dominio(s) | Brand Primary | Flags Activos en `tenantFeatures.ts` |
+|---|---|---|---|---|
+| **Moda Miel MX** | `1b498fa6-aca5-428c-9bdd-01e6fea30316` | `modamielmx.reisbloc.com` | `#D4386C` (Rose Berry) | `packLabel: true`, `onlineStoreModule: true`, `aiModules: false` |
+| **Los Chunches de Cons** | `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` | `loschunchesdecons.com`<br>`www.loschunchesdecons.com`<br>`loschunchesdecons.reisbloc.com` | `#C83E74` (Berry Rose) | `unitCost: true`, `webReference: true`, `onlineStoreModule: true`, `aiModules: false` |
+| **Juguetes San Judas Tadeo** | `324fd41f-b8af-4aef-9ea6-2f954350775a` | `sanjudastadeo.reisbloc.com` | `#C8323E` (Carmesí Suave) | `unitCost: false`, `webReference: false`, `onlineStoreModule: false`, `aiModules: false` |
+| **Reisbloc Store (Default)** | *Global / Base* | `store.reisbloc.com` | `#0D9488` (Teal) / `#1F293B` | Base SaaS estándar |
 
-- `products` — catálogo público/marca de página (con `cost_price`, `wholesale_price`, `wholesale_min_qty`).
-- `retail_products` — TABLA DEL INVENTARIO y del POS (la que se lee en `Inventory.tsx`, `PPO`); tiene `unit_cost` (costo privado, columna agregada 26-oct-2026).
-- Cualquier producto nuevo del tenant Chunches requiere filas en `retail_products` (y el resto usa el espejo por SKU/nombre/precio/categoría).
+### Detección y Tematización
+- **`src/config/branding.ts`**: Lógica de detección de tenant por `organizationId`, `slug`, hostname y parámetro de prueba en desarrollo (`?brand=modamiel`, `?brand=loschunches`, etc.).
+- **`src/hooks/useTenantTheme.ts`**: Inyecta dinámicamente las variables CSS (`--primary`, `--primary-hover`, `--bg-canvas`, etc.) en el DOM `:root` y clases de tema (`theme-modamiel`, `theme-chunches`).
+- **`src/styles/globals.css`**: Define los tokens globales. En Moda Miel, `--primary` es `#D4386C` y `--primary-hover` es `#B52656`.
 
-## 4. FLUJO DE BUILD + DEPLOY (solo rama feature)
+### Candado de Aislamiento (`src/config/tenantFeatures.ts`)
+- **Deny-by-default:** Toda funcionalidad específica de un cliente DEBE estar registrada en `tenantFeatures.ts`.
+- **Render Guard:** Usar siempre `tenantHasFeature(orgId, 'featureName')` para condicionar componentes JSX (`null` si no está activa; **no** ocultar solo con CSS).
+- **RLS y Datos:** Los datos privados (como `unit_cost`) se resguardan por RLS y solo se exponen en frontend a `currentUser?.role === 'admin'`.
+
+---
+
+## 3. INFRAESTRUCTURA Y DOMINIOS PERSONALIZADOS
+
+### Los Chunches de Cons (`loschunchesdecons.com`)
+- **DNS (Cloudflare):**
+  - Registro `A` hacia `76.76.21.21` (DNS Only / nube gris).
+  - Registro `CNAME` (`www`) hacia `cname.vercel-dns.com` (DNS Only / nube gris).
+  - Cloudflare Email Routing activo para `admin@loschunchesdecons.com` y `ventas@loschunchesdecons.com`.
+- **Vercel Project:** `loschunches`
+  - Dominios asignados: `loschunchesdecons.com` y `www.loschunchesdecons.com` con SSL/TLS Let's Encrypt automático.
+- **Supabase DEV Auth:**
+  - `uri_allow_list` incluye `https://loschunchesdecons.com/**` y `https://www.loschunchesdecons.com/**`.
+  - Usuarios verificados en DEV:
+    - `admin@loschunchesdecons.com` (Rol: `admin`)
+    - `ventas@loschunchesdecons.com` (Rol: `employee`)
+
+---
+
+## 4. BASE DE DATOS Y CATÁLOGO
+
+- **`retail_products`**: Tabla principal de inventario leída por `/inventory` y `/pos`. Contiene el inventario local, precios al menudeo/paquete y la columna privada `unit_cost`.
+- **`products`**: Tabla base de catálogo sincronizada.
+- **Productos Los Chunches (DEV):** 8 productos nuevos cargados con SKU, código de barras e imágenes locales en `public/images/chunches-products/` (Patín EROS, Báscula 150kg, Gato 3 Ton, Báscula ADIR 30kg, Torres de Gato, Inversor Münich 200A, Compresor Husky 50L, Puntas Milwaukee 100pz).
+
+---
+
+## 5. FLUJO DE BUILD Y DEPLOYMENT
 
 ```powershell
-# 1. Build local (debe salir sin errores antes de deployar)
+# 1. Validar compilación local limpia (cero errores)
 npm run build
 
-# 2. Deploy al proyecto VERCEL del tenant (NOTA: NO es el proyecto 'reisbloc-retail' original)
+# 2. Deploy a Vercel para pruebas de tenant específico (ejemplo Los Chunches)
 Copy-Item .vercel\project.json .vercel\project.json.bak -Force
 vercel link --yes --project loschunches
-vercel deploy --prod        # deploya el URL del proyecto loschunches.vercel.app
+vercel deploy --prod
 Copy-Item .vercel\project.json.bak .vercel\project.json -Force
 Remove-Item .vercel\project.json.bak -Force
 ```
 
-- Vercel CLI está logueado como `rickdichee`. Env vars del proyecto tienen las credenciales DE PERMANENCIA (`VITE_SUPABASE_URL=https://jnyyaclrelqcqzjummwe.supabase.co`, etc.) — hacen OVERRIDE de `.env.production` en el build de Vercel.
-- Tras cada deploy: fetch del `index-*.js` de producción y auditar que contiene `jnyyaclrelqcqzjummwe` (DEV) y NO las credenciales de PROD.
+> **Verificación post-deploy:** Siempre inspeccionar el bundle generado (`index-*.js`) y verificar que apunte al Supabase DEV (`jnyyaclrelqcqzjummwe`) y nunca filtre llaves de administración.
 
-## 5. COMUNICACIÓN CON LA DB (REST desde PowerShell)
+---
 
-- **SIEMPRE**: escribir el JSON como bytes UTF-8 (los acentos rompen los strings de PS). PowerShell 5.1: `Invoke-RestMethod -Body ([System.Text.Encoding]::UTF8.GetBytes($json))`.
-- Acentos y diacritichebroken con strings directas en PowerShell por encoding.
-- `curl.exe` + archivo temporal sin BOM: `[IO.File]::WriteAllText($path, $json, [Text.UTF8Encoding]::new($false))` (si hay BOM, violás JSON con 400 `bad_json`).
-- 422 en `/auth/v1/token` = ver el campo `error_code` en el cuerpo: `email_provider_disabled` → proveedor deshabilitado en el proyecto.
-- Supabase Dev ObjectMapper: API de administración accesible con el token del CLI (`Get-SupabaseAccessToken` via `~\.supabase` credencial "Supabase CLI:supabase" en el Windows Credential Manager; usar `PDF Query API` `/v1/projects/jnyyaclrelqcqzjummwe/database/query` para SQL Data Definition Language (ALTER etc.).
+## 6. FIXES RECIENTES IMPLEMENTADOS (No Revertir)
 
-## 6. SEGUIMIENTO DE FIXES YA REALIZADOS (no regresaer)
+1. **Barra de navegación móvil en POS (`DashboardLayout.tsx` & `POS.tsx`):**
+   - Ocultamiento de la barra fija inferior móvil en rutas `/pos` (`!isPosPage`) para evitar bloquear los botones de acción ("Cobrar", "Ver Ticket").
+   - Elevación de z-index de la barra de resumen en POS a `z-50`.
+2. **Encabezado unificado de Inventario (`Inventory.tsx`):**
+   - Estructura fintech oscura con `bg-slate-900 border-slate-800 text-white`.
+   - Insignia `Stock Central`, subtítulo descriptivo, botón `IMPORTAR` y botón `NUEVO PRODUCTO`.
+   - Icono y botón de alta usan variables `bg-[var(--primary)]` (en Moda Miel `#D4386C`, en Chunches `#C83E74`, en default `#0D9488`).
+   - Efecto hover conservado: `group-hover:text-teal-600 dark:group-hover:text-teal-400` y botón editar `hover:bg-teal-500`.
+3. **Módulo Analytics / Métricas Predictivas (`DashboardLayout.tsx` & `Analytics.tsx`):**
+   - Acceso universal para roles `admin` y `manager` en todos los tenants.
+   - En tenants con `aiModules: false` (Moda Miel y Chunches), la sección se titula limpiamente **"Analítica & Proyecciones"** mostrando el acceso a `/analytics`.
+   - Motor de proyección estadística a 7 y 30 días ponderado por día de la semana y salud de inventario en tiempo real.
+4. **Variable `--primary` de Moda Miel en `globals.css`:**
+   - Corregida a `#D4386C` con hover `#B52656` para evitar que los elementos de acción se mostraran en negro carbón.
+5. **Mitigación de Egress en Supabase:**
+   - Throttle de 5 minutos en sincronización de catálogo.
+   - Manejo offline con backoff y cuarentena tras 5 reintentos en `syncService`.
 
-- **Egress (fixes en rama, pendientes de merge a main)**: colonia offline con backoff (OfflineIndicator), cuarentena tras 5 retries (syncService), throttle 5-min de catálogo (supabaseService.getAllProducts()).
-- **Login**: página de login soporta email+password (signInWithPassword) + Google OAuth. El supabase DEV tenía el proveedor EMAIL deshabilitado — se re-habilitó el 26-oct-2026 vía Management API (`external_email_enabled: true`).
-- **ProductModal**: campo `showPricingOptions` faltaba `useState` (artefacto de merge). Ya corregido en la rama — ¡verificar que exista en main al merge!
+---
 
-## 7. PENDIENTES / ROADMAP
+## 7. CHECKLIST PRE-MERGE A `main` (PRODUCCIÓN)
 
-- Unir `feat/loschunches-dev` → `main` con revisión (dispara deploys de PROD de todos: plan TODO el release mínimo).
-- En PROD (cuando el dueño apruebe): deployar Edge Functions (`log-auth-event` CORS, `token-manager`), migraciones de `purchase_orders`, revisar canal realtime de `POS.tsx` (refetch del catálogo completo).
-- **Sistema de toggles por cliente** (idea del dueño): recuadros por feature en el admin (activar/deshactivar módulos y su comportamiento en el flujo de inputs). Es la próxima gran release: extender `tenantFeatures.ts` a una tabla `organizations.feature_flags jsonb` editable por UI.
+Antes de realizar el merge definitivo a `main`:
+- [ ] Ejecutar `npm run build` y asegurar 0 advertencias críticas y 0 errores.
+- [ ] Probar rutas críticas en local con cada marca:
+  - `/pos?brand=modamiel` y `/inventory?brand=modamiel`
+  - `/pos?brand=loschunches` y `/inventory?brand=loschunches`
+  - `/analytics`
+- [ ] Validar compatibilidad de schema en Supabase PROD (`nmovxyaibnixvxtepbod`) antes de que `main` dispare el deploy productivo.
+- [ ] Confirmar explícitamente con el propietario del repositorio antes de ejecutar `git push origin main`.

@@ -9,6 +9,17 @@ import printService from '@/services/printService'
 import supabaseService from '@/services/supabaseService'
 import { useAppStore } from '@/store/appStore'
 import { parseProductDescription } from '@/utils/priceParser'
+import { tenantHasFeature } from '@/config/tenantFeatures'
+import {
+  BRANDING,
+  checkIsModaMiel,
+  checkIsLosChunches,
+  checkIsJuguetes,
+  MODA_MIEL_THEME,
+  LOS_CHUNCHES_THEME,
+  JUGUETES_THEME,
+  DEFAULT_THEME
+} from '@/config/branding'
 
 interface PendingOrdersModalProps {
   isOpen: boolean
@@ -82,7 +93,28 @@ export default function PendingOrdersModal({
 }: PendingOrdersModalProps) {
   const { organizationSettings, currentUser, products: storeProducts } = useAppStore()
   const availableProducts = (propProducts && propProducts.length > 0) ? propProducts : (storeProducts || [])
-  const storeTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || 'Moda Miel MX'
+  const activeOrgHint = [
+    currentUser?.organizationId,
+    organizationSettings?.id,
+    organizationSettings?.slug,
+    organizationSettings?.name,
+    currentUser?.businessName
+  ].filter(Boolean).join(' ')
+
+  const isJuguetesTenant = activeOrgHint ? checkIsJuguetes('', '', '', activeOrgHint) : BRANDING.isJuguetes
+  const isLosChunchesTenant = !isJuguetesTenant && (activeOrgHint ? checkIsLosChunches('', '', '', activeOrgHint) : BRANDING.isLosChunches)
+  const isModaMielTenant = !isJuguetesTenant && !isLosChunchesTenant && (activeOrgHint ? checkIsModaMiel('', '', '', activeOrgHint) : BRANDING.isModaMiel)
+  const usesPackPricing = tenantHasFeature(currentUser?.organizationId || null, 'packLabel') || isModaMielTenant
+
+  const resolvedTheme = isModaMielTenant
+    ? MODA_MIEL_THEME
+    : isJuguetesTenant
+    ? JUGUETES_THEME
+    : isLosChunchesTenant
+    ? LOS_CHUNCHES_THEME
+    : DEFAULT_THEME
+
+  const storeTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || resolvedTheme.name || BRANDING.appName
 
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -364,7 +396,7 @@ export default function PendingOrdersModal({
   }
 
   // 📦 Agregar producto a pedido existente: por defecto con PRECIO POR PAQUETE
-  const addProductToEdit = (product: Product, useFullPackage: boolean = true) => {
+  const addProductToEdit = (product: Product, useFullPackage: boolean = usesPackPricing) => {
     const pricing = getProductPricing(product)
     const assignedPrice = useFullPackage ? pricing.fullPackagePrice : pricing.unitPiecePrice
     const itemLabel = useFullPackage ? `${product.name} (Paquete ${pricing.packQty} pzs)` : product.name
@@ -490,7 +522,7 @@ export default function PendingOrdersModal({
     setNewOrderProductSearch('')
   }
 
-  const addProductToNewOrder = (product: Product, useFullPackage: boolean = true) => {
+  const addProductToNewOrder = (product: Product, useFullPackage: boolean = usesPackPricing) => {
     const pricing = getProductPricing(product)
     const assignedPrice = useFullPackage ? pricing.fullPackagePrice : pricing.unitPiecePrice
     const itemLabel = useFullPackage ? `${product.name} (Paquete ${pricing.packQty} pzs)` : product.name
@@ -622,9 +654,45 @@ export default function PendingOrdersModal({
 
   const handlePrintOrderTicket = (order: Order) => {
     const ticketId = (order.id || '').replace('ticket-', '').slice(0, 10).toUpperCase()
-    const paid = Number(order.paidAmount || 0)
+    const paid = Number((order as any).paidAmount ?? (order as any).paid_amount ?? 0)
     const total = Number(order.total || 0)
     const balance = Math.max(0, total - paid)
+    const ticketShowLogo = organizationSettings?.ticketShowLogo ?? true
+
+    const candidateLogo = organizationSettings?.ticketLogoUrl || organizationSettings?.logoUrl || ''
+    const resolvedTicketLogo = (() => {
+      if (isJuguetesTenant) {
+        if (candidateLogo && !candidateLogo.includes('chunches') && !candidateLogo.includes('juguetes-san-judas-logo')) {
+          return candidateLogo
+        }
+        return '/images/sanjudas-ticket-logo.png'
+      }
+      if (isLosChunchesTenant) {
+        if (candidateLogo && !candidateLogo.includes('sanjudas') && !candidateLogo.includes('juguetes')) {
+          return candidateLogo
+        }
+        return '/images/los_chunches.jpeg'
+      }
+      if (isModaMielTenant) {
+        return candidateLogo || '/images/moda-miel-mx-logo.jpeg'
+      }
+      return candidateLogo || resolvedTheme.ticketLogoUrl || BRANDING.ticketLogoUrl || BRANDING.logoUrl
+    })()
+
+    const ticketAddress = organizationSettings?.ticketAddress || resolvedTheme.locationBadge || ''
+    const defaultPhone = isModaMielTenant
+      ? '+52 445 145 7252'
+      : isJuguetesTenant
+      ? '(442) 600-3500'
+      : isLosChunchesTenant
+      ? '(443) 124-4490'
+      : (resolvedTheme.receiptWhatsappPlaceholder || '')
+    const rawTicketPhone = organizationSettings?.ticketPhone || defaultPhone
+    const ticketPhone = rawTicketPhone.toLowerCase().includes('por configurar') ? defaultPhone : rawTicketPhone
+    const itemsLabel = isModaMielTenant ? 'PRENDAS APARTADAS:' : 'ARTÍCULOS APARTADOS:'
+    const ticketWidth = organizationSettings?.ticketPrinterWidth || 80
+    const is80mm = ticketWidth >= 70
+    const printableWidth = is80mm ? 72 : 48
 
     const html = `
       <!DOCTYPE html>
@@ -632,49 +700,72 @@ export default function PendingOrdersModal({
       <head>
         <meta charset="UTF-8">
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; color: #000 !important; }
+          * { margin: 0; padding: 0; box-sizing: border-box; color: #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          @page { size: auto; margin: 0mm !important; }
           body {
             font-family: 'Consolas', 'Courier New', monospace;
             font-weight: 700;
-            font-size: 11px;
-            width: 48mm;
+            font-size: ${is80mm ? '11px' : '10px'};
+            width: 100%;
+            max-width: ${printableWidth}mm;
             margin: 0 auto;
-            padding: 2mm 0;
+            padding: 2mm 1.5mm;
             text-align: left;
+            background: #fff;
           }
-          .divider { border-bottom: 2px dashed #000; margin: 4px 0; }
+          .divider { border-bottom: 2px dashed #000; margin: 5px 0; }
         </style>
       </head>
       <body>
-        <div style="text-align:center; font-weight:900; font-size:13px;">📋 TICKET DE PEDIDO / APARTADO</div>
-        <div style="text-align:center; font-size:11px; font-weight:bold;">${storeTitle.toUpperCase()}</div>
-        <div style="text-align:center; font-size:10px; font-weight:bold;">Pasillo 3 Local 230</div>
-        <div style="text-align:center; font-size:9.5px;">Tel: +52 445 145 7252</div>
+        <div style="text-align:center; margin-bottom:4px;">
+          ${ticketShowLogo ? `
+            <img
+              src="${resolvedTicketLogo}"
+              alt="${storeTitle}"
+              style="width:${(isJuguetesTenant || isLosChunchesTenant) ? (is80mm ? '56mm' : '38mm') : (is80mm ? '44mm' : '30mm')}; max-width:90%; height:auto; max-height:${(isJuguetesTenant || isLosChunchesTenant) ? (is80mm ? '58mm' : '40mm') : (is80mm ? '44mm' : '30mm')}; border-radius:${isJuguetesTenant ? '0px' : isLosChunchesTenant ? '50%' : '6px'}; object-fit:contain; display:block; margin:0 auto 4px auto;"
+            />
+          ` : ''}
+          <div style="font-weight:900; font-size:${is80mm ? '13.5px' : '12px'}; border:1.5px solid #000; padding:2px 4px; margin-bottom:3px; display:inline-block;">
+            📋 TICKET DE PEDIDO / APARTADO
+          </div>
+          <div style="font-size:${is80mm ? '13px' : '11px'}; font-weight:900; text-transform:uppercase;">${storeTitle.toUpperCase()}</div>
+          ${ticketAddress ? `<div style="font-size:${is80mm ? '10.5px' : '9.5px'}; font-weight:800; margin-top:1px;">${ticketAddress}</div>` : ''}
+          ${ticketPhone ? `<div style="font-size:${is80mm ? '10px' : '9px'}; margin-top:1px;">${ticketPhone.toLowerCase().includes('whatsapp') || ticketPhone.toLowerCase().includes('tel') ? ticketPhone : `Tel / WhatsApp: ${ticketPhone}`}</div>` : ''}
+        </div>
         <div class="divider"></div>
         <div>FOLIO: #${ticketId}</div>
         <div>FECHA: ${new Date(order.createdAt).toLocaleString('es-MX')}</div>
-        ${order.notes ? `<div>CLIENTE/NOTAS: ${order.notes}</div>` : ''}
+        ${order.notes ? `<div style="margin-top:2px; font-weight:900;">CLIENTE/NOTAS: ${order.notes}</div>` : ''}
         <div class="divider"></div>
-        <div style="font-weight:900; font-size:10px; margin-bottom:3px;">PRENDAS APARTADAS:</div>
+        <div style="font-weight:900; font-size:${is80mm ? '11px' : '10px'}; margin-bottom:3px;">${itemsLabel}</div>
         ${(order.items || []).map(item => `
-          <div style="margin-bottom:3px;">
-            <div>${(item.sku || (item as any).barcode) ? `[${item.sku || (item as any).barcode}] ` : ''}${item.productName}</div>
-            <div style="display:flex; justify-content:space-between; font-size:10px;">
-              <span>${item.quantity} x $${Number(item.unitPrice).toFixed(2)}</span>
-              <span>$${(item.quantity * item.unitPrice).toFixed(2)}</span>
+          <div style="margin-bottom:4px; border-bottom:1px dotted #ccc; padding-bottom:2px;">
+            <div style="font-weight:900;">${(item.sku || (item as any).barcode) ? `[${item.sku || (item as any).barcode}] ` : ''}${item.productName}</div>
+            <div style="display:flex; justify-content:space-between; font-size:${is80mm ? '10.5px' : '9.5px'};">
+              <span>${item.quantity} pz x $${Number(item.unitPrice).toFixed(2)}</span>
+              <span style="font-weight:900;">$${(item.quantity * item.unitPrice).toFixed(2)}</span>
             </div>
           </div>
         `).join('')}
         <div class="divider"></div>
-        <div>TOTAL PEDIDO: $${total.toFixed(2)}</div>
-        <div>ABONADO: $${paid.toFixed(2)}</div>
-        <div style="font-size:12px; font-weight:900;">RESTANTE PENDIENTE: $${balance.toFixed(2)}</div>
+        <div style="display:flex; justify-content:space-between;"><span>TOTAL PEDIDO:</span><span>$${total.toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>ABONADO:</span><span>$${paid.toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:${is80mm ? '13px' : '11.5px'}; font-weight:900; border:2px solid #000; padding:2px 4px; margin-top:3px;">
+          <span>RESTANTE:</span>
+          <span>$${balance.toFixed(2)}</span>
+        </div>
         <div class="divider"></div>
-        <div style="text-align:center; font-size:9px; margin-top:4px;">⚠️ ESTADO: ${balance === 0 ? 'PAGADO 100%' : 'PENDIENTE DE PAGO'}</div>
+        <div style="text-align:center; font-size:${is80mm ? '10px' : '9px'}; font-weight:900; margin-top:4px;">
+          ⚠️ ESTADO: ${balance === 0 ? 'LIQUIDADO 100%' : 'PENDIENTE DE LIQUIDAR'}
+        </div>
+        <div style="text-align:center; font-size:${is80mm ? '9px' : '8px'}; border:1px solid #000; padding:3px; margin-top:5px;">
+          ${resolvedTheme.receiptNoReturnsPolicy || 'NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA'}
+        </div>
+        ${resolvedTheme.subdomain ? `<div style="text-align:center; font-size:8.5px; margin-top:3px;">🌐 ${resolvedTheme.subdomain}</div>` : ''}
       </body>
       </html>
     `
-    printService.printReceipt(html, { title: `Pedido_${ticketId}` })
+    printService.printReceipt(html, { title: `Pedido_${ticketId}`, width: ticketWidth })
   }
 
   // Filtrado de productos para agregar (muestra precio por paquete destacado)
@@ -757,9 +848,11 @@ export default function PendingOrdersModal({
                       <Plus size={13} />
                       <span>Prenda Fuera de Catálogo</span>
                     </button>
-                    <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
-                      📦 Prioriza Precio por Paquete
-                    </span>
+                    {usesPackPricing && (
+                      <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
+                        📦 Prioriza Precio por Paquete
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="relative">
@@ -799,15 +892,17 @@ export default function PendingOrdersModal({
 
                           <div className="flex items-center gap-1.5 shrink-0">
                             {/* Botón Principal: Agregar por Paquete Completo */}
-                            <button
-                              type="button"
-                              onClick={() => addProductToEdit(prod, true)}
-                              className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
-                              title={`Agregar paquete de ${pricing.packQty} pzas`}
-                            >
-                              <Package size={13} />
-                              <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
-                            </button>
+                            {usesPackPricing && (
+                              <button
+                                type="button"
+                                onClick={() => addProductToEdit(prod, true)}
+                                className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                                title={`Agregar paquete de ${pricing.packQty} pzas`}
+                              >
+                                <Package size={13} />
+                                <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
+                              </button>
+                            )}
 
                             {/* Botón Secundario: Agregar por Pieza */}
                             <button
@@ -879,7 +974,7 @@ export default function PendingOrdersModal({
                             <div className="flex items-center gap-1.5 mt-1">
                               <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
                                 <Tag size={12} className="text-amber-600" />
-                                <span>Precio Paquete/Unit: $</span>
+                                <span>{usesPackPricing ? 'Precio Paquete/Unit: $' : 'Precio Unitario: $'}</span>
                               </span>
                               <input
                                 type="number"
@@ -1034,9 +1129,11 @@ export default function PendingOrdersModal({
                       <Plus size={13} />
                       <span>Prenda Fuera de Catálogo</span>
                     </button>
-                    <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
-                      📦 Prioriza Precio por Paquete
-                    </span>
+                    {usesPackPricing && (
+                      <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md uppercase">
+                        📦 Prioriza Precio por Paquete
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="relative">
@@ -1075,15 +1172,17 @@ export default function PendingOrdersModal({
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => addProductToNewOrder(prod, true)}
-                              className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
-                              title={`Agregar paquete de ${pricing.packQty} pzas`}
-                            >
-                              <Package size={13} />
-                              <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
-                            </button>
+                            {usesPackPricing && (
+                              <button
+                                type="button"
+                                onClick={() => addProductToNewOrder(prod, true)}
+                                className="px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95"
+                                title={`Agregar paquete de ${pricing.packQty} pzas`}
+                              >
+                                <Package size={13} />
+                                <span>Paquete: ${pricing.fullPackagePrice.toFixed(2)}</span>
+                              </button>
+                            )}
 
                             <button
                               type="button"
@@ -1148,7 +1247,7 @@ export default function PendingOrdersModal({
                             <div className="flex items-center gap-1.5 mt-1">
                               <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
                                 <Tag size={12} className="text-amber-600" />
-                                <span>Precio Paquete/Unit: $</span>
+                                <span>{usesPackPricing ? 'Precio Paquete/Unit: $' : 'Precio Unitario: $'}</span>
                               </span>
                               <input
                                 type="number"

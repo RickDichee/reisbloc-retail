@@ -14,7 +14,6 @@ import {
   BarChart3,
   Smartphone
 } from 'lucide-react'
-import { PlanType } from '@/config/plans'
 import { supabase } from '@/config/supabase'
 
 const STEPS = [

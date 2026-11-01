@@ -70,7 +70,7 @@ class CryptoPaymentService {
     }
   }
 
-  async checkPaymentStatus(referenceId: string): Promise<PaymentStatus> {
+  async checkPaymentStatus(_referenceId: string): Promise<PaymentStatus> {
     try {
       if (!this.paymentWallet) {
         return { status: 'pending' }

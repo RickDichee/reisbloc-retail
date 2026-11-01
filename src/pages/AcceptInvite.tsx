@@ -23,6 +23,7 @@ export default function AcceptInvite() {
         } else {
             checkNativeSession()
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token])
 
     const checkNativeSession = async () => {

@@ -15,6 +15,7 @@ export default function TipsWidget() {
 
   useEffect(() => {
     loadTips()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser])
 
   const loadTips = async () => {

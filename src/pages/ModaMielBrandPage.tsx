@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Shield,
-  Scale,
   HelpCircle,
   ShoppingBag,
   ShoppingCart,
   Shirt,
   Heart,
   QrCode,
-  Store,
   Sparkles,
   Search,
   MessageCircle,
@@ -17,7 +15,6 @@ import {
   Minus,
   CheckCircle,
   Package,
-  ChevronRight,
   UserCheck
 } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
@@ -62,7 +59,9 @@ export default function ModaMielBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'mm-pkg-2',
@@ -76,7 +75,9 @@ export default function ModaMielBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'mm-pkg-3',
@@ -90,7 +91,9 @@ export default function ModaMielBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'mm-pkg-4',
@@ -104,7 +107,9 @@ export default function ModaMielBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     }
   ]
 
@@ -131,6 +136,7 @@ export default function ModaMielBrandPage() {
       setLoading(false)
     }
     loadStoreProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const categories = ['Todos', ...Array.from(new Set(products.map(p => p.category || 'General')))]
@@ -152,7 +158,7 @@ export default function ModaMielBrandPage() {
     if (product.description && typeof product.description === 'string' && product.description.trim().startsWith('{')) {
       try {
         parsedDesc = JSON.parse(product.description)
-      } catch (e) {}
+      } catch { /* ignore */ }
     }
 
     const explicitPackQty = Number(
@@ -259,7 +265,7 @@ export default function ModaMielBrandPage() {
 
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [lastOrderText, setLastOrderText] = useState('')
-  const [lastOrderItems, setLastOrderItems] = useState<CartItem[]>([])
+  const [, setLastOrderItems] = useState<CartItem[]>([])
 
   const sendWhatsAppOrder = async () => {
     if (cart.length === 0) return

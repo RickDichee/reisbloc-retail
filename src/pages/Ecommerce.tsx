@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import { ShoppingBag, Globe, ExternalLink, Package, Truck, Clock, CheckCircle, XCircle, ChevronRight, Plus, Minus, Trash2 } from 'lucide-react'
+import { ShoppingBag, Globe, ExternalLink, Package, Truck, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { EcommerceOrder, EcommerceOrderStatus } from '@/types'
@@ -45,6 +45,7 @@ export default function Ecommerce() {
     if (activeTab === 'orders') {
       loadOrders()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
   const storeUrl = orgSlug ? `${window.location.origin}/p/${orgSlug}` : undefined

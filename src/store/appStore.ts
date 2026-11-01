@@ -58,6 +58,7 @@ interface AppActions {
   decrementDraftItem: (ticketNumber: number, itemId: string) => void
   removeDraftItem: (ticketNumber: number, itemId: string) => void
   updateDraftItemPrice: (ticketNumber: number, itemId: string, newPrice: number) => void
+  updateDraftItemQuantity: (ticketNumber: number, itemId: string, newQuantity: number) => void
   clearDraftForTicket: (ticketNumber: number) => void  // (antes clearDraftForTable)
   setOrganizationSettings: (settings: any) => void
   setOrgPlan: (plan: string, note?: string | null) => void
@@ -153,7 +154,7 @@ export const useAppStore = create<AppStore>()(
             localStorage.removeItem('reisbloc_auth_token')
             localStorage.removeItem('current_branch_id')
           }
-        } catch (e) {}
+        } catch (e) { /* ignore */ }
       },
 
       // Tickets (números de orden)

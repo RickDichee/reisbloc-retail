@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/config/supabase'
 import { useAppStore } from '@/store/appStore'
-import { Building2, Check, Loader2, X, Sparkles, ArrowRight } from 'lucide-react'
+import { Building2, Check, Loader2, X, ArrowRight } from 'lucide-react'
 
 interface OrgItem {
   id: string

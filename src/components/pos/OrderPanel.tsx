@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { OrderItem, Order } from '@/types'
-import { LucideIcon, ShoppingBag, Plus, Minus, Trash2, Clock, Pencil } from 'lucide-react'
+import { LucideIcon, ShoppingBag, Plus, Minus, Trash2, Pencil } from 'lucide-react'
 
 interface OrderPanelProps {
   tableNumber: number
@@ -8,6 +8,7 @@ interface OrderPanelProps {
   activeOrders?: Order[]
   onIncrement: (itemId: string) => void
   onDecrement: (itemId: string) => void
+  onUpdateQuantity?: (itemId: string, newQuantity: number) => void
   onRemove: (itemId: string) => void
   onClear: () => void
   onEditNote: (item: OrderItem) => void
@@ -28,6 +29,7 @@ export function OrderPanel({
   activeOrders = [],
   onIncrement,
   onDecrement,
+  onUpdateQuantity,
   onRemove,
   onClear,
   onEditNote,
@@ -36,6 +38,8 @@ export function OrderPanel({
 }: OrderPanelProps) {
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null)
   const [editingPriceVal, setEditingPriceVal] = useState<string>('')
+  const [editingQtyId, setEditingQtyId] = useState<string | null>(null)
+  const [editingQtyVal, setEditingQtyVal] = useState<string>('')
 
   const safeItems = items || []
   const totalPieces = safeItems.reduce((sum, item) => sum + ((item?.quantity || 0) * (item?.packQuantity || 1)), 0)
@@ -43,6 +47,20 @@ export function OrderPanel({
   const effectiveTotal = safeItems.reduce((sum, item) => {
     return sum + ((item?.unitPrice || 0) * (item?.quantity || 0))
   }, 0)
+
+  const commitQuantityEdit = (itemId: string, originalQty: number) => {
+    if (!onUpdateQuantity) {
+      setEditingQtyId(null)
+      return
+    }
+    const parsed = parseInt(editingQtyVal, 10)
+    if (!isNaN(parsed) && parsed >= 0) {
+      onUpdateQuantity(itemId, parsed)
+    } else {
+      onUpdateQuantity(itemId, originalQty)
+    }
+    setEditingQtyId(null)
+  }
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 flex flex-col h-full">
@@ -85,7 +103,7 @@ export function OrderPanel({
             <ShoppingBag size={20} />
           </div>
           <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Ticket Vacío</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Selecciona prendas para cobrar</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Selecciona productos para cobrar</p>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto space-y-2 py-2 pr-1 custom-scrollbar">
@@ -165,7 +183,7 @@ export function OrderPanel({
                 </div>
               </div>
 
-              {/* Botones de Cantidad (+ / - / eliminar) */}
+              {/* Botones de Cantidad (+ / - / teclado directo / eliminar) */}
               <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
                 {item.notes ? (
                   <button
@@ -186,23 +204,57 @@ export function OrderPanel({
                 <div className="flex items-center gap-1">
                   <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
                     <button
+                      type="button"
                       onClick={() => onDecrement(item.id)}
-                      className="w-5 h-5 bg-white hover:bg-slate-200 rounded text-slate-700 font-bold flex items-center justify-center transition-colors shadow-2xs"
+                      className="w-6 h-6 bg-white hover:bg-slate-200 rounded text-slate-700 font-bold flex items-center justify-center transition-colors shadow-2xs"
                       title="Disminuir (si llega a 0 se elimina)"
                     >
                       <Minus size={11} />
                     </button>
-                    <span className="w-6 text-center font-black text-xs text-slate-900">
-                      {item.quantity}
-                    </span>
+
+                    {editingQtyId === item.id ? (
+                      <input
+                        type="number"
+                        min="0"
+                        value={editingQtyVal}
+                        onChange={(e) => setEditingQtyVal(e.target.value)}
+                        onBlur={() => commitQuantityEdit(item.id, item.quantity)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            commitQuantityEdit(item.id, item.quantity)
+                          } else if (e.key === 'Escape') {
+                            setEditingQtyId(null)
+                          }
+                        }}
+                        className="w-11 h-6 px-1 text-center font-black text-xs text-slate-900 bg-white border border-indigo-400 rounded outline-none focus:ring-2 focus:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        autoFocus
+                        onFocus={(e) => e.target.select()}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingQtyId(item.id)
+                          setEditingQtyVal(String(item.quantity))
+                        }}
+                        className="min-w-[28px] h-6 px-1 text-center font-black text-xs text-slate-900 hover:bg-indigo-50 hover:text-indigo-700 rounded transition-colors cursor-text"
+                        title="Haz clic para escribir la cantidad con el teclado"
+                      >
+                        {item.quantity}
+                      </button>
+                    )}
+
                     <button
+                      type="button"
                       onClick={() => onIncrement(item.id)}
-                      className="w-5 h-5 bg-slate-900 hover:bg-slate-800 text-white rounded font-bold flex items-center justify-center transition-colors shadow-2xs"
+                      className="w-6 h-6 bg-slate-900 hover:bg-slate-800 text-white rounded font-bold flex items-center justify-center transition-colors shadow-2xs"
                     >
                       <Plus size={11} />
                     </button>
                   </div>
                   <button
+                    type="button"
                     onClick={() => onRemove(item.id)}
                     className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-1"
                     title="Eliminar producto del ticket"

@@ -10,6 +10,7 @@ import TokenPurchaseModal from '@/components/common/TokenPurchaseModal'
 import UpgradeModal from '@/components/common/UpgradeModal'
 import { useTokens } from '@/hooks/useTokens'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 
 export default function Marketing() {
   const { currentUser } = useAppStore()
@@ -21,6 +22,7 @@ export default function Marketing() {
 
   if (!currentUser) return <Navigate to="/login" replace />
   if (!hasAnyRole(['admin', 'manager'])) return <Navigate to="/pos" replace />
+  if (!tenantHasFeature(currentUser.organizationId, 'aiModules')) return <Navigate to="/pos" replace />
 
   return (
     <DashboardLayout>

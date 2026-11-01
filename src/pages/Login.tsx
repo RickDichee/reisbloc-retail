@@ -90,23 +90,45 @@ export default function Login() {
     }
   }
 
+  // 🎨 Variante visual dirigida por el tema del tenant (cero hardcodeo por cliente)
+  const theme = BRANDING.theme
+  const isFestive = Boolean(theme.loadingBg)
+
   return (
-    <div className="min-h-screen bg-[#070A11] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 bg-[#070A11]"
+      style={theme.loadingBg ? { backgroundImage: theme.loadingBg } : undefined}
+    >
+      {/* Decoración navidena para tenants festivos */}
+      {isFestive && (
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-4 left-4 text-4xl opacity-30 rotate-[-15deg]">🎄</div>
+          <div className="absolute top-8 right-6 text-3xl opacity-25 rotate-[10deg]">⭐</div>
+          <div className="absolute bottom-20 left-8 text-3xl opacity-25">🎁</div>
+          <div className="absolute bottom-16 right-4 text-4xl opacity-20 rotate-[5deg]">🧸</div>
+          <div className="absolute top-1/3 left-2 text-2xl opacity-20">❄️</div>
+          <div className="absolute top-1/4 right-2 text-2xl opacity-20">❄️</div>
+        </div>
+      )}
+      <div className="w-full max-w-md relative">
         <div className="text-center mb-8">
-          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-xl mb-4 overflow-hidden border shadow-xl ${
-            BRANDING.isModaMiel 
-              ? 'bg-pink-500/10 border-pink-500/30' 
-              : BRANDING.isLosChunches
-              ? 'bg-rose-500/10 border-rose-500/30 shadow-rose-500/10'
+          <div className={`inline-flex items-center justify-center w-24 h-24 rounded-2xl mb-4 overflow-hidden border shadow-2xl ${
+            isFestive
+              ? 'bg-white/20 border-[var(--on-primary-soft)]/60 ring-2 ring-[var(--on-primary-soft)]/30'
               : 'bg-slate-900 border-amber-500/30 shadow-amber-500/5'
           }`}>
             <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 tracking-tight">{BRANDING.appName}</h1>
-          <p className="text-slate-400 text-sm sm:text-base font-medium">{BRANDING.loginSubtitle}</p>
+          <h1 className={`text-3xl sm:text-4xl font-black mb-2 tracking-tight text-white ${
+            isFestive ? 'drop-shadow-lg' : ''
+          }`} style={isFestive ? { fontFamily: 'var(--font-serif)' } : {}}>
+            {BRANDING.appName}
+          </h1>
+          <p className={`text-sm sm:text-base font-medium ${
+            isFestive ? 'text-[var(--on-primary-soft)]' : 'text-slate-400'
+          }`}>{BRANDING.loginSubtitle}</p>
           <div className={`text-xs mt-2 uppercase tracking-widest font-bold font-mono ${
-            BRANDING.isModaMiel ? 'text-pink-400' : BRANDING.isLosChunches ? 'text-rose-400' : 'text-amber-400'
+            isFestive ? 'text-[var(--on-primary-soft)]' : 'text-amber-400'
           }`}>
             {BRANDING.whiteLabelName}
           </div>
@@ -118,10 +140,14 @@ export default function Login() {
           </div>
         )}
 
-        <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-6 sm:p-8 shadow-2xl space-y-4">
+        <div className={`rounded-xl p-6 sm:p-8 shadow-2xl space-y-4 ${
+          isFestive
+            ? 'bg-white/10 backdrop-blur-sm border border-white/20'
+            : 'bg-[#0F172A] border border-slate-800'
+        }`}>
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="login-email" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Email</label>
+              <label htmlFor="login-email" className={`text-xs font-bold uppercase tracking-wide ${isFestive ? 'text-[var(--on-primary-soft)]' : 'text-slate-400'}`}>Email</label>
               <input
                 id="login-email"
                 type="email"
@@ -131,11 +157,15 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 disabled={loading}
-                className="w-full bg-[#070A11] border border-slate-700 focus:border-rose-500/60 rounded-lg py-3 px-4 text-white placeholder:text-slate-600 outline-none transition-colors disabled:opacity-50"
+                className={`w-full rounded-lg py-3 px-4 outline-none transition-colors disabled:opacity-50 ${
+                  isFestive
+                    ? 'bg-white/20 border border-white/30 focus:border-[var(--on-primary-soft)] text-white placeholder:text-white/50'
+                    : 'bg-[#070A11] border border-slate-700 focus:border-[var(--primary)] text-white placeholder:text-slate-600'
+                }`}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="login-password" className="text-xs font-bold text-slate-400 uppercase tracking-wide">Contraseña</label>
+              <label htmlFor="login-password" className={`text-xs font-bold uppercase tracking-wide ${isFestive ? 'text-[var(--on-primary-soft)]' : 'text-slate-400'}`}>Contraseña</label>
               <input
                 id="login-password"
                 type="password"
@@ -145,19 +175,19 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="w-full bg-[#070A11] border border-slate-700 focus:border-rose-500/60 rounded-lg py-3 px-4 text-white placeholder:text-slate-600 outline-none transition-colors disabled:opacity-50"
+                className={`w-full rounded-lg py-3 px-4 outline-none transition-colors disabled:opacity-50 ${
+                  isFestive
+                    ? 'bg-white/20 border border-white/30 focus:border-[var(--on-primary-soft)] text-white placeholder:text-white/50'
+                    : 'bg-[#070A11] border border-slate-700 focus:border-[var(--primary)] text-white placeholder:text-slate-600'
+                }`}
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className={`w-full font-bold py-3.5 px-6 rounded-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 active:scale-[0.99] ${
-                BRANDING.isLosChunches
-                  ? 'bg-rose-500 hover:bg-rose-400 text-white shadow-lg shadow-rose-500/20'
-                  : BRANDING.isModaMiel
-                  ? 'bg-pink-500 hover:bg-pink-400 text-white shadow-lg shadow-pink-500/20'
-                  : 'bg-amber-500 hover:bg-amber-400 text-[#070A11] shadow-lg shadow-amber-500/20'
-              }`}
+              className={`w-full font-bold py-3.5 px-6 rounded-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 active:scale-[0.99] bg-[var(--login-primary)] hover:bg-[var(--login-primary-hover)] ${
+                theme.id === 'default' ? 'text-[#070A11]' : 'text-white'
+              } shadow-lg`}
             >
               {loading ? 'Entrando...' : 'Entrar'}
               <ArrowRight size={18} />
@@ -165,9 +195,9 @@ export default function Login() {
           </form>
 
           <div className="flex items-center gap-3 py-1">
-            <div className="flex-1 h-px bg-slate-800" />
-            <span className="text-slate-600 text-xs font-medium uppercase tracking-widest">o con Google</span>
-            <div className="flex-1 h-px bg-slate-800" />
+            <div className={`flex-1 h-px ${isFestive ? 'bg-white/20' : 'bg-slate-800'}`} />
+            <span className={`text-xs font-medium uppercase tracking-widest ${isFestive ? 'text-white/50' : 'text-slate-600'}`}>o con Google</span>
+            <div className={`flex-1 h-px ${isFestive ? 'bg-white/20' : 'bg-slate-800'}`} />
           </div>
 
           <button

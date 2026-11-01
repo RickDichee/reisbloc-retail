@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
+﻿import { useEffect, useMemo, useState, useRef } from 'react'
 import logger from '@/utils/logger'
 import { useAppStore } from '@/store/appStore'
 import { BRANDING } from '@/config/branding'
@@ -21,10 +21,10 @@ import { syncService } from '@/services/syncService'
 import { offlineStorage } from '@/services/offlineStorage'
 import printService from '@/services/printService'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
-import { useTenantTheme } from '@/hooks/useTenantTheme'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 import { sanitizeHTML } from '@/utils/sanitize'
 import { playCashRegisterSound } from '@/utils/audioAlerts'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, Sparkles, SlidersHorizontal, Package, ShoppingBag, ChevronUp, ChevronDown, RotateCcw, ArrowLeftRight } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, SlidersHorizontal, ShoppingBag, ChevronUp, ChevronDown, RotateCcw, ArrowLeftRight } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import { useTerminalSession } from '@/hooks/useTerminalSession'
 import { TerminalLockModal } from '@/components/pos/TerminalLockModal'
@@ -53,8 +53,7 @@ export default function POS() {
     currentUser,
     isInitializing,
     products,
-    setProducts,
-    tickets,  // Legacy: antes "tables"
+    setProducts,
     currentTicketNumber,  // Legacy: antes "currentTableNumber"
     setCurrentTicket,  // Legacy: antes "setCurrentTable"
     draftOrders,
@@ -63,6 +62,7 @@ export default function POS() {
     decrementDraftItem,
     removeDraftItem,
     updateDraftItemPrice,
+    updateDraftItemQuantity,
     clearDraftForTicket,
     organizationSettings,
     setOrganizationSettings,
@@ -70,8 +70,7 @@ export default function POS() {
     setUsers,
   } = useAppStore()
 
-  const { isModaMiel } = useTenantTheme()
-  const currentBusinessTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (isModaMiel ? 'Moda Miel MX' : 'Reisbloc Store')
+  const currentBusinessTitle = organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || BRANDING.appName
 
   // 🛡️ MECANISMO A: Monitoreo en tiempo real de terminales de cobro activas concurrentes
   const {
@@ -126,7 +125,7 @@ export default function POS() {
 
   const [editingRegisterId, setEditingRegisterId] = useState<number | null>(null)
   const [editingRegisterName, setEditingRegisterName] = useState<string>('')
-  const [showHardwareConfig, setShowHardwareConfig] = useState(false)
+  const [showHardwareConfig] = useState(false)
   const [showManualAdjustModal, setShowManualAdjustModal] = useState(false)
   const [activeOrdersList, setActiveOrdersList] = useState<Order[]>([])
   const [showPendingOrdersModal, setShowPendingOrdersModal] = useState(false)
@@ -161,12 +160,14 @@ export default function POS() {
             saleTotal={receiptModal.total}
             paymentMethod={receiptModal.paymentMethod}
             tableNumber={tableNumber}
-            businessName={currentBusinessTitle || 'MODA MIEL MX'}
-            address="Pasillo 3 Local 230"
-            phone="+52 445 145 7252"
+            businessName={currentBusinessTitle || BRANDING.appName}
+            address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
+            phone={organizationSettings?.ticketPhone || (BRANDING.isModaMiel ? "+52 445 145 7252" : "")}
             clientName={receiptModal.clientName}
             clientPhone={receiptModal.clientPhone}
             width={newWidth}
+            logoUrl={organizationSettings?.ticketLogoUrl || organizationSettings?.logoUrl || BRANDING.ticketLogoUrl || BRANDING.logoUrl}
+            organizationId={currentUser?.organizationId}
           />
         )
         setReceiptModal({
@@ -210,6 +211,7 @@ export default function POS() {
 
   useEffect(() => {
     loadClients()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.organizationId])
 
   const handleCreateQuickClient = async (e: React.FormEvent) => {
@@ -416,60 +418,21 @@ export default function POS() {
   const tableNumber = currentTicketNumber || 1
   const items = draftOrders[tableNumber] || []
   const currentTotal = items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0)
-  const activeTableOrders = useMemo(() => {
-    return activeOrdersList.filter(o => o.tableNumber === tableNumber || o.tableNumber === currentTicketNumber)
-  }, [activeOrdersList, tableNumber, currentTicketNumber])
-
-
-
   const isReadOnly = currentUser?.role === 'supervisor'
 
+  const usesPackByDefault = tenantHasFeature(currentUser?.organizationId || null, 'packLabel') || BRANDING.isModaMiel
+  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>(() => usesPackByDefault ? 'paquete' : 'pieza')
 
-  const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>('paquete')
+  useEffect(() => {
+    setPriceMode(usesPackByDefault ? 'paquete' : 'pieza')
+  }, [usesPackByDefault])
+
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
 
   const priceModeRef = useRef(priceMode)
   useEffect(() => {
     priceModeRef.current = priceMode
   }, [priceMode])
-
-
-  const handleChangePriceMode = (newMode: 'pieza' | 'mayoreo' | 'paquete' | 'bulto') => {
-    setPriceMode(newMode)
-    
-    const nextItems = items.map(item => {
-      const product = products.find(p => p.id === item.productId)
-      if (!product) return item
-
-      const parsedDesc = parseProductDescription(product.description || '')
-      let activePrice = product.price
-      let activePackQty = 1
-
-      if (newMode === 'mayoreo') {
-        activePrice = product.wholesalePrice || (product as any).wholesale_price || product.price
-        activePackQty = 1
-      } else if (newMode === 'paquete') {
-        activePrice = parsedDesc.packPrice || (product.price * 0.75)
-        activePackQty = parsedDesc.packQty || 6
-      } else if (newMode === 'bulto') {
-        activePrice = parsedDesc.bulkPrice || (product.price * 0.65)
-        activePackQty = parsedDesc.bulkQty || 12
-      }
-
-      return {
-        ...item,
-        unitPrice: activePrice,
-        packQuantity: activePackQty
-      }
-    })
-
-    useAppStore.setState(state => ({
-      draftOrders: {
-        ...state.draftOrders,
-        [tableNumber]: nextItems
-      }
-    }))
-  }
 
   const filteredProducts = useMemo(() => {
     const result = products
@@ -598,6 +561,7 @@ export default function POS() {
     return () => {
       supabase.removeChannel(syncChannel)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.organizationId])
 
   useEffect(() => {
@@ -626,33 +590,6 @@ export default function POS() {
     })
 
     if (!matchedProduct) return
-
-    const parsedDesc = parseProductDescription(matchedProduct.description || '')
-    const explicitPackQty = Number(matchedProduct.packQuantity || (matchedProduct as any).pack_quantity || (matchedProduct as any).wholesale_min_qty || parsedDesc.packQty || 1)
-    const packQty = explicitPackQty > 1 ? explicitPackQty : 10
-
-    const rawPrice = Number(matchedProduct.price || 0)
-    const wholesalePrice = Number(matchedProduct.wholesalePrice || (matchedProduct as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-    const packPrice = Number((matchedProduct as any).packPrice || (matchedProduct as any).pack_price || parsedDesc.packPrice || 0)
-
-    let extractedPriceFromName: number | null = null
-    const nameStr = matchedProduct.name || ''
-    if (nameStr.includes('$')) {
-      const afterDollar = nameStr.split('$')[1] || ''
-      const parsedNum = parseFloat(afterDollar)
-      if (!isNaN(parsedNum) && parsedNum > 0) {
-        extractedPriceFromName = parsedNum
-      }
-    }
-
-    let unitPackPrice = rawPrice
-    if (extractedPriceFromName !== null && extractedPriceFromName > 0) {
-      unitPackPrice = extractedPriceFromName
-    } else if (packPrice > 0) {
-      unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
-    } else if (wholesalePrice > 0) {
-      unitPackPrice = wholesalePrice
-    }
 
     if (targetTicket !== currentTicketNumber) {
       setCurrentTicket(targetTicket)
@@ -743,9 +680,20 @@ export default function POS() {
     });
   }
 
-  function handleAddProduct(product: Product, isPackageMode: boolean = true) {
+  function handleAddProduct(product: Product, isPackageMode: boolean = usesPackByDefault) {
     if (!currentUser || isReadOnly) return
-    
+
+    // Para clientes sin modo paquete (San Judas Tadeo, Los Chunches) o cuando se selecciona modo Pieza:
+    if (!usesPackByDefault || !isPackageMode) {
+      const pieceProduct = {
+        ...product,
+        price: Number(product.price || 0),
+        packQuantity: 1
+      }
+      addItemToDraft(tableNumber, pieceProduct, currentUser.id)
+      return
+    }
+
     const parsedDesc = parseProductDescription(product.description || '')
 
     let namePrice: number | null = null
@@ -760,47 +708,9 @@ export default function POS() {
     const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
     const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
 
-    // 📦 MODO PAQUETE: Agregar paquete completo de piezas a precio por pieza en paquete
+    // 📦 MODO PAQUETE (Exclusivo Moda Miel): Agregar paquete completo de piezas a precio por pieza en paquete
     const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
     const packQty = explicitPackQty > 1 ? explicitPackQty : 10
-
-    const computedProduct = {
-      ...product,
-      price: unitPackPrice,
-      packQuantity: 1
-    }
-
-    for (let i = 0; i < packQty; i++) {
-      addItemToDraft(tableNumber, computedProduct, currentUser.id)
-    }
-  }
-
-  const handleAddPackageProduct = (product: Product) => {
-    if (!currentUser || isReadOnly) return
-
-    const parsedDesc = parseProductDescription(product.description || '')
-    const explicitPackQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 1)
-    const packQty = explicitPackQty > 1 ? explicitPackQty : 10
-
-    const rawPrice = Number(product.price || 0)
-    const wholesalePrice = Number(product.wholesalePrice || (product as any).wholesale_price || parsedDesc.wholesalePrice || 0)
-    const packPrice = Number((product as any).packPrice || (product as any).pack_price || parsedDesc.packPrice || 0)
-
-    let namePrice: number | null = null
-    if (product.name && product.name.includes('$')) {
-      const afterDollar = product.name.split('$')[1] || ''
-      const pNum = parseFloat(afterDollar)
-      if (!isNaN(pNum) && pNum > 0) namePrice = pNum
-    }
-
-    let unitPackPrice = rawPrice
-    if (namePrice !== null && namePrice > 0) {
-      unitPackPrice = namePrice
-    } else if (packPrice > 0) {
-      unitPackPrice = packPrice > rawPrice * 2 && explicitPackQty > 1 ? packPrice / packQty : packPrice
-    } else if (wholesalePrice > 0) {
-      unitPackPrice = wholesalePrice
-    }
 
     const computedProduct = {
       ...product,
@@ -1065,12 +975,14 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           saleTotal={total}
           paymentMethod="Pendiente"
           tableNumber={tableNum}
-          businessName={currentBusinessTitle || 'MODA MIEL MX'}
-          address="Pasillo 3 Local 230"
-          phone="+52 445 145 7252"
+          businessName={currentBusinessTitle || BRANDING.appName}
+          address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
+          phone={organizationSettings?.ticketPhone || (BRANDING.isModaMiel ? "+52 445 145 7252" : "")}
           clientName={selectedClient?.name}
           clientPhone={selectedClient?.phone}
           width={selectedTicketWidth}
+          logoUrl={organizationSettings?.ticketLogoUrl || organizationSettings?.logoUrl || BRANDING.ticketLogoUrl || BRANDING.logoUrl}
+          organizationId={currentUser?.organizationId}
         />
       )
       await printService.printReceipt(ticketHTML, { title: 'Pre-cuenta', width: selectedTicketWidth })
@@ -1171,28 +1083,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
     })
   }
 
-  const handleQuickCheckout = async () => {
-    if (!currentUser || isReadOnly) return
-
-    // 1. Stock Check 🛡️
-    const formattedDraft = items.map(i => ({ ...i, productId: i.productId })) // Ensure shape
-    const stockIssues = checkStockAvailability([], formattedDraft)
-
-    if (stockIssues.length > 0) {
-      setStockWarning({ isOpen: true, items: stockIssues })
-      return
-    }
-
-    // 2. CRM Client Check (Obligatorio o Bypass con Bitácora de Auditoría) 👤
-    if (!selectedClient) {
-      setShowClientSelector(true)
-      return
-    }
-
-    confirmCheckout()
-  }
-
-  const handleBypassCrmClient = () => {
+    const handleBypassCrmClient = () => {
     if (!currentUser) return
     
     // Registrar Audit Log del Bypass de CRM por el cajero
@@ -1312,12 +1203,14 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             saleTotal={result.total}
             paymentMethod={mappedMethod}
             tableNumber={tableNumber}
-            businessName={currentBusinessTitle || 'MODA MIEL MX'}
-            address="Pasillo 3 Local 230"
-            phone="+52 445 145 7252"
+            businessName={currentBusinessTitle || BRANDING.appName}
+            address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
+            phone={organizationSettings?.ticketPhone || (BRANDING.isModaMiel ? "+52 445 145 7252" : "")}
             clientName={selectedClient?.name}
             clientPhone={selectedClient?.phone}
             width={selectedTicketWidth}
+            logoUrl={organizationSettings?.ticketLogoUrl || organizationSettings?.logoUrl || BRANDING.ticketLogoUrl || BRANDING.logoUrl}
+            organizationId={currentUser?.organizationId}
           />
         )
 
@@ -1710,12 +1603,13 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           {/* Catalog Panel (Left - Maximized) */}
           <div className="flex-[7.5] flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="flex-1 min-h-0 p-3 sm:p-4 pb-28 lg:pb-4 overflow-y-auto custom-scrollbar">
-              <ProductGrid 
-                products={filteredProducts} 
-                onAdd={handleAddProduct} 
-                disableAdd={isReadOnly || !!activeShift?.end_time} 
-                isPackageMode={true}
-                onTogglePackageMode={() => {}}
+              <ProductGrid
+                products={filteredProducts}
+                onAdd={handleAddProduct}
+                disableAdd={isReadOnly || !!activeShift?.end_time}
+                isPackageMode={usesPackByDefault && priceMode === 'paquete'}
+                showPackageOption={usesPackByDefault}
+                onTogglePackageMode={usesPackByDefault ? (isPack) => setPriceMode(isPack ? 'paquete' : 'pieza') : undefined}
               />
 
             </div>
@@ -1730,6 +1624,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 activeOrders={[]} // Hide restaurant statuses in Retail Pivot
                 onIncrement={(id) => incrementDraftItem(tableNumber, id)}
                 onDecrement={(id) => decrementDraftItem(tableNumber, id)}
+                onUpdateQuantity={(id, qty) => updateDraftItemQuantity(tableNumber, id, qty)}
                 onRemove={(id) => removeDraftItem(tableNumber, id)}
                 onClear={() => clearDraftForTicket(tableNumber)}
                 onEditNote={(item) => setEditingItem(item)}
@@ -1851,7 +1746,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
         </div>
 
         {/* 📱 Mobile & Tablet Floating Ticket Bar (< lg screens) */}
-        <div className="lg:hidden fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-40 bg-slate-900 text-white rounded-2xl shadow-2xl p-3 border border-slate-800 flex items-center justify-between animate-fadeIn">
+        <div className="lg:hidden fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-50 bg-slate-900 text-white rounded-2xl shadow-2xl p-3 border border-slate-800 flex items-center justify-between animate-fadeIn">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">
@@ -1917,6 +1812,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                   activeOrders={[]}
                   onIncrement={(id) => incrementDraftItem(tableNumber, id)}
                   onDecrement={(id) => decrementDraftItem(tableNumber, id)}
+                onUpdateQuantity={(id, qty) => updateDraftItemQuantity(tableNumber, id, qty)}
                   onRemove={(id) => removeDraftItem(tableNumber, id)}
                   onClear={() => clearDraftForTicket(tableNumber)}
                   onEditNote={(item) => setEditingItem(item)}

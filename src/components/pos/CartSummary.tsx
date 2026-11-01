@@ -62,7 +62,7 @@ export function CartSummary({ tableNumber, items, onSend, onClear, sending, prod
     const html = `
       <div style="width:58mm;padding:8px;font-family:'Courier New', monospace;font-size:11px;line-height:1.2;color:#000;">
         <div style="text-align:center;margin-bottom:8px;border-bottom:1px solid #000;">
-          <img src="${BRANDING.logoUrl}" alt="${BRANDING.whiteLabelName}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;margin:0 auto 4px auto;" />
+          <img src="${organizationSettings?.ticketLogoUrl || BRANDING.ticketLogoUrl || organizationSettings?.logoUrl || BRANDING.logoUrl}" alt="${BRANDING.whiteLabelName}" style="width:48mm;max-width:88%;height:auto;max-height:50mm;object-fit:contain;display:block;margin:0 auto 4px auto;" />
           <div style="font-weight:bold;font-size:12px;">${BRANDING.whiteLabelName.toUpperCase()}</div>
           <div style="font-size:9px;">${BRANDING.appName}</div>
           <div style="font-size:9px;">Caja ${tableNumber}</div>
@@ -88,6 +88,8 @@ export function CartSummary({ tableNumber, items, onSend, onClear, sending, prod
           </div>
         </div>
         <div style="text-align:center;font-size:9px;margin-top:8px;">
+          <div style="font-weight:bold;border:1px solid #000;padding:3px;margin-bottom:4px;"></div>
+          <div style="font-weight:bold;margin-bottom:3px;">WhatsApp: </div>
           <div>Este no es comprobante fiscal.</div>
           <div style="margin-top:4px;font-size:8px;">Gracias por su preferencia</div>
           <div style="margin-top:4px;font-size:8px;">${BRANDING.poweredBy}</div>

@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import { Package, Plus, Search, AlertTriangle, Share2, Edit2, Printer, ExternalLink } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { usePermissions } from '@/hooks/usePermissions'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 import logger from '@/utils/logger'
 import supabaseService from '@/services/supabaseService'
-import printService from '@/services/printService'
 import ProductModal from '@/components/admin/ProductModal'
 import ImportProductsModal from '@/components/admin/ImportProductsModal'
 import LabelPrintModal from '@/components/admin/LabelPrintModal'
@@ -15,7 +15,8 @@ import { useTenantTheme } from '@/hooks/useTenantTheme'
 
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
-  const { isModaMiel, isLosChunches } = useTenantTheme()
+  const { isModaMiel, isLosChunches, isJuguetes } = useTenantTheme()
+  const isBrandedTenant = isModaMiel || isLosChunches || isJuguetes
   const { hasAnyRole } = usePermissions()
   const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
   const isAdmin = currentUser?.role === 'admin'
@@ -64,10 +65,10 @@ export default function Inventory() {
     const text = `
 🔥 *¡PROMO DEL DÍA!* 🔥
 
- taco *${product.name}*
+🛍️ *${product.name}*
 💰 Solo: $${Number(product.price).toFixed(2)}
 
-📍 ¡Ven a probarlo en ${currentUser?.businessName || 'nuestro local'}!
+📍 ¡Encuéntralo hoy en ${currentUser?.businessName || BRANDING.appName}!
   `.trim()
 
     if (navigator.share) {
@@ -113,8 +114,8 @@ export default function Inventory() {
         <div className="bg-slate-900 text-white rounded-xl shadow-sm border border-slate-800 p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-lg border flex items-center justify-center shrink-0 ${
-              isModaMiel 
-                ? 'bg-[#D4386C]/15 border-[#D4386C]/30 text-[#D4386C]' 
+              isBrandedTenant
+                ? 'bg-[var(--primary)]/15 border-[var(--primary)]/30 text-[var(--primary)]'
                 : 'bg-teal-500/15 border-teal-500/30 text-teal-400'
             }`}>
               <Package size={20} />
@@ -135,8 +136,8 @@ export default function Inventory() {
                 type="button"
                 onClick={() => setShowCreateModal(true)}
                 className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm ${
-                  isModaMiel 
-                    ? 'bg-[#D4386C] hover:bg-[#b82d5b] text-white' 
+                  isBrandedTenant
+                    ? 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white'
                     : 'bg-teal-500 hover:bg-teal-400 text-slate-950 font-black'
                 }`}
               >
@@ -203,7 +204,7 @@ export default function Inventory() {
               <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
                 {/* Product Image */}
                 {product.image ? (
-                  <div className="w-full h-36 sm:h-40 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-center p-1.5 relative">
+                  <div className="w-full h-36 sm:h-40 rounded-lg overflow-hidden bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-center p-2 relative">
                     <img
                       src={product.image}
                       alt={product.name}
@@ -259,7 +260,7 @@ export default function Inventory() {
                           </div>
                         )
                       }
-                    } catch (e) {}
+                    } catch (e) { /* ignore */ }
                   }
                   return null
                 })()}
@@ -268,7 +269,7 @@ export default function Inventory() {
                 <div className="flex items-baseline justify-between pt-2 border-t border-slate-100 dark:border-slate-800 mt-auto">
                   <div>
                     <p className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">
-                      {isModaMiel ? 'Pqte' : 'Precio'}
+                      {tenantHasFeature(currentUser?.organizationId || null, 'packLabel') ? 'Pqte' : 'Precio'}
                     </p>
                     <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">
                       ${Number(product.packPrice || product.price || 0).toFixed(2)}
@@ -288,7 +289,7 @@ export default function Inventory() {
                   )}
                 </div>
 
-                {isLosChunches && isAdmin && Number(product.unitCost) > 0 && (
+                {tenantHasFeature(currentUser?.organizationId || null, 'unitCost') && isAdmin && Number(product.unitCost) > 0 && (
                   <button
                     type="button"
                     onClick={() => setEditingProduct(product)}
@@ -310,7 +311,7 @@ export default function Inventory() {
                 >
                   <Printer size={14} />
                 </button>
-                {isLosChunches && (
+                {tenantHasFeature(currentUser?.organizationId || null, 'webReference') && (
                   <button
                     type="button"
                     onClick={() => handleSearchOnline(product)}

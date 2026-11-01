@@ -4,9 +4,10 @@ import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { storageService } from '@/services/storageService'
 import { compressImage } from '@/utils/imageCompression'
-import { X, Save, Loader2, Image as ImageIcon, Camera, Plus, Printer } from 'lucide-react'
+import { X, Save, Loader2, Image as ImageIcon, Camera } from 'lucide-react'
 import PlanGate from '@/components/common/PlanGate'
 import { tenantHasFeature } from '@/config/tenantFeatures'
+import { BRANDING } from '@/config/branding'
 import printService from '@/services/printService'
 
 function parseProductDescription(descriptionText: string | null) {
@@ -63,7 +64,7 @@ export default function ProductModal({
     onClose,
     onSuccess
 }: ProductModalProps) {
-    const { currentUser, products, organizationSettings } = useAppStore()
+    const { currentUser, organizationSettings } = useAppStore()
     const isAdminOrManager = currentUser?.role === 'admin' || currentUser?.role === 'manager'
     const parsedDesc = parseProductDescription(product?.description || '')
     const initialPackPrice = Number(parsedDesc.packPrice || product?.price || 0)
@@ -100,48 +101,20 @@ export default function ProductModal({
         return 0
     })
 
-    const handlePackagesCountChange = (newPacks: number) => {
-        const val = Math.max(0, newPacks)
-        setPackagesCount(val)
-        const packSize = Number(formData.packQty || 12)
-        const totalPieces = Math.round(val * packSize)
-        setFormData(prev => ({
-            ...prev,
-            currentStock: totalPieces
-        }))
-    }
-
-    const handlePiecesCountChange = (newPieces: number) => {
-        const val = Math.max(0, newPieces)
-        const packSize = Number(formData.packQty || 12)
-        setFormData(prev => ({
-            ...prev,
-            currentStock: val
-        }))
-        if (packSize > 0) {
-            const calculatedPacks = Math.round((val / packSize) * 100) / 100
-            setPackagesCount(calculatedPacks)
-        }
-    }
-
-    const handlePackQtyChange = (newPackQty: number) => {
-        const val = Math.max(1, newPackQty)
-        setFormData(prev => {
-            const updatedStock = packagesCount > 0 ? Math.round(packagesCount * val) : prev.currentStock
-            return {
-                ...prev,
-                packQty: val,
-                packQuantity: val,
-                currentStock: updatedStock
-            }
+    const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>(() => {
+        const sizes = (parsedDesc.sizes || {}) as Record<string, number>
+        const init: Record<string, number> = {}
+        Object.keys(sizes).forEach(sz => {
+            const v = Number(sizes[sz])
+            init[sz] = Number.isFinite(v) ? v : 0
         })
-    }
+        return init
+    })
 
     const [customSize, setCustomSize] = useState('')
     const [shouldPrint, setShouldPrint] = useState(true)
     const [printMode, setPrintMode] = useState<'bulto' | 'talla' | 'prenda'>('bulto')
     const [codeFormat, setCodeFormat] = useState<'code128' | 'qrcode'>('code128')
-    const [isWholesale, setIsWholesale] = useState(!!product?.parentId)
     const [showStockAdvanced, setShowStockAdvanced] = useState(true)
 
     const getCodeImageUrl = (code: string) => {
@@ -303,7 +276,7 @@ export default function ProductModal({
                 try {
                   sessionStorage.removeItem('modamiel_public_products_cache')
                   sessionStorage.removeItem('modamiel_public_products_cache_time')
-                } catch (e) {}
+                } catch (e) { /* ignore */ }
 
                 // Audit Log especial si se modificó el Stock manualmente
                 if (oldStock !== finalStock) {
@@ -365,7 +338,7 @@ export default function ProductModal({
                                 const barcodeImgUrl = getCodeImageUrl(bulkBarcode)
                                 printHTML += `
                                   <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">MODA MIEL MX</div>
+                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">${currentUser?.businessName || BRANDING.appName}</div>
                                     <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase; line-height: 1.2;">${formData.name.trim()}</div>
                                     <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 4px;">SKU: ${formData.sku || 'N/A'}</div>
                                     <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
@@ -388,7 +361,7 @@ export default function ProductModal({
                                     const barcodeImgUrl = getCodeImageUrl(item.barcode)
                                     printHTML += `
                                       <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Moda Miel MX · Powered by Reisbloc</div>
+                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">${currentUser?.businessName || BRANDING.appName} · Powered by Reisbloc</div>
                                         <div style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">${item.name}</div>
                                         <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px;">SKU: ${item.sku}</div>
                                         <div style="font-size: 13px; font-weight: 900; margin-top: 2px;">TALLA: ${item.size}</div>
@@ -428,7 +401,7 @@ export default function ProductModal({
                 try {
                   sessionStorage.removeItem('modamiel_public_products_cache')
                   sessionStorage.removeItem('modamiel_public_products_cache_time')
-                } catch (e) {}
+                } catch (e) { /* ignore */ }
                 await supabaseService.createAuditLog({
                     userId: currentUser?.id || 'unknown',
                     action: 'PRODUCT_CREATED',
@@ -470,7 +443,7 @@ export default function ProductModal({
                                 const barcodeImgUrl = getCodeImageUrl(masterBarcode)
                                 printHTML += `
                                   <div style="border: 2px solid #000; padding: 12px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">MODA MIEL MX</div>
+                                    <div style="font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #000; width: 100%; padding-bottom: 4px; margin-bottom: 6px;">${currentUser?.businessName || BRANDING.appName}</div>
                                     <div style="font-size: 13px; font-weight: bold; margin: 2px 0; text-transform: uppercase; line-height: 1.2;">${formData.name.trim()}</div>
                                     <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 4px;">SKU: ${formData.sku || 'N/A'}</div>
                                     <div style="font-size: 11px; font-weight: bold; color: #333; margin: 4px 0;">PAQUETE COMPLETO: ${totalPiecesPerPackage} PZAS</div>
@@ -493,7 +466,7 @@ export default function ProductModal({
                                     const barcodeImgUrl = getCodeImageUrl(item.barcode)
                                     printHTML += `
                                       <div style="border: 1px dashed #000; padding: 10px; width: ${labelWidth}mm; margin: 0 auto; page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; background: #fff;">
-                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">Moda Miel MX · Powered by Reisbloc</div>
+                                        <div style="font-size: 10px; font-weight: bold; text-transform: uppercase;">${currentUser?.businessName || BRANDING.appName} · Powered by Reisbloc</div>
                                         <div style="font-size: 12px; font-weight: bold; margin: 4px 0; line-height: 1.2;">${item.name}</div>
                                         <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 2px;">SKU: ${item.sku}</div>
                                         <div style="font-size: 13px; font-weight: 900; margin-top: 2px;">TALLA: ${item.size}</div>
@@ -574,7 +547,7 @@ export default function ProductModal({
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-slate-900/5 outline-none font-bold text-lg disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                placeholder="Ej. Smart TV 55', Tacos de Pastor, etc."
+                                placeholder="Ej. Auto Control Remoto, Muñeca, Set de Hogar, etc."
                                 disabled={!isAdminOrManager}
                                 required
                             />

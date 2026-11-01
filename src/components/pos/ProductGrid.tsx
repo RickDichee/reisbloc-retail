@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Product } from '@/types'
-import { Package, AlertTriangle, User, Check } from 'lucide-react'
+import { Package, AlertTriangle, ShoppingBag } from 'lucide-react'
 import { parseProductDescription } from '@/utils/priceParser'
+import { BRANDING } from '@/config/branding'
 
 interface ProductGridProps {
   products: Product[]
   onAdd: (product: Product, isPackageMode: boolean) => void
   disableAdd?: boolean
   isPackageMode?: boolean
+  showPackageOption?: boolean
   onTogglePackageMode?: (isPack: boolean) => void
 }
 
@@ -30,22 +32,17 @@ export function ProductGrid({
   onAdd,
   disableAdd = false,
   isPackageMode: externalIsPackageMode,
+  showPackageOption = false,
   onTogglePackageMode
 }: ProductGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [internalIsPackageMode, setInternalIsPackageMode] = useState<boolean>(true)
+  const isBrandedTenant = BRANDING.isModaMiel || BRANDING.isJuguetes || BRANDING.isLosChunches
 
-  const isPackageMode = externalIsPackageMode !== undefined ? externalIsPackageMode : true
-
-  const setPackageMode = (val: boolean) => {
-    setInternalIsPackageMode(val)
-    if (onTogglePackageMode) onTogglePackageMode(val)
-  }
-
+  const isPackageMode = showPackageOption && (externalIsPackageMode !== undefined ? externalIsPackageMode : false)
 
   const categories = Array.from(new Set(products.map(p => p.category || 'General')))
-  
-  const filteredProducts = selectedCategory 
+
+  const filteredProducts = selectedCategory
     ? products.filter(p => (p.category || 'General') === selectedCategory)
     : products
 
@@ -59,23 +56,63 @@ export function ProductGrid({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
-      
-      {/* 📦 Modo de Venta: Exclusivo Paquete */}
+
+      {/* 📦 / 🛍️ Modo de Venta: Paquete (exclusivo Moda Miel) o Pieza Individual (San Judas / Los Chunches) */}
       <div className="p-3 bg-slate-900 text-white rounded-t-xl shrink-0 flex items-center justify-between border-b border-slate-800">
         <div className="flex items-center gap-2.5">
-          <Package size={20} className="text-amber-400 shrink-0" />
+          {isPackageMode ? (
+            <Package size={20} className="text-amber-400 shrink-0" />
+          ) : (
+            <ShoppingBag size={20} className={isBrandedTenant ? 'text-[var(--primary)] shrink-0' : 'text-emerald-400 shrink-0'} />
+          )}
           <div>
-            <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest leading-none">Venta en Mostrador</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Venta en Mostrador</p>
             <p className="text-xs font-black uppercase text-white tracking-tight mt-0.5">
-              📦 Venta por Paquete Completo
+              {isPackageMode ? '📦 Venta por Paquete Completo' : '🛍️ Venta por Pieza Individual'}
             </p>
           </div>
         </div>
 
-        <div className="px-3 py-1 bg-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-1.5">
-          <Package size={14} />
-          <span>Paquete</span>
-        </div>
+        {showPackageOption ? (
+          onTogglePackageMode ? (
+            <div className="flex items-center bg-slate-800 p-0.5 rounded-xl border border-slate-700">
+              <button
+                type="button"
+                onClick={() => onTogglePackageMode(false)}
+                className={`px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 ${
+                  !isPackageMode
+                    ? (isBrandedTenant ? 'bg-[var(--primary)] text-white shadow-xs' : 'bg-emerald-500 text-slate-950 shadow-xs')
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <ShoppingBag size={12} />
+                <span>Pieza</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onTogglePackageMode(true)}
+                className={`px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 ${
+                  isPackageMode
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Package size={12} />
+                <span>Paquete</span>
+              </button>
+            </div>
+          ) : (
+            <div className="px-3 py-1 bg-amber-400 text-slate-950 font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-1.5">
+              <Package size={14} />
+              <span>Paquete</span>
+            </div>
+          )
+        ) : (
+          <div className="px-3 py-1 bg-slate-800 border border-slate-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-1.5">
+            <ShoppingBag size={14} className={isBrandedTenant ? 'text-[var(--primary)]' : 'text-emerald-400'} />
+            <span>Por Pieza</span>
+          </div>
+        )}
       </div>
 
       {/* Category Tabs - Horizontal Scroll */}
@@ -84,8 +121,8 @@ export function ProductGrid({
           <button
             onClick={() => setSelectedCategory(null)}
             className={`px-3 py-1.5 rounded-md text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
-              selectedCategory === null 
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+              selectedCategory === null
+                ? (isBrandedTenant ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-xs' : 'bg-slate-900 text-white border-slate-900 shadow-xs')
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
@@ -98,8 +135,8 @@ export function ProductGrid({
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-md text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
-                  selectedCategory === cat 
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                  selectedCategory === cat
+                    ? (isBrandedTenant ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-xs' : 'bg-slate-900 text-white border-slate-900 shadow-xs')
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
@@ -123,7 +160,7 @@ export function ProductGrid({
               const disabled = isOutOfStock(product) || disableAdd
               const parsedDesc = parseProductDescription(product.description || '')
 
-              // PRECIO POR PIEZA EN PAQUETE (Requerimiento estricto para Moda Miel)
+              // PRECIO POR PIEZA EN PAQUETE (Requerimiento para Moda Miel)
               let namePrice: number | null = null
               if (product.name && product.name.includes('$')) {
                 const afterDollar = product.name.split('$')[1] || ''
@@ -138,18 +175,20 @@ export function ProductGrid({
               const unitPackPrice = namePrice || (packPrice > 0 ? (packPrice > rawPrice * 2 ? packPrice / 10 : packPrice) : (wholesalePrice > 0 ? wholesalePrice : rawPrice))
               const packQty = Number(product.packQuantity || (product as any).pack_quantity || (product as any).wholesale_min_qty || parsedDesc.packQty || 10)
 
+              const imgSrc = product.image || product.imageUrl
+
               return (
                 <button
                   key={product.id}
                   type="button"
                   onClick={() => !disabled && onAdd(product, isPackageMode)}
                   disabled={disabled}
-                  className={`group relative text-left rounded-lg border overflow-hidden transition-all duration-200 active:scale-[0.98] flex flex-col justify-between ${
+                  className={`group relative text-left rounded-xl border overflow-hidden transition-all duration-200 active:scale-[0.98] flex flex-col justify-between ${
                     disabled
                       ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
                       : isPackageMode
                         ? 'border-amber-400 bg-amber-50/30 hover:border-amber-500 shadow-xs'
-                        : 'border-slate-200/90 bg-white hover:border-slate-400 hover:shadow-md'
+                        : 'border-slate-200/90 bg-white hover:border-[var(--primary)]/50 hover:shadow-md'
                   }`}
                 >
                   {/* Badge de Paquete si está en modo paquete */}
@@ -160,65 +199,74 @@ export function ProductGrid({
                   )}
 
                   {/* Product Image / Placeholder */}
-                  {product.image ? (
-                    <div className="w-full h-24 sm:h-28 bg-slate-50 flex items-center justify-center p-2 border-b border-slate-100 overflow-hidden">
+                  {imgSrc ? (
+                    <div className="w-full h-28 sm:h-32 bg-white flex items-center justify-center p-2 border-b border-slate-100 overflow-hidden">
                       <img
-                        src={product.image}
+                        src={imgSrc}
                         alt={product.name}
                         className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.className = `w-full h-20 sm:h-24 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center` }}
+                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.className = `w-full h-24 sm:h-28 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center` }}
                       />
                     </div>
                   ) : (
-                    <div className={`w-full h-20 sm:h-24 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
+                    <div className={`w-full h-24 sm:h-28 bg-gradient-to-br ${categoryColors[product.category || 'Otros'] || 'from-gray-400 to-gray-500'} flex items-center justify-center`}>
                       <Package size={22} className="text-white/80" />
                     </div>
                   )}
 
-                  <div className="p-2.5">
-                    {/* SKU Tag destacado */}
-                    {(product.sku || product.barcode) && (
-                      <div className="mb-1">
-                        <span className="inline-flex items-center text-[9.5px] font-mono font-black bg-slate-900 text-amber-300 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">
-                          SKU: {product.sku || product.barcode}
-                        </span>
-                      </div>
-                    )}
-
-                    <h3 className="font-extrabold text-slate-900 leading-tight line-clamp-2 text-xs sm:text-sm" title={product.name}>
-                      {product.name}
-                    </h3>
-                    
-                    {/* Precio: regular o por pieza en paquete */}
-                    <div className="mt-1 flex items-baseline gap-1">
-                      <span className="text-sm sm:text-base font-black text-slate-900">
-                        {currency.format(isPackageMode ? unitPackPrice : rawPrice)}
-                      </span>
-                      {isPackageMode && (
-                        <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
+                  <div className="p-2.5 flex-1 flex flex-col justify-between">
+                    <div>
+                      {/* SKU Tag destacado */}
+                      {(product.sku || product.barcode) && (
+                        <div className="mb-1 flex items-center justify-between gap-1">
+                          <span className="inline-flex items-center text-[9.5px] font-mono font-black bg-slate-900 text-amber-300 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-2xs truncate">
+                            {product.sku || product.barcode}
+                          </span>
+                          {product.category && (
+                            <span className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                              {product.category}
+                            </span>
+                          )}
+                        </div>
                       )}
+
+                      <h3 className="font-extrabold text-slate-900 leading-tight line-clamp-2 text-xs sm:text-sm" title={product.name}>
+                        {product.name}
+                      </h3>
                     </div>
 
-
-
-                    {/* Stock Indicator */}
-                    {product.hasInventory && (
-                      <div className="mt-1">
-                        {isOutOfStock(product) ? (
-                          <span className="text-[10px] text-red-600 font-bold flex items-center gap-0.5">
-                            <AlertTriangle size={8} /> Agotado
-                          </span>
-                        ) : isLowStock(product) ? (
-                          <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5">
-                            <AlertTriangle size={8} /> Stock: {product.currentStock}
-                          </span>
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-baseline justify-between gap-1">
+                      {/* Precio: regular o por pieza en paquete */}
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm sm:text-base font-black text-slate-900">
+                          {currency.format(isPackageMode ? unitPackPrice : rawPrice)}
+                        </span>
+                        {isPackageMode ? (
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">/ pz paq</span>
                         ) : (
-                          <span className="text-[10px] text-emerald-600 font-medium">
-                            Stock: {product.currentStock} pzas
-                          </span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">c/u</span>
                         )}
                       </div>
-                    )}
+
+                      {/* Stock Indicator */}
+                      {product.hasInventory && (
+                        <div>
+                          {isOutOfStock(product) ? (
+                            <span className="text-[10px] text-red-600 font-bold flex items-center gap-0.5">
+                              <AlertTriangle size={8} /> Agotado
+                            </span>
+                          ) : isLowStock(product) ? (
+                            <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5">
+                              <AlertTriangle size={8} /> {product.currentStock}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-emerald-600 font-bold">
+                              {product.currentStock} pzas
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </button>
               )

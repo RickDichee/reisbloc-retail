@@ -9,7 +9,7 @@ export default function StoreFront() {
     const { slug } = useParams<{ slug: string }>()
     const navigate = useNavigate()
 
-    const [store, setStore] = useState<any>(null)
+    const [, setStore] = useState<any>(null)
     const [inventory, setInventory] = useState<any[]>([])
     const [organization, setOrganization] = useState<any>(null)
     const [products, setProducts] = useState<Product[]>([])
@@ -86,7 +86,6 @@ export default function StoreFront() {
             return matchesSearch && matchesCategory
         })
 
-    const storeName = isEcosystemStore ? store?.name : organization?.name
     const categories = categoryList
     const filteredProducts = filteredItems
 

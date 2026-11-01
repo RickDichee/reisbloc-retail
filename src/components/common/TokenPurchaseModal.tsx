@@ -32,6 +32,7 @@ export default function TokenPurchaseModal({ isOpen, onClose, onSuccess }: Token
       setSelectedPackage(null)
       clearPayment()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   useEffect(() => {

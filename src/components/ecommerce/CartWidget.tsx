@@ -140,16 +140,3 @@ export default function CartWidget({ onCheckout }: CartWidgetProps) {
     </>
   )
 }
-
-// Export addToCart for use in other components
-export const addToCart = (cart: CartItem[], product: any, quantity = 1): CartItem[] => {
-  const existing = cart.find(item => item.productId === product.id)
-  if (existing) {
-    return cart.map(item => 
-      item.productId === product.id 
-        ? { ...item, quantity: item.quantity + quantity }
-        : item
-    )
-  }
-  return [...cart, { productId: product.id, product, quantity }]
-}

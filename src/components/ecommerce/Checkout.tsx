@@ -9,10 +9,10 @@ interface CheckoutProps {
   onCancel: () => void
 }
 
-export default function Checkout({ cart, total, onComplete, onCancel }: CheckoutProps) {
+export default function Checkout({ cart, total, onComplete, onCancel: _onCancel }: CheckoutProps) {
   const [step, setStep] = useState<'shipping' | 'payment' | 'confirm'>('shipping')
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>('pickup')
-  const [address, setAddress] = useState<Address | null>(null)
+  const [address] = useState<Address | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<'mercadopago' | 'cash' | 'transferencia'>('mercadopago')
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)

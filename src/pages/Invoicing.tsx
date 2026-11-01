@@ -62,6 +62,7 @@ export default function Invoicing() {
 
   useEffect(() => {
     loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadInvoices = async () => {

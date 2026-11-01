@@ -345,7 +345,7 @@ export default function Closing() {
       <body>
         <div class="receipt">
           <div class="header">
-            <h1>🏪 TPV SOLUTIONS</h1>
+            <h1>🏪 ${currentUser?.businessName || BRANDING.appName}</h1>
             <p>CIERRE DE CAJA</p>
             <p>${new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
             <p>Cajero: ${currentUser?.username}</p>

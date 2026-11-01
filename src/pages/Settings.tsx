@@ -20,7 +20,6 @@ import {
     Megaphone,
     Bot,
     TrendingUp,
-    Upload,
     Check,
     AlertCircle
 } from 'lucide-react'
@@ -30,6 +29,7 @@ import AuditLogs from '@/components/admin/AuditLogs'
 import { supabase } from '@/config/supabase'
 import supabaseService from '@/services/supabaseService'
 import logger from '@/utils/logger'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 
 type SettingsTab = 'interface' | 'devices' | 'logs' | 'branding'
 
@@ -158,18 +158,23 @@ export default function Settings() {
         { id: 'logs' as SettingsTab, label: 'Seguridad', icon: FileText, enabled: canViewLogs },
     ]
 
+    const canShowOnlineStore = currentUser?.organizationId !== '324fd41f-b8af-4aef-9ea6-2f954350775a' && (currentUser?.organizationId ? tenantHasFeature(currentUser.organizationId, 'onlineStoreModule') : true)
+    const canShowAiModules = tenantHasFeature(currentUser?.organizationId || null, 'aiModules')
+
     const availableModules = [
         { id: '/pos', label: 'Punto de Venta', icon: Banknote },
-        { id: '/ecommerce', label: 'E-commerce', icon: Store },
+        ...(canShowOnlineStore ? [{ id: '/ecommerce', label: 'E-commerce', icon: Store }] : []),
         { id: '/inventory', label: 'Inventario', icon: ShoppingBag },
         { id: '/clients', label: 'Clientes', icon: Users },
         { id: '/reports', label: 'Reportes', icon: BarChart3 },
         { id: '/closing', label: 'Cierre de Caja', icon: DollarSign },
         { id: '/purchases', label: 'Compras', icon: Coins },
         { id: '/admin', label: 'Administración', icon: ShieldCheck },
-        { id: '/marketing', label: 'Marketing AI', icon: Megaphone, ai: true },
-        { id: '/agent', label: 'IA Agent', icon: Bot, ai: true },
-        { id: '/analytics', label: 'Analytics', icon: TrendingUp, ai: true },
+        ...(canShowAiModules ? [
+            { id: '/marketing', label: 'Marketing AI', icon: Megaphone, ai: true },
+            { id: '/agent', label: 'IA Agent', icon: Bot, ai: true },
+        ] : []),
+        { id: '/analytics', label: 'Analytics', icon: TrendingUp, ai: canShowAiModules },
     ]
 
     return (

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ShoppingCart,
-  Sparkles,
   Search,
   MessageCircle,
   Plus,
@@ -23,7 +22,7 @@ interface CartItem {
 
 const LOS_CHUNCHES_ORG_ID = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
 
-// 📦 Catálogo de ejemplo estilo "Saldos Costco" (solo URLs verificadas 200 OK)
+// 📦 Catálogo de ejemplo estilo 'Saldos Costco / Target / CVS / JCP' (solo URLs verificadas 200 OK)
 // Mapea keywords de productos reales a fotografías de categoría
 const CATEGORY_IMAGES: Record<string, string> = {
   'Muebles': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80',
@@ -133,7 +132,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-f2',
@@ -146,7 +147,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-f3',
@@ -159,7 +162,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-f4',
@@ -172,7 +177,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     // ==================== ROPA Y TENIS ====================
     {
@@ -186,7 +193,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-r2',
@@ -199,7 +208,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-r3',
@@ -212,7 +223,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-r4',
@@ -225,7 +238,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-r5',
@@ -238,7 +253,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     // ==================== HERRAMIENTAS ====================
     {
@@ -252,7 +269,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-h2',
@@ -265,7 +284,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     // ==================== HOGAR Y COCINA ====================
     {
@@ -279,7 +300,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-k2',
@@ -292,7 +315,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-k3',
@@ -305,7 +330,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-k4',
@@ -318,9 +345,11 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
-    // ==================== ELECTRÓNICA ====================
+    // ==================== ELECTR�"NICA ====================
     {
       id: 'lc-e1',
       name: 'Smart TV 55" 4K UHD',
@@ -332,7 +361,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-e2',
@@ -345,7 +376,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-e3',
@@ -358,7 +391,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-e4',
@@ -371,7 +406,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     // ==================== DEPORTES ====================
     {
@@ -385,7 +422,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     },
     {
       id: 'lc-d2',
@@ -398,7 +437,9 @@ export default function LosChunchesBrandPage() {
       isAvailable: true,
       imageUrl: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?auto=format&fit=crop&w=600&q=80',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      hasInventory: true,
+      active: true
     }
   ]
 
@@ -425,6 +466,7 @@ export default function LosChunchesBrandPage() {
       }
     }
     loadProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const categories = ['Todos', 'Muebles', 'Ropa y Tenis', 'Herramientas', 'Hogar y Cocina', 'Electrónica', 'Deportes']
@@ -469,27 +511,38 @@ export default function LosChunchesBrandPage() {
   const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
+
   const handleSendWhatsAppOrder = () => {
     if (cart.length === 0) return
     const lines = cart.map(
       (item) => `• ${item.quantity}x ${item.product.name} ($${(item.product.price * item.quantity).toFixed(2)})`
     )
-    const message = `¡Hola Los Chunches de Cons! 📦 Me interesa el siguiente saldo:\n\n${lines.join(
+    const message = `¡Hola Los Chunches de Cons! 🎀 Me interesa el siguiente pedido:\n\n${lines.join(
       '\n'
     )}\n\n*Total aproximado: $${cartTotal.toFixed(2)} MXN*\n¿Está disponible? ¿Aceptan envío a mi domicilio? ¡Gracias!`
 
     const encoded = encodeURIComponent(message)
-    window.open(`https://wa.me/?text=${encoded}`, '_blank')
+    window.open(`https://wa.me/524431244490?text=${encoded}`, '_blank')
   }
 
+  // 6 categorías icónicas del manual de identidad oficial de Los Chunches de Cons
+  const brandHighlights = [
+    { label: 'BLANCOS', emoji: '🧺', bg: 'bg-pink-100 border-pink-300 text-[#C83E74]', cat: 'Hogar y Cocina' },
+    { label: 'HOGAR', emoji: '🏠', bg: 'bg-teal-100 border-teal-300 text-teal-800', cat: 'Hogar y Cocina' },
+    { label: 'BELLEZA', emoji: '💄', bg: 'bg-purple-100 border-purple-300 text-purple-800', cat: 'Todos' },
+    { label: 'DECORACIÓN', emoji: '🪴', bg: 'bg-orange-100 border-orange-300 text-orange-800', cat: 'Hogar y Cocina' },
+    { label: 'HERRAMIENTAS', emoji: '🛠️', bg: 'bg-amber-100 border-amber-300 text-amber-900', cat: 'Herramientas' },
+    { label: 'MUEBLES', emoji: '🛋️', bg: 'bg-blue-100 border-blue-300 text-[#2B4882]', cat: 'Muebles' }
+  ]
+
   return (
-    <div className="min-h-screen bg-[#FAF6F7] text-slate-800 font-['Outfit',sans-serif] selection:bg-[#9B4158] selection:text-white pb-20">
-      {/* 📦 HEADER MINIMALISTA & EQUILIBRADO */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EDE6E8] shadow-xs">
+    <div className="min-h-screen bg-[#FDF8FA] text-slate-800 font-['Outfit',sans-serif] selection:bg-[#C83E74] selection:text-white pb-20">
+      {/* 🎀 HEADER OFICIAL LOS CHUNCHES DE CONS */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-[#F3DFEA] shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 h-20 flex items-center justify-between gap-4">
           {/* Logotipo y Título del Negocio */}
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl overflow-hidden border border-[#EDE6E8] shadow-xs bg-white flex-shrink-0">
+            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#C83E74] shadow-sm bg-white flex-shrink-0">
               <img
                 src="/images/los_chunches.jpeg"
                 alt="Logotipo Los Chunches de Cons"
@@ -498,13 +551,17 @@ export default function LosChunchesBrandPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                  Los Chunches <span className="text-[#9B4158] font-['Dancing_Script',cursive] text-2xl sm:text-3xl font-bold">de Cons</span>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#C83E74] uppercase">
+                  LOS CHUNCHES <span className="text-slate-900 font-['Pacifico','Dancing_Script',cursive] capitalize text-2xl sm:text-3xl font-bold">de Cons</span>
                 </h1>
-                <span className="text-base text-rose-300">📦</span>
               </div>
-              <p className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">
-                Saldos de Costco · Novedades Semanales
+              <p className="text-[10px] sm:text-[11px] font-black tracking-widest uppercase flex items-center gap-1.5">
+                <span className="text-[#C22B38]">◎ TARGET</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-[#C22B38]">♥ CVS</span>
+                <span className="text-slate-300">|</span>
+                <span className="text-[#2B4882]">JCP</span>
+                <span className="hidden md:inline text-slate-400">· Mercancía Americana e Importada</span>
               </p>
             </div>
           </div>
@@ -514,12 +571,12 @@ export default function LosChunchesBrandPage() {
             {/* Botón Carrito / Bolsa */}
             <button
               onClick={() => setShowCartModal(true)}
-              className="relative px-3.5 py-2 sm:px-4 sm:py-2.5 bg-stone-50 hover:bg-stone-100 border border-stone-200 text-slate-700 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-xs"
+              className="relative px-3.5 py-2 sm:px-4 sm:py-2.5 bg-[#FDF8FA] hover:bg-[#F3DFEA]/50 border border-[#F3DFEA] text-slate-800 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-xs"
             >
-              <ShoppingCart size={17} className="text-[#9B4158]" />
+              <ShoppingCart size={17} className="text-[#C83E74]" />
               <span className="hidden sm:inline">Mi Bolsa</span>
               {cartItemsCount > 0 && (
-                <span className="bg-[#9B4158] text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                <span className="bg-[#C83E74] text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
                   {cartItemsCount}
                 </span>
               )}
@@ -528,7 +585,7 @@ export default function LosChunchesBrandPage() {
             {/* Acceso Colaboradores / POS */}
             <Link
               to="/login?brand=loschunches"
-              className="bg-[#9B4158] hover:bg-[#833246] text-white font-bold px-4 py-2.5 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow-xs"
+              className="bg-[#C83E74] hover:bg-[#AD2E60] text-white font-bold px-4 py-2.5 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow-sm"
               title="Acceso restringido a colaboradores autorizados"
             >
               <UserCheck size={16} />
@@ -538,59 +595,97 @@ export default function LosChunchesBrandPage() {
         </div>
       </header>
 
-      {/* 📦 STRIP DE BODEGA: novedad de lotes */}
-      <div className="bg-slate-950 text-amber-300 text-[10px] sm:text-[11px] font-black tracking-[0.18em] uppercase text-center py-2.5 px-4">
-        📦 Nuevos lotes cada semana · Saldos originales de Costco · Precios de mayoreo 📦
+      {/* ⭐ CINTA OFICIAL DE IDENTIDAD: MERCANCÍA AMERICANA E IMPORTADA */}
+      <div className="bg-[#C83E74] text-white text-[11px] sm:text-xs font-black tracking-[0.2em] uppercase text-center py-2.5 px-4 shadow-xs flex items-center justify-center gap-3">
+        <span className="text-[#FFD700] text-sm">★</span>
+        <span>MERCANCÍA AMERICANA E IMPORTADA · TARGET · CVS · JCP · SALDOS ORIGINALES</span>
+        <span className="text-[#FFD700] text-sm">★</span>
       </div>
 
-      {/* 📦 HERO SALDOS */}
-      <section className="relative overflow-hidden py-12 sm:py-16 px-4 bg-gradient-to-b from-white to-[#FAF6F7]">
+      {/* 🎀 HERO CON IDENTIDAD REDONDA DEL SELLO OFICIAL */}
+      <section className="relative overflow-hidden py-10 sm:py-14 px-4 bg-gradient-to-b from-white via-[#FDF8FA] to-[#FDF8FA]">
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          {/* Badge Saldos */}
-          <div className="inline-flex items-center gap-2 bg-white border border-[#EDE6E8] text-[#9B4158] px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase mb-6 shadow-xs">
-            <Sparkles size={13} className="text-[#9B4158]" />
-            Saldos Originales de Costco · Nuevo Lote Cada Semana
-          </div>
-
-          {/* Presentación Central con Logo y Tipografías */}
+          {/* Insignia redonda principal estilo sello oficial */}
           <div className="flex flex-col items-center justify-center mb-6">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden border-2 border-white shadow-md mb-4 bg-white">
+            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-[#C83E74] ring-4 ring-[#F3DFEA] shadow-xl mb-5 bg-white">
               <img
                 src="/images/los_chunches.jpeg"
                 alt="Los Chunches de Cons"
                 className="w-full h-full object-cover"
               />
             </div>
-            <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight font-['Playfair_Display',Georgia,serif]">
-              Los Chunches <span className="text-[#9B4158] font-['Dancing_Script',cursive] text-5xl sm:text-6xl font-bold">de Cons</span>
+
+            <h2
+              className="text-4xl sm:text-6xl font-black text-[#C83E74] tracking-tight uppercase leading-none"
+              style={{ fontFamily: "'Luckiest Guy', 'Boogaloo', 'Outfit', sans-serif" }}
+            >
+              LOS CHUNCHES
             </h2>
-            <p className="mt-3 text-base sm:text-lg text-slate-600 max-w-xl mx-auto font-normal leading-relaxed">
-              Saldos y liquidación de Costco: muebles, ropa, tenis, herramientas, cocina, electrónica — todo lo que <span className="font-semibold text-slate-800">no es perecedero</span>, hasta <span className="font-semibold text-[#9B4158]">60% menos</span>. Pedidos directo por WhatsApp.
+            <p className="mt-1 text-2xl sm:text-4xl font-bold text-slate-900">
+              DE <span className="font-['Pacifico','Dancing_Script',cursive] text-[#C83E74] underline decoration-[#C83E74] decoration-2">Cons</span>
+            </p>
+
+            {/* Barra de Marcas TARGET | CVS | JCP */}
+            <div className="mt-5 inline-flex items-center gap-3 sm:gap-5 bg-white border-2 border-[#F3DFEA] px-6 py-2.5 rounded-full shadow-sm">
+              <span className="font-black text-sm sm:text-lg tracking-wider text-[#C22B38] flex items-center gap-1">
+                <span className="text-lg sm:text-xl leading-none">◎</span> TARGET
+              </span>
+              <span className="h-5 w-px bg-pink-200" />
+              <span className="font-black text-sm sm:text-lg tracking-wider text-[#C22B38] flex items-center gap-1">
+                <span>♥</span> CVS
+              </span>
+              <span className="h-5 w-px bg-pink-200" />
+              <span className="font-black text-sm sm:text-lg tracking-wider text-[#2B4882]">
+                JCP
+              </span>
+            </div>
+
+            {/* 6 Círculos de Categorías del Manual de Marca */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4 mt-7 max-w-2xl mx-auto">
+              {brandHighlights.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => setSelectedCategory(item.cat)}
+                  className="flex flex-col items-center group cursor-pointer"
+                >
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 ${item.bg} flex items-center justify-center text-xl sm:text-2xl shadow-xs group-hover:scale-110 transition-transform`}>
+                    {item.emoji}
+                  </div>
+                  <span className="mt-1.5 text-[10px] font-black tracking-wider text-slate-800 group-hover:text-[#C83E74]">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-6 text-sm sm:text-base text-slate-600 max-w-xl mx-auto font-medium leading-relaxed">
+              Blancos, hogar, belleza, decoración, herramientas y muebles de las mejores tiendas americanas hasta con <span className="font-black text-[#C83E74]">60% de descuento</span>. Pedidos directo por WhatsApp.
             </p>
           </div>
 
-          {/* Garantías y Valores (Sobrios y limpios) */}
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-8">
-            <div className="bg-white border border-[#EDE6E8] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-medium text-slate-700">
-              <CheckCircle2 size={15} className="text-[#9B4158]" />
-              <span>Mercancía Original Costco</span>
+          {/* Garantías y Valores */}
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-6">
+            <div className="bg-white border border-[#F3DFEA] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-bold text-slate-700">
+              <CheckCircle2 size={15} className="text-[#C83E74]" />
+              <span>Mercancía 100% Americana e Importada</span>
             </div>
-            <div className="bg-white border border-[#EDE6E8] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-medium text-slate-700">
-              <Star size={14} className="text-amber-500 fill-amber-500" />
-              <span>Precios de Saldo Real</span>
+            <div className="bg-white border border-[#F3DFEA] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-bold text-slate-700">
+              <Star size={14} className="text-[#D49B2A] fill-[#D49B2A]" />
+              <span>Precios de Liquidación Real</span>
             </div>
-            <div className="bg-white border border-[#EDE6E8] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-medium text-slate-700">
-              <Package size={15} className="text-[#9B4158]" />
-              <span>Nuevo Lote Cada Semana</span>
+            <div className="bg-white border border-[#F3DFEA] px-4 py-2 rounded-2xl shadow-2xs flex items-center gap-2 text-xs font-bold text-slate-700">
+              <Package size={15} className="text-[#2B4882]" />
+              <span>Nuevos Lotes Cada Semana</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 📦 CATÁLOGO & EXPLORACIÓN DE PRODUCTOS */}
+      {/* 🛍️ CATÁLOGO & EXPLORACIÓN DE PRODUCTOS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-8">
         {/* Barra de Filtros y Búsqueda */}
-        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-[#EDE6E8] mb-8">
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-[#F3DFEA] mb-8">
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
             {/* Buscador */}
             <div className="relative w-full sm:w-80">
@@ -600,11 +695,11 @@ export default function LosChunchesBrandPage() {
                 placeholder="Buscar por artículo o categoría..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-stone-50/80 border border-stone-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#9B4158]/20 focus:border-[#9B4158] text-slate-800 placeholder-slate-400 transition-all"
+                className="w-full pl-11 pr-4 py-2.5 bg-stone-50/80 border border-stone-200 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C83E74]/20 focus:border-[#C83E74] text-slate-800 placeholder-slate-400 transition-all"
               />
             </div>
 
-            {/* Categorías con Chips Sobrios */}
+            {/* Categorías con Chips */}
             <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
               {categories.map((cat) => (
                 <button
@@ -612,7 +707,7 @@ export default function LosChunchesBrandPage() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     selectedCategory === cat
-                      ? 'bg-[#9B4158] text-white shadow-xs'
+                      ? 'bg-[#C83E74] text-white shadow-xs'
                       : 'bg-stone-50 text-slate-600 hover:bg-stone-100 border border-stone-100'
                   }`}
                 >
@@ -626,11 +721,11 @@ export default function LosChunchesBrandPage() {
         {/* Grid de Productos con Imágenes Reales y Equilibradas */}
         {loading ? (
           <div className="text-center py-20">
-            <div className="w-10 h-10 border-3 border-[#9B4158] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <div className="w-10 h-10 border-3 border-[#C83E74] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-xs font-semibold text-slate-500">Cargando productos de Los Chunches...</p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-[#EDE6E8] p-8">
+          <div className="text-center py-16 bg-white rounded-3xl border border-[#F3DFEA] p-8">
             <Package size={44} className="text-slate-300 mx-auto mb-3" />
             <h3 className="text-base font-bold text-slate-800">No encontramos coincidencias</h3>
             <p className="text-xs text-slate-500 mt-1">Intenta con otro término o selecciona "Todos".</p>
@@ -642,9 +737,9 @@ export default function LosChunchesBrandPage() {
               return (
                 <div
                   key={p.id}
-                  className="bg-white rounded-3xl overflow-hidden border border-[#EDE6E8] shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col group hover:-translate-y-1"
+                  className="bg-white rounded-3xl overflow-hidden border border-[#F3DFEA] shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col group hover:-translate-y-1"
                 >
-                  {/* 📦 Fotografía de la categoría + badge de saldo */}
+                  {/* Fotografía de la categoría + badge de saldo */}
                   <div className="relative aspect-4/3 bg-stone-100 overflow-hidden">
                     <img
                       src={photo}
@@ -652,10 +747,10 @@ export default function LosChunchesBrandPage() {
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute top-3 left-3 bg-red-600 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
-                      Saldo
+                    <div className="absolute top-3 left-3 bg-[#C22B38] text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+                      Importado
                     </div>
-                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-slate-700 border border-stone-200/80 shadow-2xs">
+                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-[#2B4882] border border-stone-200/80 shadow-2xs">
                       {p.category || 'Novedades'}
                     </div>
                     {p.currentStock !== undefined && p.currentStock > 0 && p.currentStock <= 5 && (
@@ -668,11 +763,11 @@ export default function LosChunchesBrandPage() {
                   {/* Detalle y Precio */}
                   <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <h4 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-[#9B4158] transition-colors line-clamp-1">
+                      <h4 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-[#C83E74] transition-colors line-clamp-1">
                         {p.name}
                       </h4>
                       <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed font-normal">
-                        {p.description || 'Artículo especial de la tienda Los Chunches de Cons.'}
+                        {p.description || 'Artículo importado de Los Chunches de Cons.'}
                       </p>
                     </div>
 
@@ -686,7 +781,7 @@ export default function LosChunchesBrandPage() {
 
                       <button
                         onClick={() => addToCart(p)}
-                        className="bg-stone-50 hover:bg-[#9B4158] text-slate-700 hover:text-white border border-stone-200 hover:border-[#9B4158] px-3.5 py-2 rounded-xl transition-all duration-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs active:scale-95"
+                        className="bg-[#FDF8FA] hover:bg-[#C83E74] text-[#C83E74] hover:text-white border border-[#F3DFEA] hover:border-[#C83E74] px-3.5 py-2 rounded-xl transition-all duration-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs active:scale-95"
                         title="Agregar a mi bolsa"
                       >
                         <Plus size={14} />
@@ -701,13 +796,13 @@ export default function LosChunchesBrandPage() {
         )}
       </section>
 
-      {/* 📦 MODAL DE CARRITO ELEGANTE */}
+      {/* 🛍️ MODAL DE CARRITO ELEGANTE */}
       {showCartModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl border border-stone-200 max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between pb-4 border-b border-stone-100">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="text-[#9B4158]" size={20} />
+                <ShoppingCart className="text-[#C83E74]" size={20} />
                 <h3 className="text-base font-bold text-slate-900">Mi Bolsa de Pedido</h3>
               </div>
               <button
@@ -733,7 +828,7 @@ export default function LosChunchesBrandPage() {
                   >
                     <div className="flex-1 mr-3">
                       <p className="text-xs font-bold text-slate-900 line-clamp-1">{item.product.name}</p>
-                      <p className="text-xs text-[#9B4158] font-semibold">
+                      <p className="text-xs text-[#C83E74] font-semibold">
                         ${(item.product.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
@@ -763,7 +858,7 @@ export default function LosChunchesBrandPage() {
               <div className="pt-4 border-t border-stone-100 space-y-3">
                 <div className="flex items-center justify-between text-sm font-bold text-slate-900">
                   <span>Total estimado:</span>
-                  <span className="text-xl text-[#9B4158]">${cartTotal.toFixed(2)}</span>
+                  <span className="text-xl text-[#C83E74]">${cartTotal.toFixed(2)}</span>
                 </div>
 
                 <button
@@ -779,17 +874,23 @@ export default function LosChunchesBrandPage() {
         </div>
       )}
 
-      {/* 📦 FOOTER SOBRIO Y PROFESIONAL */}
-      <footer className="mt-20 border-t border-[#EDE6E8] bg-white py-8 px-4 text-center">
+      {/* 🎀 FOOTER OFICIAL */}
+      <footer className="mt-20 border-t border-[#F3DFEA] bg-white py-8 px-4 text-center">
         <div className="max-w-4xl mx-auto space-y-3">
           <div className="flex items-center justify-center gap-2">
-            <span className="font-bold text-slate-800 text-sm">Los Chunches de Cons</span>
-            <span className="text-xs text-rose-300">📦</span>
+            <span className="font-black text-[#C83E74] text-sm uppercase">Los Chunches de Cons</span>
+            <span className="text-xs text-[#C83E74]">♥</span>
           </div>
+          <p className="text-[11px] text-slate-500 font-bold tracking-wider uppercase">
+            TARGET · CVS · JCP · Mercancía Americana e Importada
+          </p>
+          <p className="text-xs text-[#C83E74] font-black">
+            📞 Tel / WhatsApp: (443) 124-4490
+          </p>
           <p className="text-[11px] text-slate-400 font-medium">
             © {new Date().getFullYear()} · Sistema Retail POS Multitenant
           </p>
-          <div className="text-[10px] font-bold text-[#9B4158] tracking-widest uppercase">
+          <div className="text-[10px] font-bold text-[#C83E74] tracking-widest uppercase">
             POWERED BY REISBLOC
           </div>
         </div>

@@ -148,14 +148,6 @@ export function useTerminalSession() {
   const claimControl = useCallback(async () => {
     if (!orgId || !currentUser) return
 
-    const myTerminalInfo: TerminalInfo = {
-      terminalId: terminalIdRef.current,
-      terminalName: terminalNameRef.current,
-      userId: currentUser.id,
-      userName: currentUser.name || currentUser.username || 'Cajero',
-      joinedAt: 1 // Prioridad máxima al forzar
-    }
-
     const channelName = `pos_terminals:${orgId}`
     const channel = supabase.channel(channelName)
     await channel.send({

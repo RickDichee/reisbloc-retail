@@ -63,7 +63,7 @@ class SupabaseService {
       if (storeState?.currentUser?.organizationId) {
         return storeState.currentUser.organizationId
       }
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 
     // 2. Intentar obtener de los datos del token en memoria / storage autenticado
     const token = getStoredToken()
@@ -554,22 +554,25 @@ class SupabaseService {
 
   // ==================== PRODUCTS ====================
 
-  async getProducts(): Promise<Product[]> {
-    return this.getAllProducts()
+  async getProducts(orgId?: string): Promise<Product[]> {
+    return this.getAllProducts(orgId)
   }
 
-  async getAllProducts(): Promise<Product[]> {
+  async getAllProducts(orgId?: string): Promise<Product[]> {
     return this.withRetry(async () => {
       // 📡 OFFLINE FIRST: Si no hay internet, devolver caché rápido
       if (!navigator.onLine) {
         console.log('📴 [Offline] Retornando productos de IndexedDB')
-        return await offlineStorage.getProducts()
+        return await offlineStorage.getProducts(orgId)
       }
 
       // ⛑️ FIX EGRESS: throttle del catálogo. Si los datos locales tienen menos
       // de 5 minutos, no re-descargamos la tabla completa de nuevo.
       const CATALOG_REFETCH_MIN_MS = 5 * 60 * 1000
-      const throttleOrgId = this.getCurrentOrgId()
+      // 🏷️ Multi-tenant: el orgId explícito (páginas de marca públicas) tiene prioridad
+      // sobre getCurrentOrgId(), que puede ser NULL cuando nadie está autenticado.
+      const targetOrgId = (orgId && orgId.trim() !== '') ? orgId.trim() : this.getCurrentOrgId()
+      const throttleOrgId = targetOrgId
       const throttleKey = `last_products_fetch_ms${throttleOrgId ? `_${throttleOrgId}` : ''}`
       const lastCatalogFetch = Number(localStorage.getItem(throttleKey) || 0)
       if (Date.now() - lastCatalogFetch < CATALOG_REFETCH_MIN_MS) {
@@ -583,7 +586,7 @@ class SupabaseService {
       console.log('🔍 [Supabase] Obteniendo productos de la red...')
       const { data, error } = await withOrg(
         supabase.from('products').select('*'),
-        this.getCurrentOrgId()
+        targetOrgId
       )
         .order('category', { ascending: true })
         .order('name', { ascending: true })
@@ -596,7 +599,8 @@ class SupabaseService {
       // Filter in memory to show active/available products
       const products = (data || []).map((p: any) => ({
         ...p,
-        active: p.available,
+        imageUrl: p.image || p.imageUrl,
+        active: p.available ?? p.active ?? true,
         currentStock: p.current_stock,
         minimumStock: p.minimum_stock,
         hasInventory: p.has_inventory,
@@ -608,7 +612,7 @@ class SupabaseService {
       return products
     }).catch(async error => {
       logger.warn('supabase', 'Fallo al descargar productos. Usando caché offline.', error)
-      return await offlineStorage.getProducts()
+      return await offlineStorage.getProducts(orgId)
     })
   }
 
@@ -936,9 +940,9 @@ class SupabaseService {
           return matched ? { ...o, syncAttempts: matched.syncAttempts } : o
         })
         localStorage.setItem(ordersKey, JSON.stringify(updated))
-      } catch (e) {}
+      } catch (e) { /* ignore */ }
 
-    } catch (e) {} finally {
+    } catch (e) { /* ignore */ } finally {
       this.isSyncingOfflineOrders = false
     }
   }
@@ -989,7 +993,7 @@ class SupabaseService {
       try {
         const ordersKey = this.getLocalOrdersKey(currentOrgId)
         localOrders = JSON.parse(localStorage.getItem(ordersKey) || '[]')
-      } catch (e) {}
+      } catch (e) { /* ignore */ }
 
       const remoteIds = new Set(normalizedRemote.map((o: any) => o.id))
       // 🛡️ FILTRO ESTRICTO: Solo incluir órdenes locales con status activo y que no estén ya en remoto
@@ -1152,7 +1156,7 @@ class SupabaseService {
         is_paid: Boolean(order.is_paid ?? order.isPaid ?? (pending === 0 && total > 0))
       })
       localStorage.setItem(ordersKey, JSON.stringify(filtered))
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   }
 
   async updateOrder(orderId: string, updates: Partial<Order>): Promise<void> {
@@ -1209,7 +1213,7 @@ class SupabaseService {
         })
       }
       localStorage.setItem(ordersKey, JSON.stringify(updated))
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   }
 
   removeLocalPendingOrder(orderId: string) {
@@ -1219,7 +1223,7 @@ class SupabaseService {
       const existing = JSON.parse(localStorage.getItem(ordersKey) || '[]')
       const updated = existing.filter((o: any) => o.id !== orderId)
       localStorage.setItem(ordersKey, JSON.stringify(updated))
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
   }
 
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
@@ -2248,8 +2252,11 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         has_inventory: product.hasInventory ?? true,
         active: product.active ?? true,
         parent_id: product.parentId || null,
-        pack_quantity: product.packQuantity || 1,
-        unit_cost: (product as any).unitCost ?? null
+        pack_quantity: product.packQuantity || 1
+      }
+
+      if ((product as any).unitCost !== undefined && (product as any).unitCost !== null && (product as any).unitCost !== '') {
+        payload.unit_cost = Number((product as any).unitCost)
       }
 
       const { data, error } = await supabase
@@ -2295,7 +2302,9 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       if ('packQuantity' in updates) payload.pack_quantity = updates.packQuantity
       if ('pack_quantity' in updates) payload.pack_quantity = (updates as any).pack_quantity
 
-      if ('unitCost' in updates) payload.unit_cost = updates.unitCost
+      if ('unitCost' in updates && updates.unitCost !== undefined && updates.unitCost !== null && updates.unitCost !== '') {
+        payload.unit_cost = Number(updates.unitCost)
+      }
 
       // Handle extra pricing fields packaging in description
       if ('description' in updates || 'packPrice' in updates || 'bulkPrice' in updates || 'packQty' in updates || 'bulkQty' in updates || 'packagesPerBulk' in updates || 'wholesalePrice' in updates || 'wholesaleMinQty' in updates) {
@@ -2314,7 +2323,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           if (currentDesc.startsWith('{') && currentDesc.endsWith('}')) {
             try {
               currentParsed = JSON.parse(currentDesc)
-            } catch (e) {}
+            } catch (e) { /* ignore */ }
           } else {
             currentParsed.description = currentDesc
           }
@@ -2626,7 +2635,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       })
 
       totalDebt = pendingOrders.reduce((sum, o) => sum + (o.pendingBalance ?? o.total ?? 0), 0)
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 
     return { sales, pendingOrders, totalDebt }
   }
@@ -2894,7 +2903,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         if (master.description && master.description.startsWith('{') && master.description.endsWith('}')) {
           try {
             descObj = JSON.parse(master.description)
-          } catch (e) {}
+          } catch (e) { /* ignore */ }
         } else {
           descObj.description = master.description || ''
         }

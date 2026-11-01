@@ -1,6 +1,6 @@
 // src/components/reports/SalesHistoryTab.tsx
 import { useEffect, useState, useMemo } from 'react'
-import { Search, Eye, X, User, Clock, CreditCard, Banknote, ArrowLeftRight, ChevronDown, ChevronUp, Package } from 'lucide-react'
+import { Search, Eye, X, User, Clock, Package } from 'lucide-react'
 import supabaseService from '@/services/supabaseService'
 
 interface SalesHistoryTabProps {
@@ -41,7 +41,7 @@ interface UserInfo {
 export default function SalesHistoryTab({ dateRange }: SalesHistoryTabProps) {
   const [sales, setSales] = useState<Sale[]>([])
   const [users, setUsers] = useState<UserInfo[]>([])
-  const [loading, setLoading] = useState(false)
+  const [, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'digital' | 'clip' | 'mixed'>('all')
   const [employeeFilter, setEmployeeFilter] = useState<'all' | string>('all')
