@@ -20,10 +20,12 @@ const DEV_PUBLISHABLE_KEY = 'sb_publishable_5YHF5VWvNfoaYNXL-xGECw_J5IXdRAa'
 
 // Detección estricta de dominios de Producción (mientras sanjudastadeo y loschunches están en fase DEV apuntan a jnyyaclrelqcqzjummwe)
 const hostname = (typeof window !== 'undefined' ? window.location.hostname : '').toLowerCase()
+const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname === ''
 const isStagingTenantDomain =
   hostname === 'sanjudastadeo.reisbloc.com' ||
   hostname === 'loschunchesdecons.reisbloc.com'
 const isProductionDomain = 
+  !isLocalhost &&
   !isStagingTenantDomain && (
     hostname === 'store.reisbloc.com' ||
     hostname === 'modamielmx.reisbloc.com' ||
@@ -34,23 +36,34 @@ const isProductionDomain =
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
 const rawAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
 
-let validUrl = PROD_SUPABASE_URL
-let validKey = PROD_PUBLISHABLE_KEY
+// 🛡️ REGLA DE ORO DE SEGURIDAD (AGENTS.md / SKILL.md):
+// El fallback por defecto NUNCA debe ser PROD. Todo entorno de desarrollo o local DEBE apuntar a DEV (jnyyaclrelqcqzjummwe).
+let validUrl = DEV_SUPABASE_URL
+let validKey = DEV_PUBLISHABLE_KEY
 
 if (isProductionDomain) {
   // En dominios oficiales de producción forzar siempre el Supabase PROD y su Publishable Key correspondiente
   validUrl = PROD_SUPABASE_URL
   validKey = PROD_PUBLISHABLE_KEY
+} else if (rawUrl.includes('nmovxyaibnixvxtepbod')) {
+  // Si explícitamente se configuró PROD en variables de entorno
+  validUrl = PROD_SUPABASE_URL
+  validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : PROD_PUBLISHABLE_KEY
 } else if (rawUrl.includes('jnyyaclrelqcqzjummwe') || rawUrl.includes('htjhzdtlvdbtlfdhsydq') || rawUrl.includes('dev')) {
   // En ambiente DEV usar la URL de DEV y la Publishable Key de DEV correspondiente
   validUrl = DEV_SUPABASE_URL
   validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : DEV_PUBLISHABLE_KEY
-} else if (rawUrl.includes('nmovxyaibnixvxtepbod')) {
-  validUrl = PROD_SUPABASE_URL
-  validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : PROD_PUBLISHABLE_KEY
+} else if (isLocalhost) {
+  // 🛡️ REGLA CRÍTICA: Localhost SIEMPRE conecta a DEV (jnyyaclrelqcqzjummwe) para proteger PROD
+  validUrl = DEV_SUPABASE_URL
+  validKey = DEV_PUBLISHABLE_KEY
 } else if (rawUrl) {
   validUrl = rawUrl
-  validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : PROD_PUBLISHABLE_KEY
+  validKey = (rawAnonKey && !rawAnonKey.startsWith('eyJ')) ? rawAnonKey : DEV_PUBLISHABLE_KEY
+} else {
+  // Default seguro: DEV
+  validUrl = DEV_SUPABASE_URL
+  validKey = DEV_PUBLISHABLE_KEY
 }
 
 if (!validUrl || !validKey) {
