@@ -23,6 +23,7 @@ interface PaymentPanelProps {
   onPaymentComplete: (result: PaymentResult) => void
   onCancel: () => void
   initialMethod?: 'cash' | 'transfer' | 'card'
+  hasCardTerminal?: boolean
 }
 
 const COMMON_BANKS = ['BBVA', 'Banamex', 'Santander', 'Banorte', 'Nu', 'Mercado Pago', 'STP', 'Azteca']
@@ -36,6 +37,7 @@ export default function PaymentPanel({
   onPaymentComplete,
   onCancel,
   initialMethod = 'cash',
+  hasCardTerminal = false,
 }: PaymentPanelProps) {
   const ids = orderIds || (orderId ? [orderId] : [])
 
@@ -174,10 +176,10 @@ export default function PaymentPanel({
             </div>
           </div>
 
-          {/* Selector de Método de Pago: Efectivo, Tarjeta TPV y Transferencia */}
+          {/* Selector de Método de Pago */}
           <div>
             <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Forma de Pago</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className={`grid ${hasCardTerminal ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
               <button
                 type="button"
                 onClick={() => setPaymentMethod('cash')}
@@ -194,21 +196,23 @@ export default function PaymentPanel({
                 <span className="text-[11px] font-black uppercase tracking-tight">Efectivo</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                disabled={loading || success}
-                className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all border-2 ${
-                  paymentMethod === 'card'
-                    ? 'bg-blue-500/10 border-blue-600 text-blue-700 shadow-md ring-2 ring-blue-500/20'
-                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <div className={`p-2 rounded-xl ${paymentMethod === 'card' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
-                  <CreditCard size={20} strokeWidth={2.5} />
-                </div>
-                <span className="text-[11px] font-black uppercase tracking-tight">Tarjeta TPV</span>
-              </button>
+              {hasCardTerminal && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('card')}
+                  disabled={loading || success}
+                  className={`p-3 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all border-2 ${
+                    paymentMethod === 'card'
+                      ? 'bg-blue-500/10 border-blue-600 text-blue-700 shadow-md ring-2 ring-blue-500/20'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl ${paymentMethod === 'card' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                    <CreditCard size={20} strokeWidth={2.5} />
+                  </div>
+                  <span className="text-[11px] font-black uppercase tracking-tight">Tarjeta TPV</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -223,7 +227,7 @@ export default function PaymentPanel({
                 <div className={`p-2 rounded-xl ${paymentMethod === 'transfer' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
                   <ArrowLeftRight size={20} strokeWidth={2.5} />
                 </div>
-                <span className="text-[11px] font-black uppercase tracking-tight">Transfer</span>
+                <span className="text-[11px] font-black uppercase tracking-tight">{hasCardTerminal ? 'Transfer' : 'Transferencia'}</span>
               </button>
             </div>
           </div>

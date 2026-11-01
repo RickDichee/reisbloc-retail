@@ -13,25 +13,29 @@ export type TenantFeature =
   | 'packLabel'
   | 'onlineStoreModule'
   | 'aiModules'
+  | 'cardTerminal'
 
 const TENANT_FEATURES: Record<string, Record<string, boolean>> = {
   [MODA_MIEL_ORG_ID]: {
     // Moda Miel vende por paquete: el label del precio es "Pqte" en vez de "Precio"
     packLabel: true,
     onlineStoreModule: true,
-    aiModules: false
+    aiModules: false,
+    cardTerminal: false
   },
   [LOS_CHUNCHES_ORG_ID]: {
     unitCost: true,
     webReference: true,
     onlineStoreModule: true,
-    aiModules: false
+    aiModules: false,
+    cardTerminal: true
   },
   [JUGUETES_SAN_JUDASTADEO_ORG_ID]: {
     unitCost: false,
     webReference: false,
     onlineStoreModule: false,
-    aiModules: false
+    aiModules: false,
+    cardTerminal: false
   }
 }
 

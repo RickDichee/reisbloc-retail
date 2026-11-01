@@ -421,6 +421,7 @@ export default function POS() {
   const isReadOnly = currentUser?.role === 'supervisor'
 
   const usesPackByDefault = tenantHasFeature(currentUser?.organizationId || null, 'packLabel') || BRANDING.isModaMiel
+  const hasCardTerminal = tenantHasFeature(currentUser?.organizationId || null, 'cardTerminal')
   const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>(() => usesPackByDefault ? 'paquete' : 'pieza')
 
   useEffect(() => {
@@ -1723,17 +1724,19 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                   <span>Cobrar Efectivo (${currentTotal.toFixed(2)})</span>
                 </button>
 
-                {/* Botones Secundarios: Tarjeta TPV, Transferencia y Apartado */}
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={handleOpenCardModal}
-                    disabled={currentTotal === 0}
-                    className="py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-1 shadow-md shadow-blue-900/20 transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
-                  >
-                    <CreditCard size={15} />
-                    <span>Tarjeta TPV</span>
-                  </button>
+                {/* Botones Secundarios: Tarjeta TPV (solo con feature flag), Transferencia y Apartado */}
+                <div className={`grid ${hasCardTerminal ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+                  {hasCardTerminal && (
+                    <button
+                      type="button"
+                      onClick={handleOpenCardModal}
+                      disabled={currentTotal === 0}
+                      className="py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-1 shadow-md shadow-blue-900/20 transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
+                    >
+                      <CreditCard size={15} />
+                      <span>Tarjeta TPV</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleOpenTransferModal}
@@ -1741,7 +1744,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                     className="py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-1 shadow-md shadow-indigo-900/20 transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
                   >
                     <ArrowLeftRight size={15} />
-                    <span>Transfer</span>
+                    <span>{hasCardTerminal ? 'Transfer' : 'Transferencia'}</span>
                   </button>
                   <button
                     type="button"
@@ -1904,19 +1907,21 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                     <span>Cobrar Efectivo (${currentTotal.toFixed(2)})</span>
                   </button>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMobileCartDrawer(false)
-                        handleOpenCardModal()
-                      }}
-                      disabled={currentTotal === 0}
-                      className="py-3 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1 shadow-md disabled:opacity-40"
-                    >
-                      <CreditCard size={15} />
-                      <span>Tarjeta</span>
-                    </button>
+                  <div className={`grid ${hasCardTerminal ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
+                    {hasCardTerminal && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMobileCartDrawer(false)
+                          handleOpenCardModal()
+                        }}
+                        disabled={currentTotal === 0}
+                        className="py-3 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1 shadow-md disabled:opacity-40"
+                      >
+                        <CreditCard size={15} />
+                        <span>Tarjeta</span>
+                      </button>
+                    )}
 
                     <button
                       type="button"
@@ -1928,7 +1933,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                       className="py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1 shadow-md disabled:opacity-40"
                     >
                       <ArrowLeftRight size={15} />
-                      <span>Transf</span>
+                      <span>{hasCardTerminal ? 'Transf' : 'Transferencia'}</span>
                     </button>
 
                     <button
@@ -2076,6 +2081,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             orderTotal={paymentPanel.orderTotal}
             tableNumber={tableNumber}
             initialMethod={paymentPanel.initialMethod}
+            hasCardTerminal={hasCardTerminal}
             onPaymentComplete={handlePaymentComplete}
             onCancel={() => setPaymentPanel({ isOpen: false, orderId: null, orderTotal: 0, orderIds: [] })}
           />
