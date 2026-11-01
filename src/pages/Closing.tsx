@@ -73,7 +73,7 @@ export default function Closing() {
             acc.totalCash += total
           } else if (['digital', 'transferencia', 'transfer'].includes(method)) {
             acc.totalDigital += total
-          } else if (['clip', 'tarjeta', 'card'].includes(method)) {
+          } else if (['clip', 'tarjeta', 'card'].includes(method) || method.includes('tarjeta') || method.includes('card') || method.includes('bbva')) {
             acc.totalClip += total
           }
           return acc
@@ -377,7 +377,7 @@ export default function Closing() {
               <span>$${(closingData?.totalDigital || 0).toFixed(2)}</span>
             </div>
             <div class="line">
-              <span>CLIP:</span>
+              <span>TARJETA / TERMINAL:</span>
               <span>$${(closingData?.totalClip || 0).toFixed(2)}</span>
             </div>
           </div>

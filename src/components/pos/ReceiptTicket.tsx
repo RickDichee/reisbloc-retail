@@ -17,6 +17,8 @@ interface ReceiptTicketProps {
   products: Product[]
   saleTotal: number
   paymentMethod: string
+  authCode?: string
+  last4?: string
   tableNumber: number
   businessName?: string
   address?: string
@@ -33,6 +35,8 @@ export default function ReceiptTicket({
   products,
   saleTotal,
   paymentMethod,
+  authCode,
+  last4,
   tableNumber,
   businessName,
   address = '',
@@ -343,9 +347,15 @@ export default function ReceiptTicket({
       </div>
 
       {/* Método de Pago */}
-      <div style={{ marginBottom: '5px', fontSize: is80mm ? '10.5px' : '9px', textAlign: 'center', fontWeight: 900, textTransform: 'uppercase' }}>
+      <div style={{ marginBottom: (authCode || last4) ? '2px' : '5px', fontSize: is80mm ? '10.5px' : '9px', textAlign: 'center', fontWeight: 900, textTransform: 'uppercase' }}>
         PAGO CON: {paymentMethod.toUpperCase()}
       </div>
+      {(authCode || last4) && (
+        <div style={{ marginBottom: '5px', fontSize: is80mm ? '9px' : '8px', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}>
+          {authCode && <span>AUT: {authCode} </span>}
+          {last4 && <span>CUENTA: ****{last4}</span>}
+        </div>
+      )}
 
       {/* Código de Barras Térmico Code128 con Folio del Ticket */}
       <div style={{ textAlign: 'center', fontSize: is80mm ? '10px' : '8.5px', borderTop: '2px dashed #000', paddingTop: '4px', marginTop: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>

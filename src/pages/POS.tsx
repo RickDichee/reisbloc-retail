@@ -24,7 +24,7 @@ import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { tenantHasFeature } from '@/config/tenantFeatures'
 import { sanitizeHTML } from '@/utils/sanitize'
 import { playCashRegisterSound } from '@/utils/audioAlerts'
-import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, SlidersHorizontal, ShoppingBag, ChevronUp, ChevronDown, RotateCcw, ArrowLeftRight } from 'lucide-react'
+import { PlusCircle, Search, Printer, DollarSign, LayoutGrid, AlertTriangle, Share2, Plus, Edit2, X, User, Users, Save, Loader2, SlidersHorizontal, ShoppingBag, ChevronUp, ChevronDown, RotateCcw, ArrowLeftRight, CreditCard } from 'lucide-react'
 import { Navigate } from 'react-router-dom'
 import { useTerminalSession } from '@/hooks/useTerminalSession'
 import { TerminalLockModal } from '@/components/pos/TerminalLockModal'
@@ -99,7 +99,7 @@ export default function POS() {
     orderId: string | null
     orderTotal: number
     orderIds?: string[]
-    initialMethod?: 'cash' | 'transfer'
+    initialMethod?: 'cash' | 'transfer' | 'card'
   }>({
     isOpen: false,
     orderId: null,
@@ -1083,6 +1083,28 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
     })
   }
 
+  // 💳 Apertura de cobro con Tarjeta / Terminal TPV (BBVA)
+  const handleOpenCardModal = () => {
+    if (!currentUser || isReadOnly) return
+    const draftTotal = items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
+    if (draftTotal === 0) return
+
+    const formattedDraft = items.map(i => ({ ...i, productId: i.productId }))
+    const stockIssues = checkStockAvailability([], formattedDraft)
+    if (stockIssues.length > 0) {
+      setStockWarning({ isOpen: true, items: stockIssues })
+      return
+    }
+
+    setPaymentPanel({
+      isOpen: true,
+      orderId: 'retail-direct',
+      orderTotal: draftTotal,
+      orderIds: [],
+      initialMethod: 'card'
+    })
+  }
+
     const handleBypassCrmClient = () => {
     if (!currentUser) return
     
@@ -1116,6 +1138,12 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
       const allItems = items.length > 0 ? items : ordersToProcess.flatMap(o => o.items || [])
 
       let baseNotes = isCheckingOutPendingOrder ? 'Liquidación de Pedido/Apartado' : 'Venta Directa Retail'
+      if (result.authCode) {
+        baseNotes += ' | Aut: ' + result.authCode
+      }
+      if (result.last4) {
+        baseNotes += ' | Tarjeta: ****' + result.last4
+      }
       if (result.transferReference) {
         baseNotes += ' | Ref: ' + result.transferReference
       }
@@ -1202,6 +1230,8 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             products={products}
             saleTotal={result.total}
             paymentMethod={mappedMethod}
+            authCode={result.authCode}
+            last4={result.last4}
             tableNumber={tableNumber}
             businessName={currentBusinessTitle || BRANDING.appName}
             address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
@@ -1693,22 +1723,31 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                   <span>Cobrar Efectivo (${currentTotal.toFixed(2)})</span>
                 </button>
 
-                {/* Botones Secundarios: Transferencia y Apartado */}
-                <div className="grid grid-cols-2 gap-2">
+                {/* Botones Secundarios: Tarjeta TPV, Transferencia y Apartado */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenCardModal}
+                    disabled={currentTotal === 0}
+                    className="py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-1 shadow-md shadow-blue-900/20 transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
+                  >
+                    <CreditCard size={15} />
+                    <span>Tarjeta TPV</span>
+                  </button>
                   <button
                     type="button"
                     onClick={handleOpenTransferModal}
                     disabled={currentTotal === 0}
-                    className="py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-indigo-900/20 transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
+                    className="py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-black rounded-xl flex items-center justify-center gap-1 shadow-md shadow-indigo-900/20 transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
                   >
                     <ArrowLeftRight size={15} />
-                    <span>Transferencia</span>
+                    <span>Transfer</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleCreatePendingOrder}
                     disabled={currentTotal === 0}
-                    className="py-2.5 bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-950 font-black rounded-xl flex items-center justify-center gap-1.5 border border-amber-300 shadow-xs transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
+                    className="py-2.5 bg-amber-400 hover:bg-amber-500 active:scale-[0.98] text-slate-950 font-black rounded-xl flex items-center justify-center gap-1 border border-amber-300 shadow-xs transition-all disabled:opacity-40 uppercase text-[11px] tracking-wide cursor-pointer"
                   >
                     <ShoppingBag size={15} />
                     <span>Apartado</span>
@@ -1865,7 +1904,20 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                     <span>Cobrar Efectivo (${currentTotal.toFixed(2)})</span>
                   </button>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMobileCartDrawer(false)
+                        handleOpenCardModal()
+                      }}
+                      disabled={currentTotal === 0}
+                      className="py-3 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1 shadow-md disabled:opacity-40"
+                    >
+                      <CreditCard size={15} />
+                      <span>Tarjeta</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -1873,10 +1925,10 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                         handleOpenTransferModal()
                       }}
                       disabled={currentTotal === 0}
-                      className="py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1.5 shadow-md disabled:opacity-40"
+                      className="py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1 shadow-md disabled:opacity-40"
                     >
-                      <ArrowLeftRight size={16} />
-                      <span>Transferencia</span>
+                      <ArrowLeftRight size={15} />
+                      <span>Transf</span>
                     </button>
 
                     <button
@@ -1886,9 +1938,9 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                         handleCreatePendingOrder()
                       }}
                       disabled={currentTotal === 0}
-                      className="py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-40"
+                      className="py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-xs uppercase flex items-center justify-center gap-1 shadow-xs disabled:opacity-40"
                     >
-                      <ShoppingBag size={16} />
+                      <ShoppingBag size={15} />
                       <span>Apartado</span>
                     </button>
                   </div>
