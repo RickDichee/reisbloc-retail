@@ -137,7 +137,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
         <div className="flex h-dvh bg-[var(--bg-canvas)] overflow-hidden transition-colors duration-200 pt-[calc(3.25rem+env(safe-area-inset-top,0px))] sm:pt-[calc(3.75rem+env(safe-area-inset-top,0px))]">
             {/* Sidebar Overlay for Mobile */}
             <div
-                className={`fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden transition-opacity duration-300 ${
+                className={`fixed inset-0 z-[65] bg-black/60 backdrop-blur-sm md:hidden transition-opacity duration-300 ${
                     isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
                 }`}
                 onClick={() => setIsSidebarOpen(false)}
@@ -145,7 +145,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
             {/* Sidebar (Desktop static / Mobile slide-over drawer) */}
             <aside
-                className={`fixed md:static z-[70] inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200/90 transition-all duration-300 ease-in-out flex flex-col pt-[calc(3.25rem+env(safe-area-inset-top,0px))] md:pt-0 shrink-0 ${
+                className={`fixed md:static z-[70] inset-y-0 left-0 bg-[var(--bg-surface)] border-r border-slate-200/90 transition-all duration-300 ease-in-out flex flex-col pt-[env(safe-area-inset-top,0px)] md:pt-0 shrink-0 ${
                     isSidebarOpen ? 'translate-x-0 w-[290px] shadow-2xl' : '-translate-x-full md:translate-x-0'
                 } ${isMini ? 'md:w-20' : 'md:w-64'}`}
             >
@@ -335,7 +335,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
             {/* Main Content */}
             <main className={`flex-1 flex flex-col h-full overflow-hidden relative ${accessibility.largeText ? 'text-lg' : ''} ${accessibility.highContrast ? 'high-contrast-mode' : ''}`}>
-                <div className={`flex-1 overflow-auto p-2 ${isPosPage ? 'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-6' : 'pb-[calc(6rem+env(safe-area-inset-bottom,0px))] scroll-pb-[calc(6rem+env(safe-area-inset-bottom,0px))]'} md:pb-6 lg:p-6 ${accessibility.largeText ? 'text-lg' : ''}`}>
+                <div className={`flex-1 overflow-auto p-1.5 sm:p-2 ${isPosPage ? 'pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-6' : 'pb-[calc(6rem+env(safe-area-inset-bottom,0px))] scroll-pb-[calc(6rem+env(safe-area-inset-bottom,0px))]'} md:pb-6 lg:p-6 ${accessibility.largeText ? 'text-lg' : ''}`}>
                     <div className="w-full max-w-[1720px] mx-auto h-full">
                         {children}
                     </div>

@@ -57,24 +57,24 @@ export function ProductGrid({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 h-full flex flex-col">
 
-      {/* 📦 / 🛍️ Modo de Venta: Paquete (exclusivo Moda Miel) o Pieza Individual (San Judas / Los Chunches) */}
-      <div className="p-3 bg-slate-900 text-white rounded-t-xl shrink-0 flex items-center justify-between border-b border-slate-800">
-        <div className="flex items-center gap-2.5">
-          {isPackageMode ? (
-            <Package size={20} className="text-amber-400 shrink-0" />
-          ) : (
-            <ShoppingBag size={20} className={isBrandedTenant ? 'text-[var(--primary)] shrink-0' : 'text-emerald-400 shrink-0'} />
-          )}
-          <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Venta en Mostrador</p>
-            <p className="text-xs font-black uppercase text-white tracking-tight mt-0.5">
-              {isPackageMode ? '📦 Venta por Paquete Completo' : '🛍️ Venta por Pieza Individual'}
-            </p>
+      {/* 📦 / 🛍️ Modo de Venta: Paquete (exclusivo para tenants mayoristas con paquetes) */}
+      {showPackageOption && (
+        <div className="p-3 bg-slate-900 text-white rounded-t-xl shrink-0 flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            {isPackageMode ? (
+              <Package size={20} className="text-amber-400 shrink-0" />
+            ) : (
+              <ShoppingBag size={20} className={isBrandedTenant ? 'text-[var(--primary)] shrink-0' : 'text-emerald-400 shrink-0'} />
+            )}
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Venta en Mostrador</p>
+              <p className="text-xs font-black uppercase text-white tracking-tight mt-0.5">
+                {isPackageMode ? '📦 Venta por Paquete Completo' : '🛍️ Venta por Pieza Individual'}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {showPackageOption ? (
-          onTogglePackageMode ? (
+          {onTogglePackageMode ? (
             <div className="flex items-center bg-slate-800 p-0.5 rounded-xl border border-slate-700">
               <button
                 type="button"
@@ -106,14 +106,9 @@ export function ProductGrid({
               <Package size={14} />
               <span>Paquete</span>
             </div>
-          )
-        ) : (
-          <div className="px-3 py-1 bg-slate-800 border border-slate-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-1.5">
-            <ShoppingBag size={14} className={isBrandedTenant ? 'text-[var(--primary)]' : 'text-emerald-400'} />
-            <span>Por Pieza</span>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Category Tabs - Horizontal Scroll */}
       <div className="shrink-0 p-2.5 border-b border-slate-100 bg-slate-50/50">
@@ -155,7 +150,7 @@ export function ProductGrid({
             <p className="text-gray-500 font-medium">No hay productos disponibles</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 pb-28 lg:pb-6">
             {filteredProducts.map(product => {
               const disabled = isOutOfStock(product) || disableAdd
               const parsedDesc = parseProductDescription(product.description || '')
