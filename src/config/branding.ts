@@ -5,15 +5,53 @@
 // =============================================================================
 
 // ---------------------------------------------------------------------------
+// HELPER: Identificación de usuarios del tenant San Judas Tadeo por correo
+// ---------------------------------------------------------------------------
+export const isSanJudasUserEmail = (email?: string | null): boolean => {
+  if (!email) return false
+  const clean = email.toLowerCase().trim()
+  return (
+    clean === 'americahernandez9076@gmail.com' ||
+    clean === 'sanjudastadeojuguetesynovedade@gmail.com' ||
+    clean === 'ramendanielle@gmail.com' ||
+    clean.includes('sanjudas') ||
+    clean.includes('judastadeo') ||
+    clean.includes('juguetes')
+  )
+}
+
+// ---------------------------------------------------------------------------
 // HELPER INTERNO: Obtiene el identificador de organización del usuario activo
 // ---------------------------------------------------------------------------
 function getActiveSessionOrgHint(): string {
   if (typeof window === 'undefined') return ''
+  const currentHost = (window.location?.hostname || '').toLowerCase()
+  if (currentHost.includes('sanjudastadeo') || currentHost.includes('juguetessanjudas') || (currentHost.includes('juguetes') && !currentHost.includes('localhost'))) {
+    return '324fd41f-b8af-4aef-9ea6-2f954350775a'
+  }
+  if (currentHost.includes('modamiel')) {
+    return '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+  }
+  if (currentHost.includes('chunches')) {
+    return 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+  }
+
   try {
     const raw = window.localStorage?.getItem('app-store')
     if (raw) {
       const parsed = JSON.parse(raw)
       const state = parsed?.state
+      const userEmail = state?.currentUser?.email
+      // 🛡️ HARDENING: Si el correo pertenece a San Judas Tadeo, forzar siempre su tenant
+      if (isSanJudasUserEmail(userEmail)) {
+        return '324fd41f-b8af-4aef-9ea6-2f954350775a'
+      }
+      if (userEmail && (userEmail.includes('lu.velazquez') || userEmail.includes('modamiel'))) {
+        return '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+      }
+      if (userEmail && (userEmail.includes('loschunchesdecons') || userEmail.includes('chunches'))) {
+        return 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+      }
       if (state?.isAuthenticated && state?.currentUser?.organizationId) {
         return String(state.currentUser.organizationId).toLowerCase()
       }
@@ -25,9 +63,9 @@ function getActiveSessionOrgHint(): string {
     // ignore storage parse error
   }
   const path = (window.location?.pathname || '').toLowerCase()
-  if (path.startsWith('/sanjudastadeo') || path.startsWith('/juguetes')) return 'sanjudastadeo'
-  if (path.startsWith('/loschunches')) return 'los-chunches'
-  if (path.startsWith('/modamiel')) return 'modamiel'
+  if (path.startsWith('/sanjudastadeo') || path.startsWith('/juguetes')) return '324fd41f-b8af-4aef-9ea6-2f954350775a'
+  if (path.startsWith('/loschunches')) return 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+  if (path.startsWith('/modamiel')) return '1b498fa6-aca5-428c-9bdd-01e6fea30316'
   return ''
 }
 
@@ -120,7 +158,15 @@ export const checkIsLosChunches = (hostname?: string, search?: string, hash?: st
 // ---------------------------------------------------------------------------
 // DETECCIÓN: Juguetes y Novedades San Judas Tadeo
 // ---------------------------------------------------------------------------
-export const checkIsJuguetes = (hostname?: string, search?: string, hash?: string, orgSlug?: string): boolean => {
+export const checkIsJuguetes = (hostname?: string, search?: string, hash?: string, orgSlug?: string, userEmail?: string): boolean => {
+  // 🛡️ HARDENING: Comprobación directa por correo de colaborador San Judas Tadeo
+  if (isSanJudasUserEmail(userEmail)) return true
+
+  const host = (hostname !== undefined ? hostname : (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
+  if (host.includes('sanjudastadeo') || host.includes('juguetessanjudas') || (host.includes('juguetes') && !host.includes('localhost'))) {
+    return true
+  }
+
   const effectiveOrg = (typeof orgSlug === 'string' && orgSlug.trim() !== '')
     ? orgSlug
     : (hostname === undefined && search === undefined && hash === undefined ? getActiveSessionOrgHint() : '')
@@ -152,8 +198,11 @@ export const checkIsJuguetes = (hostname?: string, search?: string, hash?: strin
   return (
     host.includes('sanjudastadeo') ||
     host.includes('juguetessanjudas') ||
+    host.includes('juguetes') ||
     query.includes('brand=juguetes') ||
     query.includes('brand=sanjudastadeo') ||
+    query.includes('tenant=sanjudastadeo') ||
+    query.includes('org=sanjudastadeo') ||
     fragment.includes('brand=juguetes') ||
     fragment.includes('brand=sanjudastadeo') ||
     envBrand.includes('juguetes') ||

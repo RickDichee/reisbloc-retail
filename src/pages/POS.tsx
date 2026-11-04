@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import logger from '@/utils/logger'
 import { useAppStore } from '@/store/appStore'
 import { BRANDING } from '@/config/branding'
@@ -53,7 +53,7 @@ export default function POS() {
     currentUser,
     isInitializing,
     products,
-    setProducts,
+    setProducts,
     currentTicketNumber,  // Legacy: antes "currentTableNumber"
     setCurrentTicket,  // Legacy: antes "setCurrentTable"
     draftOrders,
@@ -162,7 +162,7 @@ export default function POS() {
             tableNumber={tableNumber}
             businessName={currentBusinessTitle || BRANDING.appName}
             address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
-            phone={organizationSettings?.ticketPhone || (BRANDING.isModaMiel ? "+52 445 145 7252" : "")}
+            phone={organizationSettings?.ticketPhone || BRANDING.theme.receiptWhatsappPlaceholder || ""}
             clientName={receiptModal.clientName}
             clientPhone={receiptModal.clientPhone}
             width={newWidth}
@@ -978,7 +978,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           tableNumber={tableNum}
           businessName={currentBusinessTitle || BRANDING.appName}
           address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
-          phone={organizationSettings?.ticketPhone || (BRANDING.isModaMiel ? "+52 445 145 7252" : "")}
+          phone={organizationSettings?.ticketPhone || BRANDING.theme.receiptWhatsappPlaceholder || ""}
           clientName={selectedClient?.name}
           clientPhone={selectedClient?.phone}
           width={selectedTicketWidth}
@@ -1236,7 +1236,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             tableNumber={tableNumber}
             businessName={currentBusinessTitle || BRANDING.appName}
             address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
-            phone={organizationSettings?.ticketPhone || (BRANDING.isModaMiel ? "+52 445 145 7252" : "")}
+            phone={organizationSettings?.ticketPhone || BRANDING.theme.receiptWhatsappPlaceholder || ""}
             clientName={selectedClient?.name}
             clientPhone={selectedClient?.phone}
             width={selectedTicketWidth}

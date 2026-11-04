@@ -14,6 +14,9 @@ export type TenantFeature =
   | 'onlineStoreModule'
   | 'aiModules'
   | 'cardTerminal'
+  | 'wholesaleModule'
+  | 'invoicingModule'
+  | 'branchesModule'
 
 const TENANT_FEATURES: Record<string, Record<string, boolean>> = {
   [MODA_MIEL_ORG_ID]: {
@@ -21,21 +24,31 @@ const TENANT_FEATURES: Record<string, Record<string, boolean>> = {
     packLabel: true,
     onlineStoreModule: true,
     aiModules: false,
-    cardTerminal: false
+    cardTerminal: false,
+    wholesaleModule: true,
+    invoicingModule: false,
+    branchesModule: false
   },
   [LOS_CHUNCHES_ORG_ID]: {
     unitCost: true,
     webReference: true,
     onlineStoreModule: true,
     aiModules: false,
-    cardTerminal: true
+    cardTerminal: true,
+    wholesaleModule: false,
+    invoicingModule: false,
+    branchesModule: false
   },
   [JUGUETES_SAN_JUDASTADEO_ORG_ID]: {
     unitCost: false,
     webReference: false,
+    packLabel: false,
     onlineStoreModule: false,
     aiModules: false,
-    cardTerminal: false
+    cardTerminal: false,
+    wholesaleModule: false,
+    invoicingModule: false,
+    branchesModule: false
   }
 }
 

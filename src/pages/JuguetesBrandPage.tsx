@@ -317,7 +317,7 @@ export default function JuguetesBrandPage() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
-              to="/login"
+              to="/login?brand=sanjudastadeo"
               className="text-white/90 hover:text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl border border-white/25 hover:bg-white/15 transition-all backdrop-blur-xs"
             >
               Iniciar sesión
@@ -643,7 +643,7 @@ export default function JuguetesBrandPage() {
               Pedir por WhatsApp
             </button>
             <Link
-              to="/login"
+              to="/login?brand=sanjudastadeo"
               className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2.5 rounded-xl text-sm border border-white/25 transition-all"
             >
               <Sparkles size={16} />

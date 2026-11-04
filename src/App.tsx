@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Loader2 } from 'lucide-react'
 import NavBar from '@/components/layout/NavBar'
 import { supabase, forceAuthHeader } from '@/config/supabase'
-import { BRANDING, checkIsModaMiel, checkIsLosChunches, checkIsJuguetes } from '@/config/branding'
+import { BRANDING, checkIsModaMiel, checkIsLosChunches, checkIsJuguetes, isSanJudasUserEmail } from '@/config/branding'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { getStoredToken } from '@/services/jwtService'
@@ -218,6 +218,25 @@ export default function App() {
 
       const runRestore = async () => {
         try {
+          // 🛡️ HARDENING: Auto-sanación preventiva de caché local de iPhone / Safari para San Judas Tadeo
+          try {
+            if (typeof window !== 'undefined' && window.localStorage) {
+              const rawStore = window.localStorage.getItem('app-store')
+              if (rawStore) {
+                const parsed = JSON.parse(rawStore)
+                const userEmail = parsed?.state?.currentUser?.email
+                if (isSanJudasUserEmail(userEmail)) {
+                  const jgOrgId = '324fd41f-b8af-4aef-9ea6-2f954350775a'
+                  if (parsed.state?.currentUser && parsed.state.currentUser.organizationId !== jgOrgId) {
+                    parsed.state.currentUser.organizationId = jgOrgId
+                    window.localStorage.setItem('app-store', JSON.stringify(parsed))
+                    window.localStorage.setItem('current_org_id', jgOrgId)
+                  }
+                }
+              }
+            }
+          } catch { /* ignore */ }
+
           const { data: { session: supabaseSession }, error: sessionError } = await supabase.auth.getSession()
           let session = supabaseSession
 
@@ -280,14 +299,22 @@ export default function App() {
             // Fallback 2: Sincronización atómica backend con handle_auth_callback_sync
             if (!user) {
               try {
-                const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
-                const isLC = checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash)
-                const isJG = checkIsJuguetes(window.location.hostname, window.location.search, window.location.hash)
+                const emailClean = (session.user.email || '').toLowerCase().trim()
+                const isSanJudas = isSanJudasUserEmail(emailClean) ||
+                  checkIsJuguetes(window.location.hostname, window.location.search, window.location.hash, '', emailClean)
+                const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash) ||
+                  emailClean.includes('lu.velazquez') || emailClean.includes('modamiel')
+                const isLC = checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash) ||
+                  emailClean.includes('loschunchesdecons') || emailClean.includes('chunches')
+                const isJG = isSanJudas
+
+                const hostnameToPass = isMM ? 'modamiel' : isJG ? 'sanjudastadeo' : (isLC ? 'loschunches' : window.location.hostname)
+
                 const { data: rpcData } = await supabase.rpc('handle_auth_callback_sync', {
                   p_auth_uid: session.user.id,
-                  p_email: (session.user.email || '').toLowerCase().trim(),
+                  p_email: emailClean,
                   p_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuario',
-                  p_hostname: isMM ? 'modamiel' : isJG ? 'juguetes' : (isLC ? 'loschunches' : window.location.hostname)
+                  p_hostname: hostnameToPass
                 })
                 if (rpcData?.success && rpcData?.user) {
                   user = {
@@ -305,6 +332,21 @@ export default function App() {
             }
 
             if (user) {
+              // 🛡️ HARDENING: Auto-sanación de tenant para colaboradores de San Judas Tadeo
+              const sessionEmail = (session.user.email || user.email || '').toLowerCase().trim()
+              const isSanJudas = isSanJudasUserEmail(sessionEmail)
+              const jgOrgId = '324fd41f-b8af-4aef-9ea6-2f954350775a'
+
+              if (isSanJudas && user.organizationId !== jgOrgId) {
+                console.log('🛡️ Auto-sanando organización San Judas Tadeo para:', sessionEmail)
+                user.organizationId = jgOrgId
+                try {
+                  await supabase.from('users').update({ organization_id: jgOrgId }).eq('id', user.id)
+                } catch (patchErr) {
+                  console.warn('Error actualizando organization_id en DB:', patchErr)
+                }
+              }
+
               setCurrentUser(user)
               setAuthenticated(true)
               if (user.organizationId) {
@@ -319,7 +361,23 @@ export default function App() {
 
                 // 🛡️ Pre-cargar configuración de la organización para el Layout
                 try {
-                  const org = await supabaseService.getOrganizationById(user.organizationId)
+                  let org = await supabaseService.getOrganizationById(user.organizationId)
+                  if (!org && isSanJudas) {
+                    org = {
+                      id: jgOrgId,
+                      name: 'Juguetes y Novedades San Judas Tadeo',
+                      slug: 'sanjudastadeo',
+                      logo_url: '/images/juguetes-san-judas-logo.jpeg',
+                      settings: {
+                        businessName: 'Juguetes y Novedades San Judas Tadeo',
+                        tagline: '¡El juguete de tus sueños te espera!',
+                        ticketLogoUrl: '/images/sanjudas-ticket-logo.png',
+                        ticketPhone: '(442) 600-3500',
+                        ticketAddress: 'SAN JUDAS TADEO'
+                      }
+                    }
+                  }
+
                   if (org && org.id === user.organizationId) {
                     const mergedSettings = {
                       ...(org.settings || {}),

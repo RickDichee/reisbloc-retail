@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Navigate, useNavigate, Link } from 'react-router-dom'
 import { useAppStore } from '@/store/appStore'
+import { BRANDING, isSanJudasUserEmail } from '@/config/branding'
+import { tenantHasFeature } from '@/config/tenantFeatures'
 import { usePermissions } from '@/hooks/usePermissions'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { useTokens } from '@/hooks/useTokens'
@@ -111,8 +113,14 @@ export default function Admin() {
   const allowedAdminRoles = ['admin', 'owner', 'superadmin', 'manager']
   if (!allowedAdminRoles.includes(currentUser.role)) return <Navigate to="/pos" replace />
 
+  const activeOrgId = currentUser?.organizationId || organizationSettings?.id || null
+  const isJG = BRANDING.isJuguetes || activeOrgId === '324fd41f-b8af-4aef-9ea6-2f954350775a' || isSanJudasUserEmail(currentUser?.email) || (typeof window !== 'undefined' && window.location.hostname.includes('sanjudas'))
+  const isBrandedTenant = BRANDING.isModaMiel || isJG || BRANDING.isLosChunches
+  const canShowAiModules = tenantHasFeature(activeOrgId, 'aiModules')
+  const canShowIntegrations = !isBrandedTenant
+
   const tabs = [
-    { id: 'analytics' as AdminTab, label: 'Analytics', icon: Activity, enabled: true },
+    { id: 'analytics' as AdminTab, label: 'Analytics', icon: Activity, enabled: canShowAiModules },
     { id: 'reports' as AdminTab, label: 'Reportes', icon: BarChart3, enabled: true },
     { id: 'closing' as AdminTab, label: 'Cierre de Caja', icon: DollarSign, enabled: true },
     { id: 'users' as AdminTab, label: 'Personal', icon: UserCheck, enabled: canManageUsers },
@@ -120,9 +128,9 @@ export default function Admin() {
     { id: 'promotions' as AdminTab, label: 'Promociones', icon: Percent, enabled: true },
     { id: 'clients' as AdminTab, label: 'Clientes', icon: Users, enabled: true },
     { id: 'purchases' as AdminTab, label: 'Compras', icon: ShoppingCart, enabled: true },
-    { id: 'marketing' as AdminTab, label: 'Marketing AI', icon: Megaphone, enabled: true },
-    { id: 'integrations' as AdminTab, label: 'Integraciones', icon: Puzzle, enabled: true },
-    { id: 'llm' as AdminTab, label: 'IA Assistant', icon: Bot, enabled: true },
+    { id: 'marketing' as AdminTab, label: 'Marketing AI', icon: Megaphone, enabled: canShowAiModules },
+    { id: 'integrations' as AdminTab, label: 'Integraciones', icon: Puzzle, enabled: canShowIntegrations },
+    { id: 'llm' as AdminTab, label: 'IA Assistant', icon: Bot, enabled: canShowAiModules },
     { id: 'logs' as AdminTab, label: 'Auditoría', icon: History, enabled: true },
     { id: 'support' as AdminTab, label: 'Ayuda y Soporte', icon: LifeBuoy, enabled: true },
   ]
@@ -130,32 +138,44 @@ export default function Admin() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header - Premium Slate/Emerald Style */}
-        <div className="bg-slate-900 text-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/5 relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+        {/* Header - Styled Dynamically according to Tenant Brand */}
+        <div className={`text-white rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/10 relative ${
+          isBrandedTenant ? 'bg-[var(--primary)]' : 'bg-slate-900'
+        }`}>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
           <div className="px-6 py-6 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
             <div className="flex items-center gap-4">
-              <div className="p-4 bg-white/5 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
-                <Shield size={28} className="text-emerald-400" />
+              <div className="p-4 bg-white/15 rounded-2xl backdrop-blur-md border border-white/20 shadow-inner">
+                <Shield size={28} className={isBrandedTenant ? 'text-white' : 'text-emerald-400'} />
               </div>
               <div>
-                <p className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-0.5">Centro de Mando</p>
+                <p className={`text-[10px] uppercase tracking-[0.2em] font-black mb-0.5 ${
+                  isBrandedTenant ? 'text-[var(--on-primary-soft)]' : 'text-emerald-400'
+                }`}>Centro de Mando</p>
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase leading-none">Administración</h1>
-                <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">Panel de control operativo y gestión</p>
+                <p className="text-white/80 mt-2 font-bold tracking-tight uppercase text-xs">
+                  {isBrandedTenant ? BRANDING.tagline : 'Panel de control operativo y gestión'}
+                </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 to="/pos"
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105"
+                className={`font-black px-5 py-3 rounded-2xl text-xs sm:text-sm transition-all flex items-center gap-2 shadow-lg hover:scale-105 ${
+                  isBrandedTenant
+                    ? 'bg-white text-[var(--primary)] shadow-black/10 hover:bg-white/90'
+                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20'
+                }`}
               >
                 <ShoppingCart size={18} />
                 <span>Ir al Punto de Venta (POS)</span>
               </Link>
-              <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 flex flex-col items-end">
-                <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Organización</span>
-                <span className="font-bold text-white text-sm">{organizationSettings?.businessName || organizationSettings?.name || currentUser?.businessName || (currentUser?.organizationId ? 'Mi Organización' : 'REISBLOC')}</span>
+              <div className="bg-white/15 border border-white/20 rounded-2xl px-5 py-3 flex flex-col items-end">
+                <span className="text-[10px] text-white/70 uppercase font-black tracking-widest">Organización</span>
+                <span className="font-bold text-white text-sm">
+                  {organizationSettings?.businessName || organizationSettings?.name || BRANDING.appName}
+                </span>
               </div>
             </div>
           </div>
@@ -176,11 +196,12 @@ export default function Admin() {
         <div className="animate-fadeIn">
           {activeTab === 'hub' && (
             <div className="space-y-6">
-              {/* Sección de Plan y Tokens */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-xl border border-white/10">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
+              {/* Sección de Plan y Tokens (Oculto para tenants de marca propia) */}
+              {!isBrandedTenant && canShowAiModules && (
+                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-xl border border-white/10">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-4 rounded-2xl ${isPro ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
                       {isPro ? <Crown size={28} className="text-white" /> : <Zap size={28} className="text-white" />}
                     </div>
                     <div>
@@ -243,6 +264,7 @@ export default function Admin() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Grid de módulos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

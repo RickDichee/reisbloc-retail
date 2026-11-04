@@ -122,6 +122,79 @@ body.theme-modamiel,
   color: #D4386C;
 }
 
+/* 🧸 Juguetes y Novedades San Judas Tadeo Custom Theme Overrides */
+.theme-juguetes {
+  --primary: #C8323E;
+  --primary-hover: #A92430;
+  --secondary: #1E7E48;
+  --accent: #1E88C8;
+  --bg-canvas: #FAF7F5;
+  --bg-surface: #FFFFFF;
+  --text-main: #1A1A1A;
+  --text-secondary: #4A4A4A;
+  --border-light: #EFE4E2;
+  --on-primary-soft: #FFEB99;
+}
+
+/* 🧸 Global Background Overrides when Juguetes San Judas theme is active */
+html.theme-juguetes,
+body.theme-juguetes,
+.theme-juguetes body,
+.theme-juguetes #root,
+.theme-juguetes main,
+.theme-juguetes .bg-slate-50,
+.theme-juguetes .bg-slate-100,
+.theme-juguetes .bg-gray-50 {
+  background-color: #FAF7F5 !important;
+}
+
+/* 🧸 Header / Navbar Tone */
+.theme-juguetes .bg-rb-nav {
+  background-color: #9A1F2B !important;
+}
+
+/* 🧸 Primary Action Buttons & Highlights (Carmine Red #C8323E) */
+.theme-juguetes .btn-primary,
+.theme-juguetes .bg-indigo-600,
+.theme-juguetes .bg-indigo-500,
+.theme-juguetes .bg-rb-action {
+  background-color: #C8323E !important;
+  color: #FFFFFF !important;
+  border-color: #C8323E !important;
+}
+
+.theme-juguetes .btn-primary:hover,
+.theme-juguetes .bg-indigo-600:hover,
+.theme-juguetes .bg-indigo-500:hover {
+  background-color: #A92430 !important;
+}
+
+/* 🧸 San Judas Green Accents */
+.theme-juguetes .text-emerald-500,
+.theme-juguetes .text-emerald-600 {
+  color: #1E7E48 !important;
+}
+
+.theme-juguetes .bg-emerald-600 {
+  background-color: #1E7E48 !important;
+}
+
+.theme-juguetes .bg-emerald-600:hover {
+  background-color: #166338 !important;
+}
+
+/* 🧸 Soft Cream / Warm Badges */
+.theme-juguetes .bg-indigo-50 {
+  background-color: #FDF4E7 !important;
+  color: #C8323E !important;
+}
+
+/* 🧸 Selection Highlight */
+.theme-juguetes ::selection {
+  background-color: #FFEB99;
+  color: #C8323E;
+}
+
 html, body {
   margin: 0;
   padding: 0;

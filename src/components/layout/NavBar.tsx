@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store/appStore'
-import { BRANDING } from '@/config/branding'
+import { BRANDING, isSanJudasUserEmail } from '@/config/branding'
 import { tenantHasFeature } from '@/config/tenantFeatures'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -129,21 +129,33 @@ export default function NavBar() {
   ]
 
   const isMM = BRANDING.isModaMiel
-  const isJG = BRANDING.isJuguetes || currentUser?.organizationId === '324fd41f-b8af-4aef-9ea6-2f954350775a'
+  const isJG = BRANDING.isJuguetes || currentUser?.organizationId === '324fd41f-b8af-4aef-9ea6-2f954350775a' || isSanJudasUserEmail(currentUser?.email) || (typeof window !== 'undefined' && window.location.hostname.includes('sanjudas'))
   const isLC = BRANDING.isLosChunches
   // isBranded: true cuando el tenant tiene colores propios (no el default oscuro)
   const isBranded = isMM || isJG || isLC
   const activeOrgId = currentUser?.organizationId || organizationSettings?.id || null
-  const canShowOnlineStore = !isJG && (activeOrgId ? tenantHasFeature(activeOrgId, 'onlineStoreModule') : true)
+  const canShowOnlineStore = !isJG && (activeOrgId ? tenantHasFeature(activeOrgId, 'onlineStoreModule') : false)
   const canShowAiModules = tenantHasFeature(activeOrgId, 'aiModules')
+  const canShowWholesale = tenantHasFeature(activeOrgId, 'wholesaleModule')
+  const canShowInvoicing = tenantHasFeature(activeOrgId, 'invoicingModule')
+  const canShowBranches = tenantHasFeature(activeOrgId, 'branchesModule')
+
+  const filterItemByTenant = (item: any) => {
+    if (item.path === '/ecommerce' && !canShowOnlineStore) return false
+    if ((item.path === '/marketing' || item.path === '/agent' || item.path === '/analytics') && !canShowAiModules) return false
+    if ((item.path === '/wholesale' || item.path === '/wholesale-dashboard') && !canShowWholesale) return false
+    if (item.path === '/invoicing' && !canShowInvoicing) return false
+    if (item.path === '/branches' && !canShowBranches) return false
+    if (item.path === '/referral' && isBranded) return false
+    return true
+  }
 
   // Desktop quick favorites
   const favNavbar = organizationSettings?.favorites?.navbar || ['/pos', '/inventory', '/clients', '/reports', '/closing']
   const desktopQuickItems = allNavCategories
     .flatMap(cat => cat.items)
     .filter(item => {
-      if (item.path === '/ecommerce' && !canShowOnlineStore) return false
-      if ((item.path === '/marketing' || item.path === '/agent') && !canShowAiModules) return false
+      if (!filterItemByTenant(item)) return false
       return item.roles.includes(currentUser?.role || '') && favNavbar.includes(item.path)
     })
 
@@ -277,14 +289,16 @@ export default function NavBar() {
                 {/* Dropdown Menu Desktop */}
                 <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-[60] overflow-hidden">
                   <div className="p-1.5 space-y-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowOrgSwitcher(true)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors text-left"
-                    >
-                      <Building2 size={15} className="text-amber-600 shrink-0" />
-                      <span>Cambiar de Negocio</span>
-                    </button>
+                    {!isBranded && (
+                      <button
+                        type="button"
+                        onClick={() => setShowOrgSwitcher(true)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors text-left"
+                      >
+                        <Building2 size={15} className="text-amber-600 shrink-0" />
+                        <span>Cambiar de Negocio</span>
+                      </button>
+                    )}
                     <Link to="/settings" className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                       <Settings size={15} className="text-slate-500 shrink-0" />
                       <span>Configuración</span>
@@ -359,8 +373,7 @@ export default function NavBar() {
             <div className="flex-1 overflow-y-auto p-2.5 space-y-3.5 custom-scrollbar">
               {allNavCategories.map((category, catIdx) => {
                 const userFilteredItems = category.items.filter(item => {
-                  if (item.path === '/ecommerce' && !canShowOnlineStore) return false
-                  if ((item.path === '/marketing' || item.path === '/agent') && !canShowAiModules) return false
+                  if (!filterItemByTenant(item)) return false
                   return item.roles.includes(currentUser?.role || '')
                 })
                 if (userFilteredItems.length === 0) return null

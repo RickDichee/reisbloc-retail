@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
 import { logSuccessfulLogin } from '@/services/authService'
 import { ShieldCheck, AlertCircle } from 'lucide-react'
-import { checkIsModaMiel, checkIsLosChunches, checkIsJuguetes } from '@/config/branding'
+import { checkIsModaMiel, checkIsLosChunches, checkIsJuguetes, isSanJudasUserEmail } from '@/config/branding'
 import supabaseService from '@/services/supabaseService'
 import { useAppStore } from '@/store/appStore'
 import { User } from '@/types'
@@ -146,10 +146,22 @@ export function AuthCallback() {
 
         const userEmail = (user.email || '').toLowerCase().trim()
         const userName = user.user_metadata?.full_name || user.user_metadata?.name || userEmail.split('@')[0] || 'Usuario'
-        const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash)
-        const isLC = checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash)
-        const isJG = checkIsJuguetes(window.location.hostname, window.location.search, window.location.hash)
-        const hostnameToPass = isMM ? 'modamiel' : isJG ? 'juguetes' : (isLC ? 'loschunches' : window.location.hostname)
+        
+        // 🛡️ DETECCIÓN Y ASIGNACIÓN ESTRICTA DE TENANT (HARDENING)
+        const isSanJudas = isSanJudasUserEmail(userEmail) ||
+          checkIsJuguetes(window.location.hostname, window.location.search, window.location.hash, '', userEmail)
+        const isMM = checkIsModaMiel(window.location.hostname, window.location.search, window.location.hash) ||
+          userEmail.includes('lu.velazquez') || userEmail.includes('modamiel')
+        const isLC = checkIsLosChunches(window.location.hostname, window.location.search, window.location.hash) ||
+          userEmail.includes('loschunchesdecons') || userEmail.includes('chunches')
+        const isJG = isSanJudas
+
+        const hostnameToPass = isMM ? 'modamiel' : isJG ? 'sanjudastadeo' : (isLC ? 'loschunches' : window.location.hostname)
+
+        const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
+        const lcDefaultOrgId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
+        const jgDefaultOrgId = '324fd41f-b8af-4aef-9ea6-2f954350775a'
+        const mgmtOrgId = '8fdd0efd-544a-4624-80a3-a6c26054f639'
 
         // 5. Sincronización atómica backend con handle_auth_callback_sync (RPC SECURITY DEFINER)
         let syncedUser: any = null
@@ -173,6 +185,84 @@ export function AuthCallback() {
           console.warn('⚠️ Excepción llamando handle_auth_callback_sync:', rpcEx)
         }
 
+        // 🛡️ REGLA CRÍTICA DE AISLAMIENTO Y BLINDAJE:
+        // Si el usuario es de San Judas Tadeo, JAMÁS debe ser asignado a Reisbloc ni a otra organización
+        if (isJG) {
+          if (!syncedUser || syncedUser.organization_id !== jgDefaultOrgId) {
+            console.log('🛡️ Forzando asignación correcta de San Judas Tadeo para:', userEmail)
+            const roleForUser = (userEmail === 'sanjudastadeojuguetesynovedade@gmail.com' || userEmail === 'ramendanielle@gmail.com')
+              ? 'admin'
+              : (syncedUser?.role || 'cashier')
+
+            try {
+              const { data: updatedDbUser } = await supabase
+                .from('users')
+                .upsert({
+                  id: user.id,
+                  auth_uid: user.id,
+                  email: userEmail,
+                  name: userName,
+                  role: roleForUser,
+                  organization_id: jgDefaultOrgId,
+                  active: true
+                }, { onConflict: 'id' })
+                .select('id, organization_id, role, email, auth_uid, name')
+                .maybeSingle()
+
+              if (updatedDbUser) {
+                syncedUser = {
+                  id: updatedDbUser.id,
+                  name: updatedDbUser.name,
+                  username: updatedDbUser.name,
+                  email: updatedDbUser.email,
+                  role: updatedDbUser.role,
+                  organizationId: updatedDbUser.organization_id,
+                  organization_id: updatedDbUser.organization_id,
+                  active: true
+                }
+              }
+            } catch (updateErr) {
+              console.warn('Advertencia actualizando usuario San Judas:', updateErr)
+            }
+
+            if (!syncedUser) {
+              syncedUser = {
+                id: user.id,
+                name: userName,
+                username: userName,
+                email: userEmail,
+                role: roleForUser,
+                organizationId: jgDefaultOrgId,
+                organization_id: jgDefaultOrgId,
+                active: true
+              }
+            }
+          }
+
+          if (!syncedOrg || syncedOrg.id !== jgDefaultOrgId) {
+            try {
+              const org = await supabaseService.getOrganizationById(jgDefaultOrgId)
+              if (org) syncedOrg = org
+            } catch { /* ignore */ }
+
+            if (!syncedOrg) {
+              syncedOrg = {
+                id: jgDefaultOrgId,
+                name: 'Juguetes y Novedades San Judas Tadeo',
+                slug: 'sanjudastadeo',
+                logo_url: '/images/juguetes-san-judas-logo.jpeg',
+                settings: {
+                  businessName: 'Juguetes y Novedades San Judas Tadeo',
+                  tagline: '¡El juguete de tus sueños te espera!',
+                  ticketLogoUrl: '/images/sanjudas-ticket-logo.png',
+                  ticketPhone: '(442) 600-3500',
+                  ticketAddress: 'SAN JUDAS TADEO'
+                }
+              }
+            }
+          }
+        }
+
         // 6. Resiliencia y Fallback: Si el RPC fallara por conectividad, buscar directamente en BD
         if (!syncedUser) {
           console.log('🔄 Ejecutando fallback de sincronización directa...')
@@ -182,23 +272,21 @@ export function AuthCallback() {
             .or(`id.eq.${user.id},auth_uid.eq.${user.id},email.ilike.${userEmail}`)
             .maybeSingle()
 
-          const mmDefaultOrgId = '1b498fa6-aca5-428c-9bdd-01e6fea30316'
-          const lcDefaultOrgId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
-          const jgDefaultOrgId = '324fd41f-b8af-4aef-9ea6-2f954350775a'
-          const mgmtOrgId = '8fdd0efd-544a-4624-80a3-a6c26054f639'
           const isLu = userEmail.includes('lu.velazquez') || userEmail.includes('lu.velazquezz')
           const isRick = userEmail === 'rick.playacar@gmail.com'
           const isDanielle = userEmail === 'ramendanielle@gmail.com'
+          const isAmerica = userEmail === 'americahernandez9076@gmail.com'
+          const isSanJudasEmailAcc = userEmail === 'sanjudastadeojuguetesynovedade@gmail.com'
           const targetOrgId = isRick
             ? mgmtOrgId
             : (isMM || isLu
               ? mmDefaultOrgId
-              : (isJG || isDanielle
+              : (isJG || isDanielle || isAmerica || isSanJudasEmailAcc
                 ? jgDefaultOrgId
                 : (isLC ? lcDefaultOrgId : (existingUser?.organization_id || mgmtOrgId))))
 
-          if (isMM || isLu || isRick || isLC || isJG || isDanielle) {
-            const roleToAssign = (isLu || isRick || isLC || isJG || isDanielle) ? 'admin' : 'cashier'
+          if (isMM || isLu || isRick || isLC || isJG || isDanielle || isAmerica || isSanJudasEmailAcc) {
+            const roleToAssign = (isLu || isRick || isLC || isDanielle || isSanJudasEmailAcc) ? 'admin' : 'cashier'
             if (!existingUser) {
               const { data: newUser } = await supabase
                 .from('users')
@@ -210,8 +298,8 @@ export function AuthCallback() {
                   role: roleToAssign,
                   organization_id: targetOrgId,
                   active: true,
-                  is_primary_admin: (isLu || isRick),
-                  is_primary_user: (isLu || isRick)
+                  is_primary_admin: (isLu || isRick || isSanJudasEmailAcc),
+                  is_primary_user: (isLu || isRick || isSanJudasEmailAcc)
                 }, { onConflict: 'id' })
                 .select('id, organization_id, role, email, auth_uid, name')
                 .maybeSingle()
@@ -224,6 +312,13 @@ export function AuthCallback() {
                 role: roleToAssign,
                 organization_id: targetOrgId,
                 active: true
+              }
+            } else if (isJG && existingUser.organization_id !== jgDefaultOrgId) {
+              try {
+                await supabase.from('users').update({ organization_id: jgDefaultOrgId }).eq('id', existingUser.id)
+                existingUser.organization_id = jgDefaultOrgId
+              } catch (patchErr) {
+                console.warn('Error sanando usuario existente:', patchErr)
               }
             }
           }
@@ -298,8 +393,10 @@ export function AuthCallback() {
         }
 
         setStatus('¡Sesión autorizada! Redirigiendo...')
+        const isAmerica = userEmail === 'americahernandez9076@gmail.com'
         const adminRoles = ['admin', 'owner', 'superadmin', 'manager', 'capitan', 'supervisor']
-        const destination = adminRoles.includes((finalUser.role || '').toLowerCase()) ? '/admin' : '/pos'
+        // Para colaboradores de punto de venta (como América Hernández), aterrizar directamente en /pos
+        const destination = isAmerica ? '/pos' : (adminRoles.includes((finalUser.role || '').toLowerCase()) ? '/admin' : '/pos')
         navigate(destination, { replace: true })
 
       } catch (err: any) {

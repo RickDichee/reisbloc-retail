@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/config/supabase'
-import { BRANDING } from '@/config/branding'
+import { BRANDING, isSanJudasUserEmail, JUGUETES_THEME } from '@/config/branding'
 import { ArrowRight } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 
@@ -70,8 +70,18 @@ export default function Login() {
       setLoading(true)
 
       const params = new URLSearchParams(window.location.search)
-      const brandParam = params.get('brand')
+      let brandParam = params.get('brand')
       const errParam = params.get('error')
+
+      // 🛡️ HARDENING: Preservar marca San Judas si el email typed es de su equipo o si se detecta en origen
+      if (!brandParam) {
+        if (isSanJudasUserEmail(email)) {
+          brandParam = 'sanjudastadeo'
+        } else if (typeof document !== 'undefined' && document.referrer && (document.referrer.includes('sanjudastadeo') || document.referrer.includes('juguetes'))) {
+          brandParam = 'sanjudastadeo'
+        }
+      }
+
       // Evitar re-enviar brand en el callback si vino de un error de aislamiento previo
       const shouldPassBrand = brandParam && !errParam
       const redirectUrl = window.location.origin + '/auth/callback' + (shouldPassBrand ? `?brand=${brandParam}` : '')
@@ -91,7 +101,13 @@ export default function Login() {
   }
 
   // 🎨 Variante visual dirigida por el tema del tenant (cero hardcodeo por cliente)
-  const theme = BRANDING.theme
+  const isTypedSanJudas = isSanJudasUserEmail(email)
+  const isJGTenant = BRANDING.isJuguetes || isTypedSanJudas
+  const activeBrandName = isJGTenant ? 'Juguetes y Novedades San Judas Tadeo' : BRANDING.appName
+  const activeWhiteLabel = isJGTenant ? 'Juguetes San Judas' : BRANDING.whiteLabelName
+  const activeLogo = isJGTenant ? '/images/juguetes-san-judas-logo.jpeg' : BRANDING.logoUrl
+  const activeSubtitle = isJGTenant ? '¡Bienvenido al POS de Juguetes San Judas Tadeo!' : BRANDING.loginSubtitle
+  const theme = isJGTenant ? JUGUETES_THEME : BRANDING.theme
   const isFestive = Boolean(theme.loadingBg)
 
   return (
@@ -99,7 +115,7 @@ export default function Login() {
       className="min-h-screen flex items-center justify-center p-4 bg-[#070A11]"
       style={theme.loadingBg ? { backgroundImage: theme.loadingBg } : undefined}
     >
-      {/* Decoración navidena para tenants festivos */}
+      {/* Decoración navideña para tenants festivos */}
       {isFestive && (
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-4 left-4 text-4xl opacity-30 rotate-[-15deg]">🎄</div>
@@ -117,20 +133,20 @@ export default function Login() {
               ? 'bg-white/20 border-[var(--on-primary-soft)]/60 ring-2 ring-[var(--on-primary-soft)]/30'
               : 'bg-slate-900 border-amber-500/30 shadow-amber-500/5'
           }`}>
-            <img src={BRANDING.logoUrl} alt={BRANDING.whiteLabelName} className="w-full h-full object-cover" />
+            <img src={activeLogo} alt={activeWhiteLabel} className="w-full h-full object-cover" />
           </div>
           <h1 className={`text-3xl sm:text-4xl font-black mb-2 tracking-tight text-white ${
             isFestive ? 'drop-shadow-lg' : ''
           }`} style={isFestive ? { fontFamily: 'var(--font-serif)' } : {}}>
-            {BRANDING.appName}
+            {activeBrandName}
           </h1>
           <p className={`text-sm sm:text-base font-medium ${
             isFestive ? 'text-[var(--on-primary-soft)]' : 'text-slate-400'
-          }`}>{BRANDING.loginSubtitle}</p>
+          }`}>{activeSubtitle}</p>
           <div className={`text-xs mt-2 uppercase tracking-widest font-bold font-mono ${
             isFestive ? 'text-[var(--on-primary-soft)]' : 'text-amber-400'
           }`}>
-            {BRANDING.whiteLabelName}
+            {activeWhiteLabel}
           </div>
         </div>
 

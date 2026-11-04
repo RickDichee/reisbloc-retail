@@ -5,6 +5,7 @@ import {
   checkIsModaMiel,
   checkIsLosChunches,
   checkIsJuguetes,
+  isSanJudasUserEmail,
   MODA_MIEL_THEME,
   LOS_CHUNCHES_THEME,
   JUGUETES_THEME,
@@ -84,8 +85,46 @@ export function useTenantTheme(): {
       window.location.hostname.includes('192.168.')
     )
 
-    if (currentUser && !(isDevHost && brandQueryParam)) {
-      // Usuario autenticado -> Evaluar única y estrictamente los datos de la organización del usuario
+    const currentHost = (typeof window !== 'undefined' ? window.location.hostname : '').toLowerCase()
+    const isSanJudasDomain = currentHost.includes('sanjudastadeo') || currentHost.includes('juguetessanjudas') || (currentHost.includes('juguetes') && !currentHost.includes('localhost'))
+    const isSanJudasUser = isSanJudasUserEmail(currentUser?.email)
+    const isSanJudasOrg = (currentUser?.organizationId === '324fd41f-b8af-4aef-9ea6-2f954350775a') ||
+                          (validSettings?.id === '324fd41f-b8af-4aef-9ea6-2f954350775a') ||
+                          checkIsJuguetes('', '', '', validSettings?.slug || validSettings?.name || '')
+
+    if (isSanJudasDomain || isSanJudasUser || isSanJudasOrg) {
+      isJG = true
+      isMM = false
+      isLC = false
+      // Auto-heal si la sesión residual o el token de la cuenta apuntaba a otra organización
+      if (currentUser && currentUser.organizationId !== '324fd41f-b8af-4aef-9ea6-2f954350775a') {
+        const healedUser = { ...currentUser, organizationId: '324fd41f-b8af-4aef-9ea6-2f954350775a' }
+        useAppStore.getState().setCurrentUser(healedUser)
+        try {
+          localStorage.setItem('current_org_id', '324fd41f-b8af-4aef-9ea6-2f954350775a')
+          const rawToken = localStorage.getItem('reisbloc_auth_token')
+          if (rawToken) {
+            const parsed = JSON.parse(rawToken)
+            parsed.organizationId = '324fd41f-b8af-4aef-9ea6-2f954350775a'
+            localStorage.setItem('reisbloc_auth_token', JSON.stringify(parsed))
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (!organizationSettings || organizationSettings.id !== '324fd41f-b8af-4aef-9ea6-2f954350775a') {
+        useAppStore.getState().setOrganizationSettings({
+          id: '324fd41f-b8af-4aef-9ea6-2f954350775a',
+          name: 'Juguetes y Novedades San Judas Tadeo',
+          businessName: 'Juguetes y Novedades San Judas Tadeo',
+          slug: 'sanjudastadeo',
+          logoUrl: '/images/juguetes-san-judas-logo.jpeg',
+          tagline: '¡El juguete de tus sueños te espera!',
+          ticketLogoUrl: '/images/sanjudas-ticket-logo.png',
+          ticketPhone: '(442) 600-3500',
+          ticketAddress: 'SAN JUDAS TADEO'
+        })
+      }
+    } else if (currentUser && !(isDevHost && brandQueryParam)) {
       const userOrgId = currentUser.organizationId || ''
       const userOrgSlug = validSettings?.slug || validSettings?.name || ''
       isMM = (userOrgId === '1b498fa6-aca5-428c-9bdd-01e6fea30316') ||
@@ -93,9 +132,10 @@ export function useTenantTheme(): {
       isLC = (userOrgId === 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d') ||
              checkIsLosChunches('', '', '', userOrgSlug || userOrgId)
       isJG = (userOrgId === '324fd41f-b8af-4aef-9ea6-2f954350775a') ||
-             checkIsJuguetes('', '', '', userOrgSlug || userOrgId)
+             checkIsJuguetes('', '', '', userOrgSlug || userOrgId, currentUser.email)
     } else {
       // Visitante público o desarrollador en localhost con ?brand= -> Evaluar por hostname / query string
+      const userEmail = currentUser?.email || ''
       isMM = checkIsModaMiel(
         window.location.hostname,
         currentQuery,
@@ -106,10 +146,12 @@ export function useTenantTheme(): {
         currentQuery,
         location.hash || (typeof window !== 'undefined' ? window.location.hash : '')
       )
-      isJG = checkIsJuguetes(
+      isJG = isSanJudasUserEmail(userEmail) || checkIsJuguetes(
         window.location.hostname,
         currentQuery,
-        location.hash || (typeof window !== 'undefined' ? window.location.hash : '')
+        location.hash || (typeof window !== 'undefined' ? window.location.hash : ''),
+        '',
+        userEmail
       )
     }
 

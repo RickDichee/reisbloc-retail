@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store/appStore';
-import { BRANDING } from '@/config/branding';
+import { BRANDING, isSanJudasUserEmail } from '@/config/branding';
 import { tenantHasFeature } from '@/config/tenantFeatures';
 import {
     Shield,
@@ -52,11 +52,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     };
 
     const userRole = currentUser?.role || 'employee';
-    const isBrandedTenant = BRANDING.isModaMiel || BRANDING.isJuguetes || BRANDING.isLosChunches;
-    const isPosPage = location.pathname === '/pos' || location.pathname.startsWith('/pos');
     const activeOrgId = currentUser?.organizationId || organizationSettings?.id || null;
-    const isJuguetesTenant = BRANDING.isJuguetes || activeOrgId === '324fd41f-b8af-4aef-9ea6-2f954350775a';
-    const canShowOnlineStore = !isJuguetesTenant && (activeOrgId ? tenantHasFeature(activeOrgId, 'onlineStoreModule') : true);
+    const isJuguetesTenant = BRANDING.isJuguetes || activeOrgId === '324fd41f-b8af-4aef-9ea6-2f954350775a' || isSanJudasUserEmail(currentUser?.email) || (typeof window !== 'undefined' && window.location.hostname.includes('sanjudas'));
+    const isBrandedTenant = BRANDING.isModaMiel || isJuguetesTenant || BRANDING.isLosChunches;
+    const isPosPage = location.pathname === '/pos' || location.pathname.startsWith('/pos');
+    const canShowOnlineStore = !isJuguetesTenant && (activeOrgId ? tenantHasFeature(activeOrgId, 'onlineStoreModule') : false);
     const canShowAiModules = tenantHasFeature(activeOrgId, 'aiModules');
 
     const sections = [
@@ -108,9 +108,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const finalMenuItems = visibleSections.flatMap(sec => {
         const visibleItems = sec.items.filter(item => {
             if (item.path === '/ecommerce' && !canShowOnlineStore) return false;
-            if ((item.path === '/marketing' || item.path === '/agent') && !canShowAiModules) return false;
-            if (item.path === '/admin' || item.path === '/settings' || item.path === '/analytics') return true;
-            const favSidebar = organizationSettings?.favorites?.sidebar || ['/pos', '/inventory', '/clients', '/reports', '/purchases', '/marketing', '/agent', '/analytics', '/closing', '/ecommerce'];
+            if ((item.path === '/marketing' || item.path === '/agent' || item.path === '/analytics') && !canShowAiModules) return false;
+            if (item.path === '/admin' || item.path === '/settings') return true;
+            const favSidebar = organizationSettings?.favorites?.sidebar || ['/pos', '/inventory', '/clients', '/reports', '/purchases', '/closing'];
             return favSidebar.includes(item.path) || location.pathname === item.path;
         });
         if (visibleItems.length === 0) return [];
@@ -299,7 +299,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                         )}
                     </div>
 
-                    {!isMini && (
+                    {!isMini && !isBrandedTenant && (
                         <button
                             type="button"
                             onClick={() => setShowOrgSwitcher(true)}
@@ -335,7 +335,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
             {/* Main Content */}
             <main className={`flex-1 flex flex-col h-full overflow-hidden relative ${accessibility.largeText ? 'text-lg' : ''} ${accessibility.highContrast ? 'high-contrast-mode' : ''}`}>
-                <div className={`flex-1 overflow-auto p-2 ${isPosPage ? 'pb-20 md:pb-6' : 'pb-[calc(6rem+env(safe-area-inset-bottom,0px))] scroll-pb-[calc(6rem+env(safe-area-inset-bottom,0px))]'} md:pb-6 lg:p-6 ${accessibility.largeText ? 'text-lg' : ''}`}>
+                <div className={`flex-1 overflow-auto p-2 ${isPosPage ? 'pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-6' : 'pb-[calc(6rem+env(safe-area-inset-bottom,0px))] scroll-pb-[calc(6rem+env(safe-area-inset-bottom,0px))]'} md:pb-6 lg:p-6 ${accessibility.largeText ? 'text-lg' : ''}`}>
                     <div className="w-full max-w-[1720px] mx-auto h-full">
                         {children}
                     </div>
