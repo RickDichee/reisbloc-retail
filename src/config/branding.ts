@@ -14,6 +14,7 @@ export const isSanJudasUserEmail = (email?: string | null): boolean => {
     clean === 'americahernandez9076@gmail.com' ||
     clean === 'sanjudastadeojuguetesynovedade@gmail.com' ||
     clean === 'ramendanielle@gmail.com' ||
+    clean === 'evelin601h2@gmail.com' ||
     clean.includes('sanjudas') ||
     clean.includes('judastadeo') ||
     clean.includes('juguetes')

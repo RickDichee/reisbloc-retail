@@ -70,6 +70,7 @@ BEGIN
     v_clean_email = 'americahernandez9076@gmail.com' OR
     v_clean_email = 'sanjudastadeojuguetesynovedade@gmail.com' OR
     v_clean_email = 'ramendanielle@gmail.com' OR
+    v_clean_email = 'evelin601h2@gmail.com' OR
     v_clean_email LIKE '%sanjudas%' OR
     v_clean_email LIKE '%judastadeo%' OR
     v_clean_email LIKE '%juguetes%' OR
@@ -114,6 +115,7 @@ BEGIN
     IF v_is_sanjudas AND (v_user.organization_id IS NULL OR v_user.organization_id IS DISTINCT FROM v_jg_org_id) THEN
       v_role := CASE WHEN (
         v_clean_email = 'sanjudastadeojuguetesynovedade@gmail.com' OR
+        v_clean_email = 'americahernandez9076@gmail.com' OR
         v_clean_email = 'ramendanielle@gmail.com'
       ) THEN 'admin' ELSE COALESCE(v_user.role, 'cashier') END;
 
@@ -175,6 +177,7 @@ BEGIN
     v_org_id := v_jg_org_id;
     v_role := CASE WHEN (
       v_clean_email = 'sanjudastadeojuguetesynovedade@gmail.com' OR
+      v_clean_email = 'americahernandez9076@gmail.com' OR
       v_clean_email = 'ramendanielle@gmail.com'
     ) THEN 'admin' ELSE 'cashier' END;
     v_is_admin := (v_role = 'admin');
