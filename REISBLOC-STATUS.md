@@ -7,6 +7,19 @@
 
 ---
 
+## 🚨 RECORDATORIO DE PRIORIDAD MÁXIMA: HARDENING DE SEGURIDAD (SOC 2, ISO 27001, ISO 27701)
+
+> 📅 **PROGRAMADO PARA:** Miércoles 4 o Jueves 5 de Noviembre de 2026 (por la tarde).  
+> 🎯 **OBJETIVO:** Iniciar formalmente el proceso de hardening en rama dedicada `feat/security-hardening-soc2-iso` cubriendo:
+> 1. **Fase 1 (App & Frontend Hygiene):** Sanitización de logs en producción, protección de estado en `localStorage` / IndexedDB, bloqueo de terminal POS por PIN por inactividad.
+> 2. **Fase 2 (Protección de PII / ISO 27701):** Enmascaramiento de datos personales en `/clients` y `/pos`, flujo de derecho al olvido / anonimización contable.
+> 3. **Fase 3 (Integridad de Procesamiento / SOC 2):** Trazabilidad inmutable en `auditService.ts` de arqueos, cancelaciones y descuentos.
+> 4. **Fase 4 (Cabeceras de Red & CSP):** Endurecimiento de Content-Security-Policy y Permissions-Policy en `vercel.json`.
+>
+> ⚠️ **REGLA DE ORO:** Todas las validaciones y pruebas se ejecutan exclusivamente en Supabase DEV (`jnyyaclrelqcqzjummwe`). PROD (`nmovxyaibnixvxtepbod`) permanece intocado.
+
+---
+
 ## 🏢 Estatus de Tenants en Producción y Desarrollo
 
 | Tenant | Dominio Oficial | Org ID | Estado | Branding / Tema | Features Activas |

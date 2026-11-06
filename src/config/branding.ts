@@ -95,6 +95,7 @@ export const checkIsModaMiel = (hostname?: string, search?: string, hash?: strin
   }
 
   // Si no hay organización (usuario público o en login), evaluar URL y variables de entorno
+  const host = (hostname !== undefined ? hostname : (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
   const query = (search !== undefined ? search : (typeof window !== 'undefined' ? window.location.search : '')).toLowerCase()
   const fragment = (hash !== undefined ? hash : (typeof window !== 'undefined' ? window.location.hash : '')).toLowerCase()
 

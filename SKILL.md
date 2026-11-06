@@ -3,6 +3,13 @@
 
 ---
 
+## 0. RECORDATORIO DE PRIORIDAD: HARDENING SOC 2 / ISO 27001 / ISO 27701
+> 📅 **INICIO PROGRAMADO:** Miércoles 4 o Jueves 5 de Noviembre de 2026 (por la tarde).  
+> 🛡️ **ALCANCE:** Hardening en rama `feat/security-hardening-soc2-iso` (App hygiene, PII / ISO 27701, auditoría inmutable SOC 2, CSP headers).  
+> 🔒 **AISLAMIENTO:** Se trabajará 100% sobre Supabase DEV (`jnyyaclrelqcqzjummwe`). PROD queda bloqueado.
+
+---
+
 ## 1. REGLAS DE ORO (Inviolables)
 
 1. **NUNCA tocar Producción directamente** (`store.reisbloc.com`, Supabase PROD `nmovxyaibnixvxtepbod`). Toda feature, migración o cambio se prueba y valida primero en DEV (`jnyyaclrelqcqzjummwe`).
