@@ -9,7 +9,9 @@ import logger from '@/utils/logger'
 interface PrintOptions {
   title?: string
   silent?: boolean // Para Android: imprimir sin diálogo
-  width?: number // Para térmica: 58 o 80mm
+  width?: number // Para térmica o etiqueta (ej. 50, 58, 80mm)
+  height?: number // Para etiquetas: ej. 30mm
+  isLabel?: boolean // Si es etiqueta adhesiva o ticket continuo
 }
 
 class PrintService {
@@ -21,26 +23,101 @@ class PrintService {
     options: PrintOptions = {}
   ): Promise<void> {
     try {
-      const { title = 'Ticket', width = 58 } = options
+      const { title = 'Ticket', width = 58, height = 30, isLabel = false } = options
 
       return new Promise((resolve) => {
-        // En navegadores móviles y PWAs estrictas (Vercel/iOS/Android WebView),
-        // imprimir desde un iframe invisible es frecuentemente bloqueado.
-        // La forma más robusta y universal es abrir una ventana flotante diminuta 
-        // o pestaña efímera y mandar a imprimir ahí.
-        const printWindow = window.open('', '_blank', 'width=400,height=600,left=200,top=200')
+        const printWindow = window.open('', '_blank', 'width=450,height=600,left=200,top=200')
 
         if (!printWindow) {
           logger.error('print', 'El navegador bloqueó la ventana emergente de impresión', {})
-          alert('Por favor, permite las ventanas emergentes (pop-ups) para imprimir el ticket.')
-          resolve() // Resolvemos para no trabar el flujo
+          alert('Por favor, permite las ventanas emergentes (pop-ups) para imprimir.')
+          resolve()
           return
         }
 
         const is80 = Number(width) >= 70
         const printableMm = is80 ? 72 : 46
 
-        const printHTML = `
+        const printHTML = isLabel ? `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+            <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              @page {
+                size: ${width}mm ${height}mm;
+                margin: 0;
+              }
+              html, body {
+                width: ${width}mm !important;
+                height: ${height}mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                color: #000 !important;
+                font-family: system-ui, -apple-system, sans-serif;
+                text-align: center !important;
+                overflow: hidden !important;
+              }
+              .label-page {
+                width: ${width}mm !important;
+                height: ${height}mm !important;
+                max-width: ${width}mm !important;
+                max-height: ${height}mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                margin: 0 !important;
+                padding: 0.8mm 1mm !important;
+                box-sizing: border-box !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                overflow: hidden !important;
+                text-align: center !important;
+              }
+              .label-page:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+              }
+              img {
+                max-width: 100% !important;
+                display: block !important;
+                margin: 0 auto !important;
+              }
+              @media print {
+                @page {
+                  size: ${width}mm ${height}mm;
+                  margin: 0;
+                }
+                html, body {
+                  width: ${width}mm !important;
+                  height: ${height}mm !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+                .label-page {
+                  width: ${width}mm !important;
+                  height: ${height}mm !important;
+                  margin: 0 !important;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+          </html>
+        ` : `
           <!DOCTYPE html>
           <html>
           <head>

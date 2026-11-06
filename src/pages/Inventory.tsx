@@ -12,6 +12,7 @@ import LabelPrintModal from '@/components/admin/LabelPrintModal'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
 import { useTenantTheme } from '@/hooks/useTenantTheme'
+import { BRANDING } from '@/config/branding'
 
 export default function Inventory() {
   const { products, setProducts, currentUser } = useAppStore()
@@ -91,8 +92,8 @@ export default function Inventory() {
   }
 
   const handleSearchOnline = (product: any) => {
-    const slug = encodeURIComponent((product.name || '').toLowerCase()).replace(/%20/g, '-')
-    window.open(`https://listado.mercadolibre.com.mx/${slug}`, '_blank', 'noopener')
+    const query = encodeURIComponent(`${(product.name || '').trim()} precio`)
+    window.open(`https://www.google.com/search?q=${query}`, '_blank', 'noopener')
   }
 
   const filteredProducts = products.filter(p => {
@@ -316,7 +317,7 @@ export default function Inventory() {
                     type="button"
                     onClick={() => handleSearchOnline(product)}
                     className="p-1.5 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 transition-all rounded-md text-xs font-bold flex items-center justify-center shrink-0 border border-sky-500/20"
-                    title="Buscar precios similares en línea"
+                    title="Buscar precios en Google"
                   >
                     <ExternalLink size={14} />
                   </button>

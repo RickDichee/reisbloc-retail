@@ -304,14 +304,32 @@ class SupabaseService {
   async updateUser(userId: string, updates: Partial<User>): Promise<void> {
     try {
       // Map TypeScript User fields to Supabase schema
-      const { username, avatarUrl, ...rest } = updates as any
-      const supabaseUpdates = username ? { ...rest, name: username, username: username } : rest
+      const { username, avatarUrl, pin, ...rest } = updates as any
+      const supabaseUpdates: any = { ...rest }
+
+      if (username) {
+        supabaseUpdates.username = username
+        if (!supabaseUpdates.name) {
+          supabaseUpdates.name = username
+        }
+      }
+
+      // Sanitizar PIN: Si viene vacío o en blanco, convertir a null para no colisionar con UNIQUE(pin)
+      if (pin !== undefined) {
+        supabaseUpdates.pin = (typeof pin === 'string' && pin.trim() !== '') ? pin.trim() : null
+      }
 
       // Forzar mapeo de avatarUrl -> avatar_url
       if (avatarUrl || updates.avatar_url) {
         supabaseUpdates.avatar_url = avatarUrl || updates.avatar_url
         delete supabaseUpdates.avatarUrl
       }
+
+      // Proteger llaves primarias y de organización
+      delete supabaseUpdates.id
+      delete supabaseUpdates.organizationId
+      delete supabaseUpdates.createdAt
+      delete supabaseUpdates.created_at
 
       const { error } = await supabase
         .from('users')
