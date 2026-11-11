@@ -368,68 +368,61 @@ export default function ReceiptTicket({
         <img
           src={barcodeUrl}
           alt={`barcode-${ticketFolio}`}
-          style={{ width: is80mm ? '42mm' : '34mm', maxWidth: '88%', height: is80mm ? '13mm' : '10mm', margin: '3px auto', display: 'block', objectFit: 'contain' }}
+          style={{ width: is80mm ? '42mm' : '34mm', maxWidth: '88%', height: is80mm ? '12mm' : '9.5mm', margin: '2px auto', display: 'block', objectFit: 'contain' }}
         />
         <div style={{ fontWeight: 900, marginTop: '1px', fontSize: is80mm ? '9.5px' : '8px', letterSpacing: '0.3px' }}>FOLIO: {ticketFolio}</div>
-        <div style={{ fontWeight: 900, marginTop: '1px', wordBreak: 'break-word' }}>{ticketFooterMsg}</div>
+        <div style={{ fontWeight: 900, marginTop: '1px', wordBreak: 'break-word', fontSize: is80mm ? '10px' : '8.5px' }}>{ticketFooterMsg}</div>
 
-        <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', marginTop: '1px' }}>{resolvedTheme.tagline}</div>
-
-        {/* 📢 LEYENDA Y CONTACTO WHATSAPP CON DISEÑO MODERNO */}
+        {/* 📢 POLÍTICA Y CONTACTO WHATSAPP */}
         <div style={{
-          marginTop: '6px',
-          paddingTop: '4px',
-          borderTop: '2px solid #000',
+          marginTop: '5px',
+          paddingTop: '3px',
+          borderTop: '1px solid #000',
           width: '100%',
           textAlign: 'center',
           fontWeight: 900,
-          fontSize: is80mm ? '10px' : '8.5px',
-          lineHeight: '1.3',
+          fontSize: is80mm ? '9.5px' : '8px',
+          lineHeight: '1.25',
           textTransform: 'uppercase',
           color: '#000',
           boxSizing: 'border-box'
         }}>
-          <div style={{ border: '1.5px solid #000', padding: '3px 5px', borderRadius: '3px', letterSpacing: '0.2px', marginBottom: '4px', backgroundColor: '#f8f8f8' }}>
-            {resolvedTheme.receiptNoReturnsPolicy || 'NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA'}
+          <div style={{ border: '1.5px solid #000', padding: '2px 4px', borderRadius: '3px', letterSpacing: '0.2px', marginBottom: '4px', backgroundColor: '#f8f8f8', fontSize: is80mm ? '9px' : '8px' }}>
+            {isLosChunchesTenant ? 'NO HAY CAMBIOS NI DEVOLUCIONES' : (resolvedTheme.receiptNoReturnsPolicy || 'NO HAY CAMBIOS NI DEVOLUCIONES')}
           </div>
 
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
-            fontSize: is80mm ? '12px' : '10px',
+            gap: '5px',
+            fontSize: is80mm ? '11px' : '9.5px',
             fontWeight: 900,
             background: 'transparent',
             color: '#000',
             border: '1.5px solid #000',
-            padding: '3px 8px',
+            padding: '2.5px 7px',
             borderRadius: '4px',
             letterSpacing: '0.3px',
             maxWidth: '100%',
             boxSizing: 'border-box',
             wordBreak: 'break-word'
           }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0 }}>
               <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.205 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
             </svg>
             <span style={{ color: '#000' }}>
-              WHATSAPP: {String(ticketPhone || resolvedTheme.receiptWhatsappPlaceholder || 'Por configurar').replace(/^(tel\s*\/?\s*)?(whatsapp\s*:?\s*)?/i, '').trim()}
+              WHATSAPP: {String(ticketPhone || resolvedTheme.receiptWhatsappPlaceholder || '').replace(/^(tel\s*\/?\s*)?(whatsapp\s*:?\s*)?/i, '').trim()}
             </span>
           </div>
-          {resolvedTheme.subdomain && (
-            <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', fontWeight: 900, marginTop: '3px', textTransform: 'lowercase' }}>
-              🌐 {resolvedTheme.subdomain}
-            </div>
-          )}
         </div>
 
         {/* 📱 CÓDIGO QR TIKTOK (Los Chunches de Cons) */}
         {resolvedTheme.ticketQrUrl && (
           <div style={{
-            marginTop: '7px',
-            paddingTop: '5px',
-            borderTop: '2px dashed #000',
+            marginTop: '6px',
+            paddingTop: '4px',
+            borderTop: '1.5px dashed #000',
             width: '100%',
             textAlign: 'center',
             display: 'flex',
@@ -443,44 +436,34 @@ export default function ReceiptTicket({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              fontSize: is80mm ? '11px' : '9.5px',
+              fontSize: is80mm ? '10px' : '8.5px',
               fontWeight: 900,
               textTransform: 'uppercase',
-              letterSpacing: '0.4px',
+              letterSpacing: '0.3px',
               marginBottom: '2px',
               color: '#000'
             }}>
-              {/* TikTok Icon */}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0, verticalAlign: 'middle' }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0, verticalAlign: 'middle' }}>
                 <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.5 6.3 6.3 0 0 0 1.96-4.49V8.41a8.16 8.16 0 0 0 4.81 1.56v-3.28z"/>
               </svg>
               <span>{resolvedTheme.ticketQrLabel || 'SÍGUENOS EN TIKTOK'}</span>
-            </div>
-            <div style={{
-              fontSize: is80mm ? '8.5px' : '7.5px',
-              fontWeight: 700,
-              marginBottom: '3px',
-              textAlign: 'center',
-              color: '#222'
-            }}>
-              {resolvedTheme.ticketQrSub || '¡Nuevas llegadas, ofertas y dinámicas!'}
             </div>
             <img
               src={resolvedTheme.ticketQrUrl}
               alt="TikTok QR"
               style={{
-                width: is80mm ? '32mm' : '26mm',
-                height: is80mm ? '32mm' : '26mm',
-                maxWidth: '75%',
+                width: is80mm ? '28mm' : '23mm',
+                height: is80mm ? '28mm' : '23mm',
+                maxWidth: '70%',
                 objectFit: 'contain',
                 display: 'block',
-                margin: '2px auto 3px auto'
+                margin: '2px auto'
               }}
             />
             <div style={{
-              fontSize: is80mm ? '9px' : '8px',
+              fontSize: is80mm ? '8.5px' : '7.5px',
               fontWeight: 900,
-              letterSpacing: '0.3px',
+              letterSpacing: '0.2px',
               color: '#000'
             }}>
               @loschunchesdecons
@@ -490,21 +473,15 @@ export default function ReceiptTicket({
 
         {/* Powered by Reisbloc */}
         <div style={{
-          marginTop: '7px',
-          paddingTop: '5px',
+          marginTop: '6px',
+          paddingTop: '3px',
           borderTop: '1px solid #000',
           width: '100%',
           textAlign: 'center',
           color: '#000'
         }}>
-          <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', fontWeight: 900, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
-            ⚡ {BRANDING.poweredBy}
-          </div>
-          <div style={{ fontSize: is80mm ? '8px' : '7px', fontWeight: 700, marginTop: '1px', textTransform: 'none' }}>
-            {BRANDING.poweredByTagline}
-          </div>
-          <div style={{ fontSize: is80mm ? '7.5px' : '6.5px', fontWeight: 600, marginTop: '1px', color: '#444' }}>
-            store.reisbloc.com
+          <div style={{ fontSize: is80mm ? '8px' : '7px', fontWeight: 900, letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+            ⚡ {BRANDING.poweredBy} · store.reisbloc.com
           </div>
         </div>
       </div>
