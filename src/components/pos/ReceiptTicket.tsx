@@ -173,6 +173,7 @@ export default function ReceiptTicket({
             <html>
             <head>
               <meta charset="UTF-8">
+              <base href="${typeof window !== 'undefined' ? window.location.origin : ''}/">
               <title>Ticket_${ticketId}</title>
               <style>
                 * {
@@ -284,6 +285,11 @@ export default function ReceiptTicket({
         <div style={{ fontWeight: 900, fontSize: is80mm ? '14px' : '11.5px', textTransform: 'uppercase', letterSpacing: '0.2px', color: '#000', wordBreak: 'break-word' }}>
           {ticketBusinessName}
         </div>
+        {resolvedTheme.tagline && (
+          <div style={{ fontSize: is80mm ? '9.5px' : '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#111', marginTop: '1px' }}>
+            ★ {resolvedTheme.tagline} ★
+          </div>
+        )}
         <div style={{ fontSize: is80mm ? '11px' : '9.5px', fontWeight: 900, marginTop: '2px', color: '#000', wordBreak: 'break-word', letterSpacing: '0.2px' }}>
           {ticketAddress}
         </div>
@@ -418,20 +424,87 @@ export default function ReceiptTicket({
           )}
         </div>
 
+        {/* 📱 CÓDIGO QR TIKTOK (Los Chunches de Cons) */}
+        {resolvedTheme.ticketQrUrl && (
+          <div style={{
+            marginTop: '7px',
+            paddingTop: '5px',
+            borderTop: '2px dashed #000',
+            width: '100%',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              fontSize: is80mm ? '11px' : '9.5px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.4px',
+              marginBottom: '2px',
+              color: '#000'
+            }}>
+              {/* TikTok Icon */}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0, verticalAlign: 'middle' }}>
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.5 6.3 6.3 0 0 0 1.96-4.49V8.41a8.16 8.16 0 0 0 4.81 1.56v-3.28z"/>
+              </svg>
+              <span>{resolvedTheme.ticketQrLabel || 'SÍGUENOS EN TIKTOK'}</span>
+            </div>
+            <div style={{
+              fontSize: is80mm ? '8.5px' : '7.5px',
+              fontWeight: 700,
+              marginBottom: '3px',
+              textAlign: 'center',
+              color: '#222'
+            }}>
+              {resolvedTheme.ticketQrSub || '¡Nuevas llegadas, ofertas y dinámicas!'}
+            </div>
+            <img
+              src={resolvedTheme.ticketQrUrl}
+              alt="TikTok QR"
+              style={{
+                width: is80mm ? '32mm' : '26mm',
+                height: is80mm ? '32mm' : '26mm',
+                maxWidth: '75%',
+                objectFit: 'contain',
+                display: 'block',
+                margin: '2px auto 3px auto'
+              }}
+            />
+            <div style={{
+              fontSize: is80mm ? '9px' : '8px',
+              fontWeight: 900,
+              letterSpacing: '0.3px',
+              color: '#000'
+            }}>
+              @loschunchesdecons
+            </div>
+          </div>
+        )}
+
         {/* Powered by Reisbloc */}
         <div style={{
-          marginTop: '6px',
-          paddingTop: '4px',
+          marginTop: '7px',
+          paddingTop: '5px',
           borderTop: '1px solid #000',
           width: '100%',
           textAlign: 'center',
           color: '#000'
         }}>
-          <div style={{ fontSize: '7.5px', fontWeight: 900, letterSpacing: '0.3px' }}>
+          <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', fontWeight: 900, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
             ⚡ {BRANDING.poweredBy}
           </div>
-          <div style={{ fontSize: '7px', fontWeight: 700, marginTop: '1px', textTransform: 'none' }}>
+          <div style={{ fontSize: is80mm ? '8px' : '7px', fontWeight: 700, marginTop: '1px', textTransform: 'none' }}>
             {BRANDING.poweredByTagline}
+          </div>
+          <div style={{ fontSize: is80mm ? '7.5px' : '6.5px', fontWeight: 600, marginTop: '1px', color: '#444' }}>
+            store.reisbloc.com
           </div>
         </div>
       </div>

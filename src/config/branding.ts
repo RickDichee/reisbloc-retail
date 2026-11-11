@@ -246,6 +246,9 @@ export interface TenantThemeConfig {
   receiptWhatsappPlaceholder?: string
   receiptNoReturnsPolicy?: string
   ticketLogoUrl?: string
+  ticketQrUrl?: string
+  ticketQrLabel?: string
+  ticketQrSub?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -308,7 +311,10 @@ export const LOS_CHUNCHES_THEME: TenantThemeConfig = {
   subdomain: 'loschunchesdecons.reisbloc.com',
   receiptWhatsappPlaceholder: '(443) 124-4490',
   receiptNoReturnsPolicy: 'MERCANCÍA DE SALDO / IMPORTACIÓN: NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA',
-  ticketLogoUrl: '/images/los_chunches.jpeg'
+  ticketLogoUrl: '/images/los_chunches.jpeg',
+  ticketQrUrl: '/images/los_chunches_tiktok_qr.svg',
+  ticketQrLabel: 'SÍGUENOS EN TIKTOK',
+  ticketQrSub: '¡Nuevas llegadas, ofertas y dinámicas!'
 }
 
 export const JUGUETES_THEME: TenantThemeConfig = {
@@ -538,6 +544,18 @@ export const BRANDING = {
     if (checkIsJuguetes()) return JUGUETES_THEME.tagline
     if (checkIsLosChunches()) return LOS_CHUNCHES_THEME.tagline
     return DEFAULT_THEME.tagline
+  },
+  get ticketQrUrl() {
+    if (checkIsLosChunches()) return '/images/los_chunches_tiktok_qr.svg'
+    return undefined
+  },
+  get ticketQrLabel() {
+    if (checkIsLosChunches()) return 'SÍGUENOS EN TIKTOK'
+    return undefined
+  },
+  get ticketQrSub() {
+    if (checkIsLosChunches()) return '¡Nuevas llegadas, ofertas y dinámicas!'
+    return undefined
   },
   get theme() {
     if (checkIsModaMiel()) return MODA_MIEL_THEME
