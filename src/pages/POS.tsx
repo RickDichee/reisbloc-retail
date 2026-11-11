@@ -422,6 +422,7 @@ export default function POS() {
 
   const usesPackByDefault = tenantHasFeature(currentUser?.organizationId || null, 'packLabel') || BRANDING.isModaMiel
   const hasCardTerminal = tenantHasFeature(currentUser?.organizationId || null, 'cardTerminal')
+  const hasPriceAdjustmentFeature = tenantHasFeature(currentUser?.organizationId || null, 'ticketPriceAdjustment')
   const [priceMode, setPriceMode] = useState<'pieza' | 'mayoreo' | 'paquete' | 'bulto'>(() => usesPackByDefault ? 'paquete' : 'pieza')
 
   useEffect(() => {
@@ -938,7 +939,7 @@ export default function POS() {
       const isPriceReduction = newPrice < item.unitPrice
       const isAdmin = ['admin', 'owner', 'superadmin'].includes(currentUser.role?.toLowerCase() || '')
 
-      if (isPriceReduction && !isAdmin) {
+      if (isPriceReduction && !isAdmin && !hasPriceAdjustmentFeature) {
         alert(`⚠️ ALERTA DE EXCEPCIÓN DE PRECIO (ADMIN):
 Se está aplicando un precio especial ($${newPrice.toFixed(2)}) por debajo del precio público a una sola pieza.
 Esta excepción será registrada en el registro de auditoría y quedará notificada en las observaciones del Cierre de Caja.`)
@@ -946,13 +947,22 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
 
       updateDraftItemPrice(tableNumber, itemId, newPrice)
       
-      // Audit Log: Price manually adjusted in cart with exception flag
+      // 📝 Registro de Auditoría Completo (Obligatorio con logs de todo)
       supabaseService.createAuditLog({
         userId: currentUser.id,
         action: isPriceReduction ? 'POS_SPECIAL_PRICE_EXCEPTION_APPLIED' : 'POS_PRICE_ADJUSTED',
         entityType: 'POS',
         entityId: `caja-${tableNumber}`,
-        newValue: { itemId, oldPrice: item.unitPrice, newPrice, productName: item.name || 'Producto', isException: isPriceReduction, userRole: currentUser.role }
+        newValue: { 
+          itemId, 
+          oldPrice: item.unitPrice, 
+          newPrice, 
+          difference: newPrice - item.unitPrice,
+          productName: item.name || 'Producto', 
+          isException: isPriceReduction, 
+          adjustedBy: currentUser.name || currentUser.username || currentUser.email,
+          userRole: currentUser.role 
+        }
       }).catch(err => console.error('Error logging price adjustment:', err))
 
       // Registrar nota de ajuste en el turno de caja activo si aplica reducción
@@ -1737,6 +1747,19 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                 </span>
               </div>
 
+              {/* Botón Ajustar Precios del Ticket (habilitado para Los Chunches y administradores) */}
+              {(hasPriceAdjustmentFeature || currentUser?.role === 'admin') && items.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowManualAdjustModal(true)}
+                  className="w-full py-2 px-3 bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-200/90 rounded-xl font-black text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-[0.98]"
+                  title="Ajustar precio de los productos antes de cobrar el ticket"
+                >
+                  <SlidersHorizontal size={14} className="text-amber-700" />
+                  <span>Ajustar Precios del Ticket</span>
+                </button>
+              )}
+
               {/* Action Buttons: 1-Click Fluido sin ventanas emergentes */}
               <div className="flex flex-col gap-2">
                 {/* Botón Principal: Cobro Directo en Efectivo */}
@@ -1917,6 +1940,22 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
                   <span className="font-black text-slate-500 text-xs uppercase">TOTAL A COBRAR</span>
                   <span className="font-black text-2xl text-slate-900">${currentTotal.toFixed(2)}</span>
                 </div>
+
+                {/* Botón Ajustar Precios del Ticket */}
+                {(hasPriceAdjustmentFeature || currentUser?.role === 'admin') && items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileCartDrawer(false)
+                      setShowManualAdjustModal(true)
+                    }}
+                    className="w-full py-2.5 px-3 bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-200/90 rounded-xl font-black text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-[0.98]"
+                    title="Ajustar precio de los productos antes de cobrar el ticket"
+                  >
+                    <SlidersHorizontal size={14} className="text-amber-700" />
+                    <span>Ajustar Precios del Ticket</span>
+                  </button>
+                )}
 
                 {/* Actions: 1-Click Fluido sin ventanas emergentes */}
                 <div className="space-y-2">
@@ -2574,6 +2613,31 @@ function ManualAdjustModal({
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
                 Motivo del Ajuste (Log Obligatorio para Auditoría)
               </label>
+
+              {/* Sugerencias Rápidas de Motivo */}
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
+                {[
+                  'Descuento en mostrador',
+                  'Precio especial cliente frecuente',
+                  'Ajuste por volumen / mayoreo',
+                  'Promoción autorizada',
+                  'Detalle en producto'
+                ].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setReason(chip)}
+                    className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all ${
+                      reason === chip
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+
               <input
                 type="text"
                 value={reason}

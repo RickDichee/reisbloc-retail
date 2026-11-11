@@ -10,7 +10,7 @@ interface LabelPrintModalProps {
   onClose: () => void
 }
 
-type LabelPreset = '50x30' | '40x30' | '30x20' | '58x40' | '80x50' | 'custom'
+type LabelPreset = '51x25' | '30x15' | '50x30' | '40x30' | '30x20' | '58x40' | '80x50' | 'custom'
 
 interface PresetDimensions {
   label: string
@@ -20,6 +20,8 @@ interface PresetDimensions {
 }
 
 const PRESETS: Record<Exclude<LabelPreset, 'custom'>, PresetDimensions> = {
+  '51x25': { label: '51 × 25 mm', sub: 'Predeterminado / Estándar', width: 51, height: 25 },
+  '30x15': { label: '30 × 15 mm', sub: 'Compacta / Mini', width: 30, height: 15 },
   '50x30': { label: '50 × 30 mm', sub: 'Niimbot / Estándar', width: 50, height: 30 },
   '40x30': { label: '40 × 30 mm', sub: 'Compacta', width: 40, height: 30 },
   '30x20': { label: '30 × 20 mm', sub: 'Mini joyero', width: 30, height: 20 },
@@ -41,9 +43,9 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
   const systemPriceFormatted = `$${rawPrice.toFixed(2)}`
 
   // Estado de tamaño y formato de etiqueta
-  const [preset, setPreset] = useState<LabelPreset>('50x30')
-  const [customWidth, setCustomWidth] = useState<number>(50)
-  const [customHeight, setCustomHeight] = useState<number>(30)
+  const [preset, setPreset] = useState<LabelPreset>('51x25')
+  const [customWidth, setCustomWidth] = useState<number>(51)
+  const [customHeight, setCustomHeight] = useState<number>(25)
 
   // Calibración y alineación horizontal (Offset X en mm) para corregir el margen físico del cabezal térmico
   const [offsetX, setOffsetX] = useState<number>(() => {
@@ -128,13 +130,13 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
 
       // Ajustes de escala según el alto de la etiqueta
       const isSmall = effectiveHeight <= 25
-      const isTiny = effectiveHeight <= 20
-      const titleFontSize = isTiny ? '7px' : isSmall ? '8.5px' : '10px'
-      const priceFontSize = isTiny ? '9px' : isSmall ? '11px' : '13px'
-      const storeFontSize = isTiny ? '6.5px' : '7.5px'
-      const skuFontSize = isTiny ? '6.5px' : '7.5px'
-      const qrSizeMm = isTiny ? 10 : isSmall ? 13 : 16
-      const barHeightMm = isTiny ? 6 : isSmall ? 7.5 : 9.5
+      const isTiny = effectiveHeight <= 18
+      const titleFontSize = isTiny ? '6.5px' : isSmall ? '8px' : '10px'
+      const priceFontSize = isTiny ? '8.5px' : isSmall ? '10.5px' : '13px'
+      const storeFontSize = isTiny ? '5.5px' : '7px'
+      const skuFontSize = isTiny ? '5.5px' : '7px'
+      const qrSizeMm = isTiny ? 8.5 : isSmall ? 12 : 16
+      const barHeightMm = isTiny ? 5 : isSmall ? 7 : 9.5
 
       for (let i = 0; i < copies; i++) {
         printHTML += `
@@ -606,8 +608,8 @@ export default function LabelPrintModal({ product, onClose }: LabelPrintModalPro
               {/* Marco de etiqueta escalado proporcionalmente */}
               <div
                 style={{
-                  width: `${Math.min(260, Math.max(180, effectiveWidth * 4.2))}px`,
-                  minHeight: `${Math.min(220, Math.max(120, effectiveHeight * 4.2))}px`
+                  width: `${Math.min(260, Math.max(160, effectiveWidth * 4.2))}px`,
+                  minHeight: `${Math.min(220, Math.max(75, effectiveHeight * 4.2))}px`
                 }}
                 className="bg-white rounded-xl shadow-lg border-2 border-dashed border-slate-300 p-2.5 flex flex-col justify-between items-center text-center relative select-none transition-all duration-200"
               >

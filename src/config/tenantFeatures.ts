@@ -17,6 +17,7 @@ export type TenantFeature =
   | 'wholesaleModule'
   | 'invoicingModule'
   | 'branchesModule'
+  | 'ticketPriceAdjustment'
 
 const TENANT_FEATURES: Record<string, Record<string, boolean>> = {
   [MODA_MIEL_ORG_ID]: {
@@ -27,7 +28,8 @@ const TENANT_FEATURES: Record<string, Record<string, boolean>> = {
     cardTerminal: false,
     wholesaleModule: true,
     invoicingModule: false,
-    branchesModule: false
+    branchesModule: false,
+    ticketPriceAdjustment: false
   },
   [LOS_CHUNCHES_ORG_ID]: {
     unitCost: true,
@@ -37,7 +39,8 @@ const TENANT_FEATURES: Record<string, Record<string, boolean>> = {
     cardTerminal: true,
     wholesaleModule: false,
     invoicingModule: false,
-    branchesModule: false
+    branchesModule: false,
+    ticketPriceAdjustment: true
   },
   [JUGUETES_SAN_JUDASTADEO_ORG_ID]: {
     unitCost: false,
@@ -48,7 +51,8 @@ const TENANT_FEATURES: Record<string, Record<string, boolean>> = {
     cardTerminal: false,
     wholesaleModule: false,
     invoicingModule: false,
-    branchesModule: false
+    branchesModule: false,
+    ticketPriceAdjustment: false
   }
 }
 

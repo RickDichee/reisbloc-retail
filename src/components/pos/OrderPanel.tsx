@@ -158,18 +158,17 @@ export function OrderPanel({
                     </div>
                   ) : (
                     <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-xs font-black text-indigo-600">
-                        {currency.format(item.unitPrice)}
-                      </span>
                       <button
+                        type="button"
                         onClick={() => {
                           setEditingPriceId(item.id)
                           setEditingPriceVal(item.unitPrice.toString())
                         }}
-                        className="p-0.5 text-slate-300 hover:text-indigo-600 transition-colors"
-                        title="Editar precio unitario"
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-200/80 text-indigo-700 transition-all text-xs font-black group/price"
+                        title="Haz clic para modificar el precio unitario de este artículo"
                       >
-                        <Pencil size={11} />
+                        <span>{currency.format(item.unitPrice)}</span>
+                        <Pencil size={11} className="text-indigo-400 group-hover/price:text-indigo-700" />
                       </button>
                     </div>
                   )}
