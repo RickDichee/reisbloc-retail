@@ -1,7 +1,7 @@
 # REISBLOC-STATUS.md — Estado Operativo del Sistema
 
-**Versión:** 4.1.0  
-**Fecha de actualización:** 1 de Noviembre de 2026  
+**Versión:** 4.2.0  
+**Fecha de actualización:** 6 de Noviembre de 2026  
 **Ambiente Activo en Desarrollo:** Supabase DEV (`jnyyaclrelqcqzjummwe`)  
 **Ambiente de Producción Protegido:** Supabase PROD (`nmovxyaibnixvxtepbod`)
 
@@ -24,9 +24,9 @@
 
 | Tenant | Dominio Oficial | Org ID | Estado | Branding / Tema | Features Activas |
 |---|---|---|---|---|---|
-| **Moda Miel MX** | `modamielmx.reisbloc.com` | `1b498fa6-aca5-428c-9bdd-01e6fea30316` | Activo / En Producción | `#D4386C` (Rose Berry) | Venta por paquete (`packLabel`), Tienda Web |
-| **Los Chunches de Cons** | `loschunchesdecons.com`<br>`www.loschunchesdecons.com` | `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` | Listo para Producción (DEV verificado) | `#C83E74` (Berry Rose) | Costo unitario privado (`unitCost`), Referencia web ML (`webReference`), Tienda Web |
-| **Juguetes San Judas Tadeo** | `sanjudastadeo.reisbloc.com` | `324fd41f-b8af-4aef-9ea6-2f954350775a` | En Configuración | `#C8323E` (San Judas Red) | POS Básico / Retail Estándar |
+| **Moda Miel MX** | `modamielmx.reisbloc.com` | `1b498fa6-aca5-428c-9bdd-01e6fea30316` | Activo / En Producción | `#D4386C` (Rose Berry) | Venta por paquete (`packLabel`), Tienda Web (`onlineStoreModule`), Catálogo Mayorista (`wholesaleModule`) |
+| **Los Chunches de Cons** | `loschunchesdecons.com`<br>`www.loschunchesdecons.com` | `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` | Listo para Producción (DEV verificado) | `#C83E74` (Berry Rose) | Costo unitario privado (`unitCost`), Referencia web ML (`webReference`), Tienda Web (`onlineStoreModule`), Terminal Bancaria BBVA/Clip (`cardTerminal`) |
+| **Juguetes San Judas Tadeo** | `sanjudastadeo.reisbloc.com` | `324fd41f-b8af-4aef-9ea6-2f954350775a` | En Configuración | `#C8323E` (San Judas Red) | POS Básico / Retail Estándar Aislado |
 | **Reisbloc Store Base** | `store.reisbloc.com` | *Global* | Activo / SaaS Core | `#0D9488` (Teal) | Ecosistema B2B Mayorista + Minorista |
 
 ---
@@ -73,7 +73,10 @@
 
 ## 🛠️ Mejoras Recientes de Experiencia de Usuario (UX)
 
-1. **POS Móvil sin Obstrucciones:** La barra fija de navegación inferior de pantallas móviles se oculta de forma inteligente en `/pos` para garantizar el acceso libre a los botones de cobro y ticket.
+1. **POS Móvil sin Obstrucciones:** La barra fija de navegación inferior de pantallas móviles se oculta de forma inteligente en `/pos` para garantizar el acceso libre a los botones de cobro y ticket, eliminando scrolls anidados para operación táctil fluida.
 2. **Encabezado de Inventario Homologado:** Estructura oscura moderna (`bg-slate-900 border-slate-800 text-white`) con badge `Stock Central` y uso de variables de marca (`bg-[var(--primary)]`).
-3. **Módulo Analytics Universal:** Proyecciones estadísticas predictivas integradas al sidebar en la sección "Analítica & Proyecciones", accesibles para administradores de todos los tenants.
-4. **Armonía de Color en Moda Miel:** Corrección del token `--primary` a `#D4386C` (Rose Berry) con hover `#B52656`, manteniendo el alto contraste sobre el fondo oscuro fintech.
+3. **Búsqueda Google en Inventario:** Búsqueda directa con un clic en Google para productos de catálogo, sanitizando el término de búsqueda.
+4. **Impresión Modular de Etiquetas con Calibración:** Motor interactivo de etiquetas individuales y por paquete con offset milimétrico ajustable (Nimbot 50x30, Térmica 58mm y 80mm).
+5. **Módulo Analytics Universal:** Proyecciones estadísticas predictivas integradas al sidebar en la sección "Analítica & Proyecciones", accesibles para administradores de todos los tenants.
+6. **Armonía de Color en Moda Miel:** Corrección del token `--primary` a `#D4386C` (Rose Berry) con hover `#B52656`, manteniendo el alto contraste sobre el fondo oscuro fintech.
+7. **Blindaje Defensivo en Gestión de Personal:** Recuperación transparente ante inconsistencias de esquema (`pin` ausente en tabla `users`) permitiendo guardar perfiles de empleados sin error 400.

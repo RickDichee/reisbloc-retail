@@ -27,9 +27,9 @@ El proyecto opera bajo una **única base de código compartida** para múltiples
 
 | Tenant | Organization ID | Dominio(s) | Brand Primary | Flags Activos en `tenantFeatures.ts` |
 |---|---|---|---|---|
-| **Moda Miel MX** | `1b498fa6-aca5-428c-9bdd-01e6fea30316` | `modamielmx.reisbloc.com` | `#D4386C` (Rose Berry) | `packLabel: true`, `onlineStoreModule: true`, `aiModules: false` |
-| **Los Chunches de Cons** | `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` | `loschunchesdecons.com`<br>`www.loschunchesdecons.com`<br>`loschunchesdecons.reisbloc.com` | `#C83E74` (Berry Rose) | `unitCost: true`, `webReference: true`, `onlineStoreModule: true`, `aiModules: false` |
-| **Juguetes San Judas Tadeo** | `324fd41f-b8af-4aef-9ea6-2f954350775a` | `sanjudastadeo.reisbloc.com` | `#C8323E` (Carmesí Suave) | `unitCost: false`, `webReference: false`, `onlineStoreModule: false`, `aiModules: false` |
+| **Moda Miel MX** | `1b498fa6-aca5-428c-9bdd-01e6fea30316` | `modamielmx.reisbloc.com` | `#D4386C` (Rose Berry) | `packLabel: true`, `onlineStoreModule: true`, `wholesaleModule: true`, `aiModules: false`, `cardTerminal: false` |
+| **Los Chunches de Cons** | `a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d` | `loschunchesdecons.com`<br>`www.loschunchesdecons.com`<br>`loschunchesdecons.reisbloc.com` | `#C83E74` (Berry Rose) | `unitCost: true`, `webReference: true`, `onlineStoreModule: true`, `cardTerminal: true`, `aiModules: false` |
+| **Juguetes San Judas Tadeo** | `324fd41f-b8af-4aef-9ea6-2f954350775a` | `sanjudastadeo.reisbloc.com` | `#C8323E` (Carmesí Suave) | Retail estándar aislado: todas las flags en `false` |
 | **Reisbloc Store (Default)** | *Global / Base* | `store.reisbloc.com` | `#0D9488` (Teal) / `#1F293B` | Base SaaS estándar |
 
 ### Detección y Tematización
@@ -92,20 +92,35 @@ Remove-Item .vercel\project.json.bak -Force
 1. **Barra de navegación móvil en POS (`DashboardLayout.tsx` & `POS.tsx`):**
    - Ocultamiento de la barra fija inferior móvil en rutas `/pos` (`!isPosPage`) para evitar bloquear los botones de acción ("Cobrar", "Ver Ticket").
    - Elevación de z-index de la barra de resumen en POS a `z-50`.
+   - Optimización de layout móvil eliminando scrolls anidados para asegurar total visibilidad del catálogo táctil.
 2. **Encabezado unificado de Inventario (`Inventory.tsx`):**
    - Estructura fintech oscura con `bg-slate-900 border-slate-800 text-white`.
    - Insignia `Stock Central`, subtítulo descriptivo, botón `IMPORTAR` y botón `NUEVO PRODUCTO`.
    - Icono y botón de alta usan variables `bg-[var(--primary)]` (en Moda Miel `#D4386C`, en Chunches `#C83E74`, en default `#0D9488`).
    - Efecto hover conservado: `group-hover:text-teal-600 dark:group-hover:text-teal-400` y botón editar `hover:bg-teal-500`.
-3. **Módulo Analytics / Métricas Predictivas (`DashboardLayout.tsx` & `Analytics.tsx`):**
+   - Búsqueda comparativa Google integrada con icono oficial y sanitización del query.
+3. **Impresión Modular de Etiquetas con Calibración de Offset (`LabelPrintModal.tsx` & `printService.ts`):**
+   - Modal interactivo con vista previa en tiempo real de etiquetas individuales y por paquete.
+   - Calibrador de compensación de desplazamiento milimétrico (Offset X / Y de -10mm a +10mm) con persistencia en `localStorage`.
+   - Formatos compatibles: Mini Impresora Nimbot 50x30mm, Rollos Térmicos de 58mm y 80mm.
+   - Renderizado con motor dual QR (`bwip-js`) y código de barras Code128.
+4. **Blindaje de Actualización y Gestión de Usuarios (`supabaseService.ts` & `UsersManagement.tsx`):**
+   - Sanitización del payload de actualización para roles administrativos multi-tenant.
+   - Fallback defensivo automático ante ausencia de la columna `pin` en `public.users` (PGRST204), permitiendo actualizar perfiles y roles de empleados sin colapsar por error 400.
+   - Política RLS `users_update_policy` en `public.users` acotada a administradores de la misma organización o el usuario dueño de la cuenta.
+5. **Terminal Bancaria BBVA / Clip Aislada (`tenantFeatures.ts` & `Payment.tsx`):**
+   - Cobro guiado mediante terminal restringido exclusivamente al tenant Los Chunches de Cons (`cardTerminal: true`).
+   - Conciliación de arqueo y flujo de auditoría de caja en `Closing.tsx`.
+6. **Módulo Analytics / Métricas Predictivas (`DashboardLayout.tsx` & `Analytics.tsx`):**
    - Acceso universal para roles `admin` y `manager` en todos los tenants.
    - En tenants con `aiModules: false` (Moda Miel y Chunches), la sección se titula limpiamente **"Analítica & Proyecciones"** mostrando el acceso a `/analytics`.
    - Motor de proyección estadística a 7 y 30 días ponderado por día de la semana y salud de inventario en tiempo real.
-4. **Variable `--primary` de Moda Miel en `globals.css`:**
+7. **Variable `--primary` de Moda Miel en `globals.css`:**
    - Corregida a `#D4386C` con hover `#B52656` para evitar que los elementos de acción se mostraran en negro carbón.
-5. **Mitigación de Egress en Supabase:**
+8. **Mitigación de Egress y Caché de Imágenes en Supabase:**
    - Throttle de 5 minutos en sincronización de catálogo.
    - Manejo offline con backoff y cuarentena tras 5 reintentos en `syncService`.
+   - Precarga de imágenes resiliente en `imageCacheService.ts` evitando conflictos de modo opaco con el Service Worker de Workbox.
 
 ---
 

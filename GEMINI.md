@@ -45,6 +45,10 @@ Toda funcionalidad que no sea universal para todos los clientes se controla medi
   - `packLabel`: Muestra "Pqte" en lugar de "Precio" (ej. Moda Miel).
   - `onlineStoreModule`: Habilita la tienda en línea y catálogo web.
   - `aiModules`: Activa los módulos de Marketing IA y Agente Copiloto.
+  - `cardTerminal`: Habilita cobro guiado con terminal bancaria BBVA/Clip (exclusivo Los Chunches).
+  - `wholesaleModule`: Módulo de catálogo mayorista y ventas por volumen (Moda Miel).
+  - `invoicingModule`: Facturación electrónica CFDI 4.0.
+  - `branchesModule`: Módulo de gestión multi-sucursal.
 - **Uso en componentes:**
   ```tsx
   import { tenantHasFeature } from '@/config/tenantFeatures'
