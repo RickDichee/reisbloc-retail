@@ -244,6 +244,7 @@ export interface TenantThemeConfig {
   mascotName?: string
   subdomain?: string
   receiptWhatsappPlaceholder?: string
+  receiptWhatsappSecondary?: string
   receiptNoReturnsPolicy?: string
   ticketLogoUrl?: string
   ticketQrUrl?: string
@@ -280,6 +281,7 @@ export const MODA_MIEL_THEME: TenantThemeConfig = {
   mascotName: 'Catarina',
   subdomain: 'modamielmx.reisbloc.com',
   receiptWhatsappPlaceholder: '+52 445 145 7252',
+  receiptWhatsappSecondary: '+52 445 105 0265',
   receiptNoReturnsPolicy: 'NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA',
   ticketLogoUrl: '/images/moda-miel-mx-logo.jpeg'
 }

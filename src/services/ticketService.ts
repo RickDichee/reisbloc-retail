@@ -19,6 +19,7 @@ export interface TicketData {
   businessName: string;
   address?: string;
   phone?: string;
+  secondaryPhone?: string;
   cashier?: string;
   date?: Date;
   imageUrl?: string;
@@ -317,7 +318,10 @@ export const ticketService = {
     text += `_Conserve este comprobante para cualquier duda._\n`;
     text += `*NO HAY CAMBIOS NI DEVOLUCIONES*\n`;
     text += `━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `📲 *Atención a Clientes:* 445 131 1808\n`;
+    text += `📲 *Atención a Clientes:* ${data.phone || '445 145 7252'}\n`;
+    if (data.secondaryPhone) {
+      text += `📲 *WhatsApp 2:* ${data.secondaryPhone}\n`;
+    }
     text += `⚡ *Powered by Reisbloc Retail*`;
 
     return text;

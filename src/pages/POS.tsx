@@ -163,6 +163,7 @@ export default function POS() {
             businessName={currentBusinessTitle || BRANDING.appName}
             address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
             phone={organizationSettings?.ticketPhone || BRANDING.theme.receiptWhatsappPlaceholder || ""}
+            secondaryPhone={organizationSettings?.ticketSecondaryPhone || BRANDING.theme.receiptWhatsappSecondary || ""}
             clientName={receiptModal.clientName}
             clientPhone={receiptModal.clientPhone}
             width={newWidth}
@@ -989,6 +990,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
           businessName={currentBusinessTitle || BRANDING.appName}
           address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
           phone={organizationSettings?.ticketPhone || BRANDING.theme.receiptWhatsappPlaceholder || ""}
+          secondaryPhone={organizationSettings?.ticketSecondaryPhone || BRANDING.theme.receiptWhatsappSecondary || ""}
           clientName={selectedClient?.name}
           clientPhone={selectedClient?.phone}
           width={selectedTicketWidth}
@@ -1247,6 +1249,7 @@ Esta excepción será registrada en el registro de auditoría y quedará notific
             businessName={currentBusinessTitle || BRANDING.appName}
             address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ""}
             phone={organizationSettings?.ticketPhone || BRANDING.theme.receiptWhatsappPlaceholder || ""}
+            secondaryPhone={organizationSettings?.ticketSecondaryPhone || BRANDING.theme.receiptWhatsappSecondary || ""}
             clientName={selectedClient?.name}
             clientPhone={selectedClient?.phone}
             width={selectedTicketWidth}
