@@ -23,11 +23,14 @@ interface ReceiptTicketProps {
   businessName?: string
   address?: string
   phone?: string
+  secondaryPhone?: string
   clientName?: string
   clientPhone?: string
   width?: number
   logoUrl?: string
   organizationId?: string
+  date?: string | Date
+  isReprint?: boolean
 }
 
 export default function ReceiptTicket({
@@ -41,11 +44,14 @@ export default function ReceiptTicket({
   businessName,
   address = '',
   phone = '',
+  secondaryPhone = '',
   clientName = '',
   clientPhone = '',
   width,
   logoUrl,
   organizationId,
+  date,
+  isReprint = false,
 }: ReceiptTicketProps) {
   const receiptRef = useRef<HTMLDivElement>(null)
   const { organizationSettings, currentUser } = useAppStore()
@@ -108,6 +114,12 @@ export default function ReceiptTicket({
     : ''
   const rawTicketPhone = phone || organizationSettings?.ticketPhone || defaultPhone
   const ticketPhone = rawTicketPhone.toLowerCase().includes('por configurar') ? defaultPhone : rawTicketPhone
+
+  const defaultSecondaryPhone = isModaMielTenant
+    ? '+52 445 105 0265'
+    : (resolvedTheme.receiptWhatsappSecondary || '')
+  const rawSecondaryPhone = secondaryPhone || organizationSettings?.ticketSecondaryPhone || defaultSecondaryPhone
+  const ticketSecondaryPhone = rawSecondaryPhone.toLowerCase().includes('por configurar') ? defaultSecondaryPhone : rawSecondaryPhone
   const ticketFooterMsg = organizationSettings?.ticketFooterMsg || '¡Gracias por su compra!'
   const ticketWidth = width || organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
 
@@ -159,7 +171,7 @@ export default function ReceiptTicket({
     return acc
   }, {} as Record<string, any[]>)
 
-  const ticketId = (order.id || '').replace('ticket-', '').slice(0, 8).toUpperCase()
+  const ticketId = (order.id || '').replace(/^ticket-/, '').replace(/^sale-/, '').slice(0, 8).toUpperCase()
   const ticketFolio = tableNumber ? `TK-${tableNumber}-${ticketId}` : `TK-${ticketId}`
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(ticketFolio)}&scale=2&height=12&includetext`
 
@@ -173,6 +185,7 @@ export default function ReceiptTicket({
             <html>
             <head>
               <meta charset="UTF-8">
+              <base href="${typeof window !== 'undefined' ? window.location.origin : ''}/">
               <title>Ticket_${ticketId}</title>
               <style>
                 * {
@@ -284,6 +297,11 @@ export default function ReceiptTicket({
         <div style={{ fontWeight: 900, fontSize: is80mm ? '14px' : '11.5px', textTransform: 'uppercase', letterSpacing: '0.2px', color: '#000', wordBreak: 'break-word' }}>
           {ticketBusinessName}
         </div>
+        {resolvedTheme.tagline && (
+          <div style={{ fontSize: is80mm ? '9.5px' : '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#111', marginTop: '1px' }}>
+            ★ {resolvedTheme.tagline} ★
+          </div>
+        )}
         <div style={{ fontSize: is80mm ? '11px' : '9.5px', fontWeight: 900, marginTop: '2px', color: '#000', wordBreak: 'break-word', letterSpacing: '0.2px' }}>
           {ticketAddress}
         </div>
@@ -292,15 +310,30 @@ export default function ReceiptTicket({
             {ticketPhone.toLowerCase().includes('tel') || ticketPhone.toLowerCase().includes('whatsapp') ? ticketPhone : `Tel / WhatsApp: ${ticketPhone}`}
           </div>
         )}
+        {ticketSecondaryPhone && (
+          <div style={{ fontSize: is80mm ? '10.5px' : '9px', fontWeight: 800, marginTop: '1px', color: '#000' }}>
+            {ticketSecondaryPhone.toLowerCase().includes('tel') || ticketSecondaryPhone.toLowerCase().includes('whatsapp') ? ticketSecondaryPhone : `Tel / WhatsApp: ${ticketSecondaryPhone}`}
+          </div>
+        )}
       </div>
 
       {/* Info Ticket */}
       <div style={{ marginBottom: '5px', fontSize: is80mm ? '10px' : '8.5px', borderBottom: '1px solid #000', paddingBottom: '4px', color: '#000' }}>
+        {isReprint && (
+          <div style={{ textAlign: 'center', fontWeight: 900, fontSize: is80mm ? '10.5px' : '9px', border: '1.5px dashed #000', padding: '1.5px 3px', marginBottom: '3px', letterSpacing: '0.5px', backgroundColor: '#f5f5f5' }}>
+            *** REIMPRESIÓN / COPIA ***
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '4px' }}>
           <span style={{ fontWeight: 900 }}>FOLIO: #{ticketId}</span>
           <span style={{ marginLeft: 'auto', fontWeight: 900 }}>{registerName}</span>
         </div>
-        <div>FECHA: {new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</div>
+        <div>FECHA: {date ? new Date(date).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : (order as any).createdAt ? new Date((order as any).createdAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</div>
+        {isReprint && (
+          <div style={{ fontSize: is80mm ? '9px' : '7.5px', color: '#333', fontWeight: 800 }}>
+            REIMPRESO: {new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+          </div>
+        )}
         {clientName && <div style={{ fontWeight: 900, marginTop: '2px', wordBreak: 'break-word' }}>CLIENTE: {clientName.toUpperCase()} {clientPhone ? `(${clientPhone})` : ''}</div>}
       </div>
 
@@ -362,76 +395,148 @@ export default function ReceiptTicket({
         <img
           src={barcodeUrl}
           alt={`barcode-${ticketFolio}`}
-          style={{ width: is80mm ? '42mm' : '34mm', maxWidth: '88%', height: is80mm ? '13mm' : '10mm', margin: '3px auto', display: 'block', objectFit: 'contain' }}
+          style={{ width: is80mm ? '42mm' : '34mm', maxWidth: '88%', height: is80mm ? '12mm' : '9.5mm', margin: '2px auto', display: 'block', objectFit: 'contain' }}
         />
         <div style={{ fontWeight: 900, marginTop: '1px', fontSize: is80mm ? '9.5px' : '8px', letterSpacing: '0.3px' }}>FOLIO: {ticketFolio}</div>
-        <div style={{ fontWeight: 900, marginTop: '1px', wordBreak: 'break-word' }}>{ticketFooterMsg}</div>
+        <div style={{ fontWeight: 900, marginTop: '1px', wordBreak: 'break-word', fontSize: is80mm ? '10px' : '8.5px' }}>{ticketFooterMsg}</div>
 
-        <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', marginTop: '1px' }}>{resolvedTheme.tagline}</div>
-
-        {/* 📢 LEYENDA Y CONTACTO WHATSAPP CON DISEÑO MODERNO */}
+        {/* 📢 POLÍTICA Y CONTACTO WHATSAPP */}
         <div style={{
-          marginTop: '6px',
-          paddingTop: '4px',
-          borderTop: '2px solid #000',
+          marginTop: '5px',
+          paddingTop: '3px',
+          borderTop: '1px solid #000',
           width: '100%',
           textAlign: 'center',
           fontWeight: 900,
-          fontSize: is80mm ? '10px' : '8.5px',
-          lineHeight: '1.3',
+          fontSize: is80mm ? '9.5px' : '8px',
+          lineHeight: '1.25',
           textTransform: 'uppercase',
           color: '#000',
           boxSizing: 'border-box'
         }}>
-          <div style={{ border: '1.5px solid #000', padding: '3px 5px', borderRadius: '3px', letterSpacing: '0.2px', marginBottom: '4px', backgroundColor: '#f8f8f8' }}>
-            {resolvedTheme.receiptNoReturnsPolicy || 'NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA'}
+          <div style={{ border: '1.5px solid #000', padding: '2px 4px', borderRadius: '3px', letterSpacing: '0.2px', marginBottom: '4px', backgroundColor: '#f8f8f8', fontSize: is80mm ? '9px' : '8px' }}>
+            {isLosChunchesTenant ? 'NO HAY CAMBIOS NI DEVOLUCIONES' : (resolvedTheme.receiptNoReturnsPolicy || 'NO HAY CAMBIOS NI DEVOLUCIONES')}
           </div>
 
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
-            fontSize: is80mm ? '12px' : '10px',
+            gap: '5px',
+            fontSize: is80mm ? '11px' : '9.5px',
             fontWeight: 900,
             background: 'transparent',
             color: '#000',
             border: '1.5px solid #000',
-            padding: '3px 8px',
+            padding: '2.5px 7px',
             borderRadius: '4px',
             letterSpacing: '0.3px',
             maxWidth: '100%',
             boxSizing: 'border-box',
             wordBreak: 'break-word'
           }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0 }}>
               <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.205 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
             </svg>
             <span style={{ color: '#000' }}>
-              WHATSAPP: {String(ticketPhone || resolvedTheme.receiptWhatsappPlaceholder || 'Por configurar').replace(/^(tel\s*\/?\s*)?(whatsapp\s*:?\s*)?/i, '').trim()}
+              WHATSAPP: {String(ticketPhone || resolvedTheme.receiptWhatsappPlaceholder || '').replace(/^(tel\s*\/?\s*)?(whatsapp\s*:?\s*)?/i, '').trim()}
             </span>
           </div>
-          {resolvedTheme.subdomain && (
-            <div style={{ fontSize: is80mm ? '8.5px' : '7.5px', fontWeight: 900, marginTop: '3px', textTransform: 'lowercase' }}>
-              🌐 {resolvedTheme.subdomain}
+
+          {ticketSecondaryPhone && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '5px',
+              fontSize: is80mm ? '11px' : '9.5px',
+              fontWeight: 900,
+              background: 'transparent',
+              color: '#000',
+              border: '1.5px solid #000',
+              padding: '2.5px 7px',
+              borderRadius: '4px',
+              letterSpacing: '0.3px',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              wordBreak: 'break-word',
+              marginTop: '4px'
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0 }}>
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.205 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+              </svg>
+              <span style={{ color: '#000' }}>
+                WHATSAPP: {String(ticketSecondaryPhone).replace(/^(tel\s*\/?\s*)?(whatsapp\s*:?\s*)?/i, '').trim()}
+              </span>
             </div>
           )}
         </div>
 
+        {/* 📱 CÓDIGO QR TIKTOK (Los Chunches de Cons) */}
+        {resolvedTheme.ticketQrUrl && (
+          <div style={{
+            marginTop: '6px',
+            paddingTop: '4px',
+            borderTop: '1.5px dashed #000',
+            width: '100%',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              fontSize: is80mm ? '10px' : '8.5px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.3px',
+              marginBottom: '2px',
+              color: '#000'
+            }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', flexShrink: 0, verticalAlign: 'middle' }}>
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.5 6.3 6.3 0 0 0 1.96-4.49V8.41a8.16 8.16 0 0 0 4.81 1.56v-3.28z"/>
+              </svg>
+              <span>{resolvedTheme.ticketQrLabel || 'SÍGUENOS EN TIKTOK'}</span>
+            </div>
+            <img
+              src={resolvedTheme.ticketQrUrl}
+              alt="TikTok QR"
+              style={{
+                width: is80mm ? '28mm' : '23mm',
+                height: is80mm ? '28mm' : '23mm',
+                maxWidth: '70%',
+                objectFit: 'contain',
+                display: 'block',
+                margin: '2px auto'
+              }}
+            />
+            <div style={{
+              fontSize: is80mm ? '8.5px' : '7.5px',
+              fontWeight: 900,
+              letterSpacing: '0.2px',
+              color: '#000'
+            }}>
+              @loschunchesdecons
+            </div>
+          </div>
+        )}
+
         {/* Powered by Reisbloc */}
         <div style={{
           marginTop: '6px',
-          paddingTop: '4px',
+          paddingTop: '3px',
           borderTop: '1px solid #000',
           width: '100%',
           textAlign: 'center',
           color: '#000'
         }}>
-          <div style={{ fontSize: '7.5px', fontWeight: 900, letterSpacing: '0.3px' }}>
-            ⚡ {BRANDING.poweredBy}
-          </div>
-          <div style={{ fontSize: '7px', fontWeight: 700, marginTop: '1px', textTransform: 'none' }}>
-            {BRANDING.poweredByTagline}
+          <div style={{ fontSize: is80mm ? '8px' : '7px', fontWeight: 900, letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+            ⚡ {BRANDING.poweredBy} · store.reisbloc.com
           </div>
         </div>
       </div>

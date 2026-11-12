@@ -483,20 +483,24 @@ function EditUserModal({
     e.preventDefault()
     setLoading(true)
     try {
-      await supabaseService.updateUser(user.id, {
-        name: formData.name,
-        username: formData.username || formData.name,
-        email: formData.email,
-        pin: formData.pin,
+      const payload: any = {
+        name: formData.name.trim(),
+        username: (formData.username || formData.name).trim(),
+        email: formData.email.trim(),
         role: formData.role,
         avatar_url: formData.avatar_url
-      })
+      }
+      if (formData.pin && formData.pin.trim() !== '') {
+        payload.pin = formData.pin.trim()
+      }
+
+      await supabaseService.updateUser(user.id, payload)
 
       onSuccess()
       onClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating user profile:', error)
-      alert('Error al actualizar perfil')
+      alert('Error al actualizar perfil: ' + (error?.message || 'Error desconocido'))
     } finally {
       setLoading(false)
     }

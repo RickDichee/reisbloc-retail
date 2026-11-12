@@ -1,7 +1,12 @@
 // src/components/reports/SalesHistoryTab.tsx
 import { useEffect, useState, useMemo } from 'react'
-import { Search, Eye, X, User, Clock, Package } from 'lucide-react'
+import { Search, Eye, X, User, Clock, Package, Printer, Loader2 } from 'lucide-react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import supabaseService from '@/services/supabaseService'
+import { useAppStore } from '@/store/appStore'
+import ReceiptTicket from '@/components/pos/ReceiptTicket'
+import printService from '@/services/printService'
+import { BRANDING } from '@/config/branding'
 
 interface SalesHistoryTabProps {
   dateRange: { from: string; to: string }
@@ -39,6 +44,9 @@ interface UserInfo {
 }
 
 export default function SalesHistoryTab({ dateRange }: SalesHistoryTabProps) {
+  const { currentUser, organizationSettings, products, setProducts } = useAppStore()
+  const isAdmin = currentUser?.role === 'admin'
+
   const [sales, setSales] = useState<Sale[]>([])
   const [users, setUsers] = useState<UserInfo[]>([])
   const [, setLoading] = useState(false)
@@ -46,6 +54,16 @@ export default function SalesHistoryTab({ dateRange }: SalesHistoryTabProps) {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'digital' | 'clip' | 'mixed'>('all')
   const [employeeFilter, setEmployeeFilter] = useState<'all' | string>('all')
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
+  const [reprintingId, setReprintingId] = useState<string | null>(null)
+
+  // Asegurar que el catálogo de productos esté disponible para resolución de nombres/SKUs en reimpresión
+  useEffect(() => {
+    if (products.length === 0) {
+      supabaseService.getProducts().then(prods => {
+        if (prods && prods.length > 0) setProducts(prods)
+      }).catch(err => console.warn('Error loading products for ticket reprint:', err))
+    }
+  }, [products.length, setProducts])
 
   // Load sales + users when date range changes
   useEffect(() => {
@@ -119,6 +137,103 @@ export default function SalesHistoryTab({ dateRange }: SalesHistoryTabProps) {
         return <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">🔄 Mixto</span>
       default:
         return <span className="px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">—</span>
+    }
+  }
+
+  // Helper para extraer información de cliente (nombre y teléfono) de la venta o notas
+  const extractClientInfo = (sale: Sale) => {
+    let name = (sale as any).clientName || (sale as any).client_name
+    let phone = (sale as any).clientPhone || (sale as any).client_phone
+
+    if (!name && sale.notes) {
+      const match = sale.notes.match(/\[Cliente:\s*([^\]\n]+)\]/i)
+      if (match) {
+        const raw = match[1].trim()
+        const phoneMatch = raw.match(/\(Tel:\s*([^)]+)\)/i) || raw.match(/\(([^)]+)\)/)
+        if (phoneMatch) {
+          phone = phone || phoneMatch[1].trim()
+          name = raw.replace(phoneMatch[0], '').trim()
+        } else {
+          name = raw
+        }
+      }
+    }
+
+    return { clientName: name, clientPhone: phone }
+  }
+
+  // Reimpresión oficial de tickets para administradores (función global)
+  const handleReprintTicket = async (sale: Sale) => {
+    if (!isAdmin) {
+      alert('Solo los administradores tienen permiso para reimprimir comprobantes de venta.')
+      return
+    }
+
+    setReprintingId(sale.id)
+    try {
+      const tableNum = Number(sale.tableNumber ?? sale.table_number) || 1
+      const shortFolio = (sale.id || '').replace(/^ticket-/, '').replace(/^sale-/, '').slice(0, 8).toUpperCase()
+      const selectedTicketWidth = organizationSettings?.ticketPrinterWidth || (typeof window !== 'undefined' ? (parseInt(localStorage.getItem('preferred_ticket_width') || '80') || 80) : 80) || 80
+      const { clientName, clientPhone } = extractClientInfo(sale)
+
+      const paymentMap: Record<string, string> = {
+        cash: 'Efectivo',
+        digital: 'Transferencia',
+        clip: 'Tarjeta / Clip',
+        mixed: 'Mixto'
+      }
+      const mappedPayment = paymentMap[sale.paymentMethod] || sale.paymentMethod || 'Efectivo'
+
+      const ticketHTML = renderToStaticMarkup(
+        <ReceiptTicket
+          order={{
+            id: sale.id,
+            items: (sale.items || []).map((it: any) => ({
+              productId: it.productId || it.product_id,
+              name: it.productName || it.name || 'Producto',
+              productName: it.productName || it.name || 'Producto',
+              quantity: Number(it.quantity || 1),
+              price: Number(it.unitPrice || it.price || 0),
+              unitPrice: Number(it.unitPrice || it.price || 0),
+              totalPrice: Number(it.totalPrice ?? (Number(it.quantity || 1) * Number(it.unitPrice || it.price || 0))),
+              sku: it.sku || it.barcode || ''
+            })),
+            status: 'completed',
+            total: sale.total,
+            subtotal: sale.subtotal,
+            discounts: sale.discounts,
+            tax: sale.tax,
+            paymentMethod: mappedPayment,
+            tableNumber: tableNum,
+            createdAt: sale.created_at
+          } as any}
+          products={products}
+          saleTotal={Number(sale.total || 0)}
+          paymentMethod={mappedPayment}
+          tableNumber={tableNum}
+          businessName={organizationSettings?.ticketBusinessName || organizationSettings?.businessName || organizationSettings?.name || BRANDING.appName}
+          address={organizationSettings?.ticketAddress || BRANDING.theme.locationBadge || ''}
+          phone={organizationSettings?.ticketPhone || BRANDING.theme.receiptWhatsappPlaceholder || ''}
+          secondaryPhone={organizationSettings?.ticketSecondaryPhone || BRANDING.theme.receiptWhatsappSecondary || ''}
+          clientName={clientName}
+          clientPhone={clientPhone}
+          width={selectedTicketWidth}
+          logoUrl={organizationSettings?.ticketLogoUrl || organizationSettings?.logoUrl || BRANDING.ticketLogoUrl || BRANDING.logoUrl}
+          organizationId={currentUser?.organizationId}
+          date={sale.created_at}
+          isReprint={true}
+        />
+      )
+
+      await printService.printReceipt(ticketHTML, {
+        title: `Reimpresion_Ticket_${tableNum}_${shortFolio}`,
+        width: selectedTicketWidth
+      })
+    } catch (error: any) {
+      console.error('Error al reimprimir ticket:', error)
+      alert('Error al generar la reimpresión del ticket: ' + (error?.message || error))
+    } finally {
+      setReprintingId(null)
     }
   }
 
@@ -205,12 +320,30 @@ export default function SalesHistoryTab({ dateRange }: SalesHistoryTabProps) {
                 </td>
                 <td className="px-4 py-2 text-sm">{paymentBadge(s.paymentMethod)}</td>
                 <td className="px-4 py-2 text-center">
-                  <button
-                    onClick={() => setSelectedSale(s)}
-                    className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900"
-                  >
-                    <Eye size={16} /> Ver detalle
-                  </button>
+                  <div className="inline-flex items-center gap-2 justify-center">
+                    <button
+                      onClick={() => setSelectedSale(s)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                      title="Ver desglose completo de la venta"
+                    >
+                      <Eye size={14} /> Detalle
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleReprintTicket(s)}
+                        disabled={reprintingId === s.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors disabled:opacity-50"
+                        title="Reimprimir ticket de venta (Función exclusiva Admin)"
+                      >
+                        {reprintingId === s.id ? (
+                          <Loader2 size={13} className="animate-spin text-emerald-600" />
+                        ) : (
+                          <Printer size={13} />
+                        )}
+                        <span>Reimprimir</span>
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -232,12 +365,28 @@ export default function SalesHistoryTab({ dateRange }: SalesHistoryTabProps) {
                 {paymentBadge(s.paymentMethod)}
               </div>
             </div>
-            <button
-              onClick={() => setSelectedSale(s)}
-              className="w-full flex items-center justify-center gap-1 text-sm text-slate-600 hover:text-slate-900 mt-2"
-            >
-              <Eye size={14} /> Ver detalle
-            </button>
+            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-100">
+              <button
+                onClick={() => setSelectedSale(s)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+              >
+                <Eye size={14} /> Ver detalle
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => handleReprintTicket(s)}
+                  disabled={reprintingId === s.id}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {reprintingId === s.id ? (
+                    <Loader2 size={14} className="animate-spin text-emerald-600" />
+                  ) : (
+                    <Printer size={14} />
+                  )}
+                  <span>Reimprimir</span>
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -311,6 +460,31 @@ export default function SalesHistoryTab({ dateRange }: SalesHistoryTabProps) {
               <div className="flex justify-end items-center gap-2 pt-1">
                 <span>Método de pago:</span> {paymentBadge(selectedSale.paymentMethod)}
               </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+              {isAdmin && (
+                <button
+                  onClick={() => handleReprintTicket(selectedSale)}
+                  disabled={reprintingId === selectedSale.id}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  title="Reimprimir ticket oficial térmico"
+                >
+                  {reprintingId === selectedSale.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Printer size={16} />
+                  )}
+                  <span>Reimprimir Ticket</span>
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedSale(null)}
+                className="ml-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors cursor-pointer"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

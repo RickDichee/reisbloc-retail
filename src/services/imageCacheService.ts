@@ -62,8 +62,8 @@ class ImageCacheService {
         try {
           const match = await cache.match(url)
           if (!match) {
-            const response = await fetch(url, { mode: 'cors', cache: 'force-cache' })
-            if (response.ok) {
+            const response = await fetch(url, { cache: 'force-cache' })
+            if (response.ok || response.type === 'opaque') {
               await cache.put(url, response.clone())
             }
           }

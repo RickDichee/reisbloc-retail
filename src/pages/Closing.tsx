@@ -13,6 +13,8 @@ import {
   Mail,
   Share2,
   TrendingUp,
+  Calendar,
+  RefreshCw
 } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import {
@@ -41,6 +43,10 @@ export default function Closing() {
   const [daySales, setDaySales] = useState<any[]>([])
   const [confirmed, setConfirmed] = useState(false)
   const [notes, setNotes] = useState('')
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
 
   // Gestión de Planes: Verificar si la organización tiene acceso a features premium
   const userPlan = (currentUser as any)?.plan || 'free' // Por defecto free si no hay dato
@@ -50,17 +56,18 @@ export default function Closing() {
     loadClosingData()
   }, [])
 
-  const loadClosingData = async () => {
+  const loadClosingData = async (targetDateStr?: string) => {
     setLoading(true)
     try {
-      // Usar UTC correctamente - obtener hoy en UTC
-      const today = new Date()
-      const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0))
-      const tomorrowUTC = new Date(todayUTC)
-      tomorrowUTC.setUTCDate(tomorrowUTC.getUTCDate() + 1)
+      const dateStr = targetDateStr || selectedDate
+      // Rango de corte comercial: Día completo en hora local del comercio (00:00:00 a 23:59:59.999)
+      // Evita el bug donde UTC corta el día a las 6:00 PM local
+      const [year, month, day] = dateStr.split('-').map(Number)
+      const startDate = new Date(year, month - 1, day, 0, 0, 0, 0)
+      const endDate = new Date(year, month - 1, day, 23, 59, 59, 999)
 
       // Obtener ventas del día desde Supabase y calcular métricas localmente
-      const sales = await supabaseService.getSalesByDateRange(todayUTC, tomorrowUTC)
+      const sales = await supabaseService.getSalesByDateRange(startDate, endDate)
 
       // Métricas generales de cierre
       const metrics = sales.reduce(
@@ -139,8 +146,10 @@ export default function Closing() {
 
     setSubmitting(true)
     try {
+      const [year, month, day] = selectedDate.split('-').map(Number)
+      const closingDate = new Date(year, month - 1, day, 12, 0, 0)
       const closingRecord = {
-        date: new Date(),
+        date: closingDate,
         closedBy: currentUser?.id || '',
         closedAt: new Date(),
         totalSales: closingData.totalSales,
@@ -187,7 +196,9 @@ export default function Closing() {
   const handleShareReport = async () => {
     if (!closingData) return
 
-    const dateStr = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+    const [y, m, d] = selectedDate.split('-').map(Number)
+    const dateObj = new Date(y, m - 1, d)
+    const dateStr = dateObj.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     const text = `
 📊 *REPORTE DE CIERRE - ${currentUser?.businessName || 'REISBLOC POS'}*
 📅 ${dateStr}
@@ -273,12 +284,15 @@ export default function Closing() {
     const discounts = closingData?.totalDiscounts || 0
     const toDeposit = total - discounts
 
+    const [y, m, d] = selectedDate.split('-').map(Number)
+    const printDate = new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Cierre de Caja - ${new Date().toLocaleDateString('es-MX')}</title>
+        <title>Cierre de Caja - ${printDate}</title>
         <style>
           body {
             font-family: 'Courier New', monospace;
@@ -347,7 +361,7 @@ export default function Closing() {
           <div class="header">
             <h1>🏪 ${currentUser?.businessName || BRANDING.appName}</h1>
             <p>CIERRE DE CAJA</p>
-            <p>${new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p>${printDate}</p>
             <p>Cajero: ${currentUser?.username}</p>
           </div>
 
@@ -467,13 +481,46 @@ export default function Closing() {
                 <p className="text-[10px] text-emerald-400 uppercase tracking-[0.2em] font-black mb-0.5">Finanzas</p>
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase leading-none">Cierre de Caja</h1>
                 <p className="text-slate-400 mt-2 font-bold tracking-tight opacity-80 uppercase text-xs">
-                  {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {(() => {
+                    const [y, m, d] = selectedDate.split('-').map(Number)
+                    return new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                  })()}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-2xl border border-white/10">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-              <span className="font-bold text-white text-sm uppercase tracking-wide">{currentUser?.username}</span>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Selector de Fecha del Corte */}
+              <div className="flex items-center gap-2 bg-white/10 hover:bg-white/15 backdrop-blur-sm px-3.5 py-2 rounded-2xl border border-white/10 transition-all shadow-xs">
+                <Calendar size={15} className="text-emerald-400 shrink-0" />
+                <span className="text-[10px] font-black text-slate-300 uppercase tracking-wider hidden sm:inline">Corte:</span>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val) {
+                      setSelectedDate(val)
+                      loadClosingData(val)
+                    }
+                  }}
+                  className="bg-transparent text-white font-black text-xs outline-none cursor-pointer [color-scheme:dark]"
+                />
+              </div>
+
+              {/* Botón Refrescar */}
+              <button
+                type="button"
+                onClick={() => loadClosingData()}
+                className="p-2.5 bg-white/10 hover:bg-white/20 active:scale-95 text-white rounded-2xl border border-white/10 transition-all"
+                title="Actualizar datos de cierre"
+              >
+                <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              </button>
+
+              <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-2xl border border-white/10">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
+                <span className="font-bold text-white text-xs uppercase tracking-wide">{currentUser?.username}</span>
+              </div>
             </div>
           </div>
         </div>

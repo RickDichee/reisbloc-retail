@@ -689,6 +689,12 @@ export default function PendingOrdersModal({
       : (resolvedTheme.receiptWhatsappPlaceholder || '')
     const rawTicketPhone = organizationSettings?.ticketPhone || defaultPhone
     const ticketPhone = rawTicketPhone.toLowerCase().includes('por configurar') ? defaultPhone : rawTicketPhone
+
+    const defaultSecondaryPhone = isModaMielTenant
+      ? '+52 445 105 0265'
+      : (resolvedTheme.receiptWhatsappSecondary || '')
+    const rawTicketSecondaryPhone = organizationSettings?.ticketSecondaryPhone || defaultSecondaryPhone
+    const ticketSecondaryPhone = rawTicketSecondaryPhone.toLowerCase().includes('por configurar') ? defaultSecondaryPhone : rawTicketSecondaryPhone
     const itemsLabel = isModaMielTenant ? 'PRENDAS APARTADAS:' : 'ARTÍCULOS APARTADOS:'
     const ticketWidth = organizationSettings?.ticketPrinterWidth || 80
     const is80mm = ticketWidth >= 70
@@ -731,6 +737,7 @@ export default function PendingOrdersModal({
           <div style="font-size:${is80mm ? '13px' : '11px'}; font-weight:900; text-transform:uppercase;">${storeTitle.toUpperCase()}</div>
           ${ticketAddress ? `<div style="font-size:${is80mm ? '10.5px' : '9.5px'}; font-weight:800; margin-top:1px;">${ticketAddress}</div>` : ''}
           ${ticketPhone ? `<div style="font-size:${is80mm ? '10px' : '9px'}; margin-top:1px;">${ticketPhone.toLowerCase().includes('whatsapp') || ticketPhone.toLowerCase().includes('tel') ? ticketPhone : `Tel / WhatsApp: ${ticketPhone}`}</div>` : ''}
+          ${ticketSecondaryPhone ? `<div style="font-size:${is80mm ? '10px' : '9px'}; margin-top:1px;">${ticketSecondaryPhone.toLowerCase().includes('whatsapp') || ticketSecondaryPhone.toLowerCase().includes('tel') ? ticketSecondaryPhone : `Tel / WhatsApp: ${ticketSecondaryPhone}`}</div>` : ''}
         </div>
         <div class="divider"></div>
         <div>FOLIO: #${ticketId}</div>

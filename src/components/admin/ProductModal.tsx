@@ -201,27 +201,30 @@ export default function ProductModal({
             }
 
             const realPackQty = Number(formData.packQty || formData.packQuantity || 12)
-            const packPriceVal = Number(formData.packPrice || formData.price || 0)
+            const enteredPrice = Number(formData.price || 0)
+            const packPriceVal = (showPricingOptions && formData.packPrice !== undefined && formData.packPrice !== null && formData.packPrice > 0)
+              ? Number(formData.packPrice)
+              : enteredPrice
 
             const finalDescription = serializeProductDescription(
                 formData.description || '',
                 packPriceVal,
-                undefined,
+                showPricingOptions ? formData.bulkPrice : undefined,
                 realPackQty,
-                undefined,
-                undefined
+                showPricingOptions ? formData.packagesPerBulk : undefined,
+                showPricingOptions ? formData.wholesaleMinQty : undefined
             )
 
             const payload = { 
                 ...formData, 
-                price: packPriceVal,
+                price: enteredPrice,
                 packPrice: packPriceVal,
                 image: finalImageUrl,
                 description: finalDescription,
-                wholesalePrice: undefined,
-                wholesaleMinQty: undefined,
-                bulkPrice: undefined,
-                packagesPerBulk: undefined,
+                wholesalePrice: showPricingOptions ? formData.wholesalePrice : undefined,
+                wholesaleMinQty: showPricingOptions ? formData.wholesaleMinQty : undefined,
+                bulkPrice: showPricingOptions ? formData.bulkPrice : undefined,
+                packagesPerBulk: showPricingOptions ? formData.packagesPerBulk : undefined,
                 parentId: undefined,
                 packQuantity: realPackQty,
                 pack_quantity: realPackQty,
@@ -264,7 +267,7 @@ export default function ProductModal({
 
                 const updatedPayload = {
                     ...payload,
-                    price: packPriceVal,
+                    price: enteredPrice,
                     packPrice: packPriceVal,
                     currentStock: finalStock,
                     current_stock: finalStock,
@@ -272,6 +275,7 @@ export default function ProductModal({
                 }
 
                 await supabaseService.updateRetailProduct(product.id, updatedPayload)
+                useAppStore.getState().updateProduct(product.id, updatedPayload)
 
                 try {
                   sessionStorage.removeItem('modamiel_public_products_cache')
@@ -802,7 +806,14 @@ export default function ProductModal({
                                     <input
                                         type="number"
                                         value={formData.price || ''}
-                                        onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                                        onChange={(e) => {
+                                            const val = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                price: val,
+                                                ...(!showPricingOptions ? { packPrice: val } : {})
+                                            }))
+                                        }}
                                         className="w-full pl-7 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                                         step="0.01"
                                         min="0"

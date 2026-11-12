@@ -244,8 +244,12 @@ export interface TenantThemeConfig {
   mascotName?: string
   subdomain?: string
   receiptWhatsappPlaceholder?: string
+  receiptWhatsappSecondary?: string
   receiptNoReturnsPolicy?: string
   ticketLogoUrl?: string
+  ticketQrUrl?: string
+  ticketQrLabel?: string
+  ticketQrSub?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +281,7 @@ export const MODA_MIEL_THEME: TenantThemeConfig = {
   mascotName: 'Catarina',
   subdomain: 'modamielmx.reisbloc.com',
   receiptWhatsappPlaceholder: '+52 445 145 7252',
+  receiptWhatsappSecondary: '+52 445 105 0265',
   receiptNoReturnsPolicy: 'NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA',
   ticketLogoUrl: '/images/moda-miel-mx-logo.jpeg'
 }
@@ -308,7 +313,10 @@ export const LOS_CHUNCHES_THEME: TenantThemeConfig = {
   subdomain: 'loschunchesdecons.reisbloc.com',
   receiptWhatsappPlaceholder: '(443) 124-4490',
   receiptNoReturnsPolicy: 'MERCANCÍA DE SALDO / IMPORTACIÓN: NO HAY CAMBIOS NI DEVOLUCIONES UNA VEZ SALIDA LA MERCANCÍA',
-  ticketLogoUrl: '/images/los_chunches.jpeg'
+  ticketLogoUrl: '/images/los_chunches.jpeg',
+  ticketQrUrl: '/images/los_chunches_tiktok_qr.svg',
+  ticketQrLabel: 'SÍGUENOS EN TIKTOK',
+  ticketQrSub: '¡Nuevas llegadas, ofertas y dinámicas!'
 }
 
 export const JUGUETES_THEME: TenantThemeConfig = {
@@ -538,6 +546,18 @@ export const BRANDING = {
     if (checkIsJuguetes()) return JUGUETES_THEME.tagline
     if (checkIsLosChunches()) return LOS_CHUNCHES_THEME.tagline
     return DEFAULT_THEME.tagline
+  },
+  get ticketQrUrl() {
+    if (checkIsLosChunches()) return '/images/los_chunches_tiktok_qr.svg'
+    return undefined
+  },
+  get ticketQrLabel() {
+    if (checkIsLosChunches()) return 'SÍGUENOS EN TIKTOK'
+    return undefined
+  },
+  get ticketQrSub() {
+    if (checkIsLosChunches()) return '¡Nuevas llegadas, ofertas y dinámicas!'
+    return undefined
   },
   get theme() {
     if (checkIsModaMiel()) return MODA_MIEL_THEME

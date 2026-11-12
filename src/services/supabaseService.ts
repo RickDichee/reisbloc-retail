@@ -314,9 +314,12 @@ class SupabaseService {
         }
       }
 
-      // Sanitizar PIN: Si viene vacío o en blanco, convertir a null para no colisionar con UNIQUE(pin)
-      if (pin !== undefined) {
-        supabaseUpdates.pin = (typeof pin === 'string' && pin.trim() !== '') ? pin.trim() : null
+      // Sanitizar PIN: Solo adjuntar si viene con un valor string no vacío
+      if (pin !== undefined && pin !== null) {
+        const trimmed = typeof pin === 'string' ? pin.trim() : String(pin).trim()
+        if (trimmed !== '') {
+          supabaseUpdates.pin = trimmed
+        }
       }
 
       // Forzar mapeo de avatarUrl -> avatar_url
@@ -331,10 +334,22 @@ class SupabaseService {
       delete supabaseUpdates.createdAt
       delete supabaseUpdates.created_at
 
-      const { error } = await supabase
+      let { error } = await supabase
         .from('users')
         .update(supabaseUpdates)
         .eq('id', userId)
+
+      // 🛡️ Fallback defensivo: si la columna 'pin' no existe en la base de datos (PostgREST PGRST204)
+      if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('pin'))) && 'pin' in supabaseUpdates) {
+        logger.warn('supabase', 'Columna pin no existe en la tabla users. Reintentando actualización omitiendo pin.')
+        const updatesWithoutPin = { ...supabaseUpdates }
+        delete updatesWithoutPin.pin
+        const retryResult = await supabase
+          .from('users')
+          .update(updatesWithoutPin)
+          .eq('id', userId)
+        error = retryResult.error
+      }
 
       if (error) throw error
     } catch (error) {
@@ -356,7 +371,20 @@ class SupabaseService {
         query = query.eq('organization_id', orgId)
       }
 
-      const { error } = await query
+      let { error } = await query
+
+      // Fallback defensivo si la columna 'pin' no existe en la base de datos
+      if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('pin')))) {
+        let retryQuery = supabase
+          .from('users')
+          .update({ active: false })
+          .eq('id', userId)
+        if (orgId) {
+          retryQuery = retryQuery.eq('organization_id', orgId)
+        }
+        const retryResult = await retryQuery
+        error = retryResult.error
+      }
 
       if (error) throw error
     } catch (error) {
@@ -1501,8 +1529,16 @@ class SupabaseService {
 
   async saveClosing(closing: Omit<DailyClose, 'id'>): Promise<string> {
     try {
+      let formattedDate: string
+      if (closing.date instanceof Date) {
+        const d = closing.date
+        formattedDate = String(d.getFullYear()) + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+      } else {
+        formattedDate = String(closing.date).split('T')[0]
+      }
+
       const payload = {
-        date: closing.date instanceof Date ? closing.date.toISOString().split('T')[0] : closing.date,
+        date: formattedDate,
         closed_by: closing.closedBy,
         total_sales: parseFloat(String(closing.totalSales)) || 0,
         total_cash: parseFloat(String(closing.totalCash)) || 0,
