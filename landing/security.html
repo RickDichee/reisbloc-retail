@@ -8,6 +8,7 @@
 
   <link rel="icon" type="image/svg+xml" href="./icon.svg" />
   <link rel="alternate icon" href="./favicon.ico" />
+  <link rel="apple-touch-icon" href="./images/logo.png" />
 
   <title>Centro de Seguridad & Cumplimiento · Reisbloc Store</title>
 
@@ -29,12 +30,15 @@
   <!-- NAVBAR -->
   <nav class="sticky top-0 z-50 bg-[#0F172A]/90 backdrop-blur-md border-b border-slate-800">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-      <a href="./index.html" class="flex items-center gap-3">
-        <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="512" height="512" rx="120" fill="#1E293B"/>
-          <path d="M256 80L428.66 176V336L256 432L83.3397 336V176L256 80Z" fill="#0F172A"/>
-          <path d="M256 110L400.66 190V322L256 402L111.34 322V190L256 110Z" stroke="#00F5FF" stroke-width="14" stroke-linejoin="round"/>
-        </svg>
+      <a href="./index.html" class="flex items-center gap-3 group">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-500/30 via-cyan-500/20 to-emerald-500/30 border border-cyan-500/40 p-0.5 shadow-md shadow-teal-950/50 group-hover:scale-105 group-hover:border-cyan-400 transition-all overflow-hidden flex-shrink-0">
+          <img
+            src="./images/logo.png"
+            alt="Reisbloc"
+            class="w-full h-full object-cover rounded-[8px]"
+            onerror="this.onerror=null; this.src='./icon.svg';"
+          />
+        </div>
         <span class="font-extrabold text-xl tracking-tight text-white">Reisbloc <span class="font-light text-cyan-400">Security</span></span>
       </a>
 
