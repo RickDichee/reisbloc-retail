@@ -3,7 +3,7 @@ import { Product } from '@/types/index'
 import { useAppStore } from '@/store/appStore'
 import supabaseService from '@/services/supabaseService'
 import { storageService } from '@/services/storageService'
-import { compressImage } from '@/utils/imageCompression'
+import { compressImageToTarget } from '@/utils/imageCompression'
 import { X, Save, Loader2, Image as ImageIcon, Camera } from 'lucide-react'
 import PlanGate from '@/components/common/PlanGate'
 import { tenantHasFeature } from '@/config/tenantFeatures'
@@ -191,10 +191,11 @@ export default function ProductModal({
         try {
             let finalImageUrl = formData.image
 
-            // Si hay un archivo nuevo, lo comprimimos y lo subimos
+            // Si hay un archivo nuevo, lo comprimimos (~100 KB, max 800 px)
+            // y lo subimos. compressImageToTarget nunca lanza: si falla,
+            // devuelve el original y el servicio aplica su propio tope.
             if (imageFile) {
-                // Comprimir a max 500x500, calidad 0.6 para reducir tamaño
-                const compressedBlob = await compressImage(imageFile, 500, 500, 0.6)
+                const compressedBlob = await compressImageToTarget(imageFile)
                 // Usamos un ID temporal o el real si ya existe al subir a storage
                 const storageId = product ? product.id : `draft_${Date.now()}`
                 finalImageUrl = await storageService.uploadProductImage(storageId, compressedBlob)

@@ -1,5 +1,6 @@
 import { supabase } from '@/config/supabase'
 import logger from '@/utils/logger'
+import { compressImageToTarget } from '@/utils/imageCompression'
 
 export const storageService = {
   /**
@@ -72,11 +73,17 @@ export const storageService = {
     const cleanId = (productId || `prod_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_')
     const fileName = `${cleanId}/${Date.now()}.jpg`
 
+    // ⛑️ FIX EGRESS: tope de ~100 KB por foto. El modal ya comprime, pero
+    // esta es la garantía a nivel servicio: cualquier ruta que suba una
+    // foto sin comprimir (o una foto muy detallada) queda acotada antes
+    // de tocar Storage. Si la foto ya está en objetivo, no se re-codifica.
+    const optimizedBlob = await compressImageToTarget(fileBlob)
+
     // Intento 1: Bucket dedicado 'products'
     try {
       const { data, error } = await supabase.storage
         .from('products')
-        .upload(fileName, fileBlob, {
+        .upload(fileName, optimizedBlob, {
           contentType: 'image/jpeg',
           upsert: true
         })
@@ -99,7 +106,7 @@ export const storageService = {
       const ticketFileName = `products/${cleanId}_${Date.now()}.jpg`
       const { data: ticketData, error: ticketError } = await supabase.storage
         .from('tickets')
-        .upload(ticketFileName, fileBlob, {
+        .upload(ticketFileName, optimizedBlob, {
           contentType: 'image/jpeg',
           upsert: true
         })
@@ -125,7 +132,7 @@ export const storageService = {
 
       const { data: fallbackData, error: fallbackError } = await supabase.storage
         .from('avatars')
-        .upload(fallbackFileName, fileBlob, {
+        .upload(fallbackFileName, optimizedBlob, {
           contentType: 'image/jpeg',
           upsert: true
         })
@@ -150,7 +157,7 @@ export const storageService = {
         const reader = new FileReader()
         reader.onloadend = () => resolve(reader.result as string)
         reader.onerror = () => reject(new Error('Error al convertir imagen a base64'))
-        reader.readAsDataURL(fileBlob)
+        reader.readAsDataURL(optimizedBlob)
       })
     } catch (finalErr) {
       logger.error('storage', 'Fallo total al procesar imagen de producto', finalErr)

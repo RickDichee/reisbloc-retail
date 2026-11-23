@@ -437,6 +437,15 @@ export default function POS() {
     priceModeRef.current = priceMode
   }, [priceMode])
 
+  // ⛑️ FIX EGRESS: throttle del refetch del catálogo por Realtime.
+  // El canal dispara un evento por cada fila actualizada (una venta de N
+  // artículos = N eventos) y cada evento re-descargaba el catálogo
+  // completo con getAllRetailProducts(). Igual que el throttle de 5 min
+  // que ya tiene getAllProducts, aquí ignoramos refetches si el último
+  // fue hace menos de 5 minutos: la pantalla ya muestra el caché local.
+  const RETAIL_REFETCH_MIN_MS = 5 * 60 * 1000
+  const lastRetailRefetchRef = useRef<number>(0)
+
   const filteredProducts = useMemo(() => {
     const result = products
     if (!searchTerm) return result
@@ -538,6 +547,14 @@ export default function POS() {
           ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
         },
         async () => {
+          // ⛑️ FIX EGRESS: throttle de 5 min (igual que getAllProducts).
+          // Sin esto, cada evento Realtime re-descarga el catálogo entero.
+          const now = Date.now()
+          if (now - lastRetailRefetchRef.current < RETAIL_REFETCH_MIN_MS) {
+            logger.info('pos', '⏭️ Realtime retail_products: refetch omitido por throttle (< 5 min)')
+            return
+          }
+          lastRetailRefetchRef.current = now
           logger.info('pos', '⚡ Realtime update: Refrescando catálogo de productos...')
           const prods = await supabaseService.getAllRetailProducts(orgId)
           if (prods && prods.length > 0) {
@@ -644,6 +661,8 @@ export default function POS() {
       const prods = await supabaseService.getAllRetailProducts(orgId)
       if (prods && prods.length > 0) {
         setProducts(prods)
+        // ⛑️ FIX EGRESS: el fetch inicial ya cuenta como refetch reciente
+        lastRetailRefetchRef.current = Date.now()
         imageCacheService.saveCachedProducts(prods).catch(console.error)
       }
     } catch (error) {
