@@ -207,6 +207,8 @@ export default function Inventory() {
                 {product.image ? (
                   <div className="w-full h-36 sm:h-40 rounded-lg overflow-hidden bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-center p-2 relative">
                     <img
+                      loading="lazy"
+                      decoding="async"
                       src={product.image}
                       alt={product.name}
                       className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200 drop-shadow-xs"

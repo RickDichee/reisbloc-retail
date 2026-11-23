@@ -111,9 +111,9 @@ export default function Reports() {
 
       // Usar los nuevos métodos de agregación
       const [topProductsData, employeeMetricsData, metricsData] = await Promise.all([
-        supabaseService.getTopProducts(startDate, endDate, 5),
-        supabaseService.getEmployeeMetrics(startDate, endDate),
-        supabaseService.getSalesMetrics(startDate, endDate),
+        supabaseService.getTopProducts(startDate, endDate, 5, sales),
+        supabaseService.getEmployeeMetrics(startDate, endDate, sales),
+        supabaseService.getSalesMetrics(startDate, endDate, sales),
       ])
 
       setSalesData(chartData)

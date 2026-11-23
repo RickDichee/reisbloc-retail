@@ -185,7 +185,7 @@ export default function StoreFront() {
                         >
                             <div className="relative aspect-[4/5] bg-slate-100 rounded-[2.5rem] overflow-hidden mb-6 shadow-sm group-hover:shadow-2xl transition-all duration-500 group-hover:-translate-y-2">
                                 {product.image ? (
-                                    <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                    <img loading="lazy" decoding="async" src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-slate-200">
                                         <Package size={64} strokeWidth={1} />

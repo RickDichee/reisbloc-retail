@@ -197,6 +197,8 @@ export function ProductGrid({
                   {imgSrc ? (
                     <div className="w-full h-28 sm:h-32 bg-white flex items-center justify-center p-2 border-b border-slate-100 overflow-hidden">
                       <img
+                        loading="lazy"
+                        decoding="async"
                         src={imgSrc}
                         alt={product.name}
                         className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"

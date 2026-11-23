@@ -232,6 +232,8 @@ export default function WholesaleCatalog() {
                     <div className="flex-1">
                       {product.image_url && (
                         <img 
+                          loading="lazy"
+                          decoding="async"
                           src={product.image_url} 
                           alt={product.product_name}
                           className="w-full h-32 object-cover rounded-xl mb-3"

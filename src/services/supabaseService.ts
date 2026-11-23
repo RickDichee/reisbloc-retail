@@ -19,6 +19,7 @@ import logger from '@/utils/logger'
 import { withOrg } from '@/utils/queryHelpers'
 import { getStoredToken } from './jwtService'
 import { offlineStorage } from './offlineStorage'
+import { imageCacheService } from './imageCacheService'
 import { syncService } from './syncService'
 import { isUuidIdentifier, normalizePublicTenantIdentifier } from './tenantValidation'
 import { useAppStore } from '@/store/appStore'
@@ -1752,7 +1753,8 @@ class SupabaseService {
   }
   async getSalesMetrics(
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    preloadedSales?: Sale[]
   ): Promise<{
     totalSales: number
     totalCash: number
@@ -1763,7 +1765,7 @@ class SupabaseService {
     averageTicket: number
   }> {
     try {
-      const sales = await this.getSalesByDateRange(startDate, endDate)
+      const sales = preloadedSales ?? await this.getSalesByDateRange(startDate, endDate)
 
       const metrics = sales.reduce(
         (acc: any, sale: any) => {
@@ -1808,9 +1810,9 @@ class SupabaseService {
     }
   }
 
-  async getTopProducts(startDate: Date, endDate: Date, limit: number = 5): Promise<any[]> {
+  async getTopProducts(startDate: Date, endDate: Date, limit: number = 5, preloadedSales?: Sale[]): Promise<any[]> {
     try {
-      const sales = await this.getSalesByDateRange(startDate, endDate)
+      const sales = preloadedSales ?? await this.getSalesByDateRange(startDate, endDate)
 
       const productMap: Record<string, { name: string; qty: number; total: number }> = {}
       sales.forEach((sale: any) => {
@@ -1833,9 +1835,9 @@ class SupabaseService {
     }
   }
 
-  async getEmployeeMetrics(startDate: Date, endDate: Date): Promise<any[]> {
+  async getEmployeeMetrics(startDate: Date, endDate: Date, preloadedSales?: Sale[]): Promise<any[]> {
     try {
-      const sales = await this.getSalesByDateRange(startDate, endDate)
+      const sales = preloadedSales ?? await this.getSalesByDateRange(startDate, endDate)
       const users = await this.getAllUsers()
 
       const byUser: Record<string, any> = {}
@@ -1922,6 +1924,26 @@ class SupabaseService {
     try {
       const tenantIdentifier = normalizePublicTenantIdentifier(orgIdOrSlug)
       if (!tenantIdentifier) return []
+
+      // ⛑️ FIX EGRESS: Throttle de 5 minutos en catálogo público para no volver a descargar
+      // el payload RPC completo en cada recarga o cambio de pestaña del visitante.
+      const PUBLIC_CACHE_TTL_MS = 5 * 60 * 1000
+      const cacheKey = `public_catalog_cache_v1_${tenantIdentifier}`
+      const tsKey = `public_catalog_ts_v1_${tenantIdentifier}`
+      try {
+        const lastTs = Number(sessionStorage.getItem(tsKey) || localStorage.getItem(tsKey) || 0)
+        if (Date.now() - lastTs < PUBLIC_CACHE_TTL_MS) {
+          const cachedRaw = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
+          if (cachedRaw) {
+            const parsed = JSON.parse(cachedRaw)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              logger.info('supabase', `📦 Catálogo público (${tenantIdentifier}) servido desde caché (< 5 min)`)
+              return parsed
+            }
+          }
+        }
+      } catch { /* ignore storage quota/parse errors */ }
+
       const organization = isUuidIdentifier(tenantIdentifier)
         ? await this.getOrganizationById(tenantIdentifier)
         : await this.getOrganizationBySlug(tenantIdentifier)
@@ -1935,7 +1957,7 @@ class SupabaseService {
       if (!rpcError && rpcData) {
         const productsList = Array.isArray(rpcData) ? rpcData : [rpcData]
         if (productsList.length > 0) {
-          return productsList.map((p: any) => {
+          const mapped = productsList.map((p: any) => {
             let cleanDesc = p.description || ''
             while (typeof cleanDesc === 'string' && cleanDesc.trim().startsWith('{')) {
               try {
@@ -1970,6 +1992,16 @@ class SupabaseService {
               updatedAt: new Date()
             }
           }) as Product[]
+
+          try {
+            const serialized = JSON.stringify(mapped)
+            const nowStr = String(Date.now())
+            sessionStorage.setItem(cacheKey, serialized)
+            sessionStorage.setItem(tsKey, nowStr)
+            localStorage.setItem(tsKey, nowStr)
+          } catch { /* ignore if payload exceeds storage quota */ }
+
+          return mapped
         }
       }
 
@@ -2205,8 +2237,45 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
 
   // ==================== RETAIL ====================
 
-  async getAllRetailProducts(targetOrgId?: string): Promise<Product[]> {
+  public invalidateRetailCatalogCache(targetOrgId?: string): void {
+    try {
+      const orgId = targetOrgId || this.getCurrentOrgId()
+      const throttleKey = `last_retail_products_fetch_ms${orgId ? `_${orgId}` : ''}`
+      localStorage.removeItem(throttleKey)
+      localStorage.removeItem('last_retail_products_fetch_ms')
+    } catch { /* ignore */ }
+  }
+
+  async getAllRetailProducts(targetOrgId?: string, options?: { forceRefresh?: boolean }): Promise<Product[]> {
     const orgId = targetOrgId || this.getCurrentOrgId()
+    const RETAIL_CATALOG_TTL_MS = 5 * 60 * 1000
+    const throttleKey = `last_retail_products_fetch_ms${orgId ? `_${orgId}` : ''}`
+
+    // 📡 OFFLINE FIRST: Si no hay conexión, devolver caché local sin tocar red
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const cached = await imageCacheService.getCachedProducts()
+      if (cached && cached.length > 0) return cached
+    }
+
+    // ⛑️ FIX EGRESS: Throttle persistente de 5 minutos a nivel servicio (igual que getAllProducts).
+    // Evita que cambios de ruta (POS <-> Inventario), recargas de página o modales re-descarguen
+    // el catálogo entero de retail_products si ya tenemos una copia reciente en IndexedDB/localStorage.
+    if (!options?.forceRefresh) {
+      try {
+        const lastFetch = Number(localStorage.getItem(throttleKey) || 0)
+        if (Date.now() - lastFetch < RETAIL_CATALOG_TTL_MS) {
+          const cached = await imageCacheService.getCachedProducts()
+          if (cached && cached.length > 0) {
+            const matchesOrg = !orgId || cached.some((p: any) => !p.organization_id || p.organization_id === orgId)
+            if (matchesOrg) {
+              logger.info('supabase', '📦 [Retail] Catálogo reciente en caché (< 5 min), omitiendo refetch de red')
+              return cached
+            }
+          }
+        }
+      } catch { /* ignore */ }
+    }
+
     return this.withRetry(async () => {
       const query = withOrg(
         supabase.from('retail_products').select('*'),
@@ -2224,7 +2293,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
       const { data, error } = await Promise.race([query, timeoutPromise])
 
       if (error) throw error
-      return (data || []).map((p: any) => {
+      const mapped = (data || []).map((p: any) => {
         let parsedDesc = {
           description: p.description || '',
           packPrice: undefined,
@@ -2273,9 +2342,19 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           packagesPerBulk: parsedDesc.packagesPerBulk
         }
       }) as Product[]
-    }).catch(error => {
+
+      if (mapped.length > 0) {
+        try {
+          localStorage.setItem(throttleKey, String(Date.now()))
+        } catch { /* ignore */ }
+        imageCacheService.saveCachedProducts(mapped).catch(() => {})
+      }
+
+      return mapped
+    }).catch(async error => {
       logger.error('supabase', 'Error getting retail products', error as any)
-      return []
+      const fallbackCached = await imageCacheService.getCachedProducts()
+      return fallbackCached || []
     })
   }
 
@@ -2320,6 +2399,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         .single()
 
       if (error) throw error
+      this.invalidateRetailCatalogCache()
       return data.id
     } catch (error) {
       logger.error('supabase', 'Error creating retail product', error as any)
@@ -2404,6 +2484,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         .eq('id', productId)
 
       if (error) throw error
+      this.invalidateRetailCatalogCache()
     } catch (error) {
       logger.error('supabase', 'Error updating retail product', error as any)
       throw error
@@ -2419,6 +2500,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         .eq('id', productId)
 
       if (error) throw error
+      this.invalidateRetailCatalogCache()
     } catch (error) {
       logger.error('supabase', 'Error deleting retail product', error as any)
       throw error
@@ -2915,9 +2997,19 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
   async consolidateLegacyVariants(): Promise<void> {
     try {
       const orgId = this.getCurrentOrgId()
+      if (!orgId) return
+
+      // ⛑️ FIX EGRESS: La consolidación de variantes legacy es una migración única.
+      // No debe descargar toda la tabla retail_products en cada visita a Inventario.
+      const flagKey = `legacy_variants_consolidated_v1_${orgId}`
+      const lastRun = Number(localStorage.getItem(flagKey) || 0)
+      if (Date.now() - lastRun < 24 * 60 * 60 * 1000) {
+        return
+      }
+
       const { data: products, error } = await supabase
         .from('retail_products')
-        .select('*')
+        .select('id, name, current_stock, description')
         .eq('organization_id', orgId)
         .eq('active', true)
 
@@ -2936,6 +3028,7 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
         groups[base].push(p)
       })
 
+      let anyConsolidated = false
       for (const [baseName, items] of Object.entries(groups)) {
         if (items.length <= 1) continue
 
@@ -2974,7 +3067,16 @@ async updateEcommerceOrderStatus(orderId: string, status: string): Promise<void>
           active: false
         }).in('id', otherIds)
 
+        anyConsolidated = true
         logger.info('supabase', `Consolidated legacy sizes for ${baseName} under master ID ${master.id}`)
+      }
+
+      try {
+        localStorage.setItem(flagKey, String(Date.now()))
+      } catch { /* ignore */ }
+
+      if (anyConsolidated) {
+        this.invalidateRetailCatalogCache(orgId)
       }
     } catch (err) {
       logger.error('supabase', 'Error during database consolidation of variants', err as any)

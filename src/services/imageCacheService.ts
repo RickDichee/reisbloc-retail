@@ -81,8 +81,10 @@ class ImageCacheService {
 
   /**
    * Guarda el catálogo entero de productos en IndexedDB y localStorage para acceso instantáneo (0ms).
+   * ⛑️ FIX EGRESS: Ya no pre-descarga 50 imágenes por defecto en cada guardado o venta;
+   * las imágenes se cargan bajo demanda con loading="lazy" en los componentes visuales.
    */
-  async saveCachedProducts(products: any[]): Promise<void> {
+  async saveCachedProducts(products: any[], options?: { preloadImages?: boolean }): Promise<void> {
     if (!products || products.length === 0) return
 
     // 1. Guardar copia en localStorage para fallback inmediato
@@ -103,9 +105,11 @@ class ImageCacheService {
       logger.warn('cache', 'Error guardando productos en IndexedDB:', err as any)
     }
 
-    // 3. Disparar precarga de imágenes asociadas
-    const imageUrls = products.map(p => p.image).filter(Boolean)
-    this.preloadProductImages(imageUrls)
+    // 3. Solo pre-cargar si se solicita explícitamente
+    if (options?.preloadImages) {
+      const imageUrls = products.map(p => p.image).filter(Boolean)
+      this.preloadProductImages(imageUrls)
+    }
   }
 
   /**

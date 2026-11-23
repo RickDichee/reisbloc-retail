@@ -197,11 +197,7 @@ export default function JuguetesBrandPage() {
   const loadProducts = async () => {
     try {
       setLoading(true)
-      // Si el caché tenía imágenes genéricas de Unsplash, forzar actualización fresca
-      try {
-        localStorage.removeItem(last_products_fetch_ms_)
-      } catch { /* ignore */ }
-      const juguetesProducts = await supabaseService.getAllProducts(JUGUETES_ORG_ID)
+            const juguetesProducts = await supabaseService.getAllProducts(JUGUETES_ORG_ID)
       const visible = juguetesProducts.filter(p => p.active !== false)
       setProducts(visible)
       setFilteredProducts(visible)

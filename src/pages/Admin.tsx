@@ -83,9 +83,10 @@ export default function Admin() {
           const now = new Date()
           const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
+          const sales = await supabaseService.getSalesByDateRange(thirtyDaysAgo, now)
           const [metricsData, topProductsData] = await Promise.all([
-            supabaseService.getSalesMetrics(thirtyDaysAgo, now),
-            supabaseService.getTopProducts(thirtyDaysAgo, now, 5)
+            supabaseService.getSalesMetrics(thirtyDaysAgo, now, sales),
+            supabaseService.getTopProducts(thirtyDaysAgo, now, 5, sales)
           ])
 
           setAiMetrics(metricsData)

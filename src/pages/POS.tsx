@@ -522,6 +522,8 @@ export default function POS() {
 
     const orgId = currentUser?.organizationId || supabaseService.getCurrentOrgId()
     const channelName = `pos-realtime-${orgId || 'public'}-${Date.now()}`
+    let ordersDebounceTimer: ReturnType<typeof setTimeout> | null = null
+    let clientsDebounceTimer: ReturnType<typeof setTimeout> | null = null
     const syncChannel = supabase
       .channel(channelName)
       .on(
@@ -532,10 +534,13 @@ export default function POS() {
           table: 'orders',
           ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
         },
-        async () => {
-          logger.info('pos', '⚡ Realtime update: Refrescando lista de pedidos activos...')
-          const updated = await supabaseService.getActiveOrders()
-          setActiveOrdersList(updated || [])
+        () => {
+          if (ordersDebounceTimer) clearTimeout(ordersDebounceTimer)
+          ordersDebounceTimer = setTimeout(async () => {
+            logger.info('pos', '⚡ Realtime update: Refrescando lista de pedidos activos...')
+            const updated = await supabaseService.getActiveOrders()
+            setActiveOrdersList(updated || [])
+          }, 2500)
         }
       )
       .on(
@@ -571,14 +576,19 @@ export default function POS() {
           table: 'clients',
           ...(orgId ? { filter: `organization_id=eq.${orgId}` } : {})
         },
-        async () => {
-          const updated = await supabaseService.getAllClients()
-          setClients(updated || [])
+        () => {
+          if (clientsDebounceTimer) clearTimeout(clientsDebounceTimer)
+          clientsDebounceTimer = setTimeout(async () => {
+            const updated = await supabaseService.getAllClients()
+            setClients(updated || [])
+          }, 2500)
         }
       )
       .subscribe()
 
     return () => {
+      if (ordersDebounceTimer) clearTimeout(ordersDebounceTimer)
+      if (clientsDebounceTimer) clearTimeout(clientsDebounceTimer)
       supabase.removeChannel(syncChannel)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

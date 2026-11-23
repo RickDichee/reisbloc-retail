@@ -9,12 +9,13 @@ export const storageService = {
   async uploadAvatar(userId: string, fileBlob: Blob): Promise<string> {
     const cleanId = (userId || `usr_${Date.now()}`).replace(/[^a-zA-Z0-9_-]/g, '_')
     const fileName = `${cleanId}/${Date.now()}.jpg`
+    const optimizedAvatar = await compressImageToTarget(fileBlob, 400, 40 * 1024, 0.8)
 
     // Intento 1: Bucket dedicado 'avatars'
     try {
       const { data, error } = await supabase.storage
         .from('avatars')
-        .upload(fileName, fileBlob, {
+        .upload(fileName, optimizedAvatar, {
           contentType: 'image/jpeg',
           upsert: true
         })
@@ -37,7 +38,7 @@ export const storageService = {
       const ticketFileName = `avatars/${cleanId}_${Date.now()}.jpg`
       const { data: ticketData, error: ticketError } = await supabase.storage
         .from('tickets')
-        .upload(ticketFileName, fileBlob, {
+        .upload(ticketFileName, optimizedAvatar, {
           contentType: 'image/jpeg',
           upsert: true
         })
@@ -52,13 +53,14 @@ export const storageService = {
       logger.warn('storage', 'Excepción en bucket tickets para avatar:', e)
     }
 
-    // Intento 3 (Infalible): Convertir a Data URL Base64
+    // Intento 3 (Infalible): Convertir a Data URL Base64 ultra-ligero (<=10 KB) para no inflar egress de tabla users
     try {
+      const microAvatar = await compressImageToTarget(optimizedAvatar, 160, 10 * 1024, 0.6)
       return await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onloadend = () => resolve(reader.result as string)
         reader.onerror = () => reject(new Error('Error al convertir imagen a base64'))
-        reader.readAsDataURL(fileBlob)
+        reader.readAsDataURL(microAvatar)
       })
     } catch (finalErr) {
       logger.error('storage', 'Fallo total al procesar avatar', finalErr)
@@ -144,20 +146,22 @@ export const storageService = {
         return publicUrl
       }
       if (fallbackError) {
-        logger.warn('storage', 'Intento 3 (avatars) falló, recurriendo a DataURL base64...', fallbackError)
+        logger.warn('storage', 'Intento 3 (avatars) falló, recurriendo a miniatura DataURL base64...', fallbackError)
       }
     } catch (e) {
       logger.warn('storage', 'Excepción en bucket avatars:', e)
     }
 
-    // Intento 4 (Infalible): Convertir el Blob comprimido a Data URL base64
-    // Garantiza que la imagen NUNCA se pierda y el producto se guarde exitosamente
+    // Intento 4 (Infalible): Convertir a miniatura Data URL base64 ultra-ligera (<= 12 KB, 240px max)
+    // ⛑️ FIX EGRESS CRÍTICO: Evita que si falla RLS de Storage se guarden cadenas Base64 de 60-150 KB
+    // directamente en la tabla retail_products / products (lo cual inflaba el JSON del catálogo a >5 MB).
     try {
+      const microBlob = await compressImageToTarget(optimizedBlob, 240, 12 * 1024, 0.55)
       return await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onloadend = () => resolve(reader.result as string)
         reader.onerror = () => reject(new Error('Error al convertir imagen a base64'))
-        reader.readAsDataURL(optimizedBlob)
+        reader.readAsDataURL(microBlob)
       })
     } catch (finalErr) {
       logger.error('storage', 'Fallo total al procesar imagen de producto', finalErr)

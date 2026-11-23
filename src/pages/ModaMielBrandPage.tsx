@@ -587,6 +587,8 @@ export default function ModaMielBrandPage() {
                     {/* 🖼️ Imagen Completa (object-contain sin cortar prendar) */}
                     <div className="relative h-64 bg-slate-50/80 p-3 flex items-center justify-center overflow-hidden border-b border-slate-100">
                       <img
+                        loading="lazy"
+                        decoding="async"
                         src={
                           product.imageUrl ||
                           product.image ||
